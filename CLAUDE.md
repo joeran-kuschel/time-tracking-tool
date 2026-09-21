@@ -11,6 +11,8 @@ Time tracking tool for freelancers: track working time per customer and project,
 - Add test cases for everything we implement
 - The UI has to be accessible and adhere to W3C and WAI standards (target: WCAG 2.2 level AA)
 - Be lean in the code: avoid duplicated code and tight coupling
+- Documentation is key: document every feature in Markdown files in `documentation/`, in dedicated chapters, split into UI (`documentation/ui/`) and Backend (`documentation/backend/`)
+- The tool is available in German and English. Use a gettext-style translation tool; switching the language must not reload the page
 
 ## Current decisions
 
