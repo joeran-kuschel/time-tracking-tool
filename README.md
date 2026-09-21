@@ -7,9 +7,13 @@ Ein React-basiertes Time-Tracking-Tool für Freiberufler. Trackt Arbeitszeiten p
 - Kunden und Projekte verwalten
 - Timer starten/stoppen
 - Arbeitszeiten pro Projekt tracken
-- Monatliche Abrechnung (CSV/PDF)
+- Monatliche Abrechnung (PDF)
+- Deutsch und Englisch, Sprachwechsel ohne Neuladen
 - Lokal auf Kubernetes
 - Remote-Datenbank-Unterstützung
+- Stündliche Datenbank-Backups
+
+Ausführliche Dokumentation (Englisch) aller Features: [`documentation/`](documentation/README.md)
 
 ## Tech Stack
 
@@ -111,12 +115,16 @@ data:
 
 - `GET /api/customers` - Alle Kunden
 - `POST /api/customers` - Kunde erstellen
-- `GET /api/projects/:customerId` - Projekte eines Kunden
+- `GET /api/projects/customer/:customerId` - Projekte eines Kunden
 - `POST /api/projects` - Projekt erstellen
+- `GET /api/time-entries/active` - Laufender Timer
 - `POST /api/time-entries` - Zeiteintrag starten
 - `PATCH /api/time-entries/:id` - Zeiteintrag beenden
-- `GET /api/time-entries/:projectId?month=2026-09` - Einträge filtern
-- `GET /api/report/:customerId?month=2026-09` - PDF-Report generieren
+- `GET /api/time-entries/project/:projectId` - Einträge eines Projekts
+- `GET /api/reports/customer/:customerId?month=9&year=2026` - Monatsbericht (JSON)
+- `GET /api/reports/customer/:customerId/pdf?month=9&year=2026&lang=de` - Monatsbericht als PDF
+
+Alle Endpunkte mit Details: `documentation/backend/`
 
 ## Tests
 

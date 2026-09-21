@@ -18,7 +18,8 @@ description and can't be edited.
 - The running timer is loaded from the backend (`GET /api/time-entries/active`), not kept in the browser. It keeps
   running when you switch to **Berichte**, reload the page or close the tab.
 - The elapsed time is counted from the saved start time, so it is correct after a reload.
-- The navigation bar shows the running timer on every page: `Timer läuft: <Projekt> · 00:12:34`.
+- The navigation bar shows the running timer on every page: `Timer läuft: <Projekt> · 00:12:34`
+  (English: `Timer running: <project> · 00:12:34`).
 - After a reload, the Dashboard selects the customer and project of the running timer.
 
 ## Only one timer at a time
@@ -27,8 +28,9 @@ description and can't be edited.
   keeps showing the project that is actually tracked, with its **Stop** button, and explains why the selected project
   can't be started.
 - If a timer was started somewhere else, for example in another tab, starting fails with *Es läuft bereits ein Timer.*
-  and the panel shows that timer.
+  (*A timer is already running.*) and the panel shows that timer.
 - Without a selected project, **Start** does nothing and the panel says *Wähle ein Projekt, um den Timer zu starten.*
+  (*Select a project to start the timer.*)
 
 ## Accessibility
 
@@ -37,8 +39,8 @@ description and can't be edited.
   timer panel is always shown, so focus is never lost when the selected project changes.
 - Without a project, **Start** uses `aria-disabled` instead of `disabled`, so it stays focusable, and its description
   points to the hint text.
-- Starting and stopping are announced once through a status region (*Timer gestartet für …*, *Timer gestoppt*). The
-  ticking time itself is not announced.
+- Starting and stopping are announced once through a status region (*Timer gestartet für …* / *Timer started for …*,
+  *Timer gestoppt* / *Timer stopped*), in the current language. The ticking time itself is not announced.
 - Errors are shown with `role="alert"`, so screen readers announce them.
 - Start (`green-700`) and Stop (`red-700`) meet WCAG AA contrast with white text.
 

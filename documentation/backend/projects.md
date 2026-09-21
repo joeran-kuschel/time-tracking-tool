@@ -1,0 +1,37 @@
+# Projects API
+
+A project belongs to a customer and has an hourly rate. Time entries are recorded per project.
+
+## Endpoints
+
+All paths are under `/api/projects`.
+
+| Method | Path | Purpose |
+|---|---|---|
+| `GET` | `/customer/:customerId` | All projects of a customer, sorted by name |
+| `GET` | `/:id` | One project, or `404` |
+| `POST` | `/` | Create a project |
+| `PUT` | `/:id` | Replace name and hourly rate |
+| `DELETE` | `/:id` | Delete a project |
+
+## Fields
+
+| Field | Type | Notes |
+|---|---|---|
+| `id` | integer | Generated |
+| `customer_id` | integer | Required on create as `customerId` (`400` otherwise) |
+| `name` | text, max. 255 | Required (`400` otherwise) |
+| `hourly_rate` | decimal (10, 2) | Sent as `hourlyRate`; missing or `0` is stored as `0.00`. Returned as a string, e.g. `"80.00"` |
+| `created_at`, `updated_at` | timestamp | Set by the database |
+
+## Behavior
+
+- Creating a project for a customer that doesn't exist fails with `500` (foreign key violation), not `400`.
+- `PUT` replaces both fields: sending only `name` sets `hourly_rate` to `null`.
+- `DELETE` also deletes the project's time entries (`ON DELETE CASCADE`).
+- `PUT` and `DELETE` for an id that doesn't exist answer `200` with an empty body instead of `404`.
+- The hourly rate is stored but not used in reports yet: reports show hours, not amounts.
+
+## Code
+
+`backend/src/routes/projects.js`, `controllers/projectController.js`, `models/Project.js`
