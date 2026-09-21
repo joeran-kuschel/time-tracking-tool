@@ -1,65 +1,57 @@
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
 
+// status is the HTTP status, or 0 when the server can't be reached
+export class ApiError extends Error {
+  constructor(status, message) {
+    super(message);
+    this.status = status;
+  }
+}
+
+async function request(path, { method = 'GET', body } = {}) {
+  const options = body === undefined
+    ? { method }
+    : { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) };
+
+  let response;
+  try {
+    response = await fetch(`${API_URL}${path}`, options);
+  } catch {
+    throw new ApiError(0, 'Server not reachable');
+  }
+
+  const data = await response.json().catch(() => null);
+  if (!response.ok) {
+    throw new ApiError(response.status, data?.error || response.statusText);
+  }
+  return data;
+}
+
 export const api = {
   // Customers
-  getCustomers: async () => {
-    const response = await fetch(`${API_URL}/customers`);
-    return response.json();
-  },
+  getCustomers: () => request('/customers'),
 
-  createCustomer: async (name, email) => {
-    const response = await fetch(`${API_URL}/customers`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, email })
-    });
-    return response.json();
-  },
+  createCustomer: (name, email) =>
+    request('/customers', { method: 'POST', body: { name, email } }),
 
   // Projects
-  getProjects: async (customerId) => {
-    const response = await fetch(`${API_URL}/projects/customer/${customerId}`);
-    return response.json();
-  },
+  getProjects: (customerId) => request(`/projects/customer/${customerId}`),
 
-  createProject: async (customerId, name, hourlyRate) => {
-    const response = await fetch(`${API_URL}/projects`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ customerId, name, hourlyRate })
-    });
-    return response.json();
-  },
+  createProject: (customerId, name, hourlyRate) =>
+    request('/projects', { method: 'POST', body: { customerId, name, hourlyRate } }),
 
   // Time Entries
-  createTimeEntry: async (projectId, startTime, description) => {
-    const response = await fetch(`${API_URL}/time-entries`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ projectId, startTime, description })
-    });
-    return response.json();
-  },
+  createTimeEntry: (projectId, startTime, description) =>
+    request('/time-entries', { method: 'POST', body: { projectId, startTime, description } }),
 
-  stopTimeEntry: async (id, endTime) => {
-    const response = await fetch(`${API_URL}/time-entries/${id}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ endTime })
-    });
-    return response.json();
-  },
+  stopTimeEntry: (id, endTime) =>
+    request(`/time-entries/${id}`, { method: 'PATCH', body: { endTime } }),
 
-  getTimeEntries: async (projectId) => {
-    const response = await fetch(`${API_URL}/time-entries/project/${projectId}`);
-    return response.json();
-  },
+  getTimeEntries: (projectId) => request(`/time-entries/project/${projectId}`),
 
   // Reports
-  getMonthlyReport: async (customerId, month, year) => {
-    const response = await fetch(`${API_URL}/reports/customer/${customerId}?month=${month}&year=${year}`);
-    return response.json();
-  },
+  getMonthlyReport: (customerId, month, year) =>
+    request(`/reports/customer/${customerId}?month=${month}&year=${year}`),
 
   downloadPDF: async (customerId, month, year) => {
     const url = `${API_URL}/reports/customer/${customerId}/pdf?month=${month}&year=${year}`;

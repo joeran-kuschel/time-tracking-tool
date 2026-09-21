@@ -1,5 +1,7 @@
 import { useState } from 'react'
 import { api } from '../api'
+import { useAction } from '../hooks/useAction'
+import ErrorMessage from '../components/ErrorMessage'
 
 function Reports({ customers }) {
   const [selectedCustomer, setSelectedCustomer] = useState(null)
@@ -7,19 +9,18 @@ function Reports({ customers }) {
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear())
   const [report, setReport] = useState(null)
   const [loading, setLoading] = useState(false)
+  const [run, error] = useAction()
 
   const handleGenerateReport = async () => {
     if (!selectedCustomer) return
 
-    try {
-      setLoading(true)
-      const data = await api.getMonthlyReport(selectedCustomer.id, selectedMonth, selectedYear)
-      setReport(data)
-    } catch (err) {
-      console.error('Failed to generate report:', err)
-    } finally {
-      setLoading(false)
-    }
+    setLoading(true)
+    const data = await run(
+      () => api.getMonthlyReport(selectedCustomer.id, selectedMonth, selectedYear),
+      'Bericht konnte nicht geladen werden.'
+    )
+    if (data) setReport(data)
+    setLoading(false)
   }
 
   const handleDownloadPDF = async () => {
@@ -118,6 +119,8 @@ function Reports({ customers }) {
               </button>
             )}
           </div>
+
+          <ErrorMessage message={error} />
         </div>
       </div>
 

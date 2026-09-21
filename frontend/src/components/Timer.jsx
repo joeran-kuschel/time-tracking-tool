@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react'
 import { api } from '../api'
+import { useAction } from '../hooks/useAction'
+import ErrorMessage from './ErrorMessage'
 
 function Timer({ project, onEntryCreated, onEntryStopped }) {
   const [isRunning, setIsRunning] = useState(false)
@@ -7,6 +9,7 @@ function Timer({ project, onEntryCreated, onEntryStopped }) {
   const [startTime, setStartTime] = useState(null)
   const [currentEntryId, setCurrentEntryId] = useState(null)
   const [description, setDescription] = useState('')
+  const [run, error] = useAction()
 
   useEffect(() => {
     let interval
@@ -26,34 +29,30 @@ function Timer({ project, onEntryCreated, onEntryStopped }) {
   }
 
   const handleStart = async () => {
-    const now = new Date().toISOString()
-    setStartTime(Date.now())
-    setElapsedTime(0)
+    const entry = await run(
+      () => api.createTimeEntry(project.id, new Date().toISOString(), description),
+      'Timer konnte nicht gestartet werden.'
+    )
+    if (!entry) return
 
-    try {
-      const entry = await api.createTimeEntry(project.id, now, description)
-      setCurrentEntryId(entry.id)
-      setIsRunning(true)
-    } catch (err) {
-      console.error('Failed to start timer:', err)
-    }
+    setStartTime(new Date(entry.start_time).getTime())
+    setElapsedTime(0)
+    setCurrentEntryId(entry.id)
+    setIsRunning(true)
   }
 
   const handleStop = async () => {
-    if (!currentEntryId) return
+    const stopped = await run(
+      () => api.stopTimeEntry(currentEntryId, new Date().toISOString()),
+      'Timer konnte nicht gestoppt werden.'
+    )
+    if (!stopped) return
 
-    const endTime = new Date().toISOString()
     setIsRunning(false)
-
-    try {
-      await api.stopTimeEntry(currentEntryId, endTime)
-      setCurrentEntryId(null)
-      setElapsedTime(0)
-      setDescription('')
-      onEntryStopped()
-    } catch (err) {
-      console.error('Failed to stop timer:', err)
-    }
+    setCurrentEntryId(null)
+    setElapsedTime(0)
+    setDescription('')
+    onEntryStopped()
   }
 
   return (
@@ -76,19 +75,21 @@ function Timer({ project, onEntryCreated, onEntryStopped }) {
         {!isRunning ? (
           <button
             onClick={handleStart}
-            className="flex-1 px-4 py-3 bg-green-500 text-white rounded font-bold hover:bg-green-600"
+            className="flex-1 px-4 py-3 bg-green-700 text-white rounded font-bold hover:bg-green-800"
           >
             Start
           </button>
         ) : (
           <button
             onClick={handleStop}
-            className="flex-1 px-4 py-3 bg-red-500 text-white rounded font-bold hover:bg-red-600"
+            className="flex-1 px-4 py-3 bg-red-700 text-white rounded font-bold hover:bg-red-800"
           >
             Stop
           </button>
         )}
       </div>
+
+      <ErrorMessage message={error} />
     </div>
   )
 }

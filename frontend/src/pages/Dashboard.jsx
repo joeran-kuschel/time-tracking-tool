@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react'
 import { api } from '../api'
+import { useAction } from '../hooks/useAction'
+import ErrorMessage from '../components/ErrorMessage'
 import Timer from '../components/Timer'
 import EntriesList from '../components/EntriesList'
 
@@ -11,6 +13,9 @@ function Dashboard({ customers, onCustomersChange }) {
   const [newCustomerName, setNewCustomerName] = useState('')
   const [newProjectName, setNewProjectName] = useState('')
   const [newProjectRate, setNewProjectRate] = useState('')
+  const [runCustomerAction, customerError] = useAction()
+  const [runProjectAction, projectError] = useAction()
+  const [runEntriesAction, entriesError] = useAction()
 
   useEffect(() => {
     if (selectedCustomer) {
@@ -25,49 +30,39 @@ function Dashboard({ customers, onCustomersChange }) {
   }, [selectedProject])
 
   const loadProjects = async (customerId) => {
-    try {
-      const data = await api.getProjects(customerId)
-      setProjects(data)
-      setSelectedProject(data[0] || null)
-    } catch (err) {
-      console.error('Failed to load projects:', err)
-    }
+    const data = await runProjectAction(() => api.getProjects(customerId), 'Projekte konnten nicht geladen werden.')
+    if (!data) return
+    setProjects(data)
+    setSelectedProject(data[0] || null)
   }
 
   const loadEntries = async (projectId) => {
-    try {
-      const data = await api.getTimeEntries(projectId)
-      setEntries(data)
-    } catch (err) {
-      console.error('Failed to load entries:', err)
-    }
+    const data = await runEntriesAction(() => api.getTimeEntries(projectId), 'Einträge konnten nicht geladen werden.')
+    if (data) setEntries(data)
   }
 
   const handleAddCustomer = async (e) => {
     e.preventDefault()
     if (!newCustomerName.trim()) return
 
-    try {
-      await api.createCustomer(newCustomerName)
-      setNewCustomerName('')
-      onCustomersChange()
-    } catch (err) {
-      console.error('Failed to create customer:', err)
-    }
+    const created = await runCustomerAction(() => api.createCustomer(newCustomerName), 'Kunde konnte nicht angelegt werden.')
+    if (!created) return
+    setNewCustomerName('')
+    onCustomersChange()
   }
 
   const handleAddProject = async (e) => {
     e.preventDefault()
     if (!selectedCustomer || !newProjectName.trim()) return
 
-    try {
-      await api.createProject(selectedCustomer.id, newProjectName, parseFloat(newProjectRate) || 0)
-      setNewProjectName('')
-      setNewProjectRate('')
-      loadProjects(selectedCustomer.id)
-    } catch (err) {
-      console.error('Failed to create project:', err)
-    }
+    const created = await runProjectAction(
+      () => api.createProject(selectedCustomer.id, newProjectName, parseFloat(newProjectRate) || 0),
+      'Projekt konnte nicht angelegt werden.'
+    )
+    if (!created) return
+    setNewProjectName('')
+    setNewProjectRate('')
+    loadProjects(selectedCustomer.id)
   }
 
   const handleEntryCreated = () => {
@@ -118,6 +113,7 @@ function Dashboard({ customers, onCustomersChange }) {
             >
               + Hinzufügen
             </button>
+            <ErrorMessage message={customerError} />
           </form>
         </div>
 
@@ -164,6 +160,7 @@ function Dashboard({ customers, onCustomersChange }) {
                 >
                   + Hinzufügen
                 </button>
+                <ErrorMessage message={projectError} />
               </form>
             </>
           ) : (
@@ -185,6 +182,7 @@ function Dashboard({ customers, onCustomersChange }) {
       {selectedProject && (
         <div className="bg-white rounded-lg shadow p-6">
           <h2 className="text-lg font-bold mb-4">Einträge für {selectedProject.name}</h2>
+          <ErrorMessage message={entriesError} />
           <EntriesList entries={entries} />
         </div>
       )}
