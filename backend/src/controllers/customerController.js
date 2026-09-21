@@ -1,4 +1,5 @@
 const Customer = require('../models/Customer');
+const TimeEntry = require('../models/TimeEntry');
 
 exports.getAll = async (req, res) => {
   try {
@@ -48,6 +49,9 @@ exports.update = async (req, res) => {
     }
 
     const customer = await Customer.update(req.params.id, name, email || null);
+    if (!customer) {
+      return res.status(404).json({ error: 'Customer not found' });
+    }
     res.json(customer);
   } catch (err) {
     console.error(err);
@@ -57,7 +61,16 @@ exports.update = async (req, res) => {
 
 exports.delete = async (req, res) => {
   try {
+    // Deleting also deletes the customer's projects and entries, so not while one of them runs
+    const active = await TimeEntry.getActive();
+    if (active && active.customer_id === Number(req.params.id)) {
+      return res.status(409).json({ error: 'Stop the running timer before deleting' });
+    }
+
     const customer = await Customer.delete(req.params.id);
+    if (!customer) {
+      return res.status(404).json({ error: 'Customer not found' });
+    }
     res.json(customer);
   } catch (err) {
     console.error(err);

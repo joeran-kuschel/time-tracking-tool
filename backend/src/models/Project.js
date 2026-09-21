@@ -22,10 +22,11 @@ class Project {
     return result.rows[0];
   }
 
+  // Leaving out the hourly rate keeps the stored one
   static async update(id, name, hourlyRate) {
     const result = await pool.query(
-      'UPDATE projects SET name = $1, hourly_rate = $2, updated_at = CURRENT_TIMESTAMP WHERE id = $3 RETURNING *',
-      [name, hourlyRate, id]
+      'UPDATE projects SET name = $1, hourly_rate = COALESCE($2::numeric, hourly_rate), updated_at = CURRENT_TIMESTAMP WHERE id = $3 RETURNING *',
+      [name, hourlyRate ?? null, id]
     );
     return result.rows[0];
   }

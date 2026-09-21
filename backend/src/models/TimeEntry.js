@@ -9,15 +9,17 @@ class TimeEntry {
     return result.rows[0];
   }
 
-  // Leaving out the description keeps the stored one; '' or null clears it.
-  static async update(id, endTime, description) {
+  // Fields left out keep their stored value; for the description, '' or null clears it.
+  static async update(id, { startTime, endTime, projectId, description }) {
     const result = await pool.query(
       `UPDATE time_entries
-       SET end_time = $1,
-           description = CASE WHEN $2::boolean THEN $3 ELSE description END,
+       SET start_time = COALESCE($1::timestamp, start_time),
+           end_time = $2,
+           project_id = COALESCE($3::integer, project_id),
+           description = CASE WHEN $4::boolean THEN $5 ELSE description END,
            updated_at = CURRENT_TIMESTAMP
-       WHERE id = $4 RETURNING *`,
-      [endTime, description !== undefined, description || null, id]
+       WHERE id = $6 RETURNING *`,
+      [startTime ?? null, endTime, projectId ?? null, description !== undefined, description || null, id]
     );
     return result.rows[0];
   }

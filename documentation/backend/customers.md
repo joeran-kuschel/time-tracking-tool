@@ -28,7 +28,9 @@ All paths are under `/api/customers`.
 - `PUT` replaces both fields: sending only `name` clears `email`.
 - `DELETE` also deletes all projects of the customer and their time entries (`ON DELETE CASCADE`). There is no undo;
   see [Database backups](database-backups.md).
-- `PUT` and `DELETE` for an id that doesn't exist answer `200` with an empty body instead of `404`.
+- `DELETE` answers `409` while the running timer belongs to one of the customer's projects. A timer of another customer
+  doesn't block it.
+- `PUT` and `DELETE` for an id that doesn't exist answer `404`.
 - Database errors answer `500` with an English `{ "error": "..." }` message.
 
 ## Code

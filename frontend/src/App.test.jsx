@@ -1,9 +1,10 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest'
-import { render, screen } from './test/render'
+import { render, screen, within } from './test/render'
 import userEvent from '@testing-library/user-event'
 import { axe } from './test/axe'
 import App from './App'
 import { api, ApiError } from './api'
+import { fromInputs } from './entryTime'
 
 vi.mock('./api', async (importOriginal) => ({
   ...(await importOriginal()),
@@ -14,6 +15,9 @@ vi.mock('./api', async (importOriginal) => ({
     getProjects: vi.fn(),
     getTimeEntries: vi.fn(),
     stopTimeEntry: vi.fn(),
+    createTimeEntry: vi.fn(),
+    updateCustomer: vi.fn(),
+    deleteCustomer: vi.fn(),
   },
 }))
 
@@ -21,6 +25,10 @@ const running = {
   id: 42, project_id: 7, project_name: 'Website', customer_id: 1, description: null,
   start_time: new Date().toISOString(),
 }
+
+// The name field of the "new customer" form
+const newCustomerName = async (legend = 'Neuer Kunde') =>
+  within(await screen.findByRole('group', { name: legend })).getByLabelText('Name')
 
 beforeEach(() => {
   vi.resetAllMocks()
@@ -58,7 +66,7 @@ describe('App', () => {
     api.createCustomer.mockRejectedValue(new ApiError(500, 'boom'))
     render(<App />)
 
-    const input = await screen.findByPlaceholderText('Neuer Kunde')
+    const input = await newCustomerName()
     await userEvent.type(input, 'Muster GmbH')
     await userEvent.click(screen.getByRole('button', { name: '+ Hinzufügen' }))
 
@@ -120,13 +128,13 @@ describe('App', () => {
     render(<App />)
 
     await userEvent.click(await screen.findByRole('button', { name: 'Muster GmbH' }))
-    expect(await screen.findByRole('button', { name: /Website/ })).toBeInTheDocument()
+    expect(await screen.findByRole('button', { name: /Website/, pressed: true })).toBeInTheDocument()
 
-    await userEvent.type(screen.getByPlaceholderText('Neuer Kunde'), 'Neu AG')
+    await userEvent.type(await newCustomerName(), 'Neu AG')
     await userEvent.click(screen.getAllByRole('button', { name: '+ Hinzufügen' })[0])
 
     expect(await screen.findByRole('button', { name: 'Neu AG' })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /Website/ })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /Website/, pressed: true })).toBeInTheDocument()
   })
 
   test('has no detectable accessibility violations with a running timer', async () => {
@@ -143,13 +151,13 @@ describe('App', () => {
     api.getActiveEntry.mockResolvedValue(running)
     render(<App />)
     await screen.findByText(/Timer läuft: Website/)
-    await userEvent.type(screen.getByPlaceholderText('Neuer Kunde'), 'Muster GmbH')
+    await userEvent.type(await newCustomerName(), 'Muster GmbH')
 
     await userEvent.click(screen.getByRole('button', { name: 'English' }))
 
     expect(screen.getByText(/Timer running: Website/)).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Stop' })).toBeInTheDocument()
-    expect(screen.getByPlaceholderText('New customer')).toHaveValue('Muster GmbH')
+    expect(await newCustomerName('New customer')).toHaveValue('Muster GmbH')
     expect(screen.getByRole('button', { name: 'Reports' })).toBeInTheDocument()
     expect(document.documentElement.lang).toBe('en')
     expect(api.getActiveEntry).toHaveBeenCalledTimes(1)
@@ -175,5 +183,67 @@ describe('App', () => {
     render(<App />)
 
     expect(await screen.findByRole('heading', { name: 'Customers' })).toBeInTheDocument()
+  })
+
+  test('adds time manually for the selected project and shows it in the list', async () => {
+    const added = { id: 9, project_id: 7, start_time: fromInputs('2026-09-21', '08:00'), end_time: fromInputs('2026-09-21', '09:30'), description: 'Nachgetragen' }
+    api.getCustomers.mockResolvedValue([{ id: 1, name: 'Muster GmbH' }])
+    api.getTimeEntries.mockResolvedValueOnce([]).mockResolvedValueOnce([added])
+    api.createTimeEntry.mockResolvedValue(added)
+    render(<App />)
+    await userEvent.click(await screen.findByRole('button', { name: 'Muster GmbH' }))
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Zeit nachtragen' }))
+    const form = screen.getByRole('group', { name: 'Zeit nachtragen' })
+    await userEvent.clear(within(form).getByLabelText('Datum'))
+    await userEvent.type(within(form).getByLabelText('Datum'), '2026-09-21')
+    await userEvent.type(within(form).getByLabelText('Start'), '08:00')
+    await userEvent.type(within(form).getByLabelText('Ende'), '09:30')
+    await userEvent.type(within(form).getByLabelText('Beschreibung (optional)'), 'Nachgetragen')
+    await userEvent.click(within(form.closest('form')).getByRole('button', { name: 'Speichern' }))
+
+    expect(api.createTimeEntry).toHaveBeenCalledWith(7, fromInputs('2026-09-21', '08:00'), 'Nachgetragen', fromInputs('2026-09-21', '09:30'))
+    expect(await screen.findByText('Nachgetragen')).toBeInTheDocument()
+    expect(screen.queryByRole('group', { name: 'Zeit nachtragen' })).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Zeit nachtragen' })).toHaveFocus()
+  })
+
+  test('renaming the selected customer keeps it and its project selected', async () => {
+    api.getCustomers
+      .mockResolvedValueOnce([{ id: 1, name: 'Muster GmbH' }])
+      .mockResolvedValueOnce([{ id: 1, name: 'Muster AG' }])
+    api.updateCustomer.mockResolvedValue({ id: 1, name: 'Muster AG' })
+    render(<App />)
+    await userEvent.click(await screen.findByRole('button', { name: 'Muster GmbH' }))
+    await screen.findByRole('heading', { name: 'Einträge für Website' })
+
+    await userEvent.click(screen.getByRole('button', { name: 'Muster GmbH bearbeiten' }))
+    const name = within(screen.getByRole('list', { name: 'Kunden' })).getByLabelText('Name')
+    await userEvent.clear(name)
+    await userEvent.type(name, 'Muster AG')
+    await userEvent.click(screen.getByRole('button', { name: 'Speichern' }))
+
+    expect(api.updateCustomer).toHaveBeenCalledWith(1, 'Muster AG', '')
+    expect(await screen.findByRole('button', { name: 'Muster AG', pressed: true })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Einträge für Website' })).toBeInTheDocument()
+    expect(api.getProjects).toHaveBeenCalledTimes(1)
+  })
+
+  test('deleting the selected customer clears its projects', async () => {
+    api.getCustomers
+      .mockResolvedValueOnce([{ id: 1, name: 'Muster GmbH' }])
+      .mockResolvedValueOnce([])
+    api.deleteCustomer.mockResolvedValue({ id: 1 })
+    render(<App />)
+    await userEvent.click(await screen.findByRole('button', { name: 'Muster GmbH' }))
+    await screen.findByRole('heading', { name: 'Einträge für Website' })
+
+    await userEvent.click(screen.getByRole('button', { name: 'Muster GmbH löschen' }))
+    expect(screen.getByRole('group', { name: 'Muster GmbH und alle Projekte und Zeiteinträge löschen?' })).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: 'Löschen' }))
+
+    expect(api.deleteCustomer).toHaveBeenCalledWith(1)
+    expect(await screen.findByText('Wähle einen Kunden')).toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: /Einträge für/ })).not.toBeInTheDocument()
   })
 })

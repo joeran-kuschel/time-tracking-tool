@@ -26,23 +26,39 @@ describe('TimeEntry.update', () => {
   });
 
   test('keeps the description when none is given (stopping the timer)', async () => {
-    const updated = await TimeEntry.update(entry.id, '2026-09-21T09:00:00Z');
+    const updated = await TimeEntry.update(entry.id, { endTime: '2026-09-21T09:00:00Z' });
     expect(updated.description).toBe('Konzept schreiben');
     expect(updated.end_time).not.toBeNull();
   });
 
   test('replaces the description when a new one is given', async () => {
-    const updated = await TimeEntry.update(entry.id, '2026-09-21T09:00:00Z', 'Konzept überarbeiten');
+    const updated = await TimeEntry.update(entry.id, { endTime: '2026-09-21T09:00:00Z', description: 'Konzept überarbeiten' });
     expect(updated.description).toBe('Konzept überarbeiten');
   });
 
   test('clears the description when an empty string is given', async () => {
-    const updated = await TimeEntry.update(entry.id, '2026-09-21T09:00:00Z', '');
+    const updated = await TimeEntry.update(entry.id, { endTime: '2026-09-21T09:00:00Z', description: '' });
     expect(updated.description).toBeNull();
   });
 
+  test('changes start time and project when given, and keeps them otherwise', async () => {
+    const other = await mockPool.query(
+      'INSERT INTO projects (customer_id, name) SELECT customer_id, $1 FROM projects WHERE id = $2 RETURNING id',
+      ['Anderes Projekt', entry.project_id]
+    );
+    const moved = await TimeEntry.update(entry.id, {
+      startTime: '2026-09-21T07:30:00Z', endTime: '2026-09-21T09:00:00Z', projectId: other.rows[0].id,
+    });
+    expect(new Date(moved.start_time).toISOString()).toBe('2026-09-21T07:30:00.000Z');
+    expect(moved.project_id).toBe(other.rows[0].id);
+
+    const kept = await TimeEntry.update(entry.id, { endTime: '2026-09-21T09:15:00Z' });
+    expect(new Date(kept.start_time).toISOString()).toBe('2026-09-21T07:30:00.000Z');
+    expect(kept.project_id).toBe(other.rows[0].id);
+  });
+
   test('clears the description when null is given', async () => {
-    const updated = await TimeEntry.update(entry.id, '2026-09-21T09:00:00Z', null);
+    const updated = await TimeEntry.update(entry.id, { endTime: '2026-09-21T09:00:00Z', description: null });
     expect(updated.description).toBeNull();
   });
 });

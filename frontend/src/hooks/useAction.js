@@ -8,7 +8,7 @@ const retry = msg`Please try again.`
 // Runs an API call and keeps an error message if it fails.
 // run() resolves to the call's result, or undefined when it failed.
 // Messages are lazy (msg``) and translated when rendering, so they follow a language switch.
-// hintsByStatus replaces the generic hint for specific HTTP statuses.
+// hintsByStatus replaces the generic hint for specific HTTP statuses. clear() hides the error.
 export function useAction() {
   const { i18n } = useLingui()
   const [failure, setFailure] = useState(null)
@@ -25,6 +25,7 @@ export function useAction() {
     }
   }, [])
 
+  const clear = useCallback(() => setFailure(null), [])
   const error = failure && `${i18n._(failure.message)} ${i18n._(failure.hint)}`
-  return [run, error]
+  return [run, error, clear]
 }

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { msg } from '@lingui/core/macro'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { api } from '../api'
@@ -6,46 +6,66 @@ import { useAction } from '../hooks/useAction'
 import ErrorMessage from '../components/ErrorMessage'
 import Timer from '../components/Timer'
 import EntriesList from '../components/EntriesList'
+import EditableList from '../components/EditableList'
+import RecordForm from '../components/RecordForm'
+import EntryForm from '../components/EntryForm'
 import { formatRate } from '../format'
 
+const stopTimerFirst = msg`Stop the running timer first.`
+const customerMessages = { saveFailed: msg`Customer could not be saved.`, deleteFailed: msg`Customer could not be deleted.`, stopTimerFirst }
+const projectMessages = { saveFailed: msg`Project could not be saved.`, deleteFailed: msg`Project could not be deleted.`, stopTimerFirst }
+
 function Dashboard({ customers, onCustomersChange, timer }) {
-  const [selectedCustomer, setSelectedCustomer] = useState(null)
-  const [selectedProject, setSelectedProject] = useState(null)
+  // Only ids are kept, so a renamed customer or project shows its new name right away
+  const [selectedCustomerId, setSelectedCustomerId] = useState(null)
+  const [selectedProjectId, setSelectedProjectId] = useState(null)
   const [projects, setProjects] = useState([])
   const [entries, setEntries] = useState([])
-  const [newCustomerName, setNewCustomerName] = useState('')
-  const [newProjectName, setNewProjectName] = useState('')
-  const [newProjectRate, setNewProjectRate] = useState('')
+  const [addingEntry, setAddingEntry] = useState(false)
   const [runCustomerAction, customerError] = useAction()
   const [runProjectAction, projectError] = useAction()
   const [runEntriesAction, entriesError] = useAction()
+  const addEntryButton = useRef(null)
   const { t, i18n } = useLingui()
 
+  const selectedCustomer = customers.find((c) => c.id === selectedCustomerId) ?? null
+  const selectedProject = projects.find((p) => p.id === selectedProjectId) ?? null
+
   useEffect(() => {
-    if (selectedCustomer) {
-      loadProjects(selectedCustomer.id)
+    if (selectedCustomerId) {
+      loadProjects(selectedCustomerId)
+    } else {
+      setProjects([])
+      setSelectedProjectId(null)
     }
-  }, [selectedCustomer])
+  }, [selectedCustomerId])
 
   // After a reload, open the customer of the running timer
   useEffect(() => {
-    if (!selectedCustomer && timer.activeEntry) {
+    if (!selectedCustomerId && timer.activeEntry) {
       const customer = customers.find((c) => c.id === timer.activeEntry.customer_id)
-      if (customer) setSelectedCustomer(customer)
+      if (customer) setSelectedCustomerId(customer.id)
     }
   }, [customers, timer.activeEntry])
 
   useEffect(() => {
-    if (selectedProject) {
-      loadEntries(selectedProject.id)
+    setAddingEntry(false)
+    if (selectedProjectId) {
+      loadEntries(selectedProjectId)
+    } else {
+      setEntries([])
     }
-  }, [selectedProject])
+  }, [selectedProjectId])
 
+  // Keeps the selected project if it still exists, else the running timer's project, else the first one
   const loadProjects = async (customerId) => {
     const data = await runProjectAction(() => api.getProjects(customerId), msg`Projects could not be loaded.`)
     if (!data) return
     setProjects(data)
-    setSelectedProject(data.find((p) => p.id === timer.activeEntry?.project_id) || data[0] || null)
+    setSelectedProjectId((current) => {
+      const keep = (id) => data.some((p) => p.id === id) && id
+      return keep(current) || keep(timer.activeEntry?.project_id) || data[0]?.id || null
+    })
   }
 
   const loadEntries = async (projectId) => {
@@ -53,38 +73,102 @@ function Dashboard({ customers, onCustomersChange, timer }) {
     if (data) setEntries(data)
   }
 
-  const handleAddCustomer = async (e) => {
-    e.preventDefault()
-    if (!newCustomerName.trim()) return
+  const refreshEntries = () => selectedProjectId && loadEntries(selectedProjectId)
 
-    const created = await runCustomerAction(() => api.createCustomer(newCustomerName), msg`Customer could not be created.`)
-    if (!created) return
-    setNewCustomerName('')
-    onCustomersChange()
+  // Customers
+  const customerFields = [
+    { name: 'name', label: t`Name`, required: true },
+    { name: 'email', label: t`Email (optional)`, type: 'email' },
+  ]
+  const customerForm = { fields: customerFields, toValues: (c) => ({ name: c.name, email: c.email ?? '' }) }
+
+  const addCustomer = async ({ name, email }) => {
+    const created = await runCustomerAction(() => api.createCustomer(name.trim(), email.trim()), msg`Customer could not be created.`)
+    if (created) onCustomersChange()
+    return created
   }
 
-  const handleAddProject = async (e) => {
-    e.preventDefault()
-    if (!selectedCustomer || !newProjectName.trim()) return
+  const updateCustomer = async (customer, { name, email }) => {
+    const saved = await api.updateCustomer(customer.id, name.trim(), email.trim())
+    await onCustomersChange()
+    return saved
+  }
 
+  const deleteCustomer = async (customer) => {
+    const deleted = await api.deleteCustomer(customer.id)
+    if (customer.id === selectedCustomerId) setSelectedCustomerId(null)
+    await onCustomersChange()
+    return deleted
+  }
+
+  // Projects
+  const projectFields = [
+    { name: 'name', label: t`Name`, required: true },
+    { name: 'hourlyRate', label: t`Hourly rate (€)`, type: 'number', min: 0, step: 0.01 },
+  ]
+  const projectForm = { fields: projectFields, toValues: (p) => ({ name: p.name, hourlyRate: String(Number(p.hourly_rate)) }) }
+  const toRate = (value) => (value === '' ? 0 : Number(value))
+
+  const addProject = async ({ name, hourlyRate }) => {
     const created = await runProjectAction(
-      () => api.createProject(selectedCustomer.id, newProjectName, parseFloat(newProjectRate) || 0),
+      () => api.createProject(selectedCustomerId, name.trim(), toRate(hourlyRate)),
       msg`Project could not be created.`
     )
-    if (!created) return
-    setNewProjectName('')
-    setNewProjectRate('')
-    loadProjects(selectedCustomer.id)
+    if (created) loadProjects(selectedCustomerId)
+    return created
   }
 
-  const selectedProjectName = selectedProject?.name
+  const updateProject = async (project, { name, hourlyRate }) => {
+    const saved = await api.updateProject(project.id, name.trim(), toRate(hourlyRate))
+    await loadProjects(selectedCustomerId)
+    return saved
+  }
+
+  const deleteProject = async (project) => {
+    const deleted = await api.deleteProject(project.id)
+    await loadProjects(selectedCustomerId)
+    return deleted
+  }
+
+  // Time entries
+  const updateEntry = async (entry, changes) => {
+    const saved = await api.updateTimeEntry(entry.id, changes)
+    await refreshEntries()
+    return saved
+  }
+
+  const deleteEntry = async (entry) => {
+    const deleted = await api.deleteTimeEntry(entry.id)
+    await refreshEntries()
+    return deleted
+  }
+
+  const closeAddEntry = () => {
+    setAddingEntry(false)
+    // the button only exists again after the form closed
+    setTimeout(() => addEntryButton.current?.focus())
+  }
+
+  const addEntry = async ({ projectId, startTime, endTime, description }) => {
+    const created = await runEntriesAction(
+      () => api.createTimeEntry(projectId, startTime, description, endTime),
+      msg`Time entry could not be saved.`
+    )
+    if (created) {
+      await refreshEntries()
+      closeAddEntry()
+    }
+    return created
+  }
 
   // Reload the list after start/stop, so the running entry shows up right away
   const withEntriesRefresh = (action) => async (...args) => {
     const result = await action(...args)
-    if (result && selectedProject) loadEntries(selectedProject.id)
+    if (result) refreshEntries()
     return result
   }
+
+  const selectedProjectName = selectedProject?.name
 
   return (
     <div className="space-y-6">
@@ -92,38 +176,26 @@ function Dashboard({ customers, onCustomersChange, timer }) {
         {/* Customers Section */}
         <div className="bg-white rounded-lg shadow p-6">
           <h2 className="text-lg font-bold mb-4"><Trans>Customers</Trans></h2>
-          <div className="space-y-2 mb-4 max-h-64 overflow-y-auto">
-            {customers.map((customer) => (
-              <button
-                key={customer.id}
-                onClick={() => setSelectedCustomer(customer)}
-                className={`w-full text-left px-3 py-2 rounded ${
-                  selectedCustomer?.id === customer.id
-                    ? 'bg-blue-500 text-white'
-                    : 'bg-gray-100 hover:bg-gray-200'
-                }`}
-              >
-                {customer.name}
-              </button>
-            ))}
-          </div>
-
-          <form onSubmit={handleAddCustomer} className="space-y-2">
-            <input
-              type="text"
-              placeholder={t`New customer`}
-              value={newCustomerName}
-              onChange={(e) => setNewCustomerName(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded"
-            />
-            <button
-              type="submit"
-              className="w-full px-3 py-2 bg-green-500 text-white rounded hover:bg-green-600"
-            >
-              <Trans>+ Add</Trans>
-            </button>
-            <ErrorMessage message={customerError} />
-          </form>
+          <EditableList
+            label={t`Customers`}
+            items={customers}
+            selectedId={selectedCustomerId}
+            onSelect={(customer) => setSelectedCustomerId(customer.id)}
+            renderItem={(customer) => customer.name}
+            form={customerForm}
+            onUpdate={updateCustomer}
+            onDelete={deleteCustomer}
+            deleteMessage={({ name: customerName }) => t`Delete ${customerName} and all its projects and time entries?`}
+            messages={customerMessages}
+          />
+          <RecordForm
+            legend={t`New customer`}
+            fields={customerFields}
+            initialValues={{ name: '', email: '' }}
+            submitLabel={t`+ Add`}
+            onSubmit={addCustomer}
+            error={customerError}
+          />
         </div>
 
         {/* Projects Section */}
@@ -131,46 +203,32 @@ function Dashboard({ customers, onCustomersChange, timer }) {
           <h2 className="text-lg font-bold mb-4"><Trans>Projects</Trans></h2>
           {selectedCustomer ? (
             <>
-              <div className="space-y-2 mb-4 max-h-64 overflow-y-auto">
-                {projects.map((project) => (
-                  <button
-                    key={project.id}
-                    onClick={() => setSelectedProject(project)}
-                    className={`w-full text-left px-3 py-2 rounded text-sm ${
-                      selectedProject?.id === project.id
-                        ? 'bg-blue-500 text-white'
-                        : 'bg-gray-100 hover:bg-gray-200'
-                    }`}
-                  >
+              <EditableList
+                label={t`Projects`}
+                items={projects}
+                selectedId={selectedProjectId}
+                onSelect={(project) => setSelectedProjectId(project.id)}
+                renderItem={(project, selected) => (
+                  <>
                     <div>{project.name}</div>
-                    <div className="text-xs opacity-75">{formatRate(i18n, project.hourly_rate)}</div>
-                  </button>
-                ))}
-              </div>
-
-              <form onSubmit={handleAddProject} className="space-y-2">
-                <input
-                  type="text"
-                  placeholder={t`Project name`}
-                  value={newProjectName}
-                  onChange={(e) => setNewProjectName(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded text-sm"
-                />
-                <input
-                  type="number"
-                  placeholder={t`Hourly rate €`}
-                  value={newProjectRate}
-                  onChange={(e) => setNewProjectRate(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded text-sm"
-                />
-                <button
-                  type="submit"
-                  className="w-full px-3 py-2 bg-green-500 text-white rounded text-sm hover:bg-green-600"
-                >
-                  <Trans>+ Add</Trans>
-                </button>
-                <ErrorMessage message={projectError} />
-              </form>
+                    <div className={`text-xs ${selected ? 'text-blue-100' : 'text-gray-600'}`}>{formatRate(i18n, project.hourly_rate)}</div>
+                  </>
+                )}
+                form={projectForm}
+                onUpdate={updateProject}
+                onDelete={deleteProject}
+                deleteMessage={({ name: projectName }) => t`Delete ${projectName} and all its time entries?`}
+                messages={projectMessages}
+              />
+              <RecordForm
+                key={selectedCustomerId}
+                legend={t`New project`}
+                fields={projectFields}
+                initialValues={{ name: '', hourlyRate: '' }}
+                submitLabel={t`+ Add`}
+                onSubmit={addProject}
+                error={projectError}
+              />
             </>
           ) : (
             <p className="text-gray-500"><Trans>Select a customer</Trans></p>
@@ -191,10 +249,30 @@ function Dashboard({ customers, onCustomersChange, timer }) {
 
       {/* Entries List */}
       {selectedProject && (
-        <div className="bg-white rounded-lg shadow p-6">
-          <h2 className="text-lg font-bold mb-4"><Trans>Entries for {selectedProjectName}</Trans></h2>
-          <ErrorMessage message={entriesError} />
-          <EntriesList entries={entries} />
+        <div className="bg-white rounded-lg shadow p-6 space-y-4">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <h2 className="text-lg font-bold"><Trans>Entries for {selectedProjectName}</Trans></h2>
+            {!addingEntry && (
+              <button ref={addEntryButton} onClick={() => setAddingEntry(true)}
+                className="px-3 py-2 rounded text-sm bg-green-700 text-white hover:bg-green-800">
+                <Trans>Add time</Trans>
+              </button>
+            )}
+          </div>
+          {addingEntry && (
+            <EntryForm
+              projects={projects}
+              projectId={selectedProjectId}
+              legend={t`Add time`}
+              submitLabel={t`Save`}
+              onSubmit={addEntry}
+              onCancel={closeAddEntry}
+              error={entriesError}
+              autoFocus
+            />
+          )}
+          {!addingEntry && <ErrorMessage message={entriesError} />}
+          <EntriesList entries={entries} projects={projects} onUpdate={updateEntry} onDelete={deleteEntry} />
         </div>
       )}
     </div>

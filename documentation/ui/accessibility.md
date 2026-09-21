@@ -11,20 +11,22 @@ The UI has to meet WCAG 2.2 level AA (see `CLAUDE.md`). This chapter lists what 
   ring. Focus stays on the timer button when the timer starts or stops. See [Timer](timer.md).
 - **Status and errors:** starting and stopping the timer is announced once through a status region; errors use
   `role="alert"`. See [Error messages](error-messages.md).
-- **Labels:** the timer's description field has a visible label.
-- **Contrast** of the parts changed so far: Start 5.0:1 and the language buttons 6.7:1 and 10.3:1 (measured in the
-  browser); Stop and the error text about 6.5:1 (`red-700` on white, calculated).
+- **Labels:** all Dashboard fields have visible labels (`RecordForm`), grouped with a legend such as *New customer*.
+  Validation errors mark their field with `aria-invalid` and are linked with `aria-describedby`.
+- **Selection:** the selected customer and project are marked with `aria-pressed`, not only by color.
+- **Editing and deleting:** forms and confirmations open in place and take focus; closing them returns focus to the
+  button that opened them; Escape cancels. Edit and delete buttons name their record, e.g. *Edit Muster GmbH*.
+- **Contrast** of the parts changed so far (measured in the browser): Start, **+ Add** and **Add time** 5.0:1, the
+  selected customer or project 6.7:1, the hourly rate 5.5:1 (selected) and 6.9:1, the edit and delete buttons 10.3:1,
+  the language buttons 6.7:1 and 10.3:1. Stop, delete and the error text are `red-700`, about 6.5:1 (calculated).
 
 ## Missing
 
 From the UX review, not fixed yet:
 
-- White text on `green-500` (**+ Add**, *Hinzufügen*, about 2.3:1) and on `blue-500` (active navigation button,
-  selected customer and project, about 3.7:1) is below the 4.5:1 minimum.
-- The selected customer, project and page are shown only by color, without `aria-pressed` or `aria-current`.
-- The Dashboard's input fields have only placeholders, which disappear when typing (WCAG 3.3.2).
+- The active navigation button uses white on `blue-500` (about 3.7:1), below the 4.5:1 minimum, and the current page
+  is shown only by color, without `aria-current`.
 - On the Reports page, the labels are not linked to their dropdowns.
-- The hourly rate under each project uses small, semi-transparent text on blue.
 
 ## Testing
 

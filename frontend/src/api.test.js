@@ -45,6 +45,24 @@ describe('api', () => {
     expect(fetch.mock.calls[0][0]).toMatch(/\/time-entries\/active$/)
   })
 
+  test.each([
+    ['updateCustomer', [1, 'Neu', 'a@b.de'], '/customers/1', 'PUT', { name: 'Neu', email: 'a@b.de' }],
+    ['deleteCustomer', [1], '/customers/1', 'DELETE', undefined],
+    ['updateProject', [3, 'Web', 80], '/projects/3', 'PUT', { name: 'Web', hourlyRate: 80 }],
+    ['deleteProject', [3], '/projects/3', 'DELETE', undefined],
+    ['updateTimeEntry', [5, { endTime: 'e', startTime: 's' }], '/time-entries/5', 'PATCH', { endTime: 'e', startTime: 's' }],
+    ['deleteTimeEntry', [5], '/time-entries/5', 'DELETE', undefined],
+    ['createTimeEntry', [7, 's', 'Konzept', 'e'], '/time-entries', 'POST', { projectId: 7, startTime: 's', description: 'Konzept', endTime: 'e' }],
+  ])('%s calls %s', async (name, args, path, method, body) => {
+    const fetch = mockFetch(200, { id: 1 })
+    await api[name](...args)
+
+    const [url, options] = fetch.mock.calls[0]
+    expect(url.endsWith(path)).toBe(true)
+    expect(options.method).toBe(method)
+    expect(options.body && JSON.parse(options.body)).toEqual(body)
+  })
+
   test('asks for the PDF in the given language', () => {
     const click = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {})
     const append = vi.spyOn(document.body, 'appendChild')

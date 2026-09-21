@@ -34,15 +34,31 @@ export const api = {
   createCustomer: (name, email) =>
     request('/customers', { method: 'POST', body: { name, email } }),
 
+  updateCustomer: (id, name, email) =>
+    request(`/customers/${id}`, { method: 'PUT', body: { name, email } }),
+
+  deleteCustomer: (id) => request(`/customers/${id}`, { method: 'DELETE' }),
+
   // Projects
   getProjects: (customerId) => request(`/projects/customer/${customerId}`),
 
   createProject: (customerId, name, hourlyRate) =>
     request('/projects', { method: 'POST', body: { customerId, name, hourlyRate } }),
 
-  // Time Entries
-  createTimeEntry: (projectId, startTime, description) =>
-    request('/time-entries', { method: 'POST', body: { projectId, startTime, description } }),
+  updateProject: (id, name, hourlyRate) =>
+    request(`/projects/${id}`, { method: 'PUT', body: { name, hourlyRate } }),
+
+  deleteProject: (id) => request(`/projects/${id}`, { method: 'DELETE' }),
+
+  // Time Entries; without endTime, createTimeEntry starts the timer
+  createTimeEntry: (projectId, startTime, description, endTime) =>
+    request('/time-entries', { method: 'POST', body: { projectId, startTime, description, endTime } }),
+
+  // changes: { startTime, endTime, projectId, description }
+  updateTimeEntry: (id, changes) =>
+    request(`/time-entries/${id}`, { method: 'PATCH', body: changes }),
+
+  deleteTimeEntry: (id) => request(`/time-entries/${id}`, { method: 'DELETE' }),
 
   stopTimeEntry: (id, endTime) =>
     request(`/time-entries/${id}`, { method: 'PATCH', body: { endTime } }),
