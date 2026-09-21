@@ -9,6 +9,7 @@ Time tracking tool for freelancers: track working time per customer and project,
 - Data has to be persistently stored somewhere
 - Tool should run on a local kubernetes cluster but with the option to have a remote database
 - Add test cases for everything we implement
+- The UI has to be accessible and adhere to W3C and WAI standards
 
 ## Current decisions
 
