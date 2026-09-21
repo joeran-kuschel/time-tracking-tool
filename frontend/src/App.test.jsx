@@ -27,8 +27,11 @@ const running = {
 }
 
 // The name field of the "new customer" form
-const newCustomerName = async (legend = 'Neuer Kunde') =>
-  within(await screen.findByRole('group', { name: legend })).getByLabelText('Name')
+// Opens the "new customer" dialog and returns it
+async function openNewCustomer() {
+  await userEvent.click(await screen.findByRole('button', { name: 'Neuer Kunde' }))
+  return screen.getByRole('dialog', { name: 'Neuer Kunde' })
+}
 
 beforeEach(() => {
   vi.resetAllMocks()
@@ -66,12 +69,14 @@ describe('App', () => {
     api.createCustomer.mockRejectedValue(new ApiError(500, 'boom'))
     render(<App />)
 
-    const input = await newCustomerName()
+    const dialog = await openNewCustomer()
+    const input = within(dialog).getByLabelText('Name')
     await userEvent.type(input, 'Muster GmbH')
-    await userEvent.click(screen.getByRole('button', { name: '+ Hinzufügen' }))
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Speichern' }))
 
-    expect(await screen.findByRole('alert')).toHaveTextContent('Kunde konnte nicht angelegt werden.')
+    expect(await within(dialog).findByRole('alert')).toHaveTextContent('Kunde konnte nicht angelegt werden.')
     expect(input).toHaveValue('Muster GmbH')
+    expect(screen.getByRole('dialog', { name: 'Neuer Kunde' })).toBeInTheDocument()
   })
 
   test('resumes a running timer after a reload', async () => {
@@ -130,10 +135,15 @@ describe('App', () => {
     await userEvent.click(await screen.findByRole('button', { name: 'Muster GmbH' }))
     expect(await screen.findByRole('button', { name: /Website/, pressed: true })).toBeInTheDocument()
 
-    await userEvent.type(await newCustomerName(), 'Neu AG')
-    await userEvent.click(screen.getAllByRole('button', { name: '+ Hinzufügen' })[0])
+    const dialog = await openNewCustomer()
+    await userEvent.type(within(dialog).getByLabelText('Name'), 'Neu AG')
+    await userEvent.type(within(dialog).getByLabelText('E-Mail (optional)'), 'info@neu.de')
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Speichern' }))
 
-    expect(await screen.findByRole('button', { name: 'Neu AG' })).toBeInTheDocument()
+    expect(api.createCustomer).toHaveBeenCalledWith('Neu AG', 'info@neu.de')
+    expect(await screen.findByRole('button', { name: 'Neu AG', pressed: false })).toBeInTheDocument()
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Neuer Kunde' })).toHaveFocus()
     expect(screen.getByRole('button', { name: /Website/, pressed: true })).toBeInTheDocument()
   })
 
@@ -147,17 +157,20 @@ describe('App', () => {
   })
 
   test('switches to English without a reload and keeps the running timer and typed text', async () => {
-    api.getCustomers.mockResolvedValue([])
+    api.getCustomers.mockResolvedValue([{ id: 1, name: 'Muster GmbH' }])
     api.getActiveEntry.mockResolvedValue(running)
     render(<App />)
     await screen.findByText(/Timer läuft: Website/)
-    await userEvent.type(await newCustomerName(), 'Muster GmbH')
+    // typed into an inline edit form: while a modal dialog is open, the page behind it can't be used
+    await userEvent.click(await screen.findByRole('button', { name: 'Muster GmbH bearbeiten' }))
+    const name = within(screen.getByRole('list', { name: 'Kunden' })).getByLabelText('Name')
+    await userEvent.type(name, ' AG')
 
     await userEvent.click(screen.getByRole('button', { name: 'English' }))
 
     expect(screen.getByText(/Timer running: Website/)).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Stop' })).toBeInTheDocument()
-    expect(await newCustomerName('New customer')).toHaveValue('Muster GmbH')
+    expect(within(screen.getByRole('list', { name: 'Customers' })).getByLabelText('Name')).toHaveValue('Muster GmbH AG')
     expect(screen.getByRole('button', { name: 'Reports' })).toBeInTheDocument()
     expect(document.documentElement.lang).toBe('en')
     expect(api.getActiveEntry).toHaveBeenCalledTimes(1)
@@ -194,17 +207,17 @@ describe('App', () => {
     await userEvent.click(await screen.findByRole('button', { name: 'Muster GmbH' }))
 
     await userEvent.click(await screen.findByRole('button', { name: 'Zeit nachtragen' }))
-    const form = screen.getByRole('group', { name: 'Zeit nachtragen' })
+    const form = screen.getByRole('dialog', { name: 'Zeit nachtragen' })
     await userEvent.clear(within(form).getByLabelText('Datum'))
     await userEvent.type(within(form).getByLabelText('Datum'), '2026-09-21')
     await userEvent.type(within(form).getByLabelText('Start'), '08:00')
     await userEvent.type(within(form).getByLabelText('Ende'), '09:30')
     await userEvent.type(within(form).getByLabelText('Beschreibung (optional)'), 'Nachgetragen')
-    await userEvent.click(within(form.closest('form')).getByRole('button', { name: 'Speichern' }))
+    await userEvent.click(within(form).getByRole('button', { name: 'Speichern' }))
 
     expect(api.createTimeEntry).toHaveBeenCalledWith(7, fromInputs('2026-09-21', '08:00'), 'Nachgetragen', fromInputs('2026-09-21', '09:30'))
     expect(await screen.findByText('Nachgetragen')).toBeInTheDocument()
-    expect(screen.queryByRole('group', { name: 'Zeit nachtragen' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Zeit nachtragen' })).toHaveFocus()
   })
 
@@ -245,5 +258,48 @@ describe('App', () => {
     expect(api.deleteCustomer).toHaveBeenCalledWith(1)
     expect(await screen.findByText('Wähle einen Kunden')).toBeInTheDocument()
     expect(screen.queryByRole('heading', { name: /Einträge für/ })).not.toBeInTheDocument()
+  })
+
+  test('adds a project in a dialog and keeps the selected project', async () => {
+    api.getCustomers.mockResolvedValue([{ id: 1, name: 'Muster GmbH' }])
+    api.getProjects
+      .mockResolvedValueOnce([{ id: 7, name: 'Website', hourly_rate: '80.00' }])
+      .mockResolvedValueOnce([{ id: 7, name: 'Website', hourly_rate: '80.00' }, { id: 8, name: 'App', hourly_rate: '95.00' }])
+    api.createProject = vi.fn().mockResolvedValue({ id: 8 })
+    render(<App />)
+    await userEvent.click(await screen.findByRole('button', { name: 'Muster GmbH' }))
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Neues Projekt' }))
+    const dialog = screen.getByRole('dialog', { name: 'Neues Projekt' })
+    await userEvent.type(within(dialog).getByLabelText('Name'), 'App')
+    await userEvent.type(within(dialog).getByLabelText('Stundensatz (€)'), '95')
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Speichern' }))
+
+    expect(api.createProject).toHaveBeenCalledWith(1, 'App', 95)
+    expect(await screen.findByRole('button', { name: /App/, pressed: false })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /Website/, pressed: true })).toBeInTheDocument()
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+  })
+
+  test('cancelling a dialog discards the input', async () => {
+    api.getCustomers.mockResolvedValue([])
+    render(<App />)
+
+    let dialog = await openNewCustomer()
+    await userEvent.type(within(dialog).getByLabelText('Name'), 'Verworfen')
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Abbrechen' }))
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    expect(api.createCustomer).not.toHaveBeenCalled()
+
+    dialog = await openNewCustomer()
+    expect(within(dialog).getByLabelText('Name')).toHaveValue('')
+  })
+
+  test('has no detectable accessibility violations with a dialog open', async () => {
+    api.getCustomers.mockResolvedValue([])
+    const { container } = render(<App />)
+    await openNewCustomer()
+
+    expect(await axe(container)).toHaveNoViolations()
   })
 })

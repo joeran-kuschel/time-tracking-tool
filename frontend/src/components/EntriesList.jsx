@@ -5,6 +5,7 @@ import { formatHours, hoursBetween } from '../format'
 import { useEditable } from '../hooks/useEditable'
 import EntryForm from './EntryForm'
 import ConfirmDelete from './ConfirmDelete'
+import RecordActions from './RecordActions'
 
 const dateTime = { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }
 
@@ -13,8 +14,6 @@ const messages = {
   deleteFailed: msg`Time entry could not be deleted.`,
   stopTimerFirst: msg`Stop the running timer first.`,
 }
-
-const actionClass = 'px-2 py-1 rounded text-sm border border-gray-300 text-gray-700 hover:bg-gray-100'
 
 // One entry; finished entries can be edited in place or deleted, running ones only stopped with the timer
 function EntryRow({ entry, projects, onUpdate, onDelete, onDeleted }) {
@@ -48,12 +47,14 @@ function EntryRow({ entry, projects, onUpdate, onDelete, onDeleted }) {
       <td className="px-4 py-2">
         {!isRunning && (
           <div className="flex justify-end gap-1">
-            <button ref={editable.editButton} onClick={editable.startEdit} aria-label={t`Edit the entry from ${start}`} className={actionClass}>
-              <Trans>Edit</Trans>
-            </button>
-            <button ref={editable.deleteButton} onClick={editable.startDelete} aria-label={t`Delete the entry from ${start}`} className={actionClass}>
-              <Trans>Delete</Trans>
-            </button>
+            <RecordActions
+              editLabel={t`Edit the entry from ${start}`}
+              deleteLabel={t`Delete the entry from ${start}`}
+              onEdit={editable.startEdit}
+              onDelete={editable.startDelete}
+              editButton={editable.editButton}
+              deleteButton={editable.deleteButton}
+            />
           </div>
         )}
       </td>

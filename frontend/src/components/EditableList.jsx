@@ -1,8 +1,9 @@
 import { useRef } from 'react'
-import { Trans, useLingui } from '@lingui/react/macro'
+import { useLingui } from '@lingui/react/macro'
 import { useEditable } from '../hooks/useEditable'
 import RecordForm from './RecordForm'
 import ConfirmDelete from './ConfirmDelete'
+import RecordActions from './RecordActions'
 
 // One list item: select it, or edit or delete it in place.
 function EditableItem({ item, selected, onSelect, renderItem, name, form, onUpdate, onDelete, deleteMessage, messages, onDeleted }) {
@@ -27,7 +28,7 @@ function EditableItem({ item, selected, onSelect, renderItem, name, form, onUpda
   }
 
   return (
-    <div className="flex items-stretch gap-1">
+    <div className="flex items-center gap-1">
       <button
         onClick={() => onSelect(item)}
         aria-pressed={selected}
@@ -35,14 +36,14 @@ function EditableItem({ item, selected, onSelect, renderItem, name, form, onUpda
       >
         {renderItem(item, selected)}
       </button>
-      <button ref={editable.editButton} onClick={editable.startEdit} aria-label={t`Edit ${name}`}
-        className="px-2 rounded text-sm border border-gray-300 text-gray-700 hover:bg-gray-100">
-        <Trans>Edit</Trans>
-      </button>
-      <button ref={editable.deleteButton} onClick={editable.startDelete} aria-label={t`Delete ${name}`}
-        className="px-2 rounded text-sm border border-gray-300 text-gray-700 hover:bg-gray-100">
-        <Trans>Delete</Trans>
-      </button>
+      <RecordActions
+        editLabel={t`Edit ${name}`}
+        deleteLabel={t`Delete ${name}`}
+        onEdit={editable.startEdit}
+        onDelete={editable.startDelete}
+        editButton={editable.editButton}
+        deleteButton={editable.deleteButton}
+      />
     </div>
   )
 }

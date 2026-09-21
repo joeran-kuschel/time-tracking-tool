@@ -1,4 +1,5 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
+import { PlusIcon } from '@heroicons/react/24/outline'
 import { msg } from '@lingui/core/macro'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { api } from '../api'
@@ -9,10 +10,12 @@ import EntriesList from '../components/EntriesList'
 import EditableList from '../components/EditableList'
 import RecordForm from '../components/RecordForm'
 import EntryForm from '../components/EntryForm'
+import Modal from '../components/Modal'
 import { formatRate } from '../format'
 
 const stopTimerFirst = msg`Stop the running timer first.`
 const customerMessages = { saveFailed: msg`Customer could not be saved.`, deleteFailed: msg`Customer could not be deleted.`, stopTimerFirst }
+const addButtonClass = 'inline-flex items-center gap-1 px-3 py-2 rounded text-sm bg-green-700 text-white hover:bg-green-800'
 const projectMessages = { saveFailed: msg`Project could not be saved.`, deleteFailed: msg`Project could not be deleted.`, stopTimerFirst }
 
 function Dashboard({ customers, onCustomersChange, timer }) {
@@ -21,11 +24,11 @@ function Dashboard({ customers, onCustomersChange, timer }) {
   const [selectedProjectId, setSelectedProjectId] = useState(null)
   const [projects, setProjects] = useState([])
   const [entries, setEntries] = useState([])
-  const [addingEntry, setAddingEntry] = useState(false)
-  const [runCustomerAction, customerError] = useAction()
+  // The open add dialog: 'customer', 'project', 'entry' or null
+  const [dialog, setDialog] = useState(null)
+  const [runAdd, addError, clearAddError] = useAction()
   const [runProjectAction, projectError] = useAction()
   const [runEntriesAction, entriesError] = useAction()
-  const addEntryButton = useRef(null)
   const { t, i18n } = useLingui()
 
   const selectedCustomer = customers.find((c) => c.id === selectedCustomerId) ?? null
@@ -49,7 +52,6 @@ function Dashboard({ customers, onCustomersChange, timer }) {
   }, [customers, timer.activeEntry])
 
   useEffect(() => {
-    setAddingEntry(false)
     if (selectedProjectId) {
       loadEntries(selectedProjectId)
     } else {
@@ -75,6 +77,12 @@ function Dashboard({ customers, onCustomersChange, timer }) {
 
   const refreshEntries = () => selectedProjectId && loadEntries(selectedProjectId)
 
+  const openDialog = (name) => {
+    clearAddError()
+    setDialog(name)
+  }
+  const closeDialog = () => setDialog(null)
+
   // Customers
   const customerFields = [
     { name: 'name', label: t`Name`, required: true },
@@ -83,8 +91,11 @@ function Dashboard({ customers, onCustomersChange, timer }) {
   const customerForm = { fields: customerFields, toValues: (c) => ({ name: c.name, email: c.email ?? '' }) }
 
   const addCustomer = async ({ name, email }) => {
-    const created = await runCustomerAction(() => api.createCustomer(name.trim(), email.trim()), msg`Customer could not be created.`)
-    if (created) onCustomersChange()
+    const created = await runAdd(() => api.createCustomer(name.trim(), email.trim()), msg`Customer could not be created.`)
+    if (created) {
+      closeDialog()
+      onCustomersChange()
+    }
     return created
   }
 
@@ -110,11 +121,14 @@ function Dashboard({ customers, onCustomersChange, timer }) {
   const toRate = (value) => (value === '' ? 0 : Number(value))
 
   const addProject = async ({ name, hourlyRate }) => {
-    const created = await runProjectAction(
+    const created = await runAdd(
       () => api.createProject(selectedCustomerId, name.trim(), toRate(hourlyRate)),
       msg`Project could not be created.`
     )
-    if (created) loadProjects(selectedCustomerId)
+    if (created) {
+      closeDialog()
+      loadProjects(selectedCustomerId)
+    }
     return created
   }
 
@@ -143,20 +157,14 @@ function Dashboard({ customers, onCustomersChange, timer }) {
     return deleted
   }
 
-  const closeAddEntry = () => {
-    setAddingEntry(false)
-    // the button only exists again after the form closed
-    setTimeout(() => addEntryButton.current?.focus())
-  }
-
   const addEntry = async ({ projectId, startTime, endTime, description }) => {
-    const created = await runEntriesAction(
+    const created = await runAdd(
       () => api.createTimeEntry(projectId, startTime, description, endTime),
       msg`Time entry could not be saved.`
     )
     if (created) {
-      await refreshEntries()
-      closeAddEntry()
+      closeDialog()
+      refreshEntries()
     }
     return created
   }
@@ -171,11 +179,18 @@ function Dashboard({ customers, onCustomersChange, timer }) {
   const selectedProjectName = selectedProject?.name
 
   return (
+    <>
     <div className="space-y-6">
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Customers Section */}
         <div className="bg-white rounded-lg shadow p-6">
-          <h2 className="text-lg font-bold mb-4"><Trans>Customers</Trans></h2>
+          <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
+            <h2 className="text-lg font-bold"><Trans>Customers</Trans></h2>
+            <button onClick={() => openDialog('customer')} className={addButtonClass}>
+              <PlusIcon aria-hidden="true" className="h-4 w-4" />
+              <Trans>New customer</Trans>
+            </button>
+          </div>
           <EditableList
             label={t`Customers`}
             items={customers}
@@ -188,19 +203,19 @@ function Dashboard({ customers, onCustomersChange, timer }) {
             deleteMessage={({ name: customerName }) => t`Delete ${customerName} and all its projects and time entries?`}
             messages={customerMessages}
           />
-          <RecordForm
-            legend={t`New customer`}
-            fields={customerFields}
-            initialValues={{ name: '', email: '' }}
-            submitLabel={t`+ Add`}
-            onSubmit={addCustomer}
-            error={customerError}
-          />
         </div>
 
         {/* Projects Section */}
         <div className="bg-white rounded-lg shadow p-6">
-          <h2 className="text-lg font-bold mb-4"><Trans>Projects</Trans></h2>
+          <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
+            <h2 className="text-lg font-bold"><Trans>Projects</Trans></h2>
+            {selectedCustomer && (
+              <button onClick={() => openDialog('project')} className={addButtonClass}>
+                <PlusIcon aria-hidden="true" className="h-4 w-4" />
+                <Trans>New project</Trans>
+              </button>
+            )}
+          </div>
           {selectedCustomer ? (
             <>
               <EditableList
@@ -220,15 +235,7 @@ function Dashboard({ customers, onCustomersChange, timer }) {
                 deleteMessage={({ name: projectName }) => t`Delete ${projectName} and all its time entries?`}
                 messages={projectMessages}
               />
-              <RecordForm
-                key={selectedCustomerId}
-                legend={t`New project`}
-                fields={projectFields}
-                initialValues={{ name: '', hourlyRate: '' }}
-                submitLabel={t`+ Add`}
-                onSubmit={addProject}
-                error={projectError}
-              />
+              <ErrorMessage message={projectError} />
             </>
           ) : (
             <p className="text-gray-500"><Trans>Select a customer</Trans></p>
@@ -252,30 +259,31 @@ function Dashboard({ customers, onCustomersChange, timer }) {
         <div className="bg-white rounded-lg shadow p-6 space-y-4">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <h2 className="text-lg font-bold"><Trans>Entries for {selectedProjectName}</Trans></h2>
-            {!addingEntry && (
-              <button ref={addEntryButton} onClick={() => setAddingEntry(true)}
-                className="px-3 py-2 rounded text-sm bg-green-700 text-white hover:bg-green-800">
-                <Trans>Add time</Trans>
-              </button>
-            )}
+            <button onClick={() => openDialog('entry')} className={addButtonClass}>
+              <PlusIcon aria-hidden="true" className="h-4 w-4" />
+              <Trans>Add time</Trans>
+            </button>
           </div>
-          {addingEntry && (
-            <EntryForm
-              projects={projects}
-              projectId={selectedProjectId}
-              legend={t`Add time`}
-              submitLabel={t`Save`}
-              onSubmit={addEntry}
-              onCancel={closeAddEntry}
-              error={entriesError}
-              autoFocus
-            />
-          )}
-          {!addingEntry && <ErrorMessage message={entriesError} />}
+          <ErrorMessage message={entriesError} />
           <EntriesList entries={entries} projects={projects} onUpdate={updateEntry} onDelete={deleteEntry} />
         </div>
       )}
     </div>
+
+      {/* Outside the space-y container, whose margins would pull the dialogs off center */}
+      <Modal title={t`New customer`} open={dialog === 'customer'} onClose={closeDialog}>
+        <RecordForm fields={customerFields} initialValues={{ name: '', email: '' }} submitLabel={t`Save`}
+          onSubmit={addCustomer} onCancel={closeDialog} error={addError} />
+      </Modal>
+      <Modal title={t`New project`} open={dialog === 'project'} onClose={closeDialog}>
+        <RecordForm fields={projectFields} initialValues={{ name: '', hourlyRate: '' }} submitLabel={t`Save`}
+          onSubmit={addProject} onCancel={closeDialog} error={addError} />
+      </Modal>
+      <Modal title={t`Add time`} open={dialog === 'entry'} onClose={closeDialog}>
+        <EntryForm projects={projects} projectId={selectedProjectId} submitLabel={t`Save`}
+          onSubmit={addEntry} onCancel={closeDialog} error={addError} />
+      </Modal>
+    </>
   )
 }
 

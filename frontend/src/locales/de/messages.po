@@ -13,25 +13,20 @@ msgstr ""
 "Language-Team: \n"
 "Plural-Forms: \n"
 
-#: src/pages/Dashboard.jsx:195
-#: src/pages/Dashboard.jsx:228
-msgid "+ Add"
-msgstr "+ Hinzufügen"
-
 #: src/hooks/useActiveEntry.js:24
 msgid "A timer is already running."
 msgstr "Es läuft bereits ein Timer."
 
-#: src/components/EntriesList.jsx:81
+#: src/components/EntriesList.jsx:82
 msgid "Actions"
 msgstr "Aktionen"
 
-#: src/components/EntriesList.jsx:45
+#: src/components/EntriesList.jsx:44
 msgid "Active"
 msgstr "Aktiv"
 
-#: src/pages/Dashboard.jsx:258
-#: src/pages/Dashboard.jsx:266
+#: src/pages/Dashboard.jsx:263
+#: src/pages/Dashboard.jsx:279
 msgid "Add time"
 msgstr "Zeit nachtragen"
 
@@ -44,20 +39,20 @@ msgstr "Abbrechen"
 msgid "Customer"
 msgstr "Kunde"
 
-#: src/pages/Dashboard.jsx:86
+#: src/pages/Dashboard.jsx:94
 msgid "Customer could not be created."
 msgstr "Kunde konnte nicht angelegt werden."
 
-#: src/pages/Dashboard.jsx:15
+#: src/pages/Dashboard.jsx:17
 msgid "Customer could not be deleted."
 msgstr "Kunde konnte nicht gelöscht werden."
 
-#: src/pages/Dashboard.jsx:15
+#: src/pages/Dashboard.jsx:17
 msgid "Customer could not be saved."
 msgstr "Kunde konnte nicht gespeichert werden."
 
-#: src/pages/Dashboard.jsx:178
-#: src/pages/Dashboard.jsx:180
+#: src/pages/Dashboard.jsx:187
+#: src/pages/Dashboard.jsx:194
 msgid "Customers"
 msgstr "Kunden"
 
@@ -75,32 +70,30 @@ msgid "Date"
 msgstr "Datum"
 
 #: src/components/ConfirmDelete.jsx:26
-#: src/components/EditableList.jsx:44
-#: src/components/EntriesList.jsx:55
 msgid "Delete"
 msgstr "Löschen"
 
-#: src/pages/Dashboard.jsx:188
+#: src/pages/Dashboard.jsx:202
 msgid "Delete {customerName} and all its projects and time entries?"
 msgstr "{customerName} und alle Projekte und Zeiteinträge löschen?"
 
-#: src/components/EditableList.jsx:42
+#: src/components/EditableList.jsx:41
 msgid "Delete {name}"
 msgstr "{name} löschen"
 
-#: src/pages/Dashboard.jsx:220
+#: src/pages/Dashboard.jsx:234
 msgid "Delete {projectName} and all its time entries?"
 msgstr "{projectName} und alle Zeiteinträge löschen?"
 
-#: src/components/EntriesList.jsx:54
+#: src/components/EntriesList.jsx:52
 msgid "Delete the entry from {start}"
 msgstr "Eintrag vom {start} löschen"
 
-#: src/components/EntriesList.jsx:34
+#: src/components/EntriesList.jsx:33
 msgid "Delete the entry from {start}?"
 msgstr "Eintrag vom {start} löschen?"
 
-#: src/components/EntriesList.jsx:80
+#: src/components/EntriesList.jsx:81
 #: src/pages/Reports.jsx:140
 msgid "Description"
 msgstr "Beschreibung"
@@ -115,11 +108,6 @@ msgid "Download PDF"
 msgstr "PDF herunterladen"
 
 #: src/components/EditableList.jsx:40
-#: src/components/EntriesList.jsx:52
-msgid "Edit"
-msgstr "Bearbeiten"
-
-#: src/components/EditableList.jsx:38
 msgid "Edit {name}"
 msgstr "{name} bearbeiten"
 
@@ -127,11 +115,11 @@ msgstr "{name} bearbeiten"
 msgid "Edit the entry from {start}"
 msgstr "Eintrag vom {start} bearbeiten"
 
-#: src/pages/Dashboard.jsx:81
+#: src/pages/Dashboard.jsx:89
 msgid "Email (optional)"
 msgstr "E-Mail (optional)"
 
-#: src/components/EntriesList.jsx:78
+#: src/components/EntriesList.jsx:79
 #: src/components/EntryForm.jsx:38
 msgid "End"
 msgstr "Ende"
@@ -144,11 +132,11 @@ msgstr "Ende (nächster Tag)"
 msgid "End must be after start."
 msgstr "Das Ende muss nach dem Start liegen."
 
-#: src/pages/Dashboard.jsx:72
+#: src/pages/Dashboard.jsx:74
 msgid "Entries could not be loaded."
 msgstr "Einträge konnten nicht geladen werden."
 
-#: src/pages/Dashboard.jsx:254
+#: src/pages/Dashboard.jsx:260
 msgid "Entries for {selectedProjectName}"
 msgstr "Einträge für {selectedProjectName}"
 
@@ -160,11 +148,11 @@ msgstr "Monatsbericht generieren"
 msgid "Generating..."
 msgstr "Wird generiert..."
 
-#: src/pages/Dashboard.jsx:107
+#: src/pages/Dashboard.jsx:118
 msgid "Hourly rate (€)"
 msgstr "Stundensatz (€)"
 
-#: src/components/EntriesList.jsx:79
+#: src/components/EntriesList.jsx:80
 #: src/pages/Reports.jsx:139
 msgid "Hours"
 msgstr "Stunden"
@@ -181,16 +169,18 @@ msgstr "Laden..."
 msgid "Month"
 msgstr "Monat"
 
-#: src/pages/Dashboard.jsx:80
-#: src/pages/Dashboard.jsx:106
+#: src/pages/Dashboard.jsx:88
+#: src/pages/Dashboard.jsx:117
 msgid "Name"
 msgstr "Name"
 
-#: src/pages/Dashboard.jsx:192
+#: src/pages/Dashboard.jsx:190
+#: src/pages/Dashboard.jsx:271
 msgid "New customer"
 msgstr "Neuer Kunde"
 
-#: src/pages/Dashboard.jsx:225
+#: src/pages/Dashboard.jsx:214
+#: src/pages/Dashboard.jsx:275
 msgid "New project"
 msgstr "Neues Projekt"
 
@@ -198,7 +188,7 @@ msgstr "Neues Projekt"
 msgid "No entries for this period"
 msgstr "Keine Einträge für diesen Zeitraum"
 
-#: src/components/EntriesList.jsx:72
+#: src/components/EntriesList.jsx:73
 msgid "No entries yet"
 msgstr "Noch keine Einträge"
 
@@ -211,24 +201,24 @@ msgstr "Bitte versuche es erneut."
 msgid "Project"
 msgstr "Projekt"
 
-#: src/pages/Dashboard.jsx:115
+#: src/pages/Dashboard.jsx:126
 msgid "Project could not be created."
 msgstr "Projekt konnte nicht angelegt werden."
 
-#: src/pages/Dashboard.jsx:16
+#: src/pages/Dashboard.jsx:19
 msgid "Project could not be deleted."
 msgstr "Projekt konnte nicht gelöscht werden."
 
-#: src/pages/Dashboard.jsx:16
+#: src/pages/Dashboard.jsx:19
 msgid "Project could not be saved."
 msgstr "Projekt konnte nicht gespeichert werden."
 
-#: src/pages/Dashboard.jsx:203
-#: src/pages/Dashboard.jsx:207
+#: src/pages/Dashboard.jsx:210
+#: src/pages/Dashboard.jsx:221
 msgid "Projects"
 msgstr "Projekte"
 
-#: src/pages/Dashboard.jsx:62
+#: src/pages/Dashboard.jsx:64
 msgid "Projects could not be loaded."
 msgstr "Projekte konnten nicht geladen werden."
 
@@ -248,13 +238,15 @@ msgstr "Berichte"
 msgid "Running timer could not be loaded."
 msgstr "Laufender Timer konnte nicht geladen werden."
 
-#: src/components/EditableList.jsx:17
-#: src/components/EntriesList.jsx:31
-#: src/pages/Dashboard.jsx:267
+#: src/components/EditableList.jsx:18
+#: src/components/EntriesList.jsx:30
+#: src/pages/Dashboard.jsx:272
+#: src/pages/Dashboard.jsx:276
+#: src/pages/Dashboard.jsx:280
 msgid "Save"
 msgstr "Speichern"
 
-#: src/pages/Dashboard.jsx:234
+#: src/pages/Dashboard.jsx:240
 #: src/pages/Reports.jsx:61
 msgid "Select a customer"
 msgstr "Wähle einen Kunden"
@@ -267,7 +259,7 @@ msgstr "Wähle ein Projekt, um den Timer zu starten."
 msgid "Show report"
 msgstr "Bericht anzeigen"
 
-#: src/components/EntriesList.jsx:77
+#: src/components/EntriesList.jsx:78
 #: src/components/EntryForm.jsx:37
 #: src/components/Timer.jsx:78
 msgid "Start"
@@ -277,8 +269,8 @@ msgstr "Start"
 msgid "Stop"
 msgstr "Stop"
 
-#: src/components/EntriesList.jsx:14
-#: src/pages/Dashboard.jsx:14
+#: src/components/EntriesList.jsx:15
+#: src/pages/Dashboard.jsx:16
 msgid "Stop the running timer first."
 msgstr "Stoppe zuerst den laufenden Timer."
 
@@ -290,12 +282,12 @@ msgstr "Der Server ist nicht erreichbar."
 msgid "The timer is running for {trackedProject}. Stop it to start {selectedProject}."
 msgstr "Der Timer läuft für {trackedProject}. Stoppe ihn, um {selectedProject} zu starten."
 
-#: src/components/EntriesList.jsx:13
+#: src/components/EntriesList.jsx:14
 msgid "Time entry could not be deleted."
 msgstr "Zeiteintrag konnte nicht gelöscht werden."
 
-#: src/components/EntriesList.jsx:12
-#: src/pages/Dashboard.jsx:155
+#: src/components/EntriesList.jsx:13
+#: src/pages/Dashboard.jsx:163
 msgid "Time entry could not be saved."
 msgstr "Zeiteintrag konnte nicht gespeichert werden."
 

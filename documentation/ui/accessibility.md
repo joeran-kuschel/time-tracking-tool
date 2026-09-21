@@ -15,10 +15,19 @@ The UI has to meet WCAG 2.2 level AA (see `CLAUDE.md`). This chapter lists what 
   Validation errors mark their field with `aria-invalid` and are linked with `aria-describedby`.
 - **Selection:** the selected customer and project are marked with `aria-pressed`, not only by color.
 - **Editing and deleting:** forms and confirmations open in place and take focus; closing them returns focus to the
-  button that opened them; Escape cancels. Edit and delete buttons name their record, e.g. *Edit Muster GmbH*.
+  button that opened them; Escape cancels.
+- **Dialogs:** adding uses modal dialogs on the native `<dialog>` element. The browser keeps focus inside and makes the
+  page behind inert; the dialog is named by its heading (`aria-labelledby`). Opening focuses the first field, closing
+  (Save, Cancel, Escape) returns focus to the opening button. The backdrop doesn't close it, so no input is lost by a
+  stray click. Tab past the last button moves focus to the browser's toolbar, not to the page, as with every native
+  modal dialog.
+- **Icon buttons:** edit and delete show only an icon, which is hidden from screen readers (`aria-hidden`). The button's
+  `title` names the record, e.g. *Edit Muster GmbH*: it is the tooltip and the accessible name. There is deliberately no
+  `aria-label` as well, so the title isn't exposed a second time as a description. The buttons are 34 × 34 px (at least
+  24 × 24 px, WCAG 2.5.8).
 - **Contrast** of the parts changed so far (measured in the browser): Start, **+ Add** and **Add time** 5.0:1, the
-  selected customer or project 6.7:1, the hourly rate 5.5:1 (selected) and 6.9:1, the edit and delete buttons 10.3:1,
-  the language buttons 6.7:1 and 10.3:1. Stop, delete and the error text are `red-700`, about 6.5:1 (calculated).
+  selected customer or project 6.7:1, the hourly rate 5.5:1 (selected) and 6.9:1,
+  the language buttons 6.7:1 and 10.3:1, the edit and delete icons 10.3:1 (at least 3:1 for graphics). Stop, delete and the error text are `red-700`, about 6.5:1 (calculated).
 
 ## Missing
 
