@@ -19,6 +19,8 @@ Time tracking tool for freelancers: track working time per customer and project,
 - Use the in-cluster (local) Postgres for now. Keep the remote database option working, but it is not in use.
 - Target cluster: Docker Desktop Kubernetes (kube context `docker-desktop`).
 - User-facing docs (README.md, k8s/README.md) are written in German. Keep them in German.
+- Feature documentation in `documentation/` is written in English. `docs/` is separate: local reports only, not in git.
+- Translation tool: LinguiJS (gettext `.po` files, language switch at runtime).
 
 ## Stack
 
