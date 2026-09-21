@@ -3,6 +3,7 @@ import { useElapsedTime } from '../hooks/useElapsedTime'
 import ErrorMessage from './ErrorMessage'
 
 // Shows the running timer, or a start form for the selected project.
+// It stays mounted without a project, so focus and announcements survive stopping.
 function Timer({ project, activeEntry, onStart, onStop, error }) {
   const [description, setDescription] = useState('')
   const [announcement, setAnnouncement] = useState('')
@@ -10,8 +11,10 @@ function Timer({ project, activeEntry, onStart, onStop, error }) {
 
   const isRunning = Boolean(activeEntry)
   const otherProjectSelected = isRunning && project && project.id !== activeEntry.project_id
+  const canStart = Boolean(project)
 
   const handleStart = async () => {
+    if (!canStart) return
     if (await onStart(description)) {
       setDescription('')
       setAnnouncement(`Timer gestartet für ${project.name}`)
@@ -24,7 +27,7 @@ function Timer({ project, activeEntry, onStart, onStop, error }) {
 
   return (
     <div className="space-y-4">
-      <h3 className="text-lg font-bold">{isRunning ? activeEntry.project_name : project.name}</h3>
+      <h3 className="text-lg font-bold">{isRunning ? activeEntry.project_name : project?.name ?? 'Timer'}</h3>
 
       <div className="text-4xl font-mono text-center p-4 bg-gray-100 rounded">
         {elapsedTime}
@@ -43,6 +46,10 @@ function Timer({ project, activeEntry, onStart, onStop, error }) {
         />
       </div>
 
+      {!isRunning && !canStart && (
+        <p id="timer-hint" className="text-sm text-gray-700">Wähle ein Projekt, um den Timer zu starten.</p>
+      )}
+
       {otherProjectSelected && (
         <p className="text-sm text-gray-700">
           Der Timer läuft für {activeEntry.project_name}. Stoppe ihn, um {project.name} zu starten.
@@ -53,7 +60,11 @@ function Timer({ project, activeEntry, onStart, onStop, error }) {
         {!isRunning ? (
           <button
             onClick={handleStart}
-            className="flex-1 px-4 py-3 bg-green-700 text-white rounded font-bold hover:bg-green-800"
+            aria-disabled={!canStart}
+            aria-describedby={canStart ? undefined : 'timer-hint'}
+            className={`flex-1 px-4 py-3 rounded font-bold ${
+              canStart ? 'bg-green-700 text-white hover:bg-green-800' : 'bg-gray-200 text-gray-700 cursor-not-allowed'
+            }`}
           >
             Start
           </button>

@@ -13,6 +13,7 @@ vi.mock('./api', async (importOriginal) => ({
     getActiveEntry: vi.fn(),
     getProjects: vi.fn(),
     getTimeEntries: vi.fn(),
+    stopTimeEntry: vi.fn(),
   },
 }))
 
@@ -72,6 +73,29 @@ describe('App', () => {
 
     expect(await screen.findByText(/Timer läuft: Website/)).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Stop' })).toBeInTheDocument()
+  })
+
+  test('after a reload, selects the customer and project of the running timer', async () => {
+    api.getCustomers.mockResolvedValue([{ id: 1, name: 'Muster GmbH' }])
+    api.getProjects.mockResolvedValue([{ id: 3, name: 'Andere', hourly_rate: '50.00' }, { id: 7, name: 'Website', hourly_rate: '80.00' }])
+    api.getActiveEntry.mockResolvedValue(running)
+    render(<App />)
+
+    expect(await screen.findByRole('heading', { name: 'Einträge für Website' })).toBeInTheDocument()
+    expect(api.getProjects).toHaveBeenCalledWith(1)
+  })
+
+  test('keeps focus on the timer button after stopping a resumed timer', async () => {
+    api.getCustomers.mockResolvedValue([])
+    api.getActiveEntry.mockResolvedValue(running)
+    api.stopTimeEntry.mockResolvedValue({ ...running, end_time: new Date().toISOString() })
+    render(<App />)
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Stop' }))
+
+    expect(await screen.findByRole('button', { name: 'Start' })).toHaveFocus()
+    expect(screen.getByRole('status')).toHaveTextContent('Timer gestoppt')
+    expect(screen.queryByText(/Timer läuft/)).not.toBeInTheDocument()
   })
 
   test('keeps the running timer when switching pages', async () => {

@@ -23,6 +23,14 @@ function Dashboard({ customers, onCustomersChange, timer }) {
     }
   }, [selectedCustomer])
 
+  // After a reload, open the customer of the running timer
+  useEffect(() => {
+    if (!selectedCustomer && timer.activeEntry) {
+      const customer = customers.find((c) => c.id === timer.activeEntry.customer_id)
+      if (customer) setSelectedCustomer(customer)
+    }
+  }, [customers, timer.activeEntry])
+
   useEffect(() => {
     if (selectedProject) {
       loadEntries(selectedProject.id)
@@ -33,7 +41,7 @@ function Dashboard({ customers, onCustomersChange, timer }) {
     const data = await runProjectAction(() => api.getProjects(customerId), 'Projekte konnten nicht geladen werden.')
     if (!data) return
     setProjects(data)
-    setSelectedProject(data[0] || null)
+    setSelectedProject(data.find((p) => p.id === timer.activeEntry?.project_id) || data[0] || null)
   }
 
   const loadEntries = async (projectId) => {
@@ -165,17 +173,13 @@ function Dashboard({ customers, onCustomersChange, timer }) {
 
         {/* Timer Section */}
         <div className="bg-white rounded-lg shadow p-6">
-          {selectedProject || timer.activeEntry ? (
-            <Timer
-              project={selectedProject}
-              activeEntry={timer.activeEntry}
-              onStart={withEntriesRefresh((description) => timer.start(selectedProject, description))}
-              onStop={withEntriesRefresh(timer.stop)}
-              error={timer.error}
-            />
-          ) : (
-            <p className="text-gray-500">Wähle ein Projekt</p>
-          )}
+          <Timer
+            project={selectedProject}
+            activeEntry={timer.activeEntry}
+            onStart={withEntriesRefresh((description) => timer.start(selectedProject, description))}
+            onStop={withEntriesRefresh(timer.stop)}
+            error={timer.error}
+          />
         </div>
       </div>
 

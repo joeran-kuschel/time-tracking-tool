@@ -1,4 +1,5 @@
 import { describe, expect, test, vi } from 'vitest'
+import { useState } from 'react'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { axe } from '../test/axe'
@@ -59,6 +60,37 @@ describe('Timer', () => {
   test('shows the running timer when no project is selected', () => {
     renderTimer({ project: null, activeEntry: running })
     expect(screen.getByRole('heading', { name: 'Website' })).toBeInTheDocument()
+  })
+
+  test('without a project, Start stays focusable but does nothing', async () => {
+    const onStart = vi.fn()
+    renderTimer({ project: null, onStart })
+
+    const start = screen.getByRole('button', { name: 'Start' })
+    expect(start).toHaveAttribute('aria-disabled', 'true')
+    expect(start).toHaveAccessibleDescription('Wähle ein Projekt, um den Timer zu starten.')
+
+    await userEvent.click(start)
+    expect(onStart).not.toHaveBeenCalled()
+    expect(start).toHaveFocus()
+  })
+
+  test('keeps focus and announces the stop when no project is selected', async () => {
+    // Parent that clears the running entry after stopping, like the Dashboard after a reload
+    function Parent() {
+      const [activeEntry, setActiveEntry] = useState(running)
+      const onStop = async () => {
+        setActiveEntry(null)
+        return { id: 42 }
+      }
+      return <Timer project={null} activeEntry={activeEntry} onStart={vi.fn()} onStop={onStop} error={null} />
+    }
+    render(<Parent />)
+
+    await userEvent.click(screen.getByRole('button', { name: 'Stop' }))
+
+    expect(screen.getByRole('button', { name: 'Start' })).toHaveFocus()
+    expect(screen.getByRole('status')).toHaveTextContent('Timer gestoppt')
   })
 
   test('shows the error it is given', () => {
