@@ -7,6 +7,7 @@ const customerRoutes = require('./routes/customers');
 const projectRoutes = require('./routes/projects');
 const timeEntryRoutes = require('./routes/timeEntries');
 const reportRoutes = require('./routes/reports');
+const { redactConnectionString } = require('./config/redact');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -35,5 +36,5 @@ app.use((err, req, res, next) => {
 
 app.listen(PORT, () => {
   console.log(`Time tracking API running on port ${PORT}`);
-  console.log(`Database: ${process.env.DATABASE_URL}`);
+  console.log(`Database: ${redactConnectionString(process.env.DATABASE_URL)}`);
 });

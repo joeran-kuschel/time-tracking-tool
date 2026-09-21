@@ -11,6 +11,9 @@ The tool runs on the local Kubernetes cluster of Docker Desktop, in the namespac
 | `postgres` | `postgres:15-alpine` | ClusterIP, port 5432 | inside the cluster only |
 
 - The backend answers `GET /health` with `{"status":"OK"}`; Kubernetes uses it for liveness and readiness probes.
+- At startup the backend logs which database it uses, with the password replaced by `***`
+  (`backend/src/config/redact.js`). Values that aren't a URL with a host are not logged at all, since they could still
+  contain the password.
 - The API allows requests from any origin (CORS).
 - The frontend calls the API at `VITE_API_URL`, built into the image (default `http://localhost:3000/api`).
 
@@ -31,5 +34,4 @@ See [Database](database.md) for `DATABASE_URL` and `DB_SSL`. `NODE_ENV` is `prod
 
 ## Known issues
 
-- `backend/src/server.js` logs the full `DATABASE_URL`, including the password, at startup.
 - Credentials in `k8s/configmap.yaml` are local placeholders (`password`).

@@ -97,5 +97,4 @@ Docker Desktop publishes the LoadBalancer services on localhost: frontend at htt
 ## Known open issues
 
 - `backend.yaml` has a `wait-for-db` init container that waits for host `postgres`. With a remote database the backend would never start.
-- `backend/src/server.js` logs the full `DATABASE_URL`, including the password, at startup.
 - `npm audit` in `frontend/` reports vulnerabilities in dev tools only (Vitest 0.34, esbuild via Vite 4); the production image doesn't contain them. Fixing needs Vite 6+ and a current Vitest.
