@@ -40,9 +40,15 @@ cd backend && npm install && npm test
 # Frontend dev server
 cd frontend && npm run dev
 
-# Build images (Docker Desktop Kubernetes uses local images, imagePullPolicy: Never)
+# Build images
 docker build -t time-tracking-backend:latest ./backend
 docker build -t time-tracking-frontend:latest ./frontend
+
+# Load them into the cluster. Docker Desktop runs Kubernetes in kind mode, which has its own
+# image store, so imagePullPolicy: Never only finds images imported into the node
+for img in time-tracking-backend time-tracking-frontend; do
+  docker save "${img}:latest" | docker exec -i desktop-control-plane ctr --namespace k8s.io images import -
+done
 
 # Deploy in this order
 kubectl config use-context docker-desktop
