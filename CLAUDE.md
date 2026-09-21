@@ -1,5 +1,7 @@
 # CLAUDE.md
 
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
 Time tracking tool for freelancers: track working time per customer and project, generate monthly PDF reports.
 
 ## Rules
@@ -29,16 +31,33 @@ Time tracking tool for freelancers: track working time per customer and project,
 - **Database**: PostgreSQL 15. Schema in `backend/migrations/*.sql`
 - **Deployment**: manifests in `k8s/`, Docker Compose in `docker-compose.yml` for local development
 
+Feature details, endpoints and known gaps are documented per feature in `documentation/` (index: `documentation/README.md`).
+
+## Architecture
+
+- **Frontend state:** `App` owns the customer list and the running timer (`useActiveEntry`), so both survive switching between Dashboard and Reports and are reloaded from the backend after a page reload. Pages get the timer as one `timer` prop. `components/Timer.jsx` only displays and makes no API calls.
+- **API calls and errors:** `api.js` sends everything through `request()`, which throws `ApiError` with the HTTP status (`0` = server unreachable). Components run calls through the `useAction` hook, which returns the result or `undefined` and keeps the error for `ErrorMessage` (`role="alert"`). Use this chain for new calls instead of your own `try/catch`.
+- **Frontend translation:** texts are English Lingui macros (`<Trans>`, `t` from `useLingui()`, `msg`). Messages that are shown later, like errors, are passed as lazy `msg` descriptors and translated when rendering, so visible ones follow a language switch. `i18n.js` loads both catalogs and switches the language; `format.js` formats hours and rates for the active language.
+- **Backend:** `routes → controllers → models`. Models query the shared `pg` pool from `config/database.js` directly. Business rules live in the controllers, e.g. only one running timer (`POST /api/time-entries` answers `409`).
+- **Backend translation:** one shared Lingui instance, used for the PDF report. Call `activateLocale()` from `src/i18n.js` and translate synchronously right after it (see `utils/pdfGenerator.js`), so concurrent requests can't mix languages. Messages need a fixed id and `i18n` imported from `@lingui/core` (`i18n._({ id, message })`), otherwise `lingui extract` doesn't find them.
+
 ## Commands
 
-Node: npm 12 needs Node 22.22+, 24.15+ or 26+. The nvm default is 26.9.0.
+Use Node 22+ locally; the Docker images use Node 24. There is no linter configured.
 
 ```bash
-# Backend tests (Jest)
-cd backend && npm install && npm test
+# Tests
+cd backend && npm test
+cd frontend && npm test
 
-# Frontend dev server
+# Single test file / test name
+cd backend && npx jest tests/timeEntry.model.test.js -t "keeps the description"
+cd frontend && NODE_OPTIONS=--no-experimental-webstorage npx vitest run src/App.test.jsx -t "resumes"
+# Without NODE_OPTIONS, every frontend test that touches localStorage fails (see Testing)
+
+# Frontend dev server and production build
 cd frontend && npm run dev
+cd frontend && npm run build
 
 # After adding or changing texts: extract them, then fill in the German msgstr in src/locales/de/messages.po
 cd frontend && npm run extract
@@ -60,14 +79,9 @@ for f in namespace configmap postgres-init-scripts postgres backend frontend; do
 
 # Pick up new images
 kubectl -n time-tracking rollout restart deployment/backend deployment/frontend
-
-# Database backups (hourly launchd job to ~/TimeTrackingBackups; see documentation/backend/database-backups.md)
-k8s/install-backup-job.sh
-k8s/backup-db.sh
-k8s/restore-db.sh <backup.sql.gz>
 ```
 
-The database volume lives inside the kind node: a Docker Desktop update or cluster reset deletes it, and so does `kubectl delete namespace time-tracking`. Back up before either.
+The database volume lives inside the kind node: a Docker Desktop update or cluster reset deletes it, and so does `kubectl delete namespace time-tracking`. Back up first with `k8s/backup-db.sh`; an hourly launchd job does this automatically (details, restore: `documentation/backend/database-backups.md`).
 
 Docker Desktop publishes the LoadBalancer services on localhost: frontend at http://localhost, API at http://localhost:3000 (`/health`, `/api/...`).
 
@@ -88,7 +102,7 @@ Docker Desktop publishes the LoadBalancer services on localhost: frontend at htt
 
 ## Testing
 
-- Backend tests live in `backend/tests/` and use Jest. `js-yaml` checks the k8s manifests. Database tests use `tests/helpers/testDb.js`, which runs the real migrations in pg-mem (in-memory Postgres).
+- Backend tests live in `backend/tests/` and use Jest. Patterns: model tests run real SQL against the migrations in pg-mem (`tests/helpers/testDb.js`); controller tests mock the model and use a fake `res`; `js-yaml` checks the k8s manifests; the shell scripts in `k8s/` are tested against a fake `kubectl`/`launchctl` on the `PATH`.
 - Frontend tests live next to the components (`*.test.jsx`) and use Vitest 0.34 (the last version that supports Vite 4), React Testing Library and vitest-axe. Import `axe` from `src/test/axe.js`.
 - axe runs in jsdom, where color contrast can't be checked. Check contrast in a real browser.
 - Frontend tests import `render`/`renderHook` from `src/test/render.jsx`, which adds the `I18nProvider`. Tests run in German by default; `src/locales/catalogs.test.js` (and `backend/tests/i18n.test.js`) fail when a text is not extracted or a German translation is missing.
