@@ -121,12 +121,12 @@ data:
 ## Tests
 
 ```bash
-cd backend
-npm install
-npm test
+cd backend && npm install && npm test
+cd frontend && npm install && npm test
 ```
 
-Die Tests prüfen u. a., dass `k8s/postgres-init-scripts.yaml` mit `backend/migrations/` übereinstimmt.
+- Backend (Jest): prüft u. a., dass `k8s/postgres-init-scripts.yaml` mit `backend/migrations/` übereinstimmt. Datenbank-Tests laufen mit pg-mem im Speicher, ohne Postgres.
+- Frontend (Vitest, React Testing Library): prüft Komponenten inkl. automatischer Barrierefreiheits-Checks mit axe. Farbkontraste lassen sich so nicht prüfen, die müssen im Browser getestet werden.
 
 ## Ordnerstruktur
 

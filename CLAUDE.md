@@ -67,8 +67,9 @@ Docker Desktop publishes the LoadBalancer services on localhost: frontend at htt
 
 ## Testing
 
-- Backend tests live in `backend/tests/` and use Jest. `js-yaml` is used to check the k8s manifests.
-- The frontend has no test setup yet. Vitest with React Testing Library is the planned choice.
+- Backend tests live in `backend/tests/` and use Jest. `js-yaml` checks the k8s manifests. Database tests use `tests/helpers/testDb.js`, which runs the real migrations in pg-mem (in-memory Postgres).
+- Frontend tests live next to the components (`*.test.jsx`) and use Vitest 0.34 (the last version that supports Vite 4), React Testing Library and vitest-axe. Import `axe` from `src/test/axe.js`.
+- axe runs in jsdom, where color contrast can't be checked. Check contrast in a real browser.
 
 ## Known open issues
 
