@@ -39,3 +39,6 @@ postgres-data/
 # Temporary
 temp/
 tmp/
+
+# Reports (stay local)
+docs/*.pdf
