@@ -46,3 +46,28 @@ describe('TimeEntry.update', () => {
     expect(updated.description).toBeNull();
   });
 });
+
+describe('TimeEntry.getActive', () => {
+  let projectId;
+
+  beforeEach(async () => {
+    mockPool = createTestPool();
+    projectId = await createProject();
+  });
+
+  test('returns undefined when no timer is running', async () => {
+    await TimeEntry.create(projectId, '2026-09-21T08:00:00Z', '2026-09-21T09:00:00Z', null);
+    expect(await TimeEntry.getActive()).toBeUndefined();
+  });
+
+  test('returns the running entry with its project and customer', async () => {
+    await TimeEntry.create(projectId, '2026-09-21T08:00:00Z', '2026-09-21T09:00:00Z', null);
+    const running = await TimeEntry.create(projectId, '2026-09-21T10:00:00Z', null, 'Konzept');
+
+    const active = await TimeEntry.getActive();
+
+    expect(active.id).toBe(running.id);
+    expect(active.project_name).toBe('Projekt');
+    expect(active.customer_name).toBe('Kunde');
+  });
+});

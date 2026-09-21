@@ -35,6 +35,20 @@ class TimeEntry {
     return result.rows;
   }
 
+  // The running entry (no end_time) with its project and customer, or undefined
+  static async getActive() {
+    const result = await pool.query(
+      `SELECT te.*, p.name as project_name, c.id as customer_id, c.name as customer_name
+       FROM time_entries te
+       JOIN projects p ON te.project_id = p.id
+       JOIN customers c ON p.customer_id = c.id
+       WHERE te.end_time IS NULL
+       ORDER BY te.start_time DESC
+       LIMIT 1`
+    );
+    return result.rows[0];
+  }
+
   static async getByCustomerIdAndMonth(customerId, year, month) {
     const startDate = new Date(year, month - 1, 1);
     const endDate = new Date(year, month, 0, 23, 59, 59);

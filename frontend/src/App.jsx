@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react'
 import { api } from './api'
 import { useAction } from './hooks/useAction'
+import { useActiveEntry } from './hooks/useActiveEntry'
+import { useElapsedTime } from './hooks/useElapsedTime'
 import ErrorMessage from './components/ErrorMessage'
 import Dashboard from './pages/Dashboard'
 import Reports from './pages/Reports'
@@ -11,13 +13,15 @@ function App() {
   const [customers, setCustomers] = useState([])
   const [loading, setLoading] = useState(true)
   const [run, error] = useAction()
+  const timer = useActiveEntry()
+  const elapsedTime = useElapsedTime(timer.activeEntry?.start_time)
 
   useEffect(() => {
     loadCustomers()
   }, [])
 
+  // Only the first load shows the loading screen, so reloads keep the page state
   const loadCustomers = async () => {
-    setLoading(true)
     const data = await run(api.getCustomers, 'Kunden konnten nicht geladen werden.')
     if (data) setCustomers(data)
     setLoading(false)
@@ -31,8 +35,13 @@ function App() {
     <div className="min-h-screen bg-gray-50">
       {/* Navigation */}
       <nav className="bg-white shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
+        <div className="max-w-7xl mx-auto px-4 py-4 flex flex-wrap items-center justify-between gap-2">
           <h1 className="text-2xl font-bold text-gray-900">Time Tracking</h1>
+          {timer.activeEntry && (
+            <p className="text-sm text-gray-700">
+              Timer läuft: {timer.activeEntry.project_name} · <span className="font-mono">{elapsedTime}</span>
+            </p>
+          )}
           <div className="flex gap-4">
             <button
               onClick={() => setCurrentPage('dashboard')}
@@ -72,7 +81,7 @@ function App() {
           </div>
         )}
         {currentPage === 'dashboard' && (
-          <Dashboard customers={customers} onCustomersChange={loadCustomers} />
+          <Dashboard customers={customers} onCustomersChange={loadCustomers} timer={timer} />
         )}
         {currentPage === 'reports' && (
           <Reports customers={customers} />

@@ -47,6 +47,8 @@ export const api = {
   stopTimeEntry: (id, endTime) =>
     request(`/time-entries/${id}`, { method: 'PATCH', body: { endTime } }),
 
+  getActiveEntry: () => request('/time-entries/active'),
+
   getTimeEntries: (projectId) => request(`/time-entries/project/${projectId}`),
 
   // Reports

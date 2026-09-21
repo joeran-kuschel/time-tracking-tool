@@ -8,6 +8,11 @@ exports.create = async (req, res) => {
       return res.status(400).json({ error: 'projectId and startTime are required' });
     }
 
+    // Only one timer may run at a time; finished entries can always be added
+    if (!endTime && await TimeEntry.getActive()) {
+      return res.status(409).json({ error: 'A timer is already running' });
+    }
+
     const entry = await TimeEntry.create(projectId, startTime, endTime || null, description);
     res.status(201).json(entry);
   } catch (err) {
@@ -29,6 +34,16 @@ exports.update = async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Failed to update time entry' });
+  }
+};
+
+exports.getActive = async (req, res) => {
+  try {
+    const entry = await TimeEntry.getActive();
+    res.json(entry || null);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Failed to fetch active time entry' });
   }
 };
 

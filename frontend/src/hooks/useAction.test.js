@@ -36,6 +36,14 @@ describe('useAction', () => {
     expect(result.current[1]).toBe('Fehler. Der Server ist nicht erreichbar.')
   })
 
+  test('uses a status-specific hint when one is given', async () => {
+    const { result } = renderHook(() => useAction())
+    await act(async () => {
+      await result.current[0](() => Promise.reject(new ApiError(409, 'conflict')), 'Fehler.', { 409: 'Schon vorhanden.' })
+    })
+    expect(result.current[1]).toBe('Fehler. Schon vorhanden.')
+  })
+
   test('clears the previous error when the next call succeeds', async () => {
     const { result } = renderHook(() => useAction())
     await act(async () => {

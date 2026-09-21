@@ -1,75 +1,53 @@
-import { useState, useEffect } from 'react'
-import { api } from '../api'
-import { useAction } from '../hooks/useAction'
+import { useState } from 'react'
+import { useElapsedTime } from '../hooks/useElapsedTime'
 import ErrorMessage from './ErrorMessage'
 
-function Timer({ project, onEntryCreated, onEntryStopped }) {
-  const [isRunning, setIsRunning] = useState(false)
-  const [elapsedTime, setElapsedTime] = useState(0)
-  const [startTime, setStartTime] = useState(null)
-  const [currentEntryId, setCurrentEntryId] = useState(null)
+// Shows the running timer, or a start form for the selected project.
+function Timer({ project, activeEntry, onStart, onStop, error }) {
   const [description, setDescription] = useState('')
-  const [run, error] = useAction()
+  const [announcement, setAnnouncement] = useState('')
+  const elapsedTime = useElapsedTime(activeEntry?.start_time)
 
-  useEffect(() => {
-    let interval
-    if (isRunning) {
-      interval = setInterval(() => {
-        setElapsedTime(Math.floor((Date.now() - startTime) / 1000))
-      }, 100)
-    }
-    return () => clearInterval(interval)
-  }, [isRunning, startTime])
-
-  const formatTime = (seconds) => {
-    const hours = Math.floor(seconds / 3600)
-    const minutes = Math.floor((seconds % 3600) / 60)
-    const secs = seconds % 60
-    return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(secs).padStart(2, '0')}`
-  }
+  const isRunning = Boolean(activeEntry)
+  const otherProjectSelected = isRunning && project && project.id !== activeEntry.project_id
 
   const handleStart = async () => {
-    const entry = await run(
-      () => api.createTimeEntry(project.id, new Date().toISOString(), description),
-      'Timer konnte nicht gestartet werden.'
-    )
-    if (!entry) return
-
-    setStartTime(new Date(entry.start_time).getTime())
-    setElapsedTime(0)
-    setCurrentEntryId(entry.id)
-    setIsRunning(true)
+    if (await onStart(description)) {
+      setDescription('')
+      setAnnouncement(`Timer gestartet für ${project.name}`)
+    }
   }
 
   const handleStop = async () => {
-    const stopped = await run(
-      () => api.stopTimeEntry(currentEntryId, new Date().toISOString()),
-      'Timer konnte nicht gestoppt werden.'
-    )
-    if (!stopped) return
-
-    setIsRunning(false)
-    setCurrentEntryId(null)
-    setElapsedTime(0)
-    setDescription('')
-    onEntryStopped()
+    if (await onStop()) setAnnouncement('Timer gestoppt')
   }
 
   return (
     <div className="space-y-4">
-      <h3 className="text-lg font-bold">{project.name}</h3>
+      <h3 className="text-lg font-bold">{isRunning ? activeEntry.project_name : project.name}</h3>
 
       <div className="text-4xl font-mono text-center p-4 bg-gray-100 rounded">
-        {formatTime(elapsedTime)}
+        {elapsedTime}
       </div>
 
-      <textarea
-        placeholder="Beschreibung (optional)"
-        value={description}
-        onChange={(e) => setDescription(e.target.value)}
-        disabled={isRunning}
-        className="w-full px-3 py-2 border border-gray-300 rounded text-sm resize-none h-20 disabled:bg-gray-100"
-      />
+      <div>
+        <label htmlFor="timer-description" className="block text-sm font-medium mb-1">
+          Beschreibung (optional)
+        </label>
+        <textarea
+          id="timer-description"
+          value={isRunning ? activeEntry.description || '' : description}
+          onChange={(e) => setDescription(e.target.value)}
+          disabled={isRunning}
+          className="w-full px-3 py-2 border border-gray-300 rounded text-sm resize-none h-20 disabled:bg-gray-100"
+        />
+      </div>
+
+      {otherProjectSelected && (
+        <p className="text-sm text-gray-700">
+          Der Timer läuft für {activeEntry.project_name}. Stoppe ihn, um {project.name} zu starten.
+        </p>
+      )}
 
       <div className="flex gap-2">
         {!isRunning ? (
@@ -90,6 +68,7 @@ function Timer({ project, onEntryCreated, onEntryStopped }) {
       </div>
 
       <ErrorMessage message={error} />
+      <p role="status" className="sr-only">{announcement}</p>
     </div>
   )
 }

@@ -5,7 +5,7 @@ import ErrorMessage from '../components/ErrorMessage'
 import Timer from '../components/Timer'
 import EntriesList from '../components/EntriesList'
 
-function Dashboard({ customers, onCustomersChange }) {
+function Dashboard({ customers, onCustomersChange, timer }) {
   const [selectedCustomer, setSelectedCustomer] = useState(null)
   const [selectedProject, setSelectedProject] = useState(null)
   const [projects, setProjects] = useState([])
@@ -65,16 +65,11 @@ function Dashboard({ customers, onCustomersChange }) {
     loadProjects(selectedCustomer.id)
   }
 
-  const handleEntryCreated = () => {
-    if (selectedProject) {
-      loadEntries(selectedProject.id)
-    }
-  }
-
-  const handleEntryStopped = () => {
-    if (selectedProject) {
-      loadEntries(selectedProject.id)
-    }
+  // Reload the list after start/stop, so the running entry shows up right away
+  const withEntriesRefresh = (action) => async (...args) => {
+    const result = await action(...args)
+    if (result && selectedProject) loadEntries(selectedProject.id)
+    return result
   }
 
   return (
@@ -170,8 +165,14 @@ function Dashboard({ customers, onCustomersChange }) {
 
         {/* Timer Section */}
         <div className="bg-white rounded-lg shadow p-6">
-          {selectedProject ? (
-            <Timer project={selectedProject} onEntryCreated={handleEntryCreated} onEntryStopped={handleEntryStopped} />
+          {selectedProject || timer.activeEntry ? (
+            <Timer
+              project={selectedProject}
+              activeEntry={timer.activeEntry}
+              onStart={withEntriesRefresh((description) => timer.start(selectedProject, description))}
+              onStop={withEntriesRefresh(timer.stop)}
+              error={timer.error}
+            />
           ) : (
             <p className="text-gray-500">Wähle ein Projekt</p>
           )}

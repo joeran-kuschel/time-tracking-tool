@@ -1,81 +1,76 @@
-import { beforeEach, describe, expect, test, vi } from 'vitest'
+import { describe, expect, test, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { axe } from '../test/axe'
 import Timer from './Timer'
-import { api, ApiError } from '../api'
 
-vi.mock('../api', async (importOriginal) => ({
-  ...(await importOriginal()),
-  api: { createTimeEntry: vi.fn(), stopTimeEntry: vi.fn() },
-}))
+const website = { id: 7, name: 'Website' }
+const shop = { id: 8, name: 'Shop' }
+const running = { id: 42, project_id: 7, project_name: 'Website', description: 'Konzept', start_time: new Date().toISOString() }
 
-const project = { id: 7, name: 'Website' }
-const entry = { id: 42, start_time: new Date().toISOString() }
-
-function renderTimer(onEntryStopped = vi.fn()) {
-  const { container } = render(<Timer project={project} onEntryCreated={vi.fn()} onEntryStopped={onEntryStopped} />)
-  return { container, onEntryStopped }
+function renderTimer(props) {
+  return render(<Timer project={website} activeEntry={null} onStart={vi.fn()} onStop={vi.fn()} error={null} {...props} />)
 }
 
-beforeEach(() => {
-  vi.resetAllMocks()
-  vi.spyOn(console, 'error').mockImplementation(() => {})
-})
-
 describe('Timer', () => {
-  test('starts only after the backend created the entry', async () => {
-    api.createTimeEntry.mockResolvedValue(entry)
-    renderTimer()
+  test('starts the selected project with the typed description', async () => {
+    const onStart = vi.fn().mockResolvedValue({ id: 42 })
+    renderTimer({ onStart })
 
+    await userEvent.type(screen.getByLabelText('Beschreibung (optional)'), 'Konzept')
     await userEvent.click(screen.getByRole('button', { name: 'Start' }))
 
-    expect(api.createTimeEntry).toHaveBeenCalledWith(7, expect.any(String), '')
-    expect(screen.getByRole('button', { name: 'Stop' })).toBeInTheDocument()
-    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+    expect(onStart).toHaveBeenCalledWith('Konzept')
+    expect(screen.getByRole('status')).toHaveTextContent('Timer gestartet für Website')
   })
 
-  test('stays stopped and shows an error when starting fails', async () => {
-    api.createTimeEntry.mockRejectedValue(new ApiError(500, 'boom'))
-    renderTimer()
+  test('keeps the description when starting fails', async () => {
+    renderTimer({ onStart: vi.fn().mockResolvedValue(undefined) })
 
+    await userEvent.type(screen.getByLabelText('Beschreibung (optional)'), 'Konzept')
     await userEvent.click(screen.getByRole('button', { name: 'Start' }))
 
+    expect(screen.getByLabelText('Beschreibung (optional)')).toHaveValue('Konzept')
+    expect(screen.getByRole('status')).toHaveTextContent('')
+  })
+
+  test('shows the running entry with its description and a Stop button', async () => {
+    const onStop = vi.fn().mockResolvedValue({ id: 42 })
+    renderTimer({ activeEntry: running, onStop })
+
+    expect(screen.getByRole('heading', { name: 'Website' })).toBeInTheDocument()
+    expect(screen.getByLabelText('Beschreibung (optional)')).toHaveValue('Konzept')
+
+    await userEvent.click(screen.getByRole('button', { name: 'Stop' }))
+
+    expect(onStop).toHaveBeenCalled()
+    expect(screen.getByRole('status')).toHaveTextContent('Timer gestoppt')
+  })
+
+  test('keeps showing the running project when another project is selected', () => {
+    renderTimer({ project: shop, activeEntry: running })
+
+    expect(screen.getByRole('heading', { name: 'Website' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Stop' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Start' })).not.toBeInTheDocument()
+    expect(screen.getByText('Der Timer läuft für Website. Stoppe ihn, um Shop zu starten.')).toBeInTheDocument()
+  })
+
+  test('shows the running timer when no project is selected', () => {
+    renderTimer({ project: null, activeEntry: running })
+    expect(screen.getByRole('heading', { name: 'Website' })).toBeInTheDocument()
+  })
+
+  test('shows the error it is given', () => {
+    renderTimer({ error: 'Timer konnte nicht gestartet werden. Bitte versuche es erneut.' })
     expect(screen.getByRole('alert')).toHaveTextContent('Timer konnte nicht gestartet werden.')
-    expect(screen.getByRole('button', { name: 'Start' })).toBeInTheDocument()
   })
 
-  test('keeps running and shows an error when stopping fails', async () => {
-    api.createTimeEntry.mockResolvedValue(entry)
-    api.stopTimeEntry.mockRejectedValue(new ApiError(0, 'unreachable'))
-    const { onEntryStopped } = renderTimer()
+  test('has no detectable accessibility violations, idle and running', async () => {
+    const { container, rerender } = renderTimer({ error: 'Fehler.' })
+    expect(await axe(container)).toHaveNoViolations()
 
-    await userEvent.click(screen.getByRole('button', { name: 'Start' }))
-    await userEvent.click(screen.getByRole('button', { name: 'Stop' }))
-
-    expect(screen.getByRole('alert')).toHaveTextContent('Timer konnte nicht gestoppt werden. Der Server ist nicht erreichbar.')
-    expect(screen.getByRole('button', { name: 'Stop' })).toBeInTheDocument()
-    expect(onEntryStopped).not.toHaveBeenCalled()
-  })
-
-  test('stops the entry that was started', async () => {
-    api.createTimeEntry.mockResolvedValue(entry)
-    api.stopTimeEntry.mockResolvedValue({ ...entry, end_time: new Date().toISOString() })
-    const { onEntryStopped } = renderTimer()
-
-    await userEvent.click(screen.getByRole('button', { name: 'Start' }))
-    await userEvent.click(screen.getByRole('button', { name: 'Stop' }))
-
-    expect(api.stopTimeEntry).toHaveBeenCalledWith(42, expect.any(String))
-    expect(screen.getByRole('button', { name: 'Start' })).toBeInTheDocument()
-    expect(onEntryStopped).toHaveBeenCalled()
-  })
-
-  test('has no detectable accessibility violations with an error shown', async () => {
-    api.createTimeEntry.mockRejectedValue(new ApiError(500, 'boom'))
-    const { container } = renderTimer()
-    await userEvent.click(screen.getByRole('button', { name: 'Start' }))
-
+    rerender(<Timer project={shop} activeEntry={running} onStart={vi.fn()} onStop={vi.fn()} error={null} />)
     expect(await axe(container)).toHaveNoViolations()
   })
 })
