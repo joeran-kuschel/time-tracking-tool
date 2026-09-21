@@ -89,8 +89,23 @@ kubectl apply -f k8s/configmap.yaml
 kubectl rollout restart deployment/backend -n time-tracking
 ```
 
-## Cleanup
+## Backups
+
+Die Datenbank liegt im Cluster. Ein Docker-Desktop-Update oder ein Cluster-Reset löscht sie. Deshalb gibt es stündliche Backups nach `~/TimeTrackingBackups`:
 
 ```bash
+./k8s/install-backup-job.sh                # stündliches Backup einrichten
+./k8s/backup-db.sh                         # Backup sofort erstellen
+./k8s/restore-db.sh <backup.sql.gz>        # Backup zurückspielen (ersetzt alle Daten)
+```
+
+Details: `documentation/backend/database-backups.md`
+
+## Cleanup
+
+**Achtung:** Das löscht auch alle Daten in der Datenbank. Vorher ein Backup erstellen.
+
+```bash
+./k8s/backup-db.sh
 kubectl delete namespace time-tracking
 ```

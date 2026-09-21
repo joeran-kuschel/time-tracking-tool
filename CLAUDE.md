@@ -56,7 +56,14 @@ for f in namespace configmap postgres-init-scripts postgres backend frontend; do
 
 # Pick up new images
 kubectl -n time-tracking rollout restart deployment/backend deployment/frontend
+
+# Database backups (hourly launchd job to ~/TimeTrackingBackups; see documentation/backend/database-backups.md)
+k8s/install-backup-job.sh
+k8s/backup-db.sh
+k8s/restore-db.sh <backup.sql.gz>
 ```
+
+The database volume lives inside the kind node: a Docker Desktop update or cluster reset deletes it, and so does `kubectl delete namespace time-tracking`. Back up before either.
 
 Docker Desktop publishes the LoadBalancer services on localhost: frontend at http://localhost, API at http://localhost:3000 (`/health`, `/api/...`).
 
