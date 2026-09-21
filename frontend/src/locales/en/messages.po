@@ -1,0 +1,223 @@
+msgid ""
+msgstr ""
+"POT-Creation-Date: 2026-09-21 11:44+0200\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Generator: @lingui/cli\n"
+"Language: en\n"
+"Project-Id-Version: \n"
+"Report-Msgid-Bugs-To: \n"
+"PO-Revision-Date: \n"
+"Last-Translator: \n"
+"Language-Team: \n"
+"Plural-Forms: \n"
+
+#: src/pages/Dashboard.jsx:123
+#: src/pages/Dashboard.jsx:170
+msgid "+ Add"
+msgstr "+ Add"
+
+#: src/hooks/useActiveEntry.js:24
+msgid "A timer is already running."
+msgstr "A timer is already running."
+
+#: src/components/EntriesList.jsx:29
+msgid "Active"
+msgstr "Active"
+
+#: src/pages/Reports.jsx:52
+msgid "Customer"
+msgstr "Customer"
+
+#: src/pages/Dashboard.jsx:60
+msgid "Customer could not be created."
+msgstr "Customer could not be created."
+
+#: src/pages/Dashboard.jsx:94
+msgid "Customers"
+msgstr "Customers"
+
+#: src/App.jsx:29
+msgid "Customers could not be loaded."
+msgstr "Customers could not be loaded."
+
+#: src/App.jsx:58
+msgid "Dashboard"
+msgstr "Dashboard"
+
+#: src/pages/Reports.jsx:137
+msgid "Date"
+msgstr "Date"
+
+#: src/components/EntriesList.jsx:21
+#: src/pages/Reports.jsx:140
+msgid "Description"
+msgstr "Description"
+
+#: src/components/Timer.jsx:47
+msgid "Description (optional)"
+msgstr "Description (optional)"
+
+#: src/pages/Reports.jsx:115
+msgid "Download PDF"
+msgstr "Download PDF"
+
+#: src/components/EntriesList.jsx:19
+msgid "End"
+msgstr "End"
+
+#: src/pages/Dashboard.jsx:52
+msgid "Entries could not be loaded."
+msgstr "Entries could not be loaded."
+
+#: src/pages/Dashboard.jsx:195
+msgid "Entries for {selectedProjectName}"
+msgstr "Entries for {selectedProjectName}"
+
+#: src/pages/Reports.jsx:47
+msgid "Generate monthly report"
+msgstr "Generate monthly report"
+
+#: src/pages/Reports.jsx:107
+msgid "Generating..."
+msgstr "Generating..."
+
+#: src/pages/Dashboard.jsx:161
+msgid "Hourly rate €"
+msgstr "Hourly rate €"
+
+#: src/components/EntriesList.jsx:20
+#: src/pages/Reports.jsx:139
+msgid "Hours"
+msgstr "Hours"
+
+#: src/components/LanguageSwitcher.jsx:9
+msgid "Language"
+msgstr "Language"
+
+#: src/App.jsx:35
+msgid "Loading..."
+msgstr "Loading..."
+
+#: src/pages/Reports.jsx:71
+msgid "Month"
+msgstr "Month"
+
+#: src/pages/Dashboard.jsx:114
+msgid "New customer"
+msgstr "New customer"
+
+#: src/pages/Reports.jsx:169
+msgid "No entries for this period"
+msgstr "No entries for this period"
+
+#: src/components/EntriesList.jsx:10
+msgid "No entries yet"
+msgstr "No entries yet"
+
+#: src/hooks/useAction.js:6
+msgid "Please try again."
+msgstr "Please try again."
+
+#: src/pages/Reports.jsx:138
+msgid "Project"
+msgstr "Project"
+
+#: src/pages/Dashboard.jsx:72
+msgid "Project could not be created."
+msgstr "Project could not be created."
+
+#: src/pages/Dashboard.jsx:154
+msgid "Project name"
+msgstr "Project name"
+
+#: src/pages/Dashboard.jsx:131
+msgid "Projects"
+msgstr "Projects"
+
+#: src/pages/Dashboard.jsx:45
+msgid "Projects could not be loaded."
+msgstr "Projects could not be loaded."
+
+#: src/pages/Reports.jsx:128
+msgid "Report {reportCustomer} – {reportPeriod}"
+msgstr "Report {reportCustomer} – {reportPeriod}"
+
+#: src/pages/Reports.jsx:24
+msgid "Report could not be loaded."
+msgstr "Report could not be loaded."
+
+#: src/App.jsx:68
+msgid "Reports"
+msgstr "Reports"
+
+#: src/hooks/useActiveEntry.js:12
+msgid "Running timer could not be loaded."
+msgstr "Running timer could not be loaded."
+
+#: src/pages/Dashboard.jsx:176
+#: src/pages/Reports.jsx:61
+msgid "Select a customer"
+msgstr "Select a customer"
+
+#: src/components/Timer.jsx:59
+msgid "Select a project to start the timer."
+msgstr "Select a project to start the timer."
+
+#: src/pages/Reports.jsx:107
+msgid "Show report"
+msgstr "Show report"
+
+#: src/components/EntriesList.jsx:18
+#: src/components/Timer.jsx:78
+msgid "Start"
+msgstr "Start"
+
+#: src/components/Timer.jsx:85
+msgid "Stop"
+msgstr "Stop"
+
+#: src/hooks/useAction.js:5
+msgid "The server is not reachable."
+msgstr "The server is not reachable."
+
+#: src/components/Timer.jsx:64
+msgid "The timer is running for {trackedProject}. Stop it to start {selectedProject}."
+msgstr "The timer is running for {trackedProject}. Stop it to start {selectedProject}."
+
+#: src/components/Timer.jsx:39
+msgid "Timer"
+msgstr "Timer"
+
+#: src/hooks/useActiveEntry.js:23
+msgid "Timer could not be started."
+msgstr "Timer could not be started."
+
+#: src/hooks/useActiveEntry.js:39
+msgid "Timer could not be stopped."
+msgstr "Timer could not be stopped."
+
+#: src/App.jsx:46
+msgid "Timer running: {runningProject}"
+msgstr "Timer running: {runningProject}"
+
+#: src/components/Timer.jsx:35
+msgid "Timer started for {announcedProject}"
+msgstr "Timer started for {announcedProject}"
+
+#: src/components/Timer.jsx:35
+msgid "Timer stopped"
+msgstr "Timer stopped"
+
+#: src/pages/Reports.jsx:163
+msgid "TOTAL HOURS:"
+msgstr "TOTAL HOURS:"
+
+#: src/App.jsx:84
+msgid "Try again"
+msgstr "Try again"
+
+#: src/pages/Reports.jsx:86
+msgid "Year"
+msgstr "Year"

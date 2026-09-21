@@ -1,9 +1,12 @@
 import { useState, useEffect } from 'react'
+import { msg } from '@lingui/core/macro'
+import { Trans, useLingui } from '@lingui/react/macro'
 import { api } from '../api'
 import { useAction } from '../hooks/useAction'
 import ErrorMessage from '../components/ErrorMessage'
 import Timer from '../components/Timer'
 import EntriesList from '../components/EntriesList'
+import { formatRate } from '../format'
 
 function Dashboard({ customers, onCustomersChange, timer }) {
   const [selectedCustomer, setSelectedCustomer] = useState(null)
@@ -16,6 +19,7 @@ function Dashboard({ customers, onCustomersChange, timer }) {
   const [runCustomerAction, customerError] = useAction()
   const [runProjectAction, projectError] = useAction()
   const [runEntriesAction, entriesError] = useAction()
+  const { t, i18n } = useLingui()
 
   useEffect(() => {
     if (selectedCustomer) {
@@ -38,14 +42,14 @@ function Dashboard({ customers, onCustomersChange, timer }) {
   }, [selectedProject])
 
   const loadProjects = async (customerId) => {
-    const data = await runProjectAction(() => api.getProjects(customerId), 'Projekte konnten nicht geladen werden.')
+    const data = await runProjectAction(() => api.getProjects(customerId), msg`Projects could not be loaded.`)
     if (!data) return
     setProjects(data)
     setSelectedProject(data.find((p) => p.id === timer.activeEntry?.project_id) || data[0] || null)
   }
 
   const loadEntries = async (projectId) => {
-    const data = await runEntriesAction(() => api.getTimeEntries(projectId), 'Einträge konnten nicht geladen werden.')
+    const data = await runEntriesAction(() => api.getTimeEntries(projectId), msg`Entries could not be loaded.`)
     if (data) setEntries(data)
   }
 
@@ -53,7 +57,7 @@ function Dashboard({ customers, onCustomersChange, timer }) {
     e.preventDefault()
     if (!newCustomerName.trim()) return
 
-    const created = await runCustomerAction(() => api.createCustomer(newCustomerName), 'Kunde konnte nicht angelegt werden.')
+    const created = await runCustomerAction(() => api.createCustomer(newCustomerName), msg`Customer could not be created.`)
     if (!created) return
     setNewCustomerName('')
     onCustomersChange()
@@ -65,13 +69,15 @@ function Dashboard({ customers, onCustomersChange, timer }) {
 
     const created = await runProjectAction(
       () => api.createProject(selectedCustomer.id, newProjectName, parseFloat(newProjectRate) || 0),
-      'Projekt konnte nicht angelegt werden.'
+      msg`Project could not be created.`
     )
     if (!created) return
     setNewProjectName('')
     setNewProjectRate('')
     loadProjects(selectedCustomer.id)
   }
+
+  const selectedProjectName = selectedProject?.name
 
   // Reload the list after start/stop, so the running entry shows up right away
   const withEntriesRefresh = (action) => async (...args) => {
@@ -85,7 +91,7 @@ function Dashboard({ customers, onCustomersChange, timer }) {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Customers Section */}
         <div className="bg-white rounded-lg shadow p-6">
-          <h2 className="text-lg font-bold mb-4">Kunden</h2>
+          <h2 className="text-lg font-bold mb-4"><Trans>Customers</Trans></h2>
           <div className="space-y-2 mb-4 max-h-64 overflow-y-auto">
             {customers.map((customer) => (
               <button
@@ -105,7 +111,7 @@ function Dashboard({ customers, onCustomersChange, timer }) {
           <form onSubmit={handleAddCustomer} className="space-y-2">
             <input
               type="text"
-              placeholder="Neuer Kunde"
+              placeholder={t`New customer`}
               value={newCustomerName}
               onChange={(e) => setNewCustomerName(e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded"
@@ -114,7 +120,7 @@ function Dashboard({ customers, onCustomersChange, timer }) {
               type="submit"
               className="w-full px-3 py-2 bg-green-500 text-white rounded hover:bg-green-600"
             >
-              + Hinzufügen
+              <Trans>+ Add</Trans>
             </button>
             <ErrorMessage message={customerError} />
           </form>
@@ -122,7 +128,7 @@ function Dashboard({ customers, onCustomersChange, timer }) {
 
         {/* Projects Section */}
         <div className="bg-white rounded-lg shadow p-6">
-          <h2 className="text-lg font-bold mb-4">Projekte</h2>
+          <h2 className="text-lg font-bold mb-4"><Trans>Projects</Trans></h2>
           {selectedCustomer ? (
             <>
               <div className="space-y-2 mb-4 max-h-64 overflow-y-auto">
@@ -137,7 +143,7 @@ function Dashboard({ customers, onCustomersChange, timer }) {
                     }`}
                   >
                     <div>{project.name}</div>
-                    <div className="text-xs opacity-75">{project.hourly_rate}€/h</div>
+                    <div className="text-xs opacity-75">{formatRate(i18n, project.hourly_rate)}</div>
                   </button>
                 ))}
               </div>
@@ -145,14 +151,14 @@ function Dashboard({ customers, onCustomersChange, timer }) {
               <form onSubmit={handleAddProject} className="space-y-2">
                 <input
                   type="text"
-                  placeholder="Projektname"
+                  placeholder={t`Project name`}
                   value={newProjectName}
                   onChange={(e) => setNewProjectName(e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded text-sm"
                 />
                 <input
                   type="number"
-                  placeholder="Stundensatz €"
+                  placeholder={t`Hourly rate €`}
                   value={newProjectRate}
                   onChange={(e) => setNewProjectRate(e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded text-sm"
@@ -161,13 +167,13 @@ function Dashboard({ customers, onCustomersChange, timer }) {
                   type="submit"
                   className="w-full px-3 py-2 bg-green-500 text-white rounded text-sm hover:bg-green-600"
                 >
-                  + Hinzufügen
+                  <Trans>+ Add</Trans>
                 </button>
                 <ErrorMessage message={projectError} />
               </form>
             </>
           ) : (
-            <p className="text-gray-500">Wähle einen Kunden</p>
+            <p className="text-gray-500"><Trans>Select a customer</Trans></p>
           )}
         </div>
 
@@ -186,7 +192,7 @@ function Dashboard({ customers, onCustomersChange, timer }) {
       {/* Entries List */}
       {selectedProject && (
         <div className="bg-white rounded-lg shadow p-6">
-          <h2 className="text-lg font-bold mb-4">Einträge für {selectedProject.name}</h2>
+          <h2 className="text-lg font-bold mb-4"><Trans>Entries for {selectedProjectName}</Trans></h2>
           <ErrorMessage message={entriesError} />
           <EntriesList entries={entries} />
         </div>

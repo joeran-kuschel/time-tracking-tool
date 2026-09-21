@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
-import { act, renderHook } from '@testing-library/react'
+import { act, renderHook } from '../test/render'
 import { useElapsedTime } from './useElapsedTime'
 
 beforeEach(() => {

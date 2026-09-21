@@ -1,11 +1,11 @@
 const TimeEntry = require('../models/TimeEntry');
 const Customer = require('../models/Customer');
-const { generateReportPDF } = require('../utils/pdfGenerator');
+const { generateReportPDF, reportFileName } = require('../utils/pdfGenerator');
 
 exports.generatePDF = async (req, res) => {
   try {
     const { customerId } = req.params;
-    const { month, year } = req.query;
+    const { month, year, lang } = req.query;
 
     if (!month || !year) {
       return res.status(400).json({ error: 'month and year are required' });
@@ -25,11 +25,11 @@ exports.generatePDF = async (req, res) => {
     }
 
     // Generate PDF
-    const pdfBuffer = await generateReportPDF(entries, customer.name, month, year);
+    const pdfBuffer = await generateReportPDF(entries, customer.name, month, year, lang);
 
     // Send PDF
     res.contentType('application/pdf');
-    res.setHeader('Content-Disposition', `attachment; filename="abrechnung-${customer.name}-${year}-${month}.pdf"`);
+    res.setHeader('Content-Disposition', `attachment; filename="${reportFileName(customer.name, month, year, lang)}"`);
     res.send(pdfBuffer);
   } catch (err) {
     console.error(err);

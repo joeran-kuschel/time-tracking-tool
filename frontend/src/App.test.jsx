@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { render, screen } from './test/render'
 import userEvent from '@testing-library/user-event'
 import { axe } from './test/axe'
 import App from './App'
@@ -136,5 +136,44 @@ describe('App', () => {
     await screen.findByText(/Timer läuft: Website/)
 
     expect(await axe(document.body)).toHaveNoViolations()
+  })
+
+  test('switches to English without a reload and keeps the running timer and typed text', async () => {
+    api.getCustomers.mockResolvedValue([])
+    api.getActiveEntry.mockResolvedValue(running)
+    render(<App />)
+    await screen.findByText(/Timer läuft: Website/)
+    await userEvent.type(screen.getByPlaceholderText('Neuer Kunde'), 'Muster GmbH')
+
+    await userEvent.click(screen.getByRole('button', { name: 'English' }))
+
+    expect(screen.getByText(/Timer running: Website/)).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Stop' })).toBeInTheDocument()
+    expect(screen.getByPlaceholderText('New customer')).toHaveValue('Muster GmbH')
+    expect(screen.getByRole('button', { name: 'Reports' })).toBeInTheDocument()
+    expect(document.documentElement.lang).toBe('en')
+    expect(api.getActiveEntry).toHaveBeenCalledTimes(1)
+    expect(api.getCustomers).toHaveBeenCalledTimes(1)
+  })
+
+  test('an error that is already shown follows the language switch', async () => {
+    api.getCustomers.mockRejectedValue(new ApiError(0, 'unreachable'))
+    render(<App />)
+    await screen.findByRole('alert')
+
+    await userEvent.click(screen.getByRole('button', { name: 'English' }))
+
+    expect(screen.getByRole('alert')).toHaveTextContent('Customers could not be loaded. The server is not reachable.')
+    expect(screen.getByRole('button', { name: 'Try again' })).toBeInTheDocument()
+  })
+
+  test('starts in the stored language', async () => {
+    window.localStorage.setItem('language', 'en')
+    const { detectLocale, activateLocale } = await import('./i18n')
+    activateLocale(detectLocale())
+    api.getCustomers.mockResolvedValue([])
+    render(<App />)
+
+    expect(await screen.findByRole('heading', { name: 'Customers' })).toBeInTheDocument()
   })
 })

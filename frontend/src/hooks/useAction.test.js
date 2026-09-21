@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest'
-import { act, renderHook } from '@testing-library/react'
+import { act, renderHook } from '../test/render'
 import { useAction } from './useAction'
 import { ApiError } from '../api'
 

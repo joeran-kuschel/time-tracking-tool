@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
+import { msg } from '@lingui/core/macro'
 import { api } from '../api'
 import { useAction } from './useAction'
 
@@ -8,7 +9,7 @@ export function useActiveEntry() {
   const [run, error] = useAction()
 
   const load = useCallback(async () => {
-    const entry = await run(api.getActiveEntry, 'Laufender Timer konnte nicht geladen werden.')
+    const entry = await run(api.getActiveEntry, msg`Running timer could not be loaded.`)
     if (entry !== undefined) setActiveEntry(entry)
   }, [run])
 
@@ -19,8 +20,8 @@ export function useActiveEntry() {
   const start = async (project, description) => {
     const entry = await run(
       () => api.createTimeEntry(project.id, new Date().toISOString(), description),
-      'Timer konnte nicht gestartet werden.',
-      { 409: 'Es läuft bereits ein Timer.' }
+      msg`Timer could not be started.`,
+      { 409: msg`A timer is already running.` }
     )
     if (entry) {
       setActiveEntry({ ...entry, project_name: project.name })
@@ -35,7 +36,7 @@ export function useActiveEntry() {
   const stop = async () => {
     const stopped = await run(
       () => api.stopTimeEntry(activeEntry.id, new Date().toISOString()),
-      'Timer konnte nicht gestoppt werden.'
+      msg`Timer could not be stopped.`
     )
     if (stopped) setActiveEntry(null)
     return stopped

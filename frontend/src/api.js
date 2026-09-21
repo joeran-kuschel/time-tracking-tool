@@ -55,8 +55,8 @@ export const api = {
   getMonthlyReport: (customerId, month, year) =>
     request(`/reports/customer/${customerId}?month=${month}&year=${year}`),
 
-  downloadPDF: async (customerId, month, year) => {
-    const url = `${API_URL}/reports/customer/${customerId}/pdf?month=${month}&year=${year}`;
+  downloadPDF: async (customerId, month, year, locale) => {
+    const url = `${API_URL}/reports/customer/${customerId}/pdf?month=${month}&year=${year}&lang=${locale}`;
     const link = document.createElement('a');
     link.href = url;
     link.download = `abrechnung-${year}-${month}.pdf`;

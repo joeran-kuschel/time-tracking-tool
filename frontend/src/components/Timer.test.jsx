@@ -1,6 +1,6 @@
 import { describe, expect, test, vi } from 'vitest'
 import { useState } from 'react'
-import { render, screen } from '@testing-library/react'
+import { render, screen } from '../test/render'
 import userEvent from '@testing-library/user-event'
 import { axe } from '../test/axe'
 import Timer from './Timer'

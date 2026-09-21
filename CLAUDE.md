@@ -20,12 +20,12 @@ Time tracking tool for freelancers: track working time per customer and project,
 - Target cluster: Docker Desktop Kubernetes (kube context `docker-desktop`).
 - User-facing docs (README.md, k8s/README.md) are written in German. Keep them in German.
 - Feature documentation in `documentation/` is written in English. `docs/` is separate: local reports only, not in git.
-- Translation tool: LinguiJS (gettext `.po` files, language switch at runtime).
+- Translation tool: LinguiJS 5 (gettext `.po` files, language switch at runtime). English is the source language in the code; German comes from `de/messages.po`. Lingui 6 would need Vite 6+.
 
 ## Stack
 
 - **Frontend** (`frontend/`): React, Vite, Tailwind, served by nginx in its image
-- **Backend** (`backend/`): Node.js, Express, `pg`. Structure: `src/routes`, `src/controllers`, `src/models`, `src/config`
+- **Backend** (`backend/`): Node.js 24, Express, `pg`. Structure: `src/routes`, `src/controllers`, `src/models`, `src/config`
 - **Database**: PostgreSQL 15. Schema in `backend/migrations/*.sql`
 - **Deployment**: manifests in `k8s/`, Docker Compose in `docker-compose.yml` for local development
 
@@ -39,6 +39,10 @@ cd backend && npm install && npm test
 
 # Frontend dev server
 cd frontend && npm run dev
+
+# After adding or changing texts: extract them, then fill in the German msgstr in src/locales/de/messages.po
+cd frontend && npm run extract
+cd backend && npm run extract
 
 # Build images
 docker build -t time-tracking-backend:latest ./backend
@@ -87,9 +91,11 @@ Docker Desktop publishes the LoadBalancer services on localhost: frontend at htt
 - Backend tests live in `backend/tests/` and use Jest. `js-yaml` checks the k8s manifests. Database tests use `tests/helpers/testDb.js`, which runs the real migrations in pg-mem (in-memory Postgres).
 - Frontend tests live next to the components (`*.test.jsx`) and use Vitest 0.34 (the last version that supports Vite 4), React Testing Library and vitest-axe. Import `axe` from `src/test/axe.js`.
 - axe runs in jsdom, where color contrast can't be checked. Check contrast in a real browser.
+- Frontend tests import `render`/`renderHook` from `src/test/render.jsx`, which adds the `I18nProvider`. Tests run in German by default; `src/locales/catalogs.test.js` (and `backend/tests/i18n.test.js`) fail when a text is not extracted or a German translation is missing.
+- The frontend test script sets `NODE_OPTIONS=--no-experimental-webstorage`: Node 22+ has its own `localStorage` global, which hides jsdom's in Vitest 0.34.
 
 ## Known open issues
 
 - `backend.yaml` has a `wait-for-db` init container that waits for host `postgres`. With a remote database the backend would never start.
 - `backend/src/server.js` logs the full `DATABASE_URL`, including the password, at startup.
-- The backend Dockerfile uses `node:18-alpine`, which has reached end of life.
+- `npm audit` in `frontend/` reports vulnerabilities in dev tools only (Vitest 0.34, esbuild via Vite 4); the production image doesn't contain them. Fixing needs Vite 6+ and a current Vitest.

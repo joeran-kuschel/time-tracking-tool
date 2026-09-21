@@ -1,7 +1,10 @@
 import { useState } from 'react'
+import { msg } from '@lingui/core/macro'
+import { Trans, useLingui } from '@lingui/react/macro'
 import { api } from '../api'
 import { useAction } from '../hooks/useAction'
 import ErrorMessage from '../components/ErrorMessage'
+import { formatHours, hoursBetween } from '../format'
 
 function Reports({ customers }) {
   const [selectedCustomer, setSelectedCustomer] = useState(null)
@@ -10,6 +13,7 @@ function Reports({ customers }) {
   const [report, setReport] = useState(null)
   const [loading, setLoading] = useState(false)
   const [run, error] = useAction()
+  const { t, i18n } = useLingui()
 
   const handleGenerateReport = async () => {
     if (!selectedCustomer) return
@@ -17,7 +21,7 @@ function Reports({ customers }) {
     setLoading(true)
     const data = await run(
       () => api.getMonthlyReport(selectedCustomer.id, selectedMonth, selectedYear),
-      'Bericht konnte nicht geladen werden.'
+      msg`Report could not be loaded.`
     )
     if (data) setReport(data)
     setLoading(false)
@@ -26,33 +30,26 @@ function Reports({ customers }) {
   const handleDownloadPDF = async () => {
     if (!selectedCustomer) return
     try {
-      await api.downloadPDF(selectedCustomer.id, selectedMonth, selectedYear)
+      await api.downloadPDF(selectedCustomer.id, selectedMonth, selectedYear, i18n.locale)
     } catch (err) {
       console.error('Failed to download PDF:', err)
     }
   }
 
-  const calculateHours = (startTime, endTime) => {
-    if (!endTime) return 0
-    const diff = new Date(endTime) - new Date(startTime)
-    return (diff / (1000 * 60 * 60)).toFixed(2)
-  }
-
-  const monthNames = [
-    'Januar', 'Februar', 'März', 'April', 'Mai', 'Juni',
-    'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember'
-  ]
+  const monthNames = Array.from({ length: 12 }, (_, i) => i18n.date(new Date(2000, i, 1), { month: 'long' }))
+  const reportCustomer = selectedCustomer?.name
+  const reportPeriod = i18n.date(new Date(selectedYear, selectedMonth - 1, 1), { month: 'long', year: 'numeric' })
 
   return (
     <div className="space-y-6">
       {/* Report Generator */}
       <div className="bg-white rounded-lg shadow p-6">
-        <h2 className="text-lg font-bold mb-4">Monatsbericht generieren</h2>
+        <h2 className="text-lg font-bold mb-4"><Trans>Generate monthly report</Trans></h2>
 
         <div className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
-              <label className="block text-sm font-medium mb-2">Kunde</label>
+              <label className="block text-sm font-medium mb-2"><Trans>Customer</Trans></label>
               <select
                 value={selectedCustomer?.id || ''}
                 onChange={(e) => {
@@ -61,7 +58,7 @@ function Reports({ customers }) {
                 }}
                 className="w-full px-3 py-2 border border-gray-300 rounded"
               >
-                <option value="">Wähle einen Kunden</option>
+                <option value="">{t`Select a customer`}</option>
                 {customers.map((customer) => (
                   <option key={customer.id} value={customer.id}>
                     {customer.name}
@@ -71,7 +68,7 @@ function Reports({ customers }) {
             </div>
 
             <div>
-              <label className="block text-sm font-medium mb-2">Monat</label>
+              <label className="block text-sm font-medium mb-2"><Trans>Month</Trans></label>
               <select
                 value={selectedMonth}
                 onChange={(e) => setSelectedMonth(parseInt(e.target.value))}
@@ -86,7 +83,7 @@ function Reports({ customers }) {
             </div>
 
             <div>
-              <label className="block text-sm font-medium mb-2">Jahr</label>
+              <label className="block text-sm font-medium mb-2"><Trans>Year</Trans></label>
               <select
                 value={selectedYear}
                 onChange={(e) => setSelectedYear(parseInt(e.target.value))}
@@ -107,7 +104,7 @@ function Reports({ customers }) {
               disabled={!selectedCustomer || loading}
               className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:bg-gray-400"
             >
-              {loading ? 'Wird generiert...' : 'Bericht anzeigen'}
+              {loading ? <Trans>Generating...</Trans> : <Trans>Show report</Trans>}
             </button>
 
             {report && (
@@ -115,7 +112,7 @@ function Reports({ customers }) {
                 onClick={handleDownloadPDF}
                 className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600"
               >
-                PDF herunterladen
+                <Trans>Download PDF</Trans>
               </button>
             )}
           </div>
@@ -128,7 +125,7 @@ function Reports({ customers }) {
       {report && (
         <div className="bg-white rounded-lg shadow p-6">
           <h3 className="text-xl font-bold mb-4">
-            Abrechnung {selectedCustomer.name} - {monthNames[selectedMonth - 1]} {selectedYear}
+            <Trans>Report {reportCustomer} – {reportPeriod}</Trans>
           </h3>
 
           {report.entries.length > 0 ? (
@@ -137,22 +134,22 @@ function Reports({ customers }) {
                 <table className="w-full border-collapse border border-gray-300">
                   <thead>
                     <tr className="bg-gray-100">
-                      <th className="border border-gray-300 px-4 py-2 text-left">Datum</th>
-                      <th className="border border-gray-300 px-4 py-2 text-left">Projekt</th>
-                      <th className="border border-gray-300 px-4 py-2 text-right">Stunden</th>
-                      <th className="border border-gray-300 px-4 py-2 text-left">Beschreibung</th>
+                      <th className="border border-gray-300 px-4 py-2 text-left"><Trans>Date</Trans></th>
+                      <th className="border border-gray-300 px-4 py-2 text-left"><Trans>Project</Trans></th>
+                      <th className="border border-gray-300 px-4 py-2 text-right"><Trans>Hours</Trans></th>
+                      <th className="border border-gray-300 px-4 py-2 text-left"><Trans>Description</Trans></th>
                     </tr>
                   </thead>
                   <tbody>
                     {report.entries.map((entry) => {
-                      const hours = calculateHours(entry.start_time, entry.end_time)
+                      const hours = formatHours(i18n, hoursBetween(entry.start_time, entry.end_time))
                       return (
                         <tr key={entry.id} className="hover:bg-gray-50">
                           <td className="border border-gray-300 px-4 py-2">
-                            {new Date(entry.start_time).toLocaleDateString('de-DE')}
+                            {i18n.date(entry.start_time, { year: 'numeric', month: 'numeric', day: 'numeric' })}
                           </td>
                           <td className="border border-gray-300 px-4 py-2">{entry.project_name}</td>
-                          <td className="border border-gray-300 px-4 py-2 text-right">{hours}h</td>
+                          <td className="border border-gray-300 px-4 py-2 text-right">{hours}</td>
                           <td className="border border-gray-300 px-4 py-2 text-sm">{entry.description || '---'}</td>
                         </tr>
                       )
@@ -163,13 +160,13 @@ function Reports({ customers }) {
 
               <div className="bg-gray-50 p-4 rounded border border-gray-300">
                 <div className="flex justify-between font-bold">
-                  <span>GESAMTSTUNDEN:</span>
-                  <span>{report.totalHours}h</span>
+                  <span><Trans>TOTAL HOURS:</Trans></span>
+                  <span>{formatHours(i18n, report.totalHours)}</span>
                 </div>
               </div>
             </>
           ) : (
-            <p className="text-gray-500">Keine Einträge für diesen Zeitraum</p>
+            <p className="text-gray-500"><Trans>No entries for this period</Trans></p>
           )}
         </div>
       )}

@@ -45,6 +45,17 @@ describe('api', () => {
     expect(fetch.mock.calls[0][0]).toMatch(/\/time-entries\/active$/)
   })
 
+  test('asks for the PDF in the given language', () => {
+    const click = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {})
+    const append = vi.spyOn(document.body, 'appendChild')
+
+    api.downloadPDF(1, 9, 2026, 'en')
+
+    expect(append.mock.calls[0][0].href).toMatch(/\/reports\/customer\/1\/pdf\?month=9&year=2026&lang=en$/)
+    expect(click).toHaveBeenCalled()
+    vi.restoreAllMocks()
+  })
+
   test('throws an ApiError with status and backend message on error responses', async () => {
     mockFetch(400, { error: 'projectId and startTime are required' })
     const error = await api.createTimeEntry().catch((err) => err)

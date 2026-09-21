@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Trans, useLingui } from '@lingui/react/macro'
 import { useElapsedTime } from '../hooks/useElapsedTime'
 import ErrorMessage from './ErrorMessage'
 
@@ -6,7 +7,9 @@ import ErrorMessage from './ErrorMessage'
 // It stays mounted without a project, so focus and announcements survive stopping.
 function Timer({ project, activeEntry, onStart, onStop, error }) {
   const [description, setDescription] = useState('')
-  const [announcement, setAnnouncement] = useState('')
+  // What to announce: { kind: 'started', projectName } or { kind: 'stopped' }
+  const [announcement, setAnnouncement] = useState(null)
+  const { t } = useLingui()
   const elapsedTime = useElapsedTime(activeEntry?.start_time)
 
   const isRunning = Boolean(activeEntry)
@@ -17,17 +20,23 @@ function Timer({ project, activeEntry, onStart, onStop, error }) {
     if (!canStart) return
     if (await onStart(description)) {
       setDescription('')
-      setAnnouncement(`Timer gestartet für ${project.name}`)
+      setAnnouncement({ kind: 'started', projectName: project.name })
     }
   }
 
   const handleStop = async () => {
-    if (await onStop()) setAnnouncement('Timer gestoppt')
+    if (await onStop()) setAnnouncement({ kind: 'stopped' })
   }
+
+  const trackedProject = isRunning ? activeEntry.project_name : null
+  const selectedProject = project?.name
+  const announcedProject = announcement?.projectName
+  const announcementText = !announcement ? ''
+    : announcement.kind === 'started' ? t`Timer started for ${announcedProject}` : t`Timer stopped`
 
   return (
     <div className="space-y-4">
-      <h3 className="text-lg font-bold">{isRunning ? activeEntry.project_name : project?.name ?? 'Timer'}</h3>
+      <h3 className="text-lg font-bold">{trackedProject ?? selectedProject ?? t`Timer`}</h3>
 
       <div className="text-4xl font-mono text-center p-4 bg-gray-100 rounded">
         {elapsedTime}
@@ -35,7 +44,7 @@ function Timer({ project, activeEntry, onStart, onStop, error }) {
 
       <div>
         <label htmlFor="timer-description" className="block text-sm font-medium mb-1">
-          Beschreibung (optional)
+          <Trans>Description (optional)</Trans>
         </label>
         <textarea
           id="timer-description"
@@ -47,12 +56,12 @@ function Timer({ project, activeEntry, onStart, onStop, error }) {
       </div>
 
       {!isRunning && !canStart && (
-        <p id="timer-hint" className="text-sm text-gray-700">Wähle ein Projekt, um den Timer zu starten.</p>
+        <p id="timer-hint" className="text-sm text-gray-700"><Trans>Select a project to start the timer.</Trans></p>
       )}
 
       {otherProjectSelected && (
         <p className="text-sm text-gray-700">
-          Der Timer läuft für {activeEntry.project_name}. Stoppe ihn, um {project.name} zu starten.
+          <Trans>The timer is running for {trackedProject}. Stop it to start {selectedProject}.</Trans>
         </p>
       )}
 
@@ -66,20 +75,20 @@ function Timer({ project, activeEntry, onStart, onStop, error }) {
               canStart ? 'bg-green-700 text-white hover:bg-green-800' : 'bg-gray-200 text-gray-700 cursor-not-allowed'
             }`}
           >
-            Start
+            <Trans>Start</Trans>
           </button>
         ) : (
           <button
             onClick={handleStop}
             className="flex-1 px-4 py-3 bg-red-700 text-white rounded font-bold hover:bg-red-800"
           >
-            Stop
+            <Trans>Stop</Trans>
           </button>
         )}
       </div>
 
       <ErrorMessage message={error} />
-      <p role="status" className="sr-only">{announcement}</p>
+      <p role="status" className="sr-only">{announcementText}</p>
     </div>
   )
 }

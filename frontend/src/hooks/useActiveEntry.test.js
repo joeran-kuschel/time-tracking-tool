@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest'
-import { act, renderHook, waitFor } from '@testing-library/react'
+import { act, renderHook, waitFor } from '../test/render'
 import { useActiveEntry } from './useActiveEntry'
 import { api, ApiError } from '../api'
 

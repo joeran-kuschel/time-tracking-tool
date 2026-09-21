@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { render, screen } from '../test/render'
 import { axe } from '../test/axe'
 import EntriesList from './EntriesList'
 
@@ -16,7 +16,7 @@ describe('EntriesList', () => {
 
   test('shows hours for finished entries and marks running ones', () => {
     render(<EntriesList entries={entries} />)
-    expect(screen.getByText('1.50h')).toBeInTheDocument()
+    expect(screen.getByText('1,50 h')).toBeInTheDocument()
     expect(screen.getByText('Aktiv')).toBeInTheDocument()
     expect(screen.getByText('Konzept')).toBeInTheDocument()
   })

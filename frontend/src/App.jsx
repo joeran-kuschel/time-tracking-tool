@@ -1,9 +1,12 @@
 import { useState, useEffect } from 'react'
+import { msg } from '@lingui/core/macro'
+import { Trans } from '@lingui/react/macro'
 import { api } from './api'
 import { useAction } from './hooks/useAction'
 import { useActiveEntry } from './hooks/useActiveEntry'
 import { useElapsedTime } from './hooks/useElapsedTime'
 import ErrorMessage from './components/ErrorMessage'
+import LanguageSwitcher from './components/LanguageSwitcher'
 import Dashboard from './pages/Dashboard'
 import Reports from './pages/Reports'
 import './App.css'
@@ -15,6 +18,7 @@ function App() {
   const [run, error] = useAction()
   const timer = useActiveEntry()
   const elapsedTime = useElapsedTime(timer.activeEntry?.start_time)
+  const runningProject = timer.activeEntry?.project_name
 
   useEffect(() => {
     loadCustomers()
@@ -22,13 +26,13 @@ function App() {
 
   // Only the first load shows the loading screen, so reloads keep the page state
   const loadCustomers = async () => {
-    const data = await run(api.getCustomers, 'Kunden konnten nicht geladen werden.')
+    const data = await run(api.getCustomers, msg`Customers could not be loaded.`)
     if (data) setCustomers(data)
     setLoading(false)
   }
 
   if (loading) {
-    return <div className="flex items-center justify-center h-screen">Laden...</div>
+    return <div className="flex items-center justify-center h-screen"><Trans>Loading...</Trans></div>
   }
 
   return (
@@ -39,10 +43,10 @@ function App() {
           <h1 className="text-2xl font-bold text-gray-900">Time Tracking</h1>
           {timer.activeEntry && (
             <p className="text-sm text-gray-700">
-              Timer läuft: {timer.activeEntry.project_name} · <span className="font-mono">{elapsedTime}</span>
+              <Trans>Timer running: {runningProject}</Trans> · <span className="font-mono">{elapsedTime}</span>
             </p>
           )}
-          <div className="flex gap-4">
+          <div className="flex flex-wrap items-center gap-4">
             <button
               onClick={() => setCurrentPage('dashboard')}
               className={`px-4 py-2 rounded ${
@@ -51,7 +55,7 @@ function App() {
                   : 'text-gray-700 hover:bg-gray-100'
               }`}
             >
-              Dashboard
+              <Trans>Dashboard</Trans>
             </button>
             <button
               onClick={() => setCurrentPage('reports')}
@@ -61,8 +65,9 @@ function App() {
                   : 'text-gray-700 hover:bg-gray-100'
               }`}
             >
-              Berichte
+              <Trans>Reports</Trans>
             </button>
+            <LanguageSwitcher />
           </div>
         </div>
       </nav>
@@ -76,7 +81,7 @@ function App() {
               onClick={loadCustomers}
               className="px-4 py-2 rounded bg-blue-700 text-white hover:bg-blue-800"
             >
-              Erneut versuchen
+              <Trans>Try again</Trans>
             </button>
           </div>
         )}
