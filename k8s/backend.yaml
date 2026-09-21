@@ -22,6 +22,8 @@ spec:
         envFrom:
         - configMapRef:
             name: time-tracking-config
+        - secretRef:
+            name: time-tracking-db
         livenessProbe:
           httpGet:
             path: /health

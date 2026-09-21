@@ -67,6 +67,7 @@ docker build -t time-tracking-frontend:latest ./frontend
 ```bash
 kubectl apply -f k8s/namespace.yaml
 kubectl apply -f k8s/configmap.yaml
+kubectl apply -f k8s/postgres-init-scripts.yaml
 kubectl apply -f k8s/postgres.yaml
 kubectl apply -f k8s/backend.yaml
 kubectl apply -f k8s/frontend.yaml
@@ -88,11 +89,16 @@ Für Production, nutze Remote PostgreSQL:
 DATABASE_URL=postgresql://user:pass@db.example.com:5432/time_tracking docker-compose up
 ```
 
-Oder in Kubernetes: Aktualisiere das ConfigMap:
+Oder in Kubernetes: Aktualisiere das Secret `time-tracking-db` und setze `DB_SSL` im ConfigMap (`k8s/configmap.yaml`):
+
+```yaml
+stringData:
+  DATABASE_URL: "postgresql://user:pass@db.example.com:5432/time_tracking"
+```
 
 ```yaml
 data:
-  DATABASE_URL: "postgresql://user:pass@db.example.com:5432/time_tracking"
+  DB_SSL: "true"
 ```
 
 ## Datenbank-Schema
@@ -111,6 +117,16 @@ data:
 - `PATCH /api/time-entries/:id` - Zeiteintrag beenden
 - `GET /api/time-entries/:projectId?month=2026-09` - Einträge filtern
 - `GET /api/report/:customerId?month=2026-09` - PDF-Report generieren
+
+## Tests
+
+```bash
+cd backend
+npm install
+npm test
+```
+
+Die Tests prüfen u. a., dass `k8s/postgres-init-scripts.yaml` mit `backend/migrations/` übereinstimmt.
 
 ## Ordnerstruktur
 

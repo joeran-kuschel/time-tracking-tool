@@ -4,9 +4,21 @@ metadata:
   name: time-tracking-config
   namespace: time-tracking
 data:
-  DATABASE_URL: "postgresql://timetracking:password@postgres:5432/time_tracking"
   NODE_ENV: "production"
+  # "true" for remote databases that require SSL, "false" for the in-cluster Postgres
+  DB_SSL: "false"
   VITE_API_URL: "http://localhost:3000/api"
+
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: time-tracking-db
+  namespace: time-tracking
+type: Opaque
+stringData:
+  # Replace with the remote connection string to use an external database
+  DATABASE_URL: "postgresql://timetracking:password@postgres:5432/time_tracking"
 
 ---
 apiVersion: v1

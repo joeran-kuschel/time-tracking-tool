@@ -26,10 +26,22 @@ cd ..
 ```bash
 kubectl apply -f k8s/namespace.yaml
 kubectl apply -f k8s/configmap.yaml
+kubectl apply -f k8s/postgres-init-scripts.yaml
 kubectl apply -f k8s/postgres.yaml
 kubectl apply -f k8s/backend.yaml
 kubectl apply -f k8s/frontend.yaml
 ```
+
+### Migrationen
+
+Die Init-Scripts für Postgres (`postgres-init-scripts.yaml`) werden aus `backend/migrations/` generiert.
+Nach Änderungen an den Migrationen neu generieren:
+
+```bash
+./k8s/generate-init-scripts.sh
+```
+
+Postgres führt die Scripts nur beim ersten Start mit leerem Volume aus.
 
 ### 4. Status prüfen
 
@@ -57,11 +69,19 @@ Dann: `http://localhost:8080`
 
 Um Remote-Datenbank zu nutzen:
 
-1. ConfigMap aktualisieren in `configmap.yaml`:
+1. In `configmap.yaml` das Secret `time-tracking-db` und das ConfigMap anpassen:
 ```yaml
-data:
+# Secret time-tracking-db
+stringData:
   DATABASE_URL: "postgresql://user:pass@db.example.com:5432/time_tracking"
+
+# ConfigMap time-tracking-config
+data:
+  DB_SSL: "true"
 ```
+
+Das Schema muss auf der Remote-Datenbank einmalig selbst angelegt werden
+(`backend/migrations/*.sql`), die Init-Scripts laufen nur für die Postgres im Cluster.
 
 2. Neu deployen:
 ```bash
