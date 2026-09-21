@@ -11,17 +11,13 @@ class TimeEntry {
 
   // Leaving out the description keeps the stored one; '' or null clears it.
   static async update(id, endTime, description) {
-    if (description === undefined) {
-      const result = await pool.query(
-        'UPDATE time_entries SET end_time = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2 RETURNING *',
-        [endTime, id]
-      );
-      return result.rows[0];
-    }
-
     const result = await pool.query(
-      'UPDATE time_entries SET end_time = $1, description = $2, updated_at = CURRENT_TIMESTAMP WHERE id = $3 RETURNING *',
-      [endTime, description || null, id]
+      `UPDATE time_entries
+       SET end_time = $1,
+           description = CASE WHEN $2::boolean THEN $3 ELSE description END,
+           updated_at = CURRENT_TIMESTAMP
+       WHERE id = $4 RETURNING *`,
+      [endTime, description !== undefined, description || null, id]
     );
     return result.rows[0];
   }
