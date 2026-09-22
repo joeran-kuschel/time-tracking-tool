@@ -93,6 +93,16 @@ exports.getByProjectId = async (req, res) => {
   }
 };
 
+exports.getByCustomerId = async (req, res) => {
+  try {
+    const entries = await TimeEntry.getByCustomerId(req.params.customerId);
+    res.json(entries);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Failed to fetch time entries' });
+  }
+};
+
 exports.getById = async (req, res) => {
   try {
     const entry = await TimeEntry.getById(req.params.id);

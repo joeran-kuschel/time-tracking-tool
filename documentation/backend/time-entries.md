@@ -10,6 +10,7 @@ All paths are under `/api/time-entries`.
 |---|---|---|
 | `GET` | `/active` | The running entry with `project_name`, `customer_id` and `customer_name`, or `null` |
 | `GET` | `/project/:projectId` | All entries of a project, newest first |
+| `GET` | `/customer/:customerId` | All entries of a customer's projects with `project_name`, ordered by project name, then newest first; `[]` for an unknown customer (used by the Dashboard) |
 | `GET` | `/:id` | One entry, or `404` |
 | `POST` | `/` | Create an entry (start a timer, or add a finished entry) |
 | `PATCH` | `/:id` | Stop a running entry, or edit a finished one |
@@ -60,4 +61,4 @@ instead.
 - `backend/tests/timeEntry.model.test.js`: SQL against the real schema in pg-mem
 - `backend/tests/timeEntry.controller.test.js`: status codes, the one-timer rule, editing, moving, deleting and the
   description handling
-- `backend/tests/timeEntry.routes.test.js`: route order
+- `backend/tests/timeEntry.routes.test.js`: route order and the customer route

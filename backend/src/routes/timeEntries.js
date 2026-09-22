@@ -4,6 +4,7 @@ const timeEntryController = require('../controllers/timeEntryController');
 
 router.get('/active', timeEntryController.getActive);
 router.get('/project/:projectId', timeEntryController.getByProjectId);
+router.get('/customer/:customerId', timeEntryController.getByCustomerId);
 router.get('/:id', timeEntryController.getById);
 router.post('/', timeEntryController.create);
 router.patch('/:id', timeEntryController.update);

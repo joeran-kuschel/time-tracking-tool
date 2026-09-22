@@ -13,7 +13,8 @@ vi.mock('./api', async (importOriginal) => ({
     createCustomer: vi.fn(),
     getActiveEntry: vi.fn(),
     getProjects: vi.fn(),
-    getTimeEntries: vi.fn(),
+    getCustomerTimeEntries: vi.fn(),
+    deleteProject: vi.fn(),
     stopTimeEntry: vi.fn(),
     createTimeEntry: vi.fn(),
     updateCustomer: vi.fn(),
@@ -38,7 +39,7 @@ beforeEach(() => {
   vi.spyOn(console, 'error').mockImplementation(() => {})
   api.getActiveEntry.mockResolvedValue(null)
   api.getProjects.mockResolvedValue([{ id: 7, name: 'Website', hourly_rate: '80.00' }])
-  api.getTimeEntries.mockResolvedValue([])
+  api.getCustomerTimeEntries.mockResolvedValue([])
 })
 
 describe('App', () => {
@@ -95,6 +96,7 @@ describe('App', () => {
     render(<App />)
 
     expect(await screen.findByRole('heading', { name: 'Einträge für Website' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /Website/, pressed: true })).toBeInTheDocument()
     expect(api.getProjects).toHaveBeenCalledWith(1)
   })
 
@@ -133,7 +135,8 @@ describe('App', () => {
     render(<App />)
 
     await userEvent.click(await screen.findByRole('button', { name: 'Muster GmbH' }))
-    expect(await screen.findByRole('button', { name: /Website/, pressed: true })).toBeInTheDocument()
+    await userEvent.click(await screen.findByRole('button', { name: /Website/, pressed: false }))
+    expect(screen.getByRole('button', { name: /Website/, pressed: true })).toBeInTheDocument()
 
     const dialog = await openNewCustomer()
     await userEvent.type(within(dialog).getByLabelText('Name'), 'Neu AG')
@@ -198,10 +201,10 @@ describe('App', () => {
     expect(await screen.findByRole('heading', { name: 'Customers' })).toBeInTheDocument()
   })
 
-  test('adds time manually for the selected project and shows it in the list', async () => {
+  test('adds time manually, for the first project when none is selected, and shows it in the list', async () => {
     const added = { id: 9, project_id: 7, start_time: fromInputs('2026-09-21', '08:00'), end_time: fromInputs('2026-09-21', '09:30'), description: 'Nachgetragen' }
     api.getCustomers.mockResolvedValue([{ id: 1, name: 'Muster GmbH' }])
-    api.getTimeEntries.mockResolvedValueOnce([]).mockResolvedValueOnce([added])
+    api.getCustomerTimeEntries.mockResolvedValueOnce([]).mockResolvedValueOnce([added])
     api.createTimeEntry.mockResolvedValue(added)
     render(<App />)
     await userEvent.click(await screen.findByRole('button', { name: 'Muster GmbH' }))
@@ -213,6 +216,7 @@ describe('App', () => {
     await userEvent.type(within(form).getByLabelText('Start'), '08:00')
     await userEvent.type(within(form).getByLabelText('Ende'), '09:30')
     await userEvent.type(within(form).getByLabelText('Beschreibung (optional)'), 'Nachgetragen')
+    expect(within(form).getByLabelText('Projekt')).toHaveValue('7')
     await userEvent.click(within(form).getByRole('button', { name: 'Speichern' }))
 
     expect(api.createTimeEntry).toHaveBeenCalledWith(7, fromInputs('2026-09-21', '08:00'), 'Nachgetragen', fromInputs('2026-09-21', '09:30'))
@@ -228,6 +232,7 @@ describe('App', () => {
     api.updateCustomer.mockResolvedValue({ id: 1, name: 'Muster AG' })
     render(<App />)
     await userEvent.click(await screen.findByRole('button', { name: 'Muster GmbH' }))
+    await userEvent.click(await screen.findByRole('button', { name: /Website/, pressed: false }))
     await screen.findByRole('heading', { name: 'Einträge für Website' })
 
     await userEvent.click(screen.getByRole('button', { name: 'Muster GmbH bearbeiten' }))
@@ -249,7 +254,7 @@ describe('App', () => {
     api.deleteCustomer.mockResolvedValue({ id: 1 })
     render(<App />)
     await userEvent.click(await screen.findByRole('button', { name: 'Muster GmbH' }))
-    await screen.findByRole('heading', { name: 'Einträge für Website' })
+    await screen.findByRole('heading', { name: 'Einträge für Muster GmbH' })
 
     await userEvent.click(screen.getByRole('button', { name: 'Muster GmbH löschen' }))
     expect(screen.getByRole('group', { name: 'Muster GmbH und alle Projekte und Zeiteinträge löschen?' })).toBeInTheDocument()
@@ -260,6 +265,57 @@ describe('App', () => {
     expect(screen.queryByRole('heading', { name: /Einträge für/ })).not.toBeInTheDocument()
   })
 
+  test('selecting a customer shows all its entries grouped by project, and a project narrows them', async () => {
+    api.getCustomers.mockResolvedValue([{ id: 1, name: 'Muster GmbH' }])
+    api.getProjects.mockResolvedValue([{ id: 3, name: 'App', hourly_rate: '50.00' }, { id: 7, name: 'Website', hourly_rate: '80.00' }])
+    api.getCustomerTimeEntries.mockResolvedValue([
+      { id: 1, project_id: 3, start_time: '2026-09-21T08:00:00Z', end_time: '2026-09-21T09:00:00Z', description: 'App-Arbeit' },
+      { id: 2, project_id: 7, start_time: '2026-09-21T10:00:00Z', end_time: '2026-09-21T12:00:00Z', description: 'Website-Arbeit' },
+    ])
+    render(<App />)
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Muster GmbH' }))
+
+    expect(await screen.findByRole('heading', { name: 'Einträge für Muster GmbH' })).toBeInTheDocument()
+    expect(api.getCustomerTimeEntries).toHaveBeenCalledWith(1)
+    expect(screen.getByRole('button', { name: /Website/, pressed: false })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /App/, pressed: false })).toBeInTheDocument()
+    expect(screen.getByRole('table', { name: /^App/ })).toHaveTextContent('App-Arbeit')
+    expect(screen.getByRole('table', { name: /^Website/ })).toHaveTextContent('Website-Arbeit')
+    expect(screen.getByText('Wähle ein Projekt, um den Timer zu starten.')).toBeInTheDocument()
+
+    await userEvent.click(screen.getByRole('button', { name: /Website/, pressed: false }))
+    expect(screen.getByRole('heading', { name: 'Einträge für Website' })).toBeInTheDocument()
+    expect(screen.queryByText('App-Arbeit')).not.toBeInTheDocument()
+    expect(screen.getByText('Website-Arbeit')).toBeInTheDocument()
+
+    await userEvent.click(screen.getByRole('button', { name: /Website/, pressed: true }))
+    expect(screen.getByRole('heading', { name: 'Einträge für Muster GmbH' })).toBeInTheDocument()
+    expect(screen.getByText('App-Arbeit')).toBeInTheDocument()
+    expect(api.getCustomerTimeEntries).toHaveBeenCalledTimes(1)
+  })
+
+  test('deleting a project reloads the entries of the customer', async () => {
+    api.getCustomers.mockResolvedValue([{ id: 1, name: 'Muster GmbH' }])
+    api.getProjects
+      .mockResolvedValueOnce([{ id: 7, name: 'Website', hourly_rate: '80.00' }])
+      .mockResolvedValueOnce([])
+    api.getCustomerTimeEntries
+      .mockResolvedValueOnce([{ id: 2, project_id: 7, start_time: '2026-09-21T10:00:00Z', end_time: '2026-09-21T12:00:00Z', description: 'Website-Arbeit' }])
+      .mockResolvedValueOnce([])
+    api.deleteProject.mockResolvedValue({ id: 7 })
+    render(<App />)
+    await userEvent.click(await screen.findByRole('button', { name: 'Muster GmbH' }))
+    await screen.findByText('Website-Arbeit')
+
+    await userEvent.click(screen.getByRole('button', { name: 'Website löschen' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Löschen' }))
+
+    expect(await screen.findByText('Noch keine Einträge')).toBeInTheDocument()
+    expect(api.getCustomerTimeEntries).toHaveBeenCalledTimes(2)
+    expect(screen.queryByRole('button', { name: 'Zeit nachtragen' })).not.toBeInTheDocument()
+  })
+
   test('adds a project in a dialog and keeps the selected project', async () => {
     api.getCustomers.mockResolvedValue([{ id: 1, name: 'Muster GmbH' }])
     api.getProjects
@@ -268,6 +324,7 @@ describe('App', () => {
     api.createProject = vi.fn().mockResolvedValue({ id: 8 })
     render(<App />)
     await userEvent.click(await screen.findByRole('button', { name: 'Muster GmbH' }))
+    await userEvent.click(await screen.findByRole('button', { name: /Website/, pressed: false }))
 
     await userEvent.click(await screen.findByRole('button', { name: 'Neues Projekt' }))
     const dialog = screen.getByRole('dialog', { name: 'Neues Projekt' })

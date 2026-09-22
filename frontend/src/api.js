@@ -65,7 +65,8 @@ export const api = {
 
   getActiveEntry: () => request('/time-entries/active'),
 
-  getTimeEntries: (projectId) => request(`/time-entries/project/${projectId}`),
+  // All entries of the customer's projects, with project_name
+  getCustomerTimeEntries: (customerId) => request(`/time-entries/customer/${customerId}`),
 
   // Reports
   getMonthlyReport: (customerId, month, year) =>

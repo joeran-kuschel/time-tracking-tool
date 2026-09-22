@@ -35,7 +35,8 @@ describe('api', () => {
 
   test('sends GET requests without a body', async () => {
     const fetch = mockFetch(200, [])
-    await api.getTimeEntries(3)
+    await api.getCustomerTimeEntries(3)
+    expect(fetch.mock.calls[0][0]).toMatch(/\/time-entries\/customer\/3$/)
     expect(fetch.mock.calls[0][1]).toEqual({ method: 'GET' })
   })
 

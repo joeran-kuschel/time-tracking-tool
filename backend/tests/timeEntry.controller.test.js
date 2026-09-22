@@ -237,3 +237,30 @@ describe('timeEntryController.delete', () => {
     expect(res.status).toHaveBeenCalledWith(404);
   });
 });
+
+describe('timeEntryController.getByCustomerId', () => {
+  beforeEach(() => {
+    jest.resetAllMocks();
+  });
+
+  test('answers with the customer\'s entries', async () => {
+    TimeEntry.getByCustomerId.mockResolvedValue([{ id: 1 }]);
+    const res = mockResponse();
+
+    await controller.getByCustomerId({ params: { customerId: '3' } }, res);
+
+    expect(TimeEntry.getByCustomerId).toHaveBeenCalledWith('3');
+    expect(res.json).toHaveBeenCalledWith([{ id: 1 }]);
+  });
+
+  test('answers 500 when the query fails', async () => {
+    TimeEntry.getByCustomerId.mockRejectedValue(new Error('down'));
+    jest.spyOn(console, 'error').mockImplementation(() => {});
+    const res = mockResponse();
+
+    await controller.getByCustomerId({ params: { customerId: '3' } }, res);
+
+    expect(res.status).toHaveBeenCalledWith(500);
+    console.error.mockRestore();
+  });
+});

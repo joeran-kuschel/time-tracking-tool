@@ -12,6 +12,19 @@ const entries = [
 const projects = [{ id: 7, name: 'Website' }]
 
 describe('EntriesList', () => {
+  test('groups entries by project in the order of the projects, with total hours, and leaves out empty projects', () => {
+    const grouped = [
+      { id: 3, project_id: 8, start_time: '2026-09-21T08:00:00Z', end_time: '2026-09-21T10:00:00Z', description: 'App-Arbeit' },
+      ...entries,
+    ]
+    render(<EntriesList entries={grouped} projects={[{ id: 9, name: 'Leer' }, ...projects, { id: 8, name: 'App' }]} />)
+
+    const headings = screen.getAllByRole('heading', { level: 3 })
+    expect(headings.map((h) => h.textContent)).toEqual(['Website · 1,50 h gesamt', 'App · 2,00 h gesamt'])
+    expect(screen.getByRole('table', { name: /^App/ })).toHaveTextContent('App-Arbeit')
+    expect(screen.getByRole('table', { name: /^Website/ })).toHaveTextContent('Konzept')
+  })
+
   test('shows an empty state without entries', () => {
     render(<EntriesList entries={[]} projects={[]} />)
     expect(screen.getByText('Noch keine Einträge')).toBeInTheDocument()
@@ -25,7 +38,7 @@ describe('EntriesList', () => {
   })
 
   test('has no detectable accessibility violations', async () => {
-    const { container } = render(<EntriesList entries={entries} projects={projects} />)
+    const { container } = render(<EntriesList entries={entries} projects={[...projects, { id: 8, name: 'App' }]} />)
     expect(await axe(container)).toHaveNoViolations()
   })
 

@@ -35,8 +35,10 @@ function Dashboard({ customers, onCustomersChange, timer }) {
   const selectedProject = projects.find((p) => p.id === selectedProjectId) ?? null
 
   useEffect(() => {
+    setEntries([])
     if (selectedCustomerId) {
       loadProjects(selectedCustomerId)
+      loadEntries(selectedCustomerId)
     } else {
       setProjects([])
       setSelectedProjectId(null)
@@ -51,31 +53,24 @@ function Dashboard({ customers, onCustomersChange, timer }) {
     }
   }, [customers, timer.activeEntry])
 
-  useEffect(() => {
-    if (selectedProjectId) {
-      loadEntries(selectedProjectId)
-    } else {
-      setEntries([])
-    }
-  }, [selectedProjectId])
-
-  // Keeps the selected project if it still exists, else the running timer's project, else the first one
+  // Keeps the selected project if it still exists, else selects the running timer's project, else none
   const loadProjects = async (customerId) => {
     const data = await runProjectAction(() => api.getProjects(customerId), msg`Projects could not be loaded.`)
     if (!data) return
     setProjects(data)
     setSelectedProjectId((current) => {
       const keep = (id) => data.some((p) => p.id === id) && id
-      return keep(current) || keep(timer.activeEntry?.project_id) || data[0]?.id || null
+      return keep(current) || keep(timer.activeEntry?.project_id) || null
     })
   }
 
-  const loadEntries = async (projectId) => {
-    const data = await runEntriesAction(() => api.getTimeEntries(projectId), msg`Entries could not be loaded.`)
+  // All entries of the customer; a selected project only narrows what is shown
+  const loadEntries = async (customerId) => {
+    const data = await runEntriesAction(() => api.getCustomerTimeEntries(customerId), msg`Entries could not be loaded.`)
     if (data) setEntries(data)
   }
 
-  const refreshEntries = () => selectedProjectId && loadEntries(selectedProjectId)
+  const refreshEntries = () => selectedCustomerId && loadEntries(selectedCustomerId)
 
   const openDialog = (name) => {
     clearAddError()
@@ -140,7 +135,7 @@ function Dashboard({ customers, onCustomersChange, timer }) {
 
   const deleteProject = async (project) => {
     const deleted = await api.deleteProject(project.id)
-    await loadProjects(selectedCustomerId)
+    await Promise.all([loadProjects(selectedCustomerId), refreshEntries()])
     return deleted
   }
 
@@ -176,7 +171,8 @@ function Dashboard({ customers, onCustomersChange, timer }) {
     return result
   }
 
-  const selectedProjectName = selectedProject?.name
+  const visibleEntries = selectedProject ? entries.filter((e) => e.project_id === selectedProject.id) : entries
+  const entriesOf = selectedProject?.name ?? selectedCustomer?.name
 
   return (
     <>
@@ -222,7 +218,7 @@ function Dashboard({ customers, onCustomersChange, timer }) {
                 label={t`Projects`}
                 items={projects}
                 selectedId={selectedProjectId}
-                onSelect={(project) => setSelectedProjectId(project.id)}
+                onSelect={(project) => setSelectedProjectId((current) => (current === project.id ? null : project.id))}
                 renderItem={(project, selected) => (
                   <>
                     <div>{project.name}</div>
@@ -255,17 +251,20 @@ function Dashboard({ customers, onCustomersChange, timer }) {
       </div>
 
       {/* Entries List */}
-      {selectedProject && (
+      {/* All entries of the customer, or only those of the selected project */}
+      {selectedCustomer && (
         <div className="bg-white rounded-lg shadow p-6 space-y-4">
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <h2 className="text-lg font-bold"><Trans>Entries for {selectedProjectName}</Trans></h2>
-            <button onClick={() => openDialog('entry')} className={addButtonClass}>
-              <PlusIcon aria-hidden="true" className="h-4 w-4" />
-              <Trans>Add time</Trans>
-            </button>
+            <h2 className="text-lg font-bold"><Trans>Entries for {entriesOf}</Trans></h2>
+            {projects.length > 0 && (
+              <button onClick={() => openDialog('entry')} className={addButtonClass}>
+                <PlusIcon aria-hidden="true" className="h-4 w-4" />
+                <Trans>Add time</Trans>
+              </button>
+            )}
           </div>
           <ErrorMessage message={entriesError} />
-          <EntriesList entries={entries} projects={projects} onUpdate={updateEntry} onDelete={deleteEntry} />
+          <EntriesList entries={visibleEntries} projects={projects} onUpdate={updateEntry} onDelete={deleteEntry} />
         </div>
       )}
     </div>
@@ -280,7 +279,7 @@ function Dashboard({ customers, onCustomersChange, timer }) {
           onSubmit={addProject} onCancel={closeDialog} error={addError} />
       </Modal>
       <Modal title={t`Add time`} open={dialog === 'entry'} onClose={closeDialog}>
-        <EntryForm projects={projects} projectId={selectedProjectId} submitLabel={t`Save`}
+        <EntryForm projects={projects} projectId={selectedProjectId ?? projects[0]?.id} submitLabel={t`Save`}
           onSubmit={addEntry} onCancel={closeDialog} error={addError} />
       </Modal>
     </>

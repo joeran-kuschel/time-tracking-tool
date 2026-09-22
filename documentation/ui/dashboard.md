@@ -1,7 +1,7 @@
 # Dashboard
 
 The Dashboard is the start page. It has three panels (customers, projects, timer) and below them the entries of the
-selected project. On narrow screens the panels are stacked.
+selected customer, grouped by project. On narrow screens the panels are stacked.
 
 ## Customers
 
@@ -17,8 +17,11 @@ selected project. On narrow screens the panels are stacked.
 
 - Shows the projects of the selected customer, sorted by name, each with its hourly rate, for example `80,00 €/h`
   in German and `€80.00/h` in English.
-- Selecting a customer selects its first project, or the project of a running timer. After adding, editing or deleting
-  a project, the selection stays if the project still exists.
+- Selecting a customer selects no project, so the entries below show all its projects. Only the project of a running
+  timer is selected, e.g. after a reload, so **Stop** sits next to the right project.
+- Selecting a project narrows the entries to it and lets the timer start for it. Selecting it again deselects it and
+  shows all projects again. After adding, editing or deleting a project, the selection stays if the project still
+  exists.
 - **Edit** (name, hourly rate) and **Delete** (with its time entries) work like for customers.
 - **New project** next to the heading (shown once a customer is selected) opens a dialog with name and hourly rate.
   The new project is added but not selected.
@@ -48,7 +51,13 @@ See [Timer](timer.md).
 
 ## Entries
 
-- Lists all entries of the selected project, newest first: start, end, hours and description.
+- Shown once a customer is selected. The heading reads *Entries for Muster GmbH*, or *Entries for Website* while a
+  project is selected.
+- Entries are grouped by project, in the order of the project list; projects without entries are left out. Each group
+  has a heading with the project name and its total hours (*Website · 12,50 h gesamt*) and its own table (named by
+  that heading): start, end, hours and description, newest first. A running entry counts `0` hours in the total, as
+  in its row.
+- With a project selected, only its group is shown.
 - A running entry shows **Active** as its end and `0,00 h` / `0.00 h`. It appears as soon as the timer starts. It can't
   be edited or deleted; stop the timer first.
 - Dates and hours follow the language, for example `21.09.2026, 11:52` and `1,50 h` in German, `09/21/2026, 11:52 AM`
@@ -57,7 +66,8 @@ See [Timer](timer.md).
 ### Adding time manually
 
 **Add time** (*Zeit nachtragen*) opens a dialog: project, date, start, end and an optional description. The date starts
-as today, the project as the selected one. The end must be after the start, so an entry can't cross midnight;
+as today, the project as the selected one, or the first project when none is selected. The button is hidden while the
+customer has no projects. The end must be after the start, so an entry can't cross midnight;
 otherwise the form says *End must be after start.* next to the end field. Overlapping entries are allowed.
 
 ### Editing and deleting entries

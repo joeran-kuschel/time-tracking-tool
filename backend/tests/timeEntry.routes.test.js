@@ -8,3 +8,9 @@ test('matches /active before /:id, so "active" is not read as an id', () => {
   expect(getPaths.indexOf('/active')).toBeGreaterThanOrEqual(0);
   expect(getPaths.indexOf('/active')).toBeLessThan(getPaths.indexOf('/:id'));
 });
+
+test('serves the entries of a customer', () => {
+  const route = router.stack.find((layer) => layer.route?.path === '/customer/:customerId');
+
+  expect(route.route.methods.get).toBe(true);
+});

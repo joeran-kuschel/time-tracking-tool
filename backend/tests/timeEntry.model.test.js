@@ -87,3 +87,28 @@ describe('TimeEntry.getActive', () => {
     expect(active.customer_name).toBe('Kunde');
   });
 });
+
+describe('TimeEntry.getByCustomerId', () => {
+  beforeEach(() => {
+    mockPool = createTestPool();
+  });
+
+  test('returns only the customer\'s entries, grouped by project name and newest first', async () => {
+    const [kunde, andere] = await Promise.all(['Kunde', 'Andere'].map(async (name) =>
+      (await mockPool.query('INSERT INTO customers (name) VALUES ($1) RETURNING id', [name])).rows[0].id));
+    const addProject = async (customerId, name) =>
+      (await mockPool.query('INSERT INTO projects (customer_id, name) VALUES ($1, $2) RETURNING id', [customerId, name])).rows[0].id;
+    const website = await addProject(kunde, 'Website');
+    const app = await addProject(kunde, 'App');
+    const fremd = await addProject(andere, 'Fremd');
+    const early = await TimeEntry.create(website, '2026-09-20T08:00:00Z', '2026-09-20T09:00:00Z', null);
+    const late = await TimeEntry.create(website, '2026-09-21T08:00:00Z', '2026-09-21T09:00:00Z', null);
+    const appEntry = await TimeEntry.create(app, '2026-09-19T08:00:00Z', null, null);
+    await TimeEntry.create(fremd, '2026-09-21T08:00:00Z', '2026-09-21T09:00:00Z', null);
+
+    const entries = await TimeEntry.getByCustomerId(kunde);
+
+    expect(entries.map((e) => e.id)).toEqual([appEntry.id, late.id, early.id]);
+    expect(entries.map((e) => e.project_name)).toEqual(['App', 'Website', 'Website']);
+  });
+});

@@ -1,4 +1,4 @@
-import { useRef } from 'react'
+import { useId, useRef } from 'react'
 import { msg } from '@lingui/core/macro'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { formatHours, hoursBetween } from '../format'
@@ -62,17 +62,18 @@ function EntryRow({ entry, projects, onUpdate, onDelete, onDeleted }) {
   )
 }
 
-// projects: the projects an entry can be moved to (those of the same customer)
-// After deleting, focus moves to the list, which stays even when the last entry is gone.
-function EntriesList({ entries, projects, onUpdate, onDelete }) {
-  const list = useRef(null)
+// One project's entries under a heading with its total hours
+function ProjectGroup({ project, entries, projects, onUpdate, onDelete, onDeleted }) {
+  const { t, i18n } = useLingui()
+  const headingId = useId()
+  const total = formatHours(i18n, entries.reduce((sum, e) => sum + hoursBetween(e.start_time, e.end_time), 0))
 
   return (
-    <div ref={list} tabIndex={-1} className="overflow-x-auto">
-      {entries.length === 0 ? (
-        <p className="text-gray-500"><Trans>No entries yet</Trans></p>
-      ) : (
-      <table className="w-full text-sm">
+    <div>
+      <h3 id={headingId} className="font-bold mb-2">
+        {project.name} <span className="font-normal text-gray-600">· {t`${total} total`}</span>
+      </h3>
+      <table aria-labelledby={headingId} className="w-full text-sm">
         <thead>
           <tr className="bg-gray-100 border-b">
             <th className="px-4 py-2 text-left"><Trans>Start</Trans></th>
@@ -84,11 +85,32 @@ function EntriesList({ entries, projects, onUpdate, onDelete }) {
         </thead>
         <tbody>
           {entries.map((entry) => (
-            <EntryRow key={entry.id} entry={entry} projects={projects} onUpdate={onUpdate} onDelete={onDelete}
-              onDeleted={() => list.current?.focus()} />
+            <EntryRow key={entry.id} entry={entry} projects={projects} onUpdate={onUpdate} onDelete={onDelete} onDeleted={onDeleted} />
           ))}
         </tbody>
       </table>
+    </div>
+  )
+}
+
+// Entries grouped by project, in the order of projects; projects without entries are left out.
+// projects: the customer's projects, also the ones an entry can be moved to.
+// After deleting, focus moves to the list, which stays even when the last entry is gone.
+function EntriesList({ entries, projects, onUpdate, onDelete }) {
+  const list = useRef(null)
+  const groups = projects
+    .map((project) => ({ project, entries: entries.filter((e) => e.project_id === project.id) }))
+    .filter((group) => group.entries.length > 0)
+
+  return (
+    <div ref={list} tabIndex={-1} className="overflow-x-auto space-y-6">
+      {groups.length === 0 ? (
+        <p className="text-gray-500"><Trans>No entries yet</Trans></p>
+      ) : (
+        groups.map((group) => (
+          <ProjectGroup key={group.project.id} project={group.project} entries={group.entries} projects={projects}
+            onUpdate={onUpdate} onDelete={onDelete} onDeleted={() => list.current?.focus()} />
+        ))
       )}
     </div>
   )
