@@ -35,7 +35,7 @@ function Modal({ title, open, onClose, children }) {
       ref={dialog}
       aria-labelledby={titleId}
       onCancel={handleCancel}
-      className="m-auto w-[calc(100%-2rem)] max-w-md rounded-2xl bg-surface p-6 text-ink shadow-xl backdrop:bg-ink/40"
+      className="m-auto w-[calc(100%-2rem)] max-w-md rounded-2xl bg-surface p-6 text-ink shadow-xl backdrop:bg-black/50"
     >
       {open && (
         <>

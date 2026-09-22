@@ -22,7 +22,7 @@ function RunningTimer({ entry, onStop }) {
       <button
         type="button"
         onClick={onStop}
-        className="inline-flex min-h-[2rem] shrink-0 items-center gap-1.5 rounded-full bg-danger px-3.5 text-sm font-semibold text-white hover:bg-danger-dark"
+        className="inline-flex min-h-[2rem] shrink-0 items-center gap-1.5 rounded-full bg-danger px-3.5 text-sm font-semibold text-on-fill hover:bg-danger-dark"
       >
         <StopIcon aria-hidden="true" className="h-3 w-3" />
         <Trans>Stop <span className="sr-only">timer</span></Trans>

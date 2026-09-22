@@ -76,11 +76,15 @@ msgstr "Kunde konnte nicht gespeichert werden."
 msgid "Customers"
 msgstr "Kunden"
 
-#: src/App.jsx:38
+#: src/App.jsx:39
 msgid "Customers could not be loaded."
 msgstr "Kunden konnten nicht geladen werden."
 
-#: src/App.jsx:17
+#: src/components/ThemeSwitcher.jsx:9
+msgid "Dark"
+msgstr "Dunkel"
+
+#: src/App.jsx:18
 #: src/pages/Dashboard.jsx:307
 msgid "Dashboard"
 msgstr "Dashboard"
@@ -190,12 +194,20 @@ msgstr "Stunden diesen Monat"
 msgid "Language"
 msgstr "Sprache"
 
-#: src/App.jsx:58
+#: src/components/ThemeSwitcher.jsx:8
+msgid "Light"
+msgstr "Hell"
+
+#: src/components/ThemeSwitcher.jsx:10
+msgid "Like the system"
+msgstr "Wie das System"
+
+#: src/App.jsx:59
 #: src/pages/Reports.jsx:108
 msgid "Loading..."
 msgstr "Laden..."
 
-#: src/App.jsx:69
+#: src/App.jsx:70
 msgid "Main"
 msgstr "Hauptnavigation"
 
@@ -284,7 +296,7 @@ msgstr "Abrechnung {reportCustomer} – {reportPeriod}"
 msgid "Report could not be loaded."
 msgstr "Bericht konnte nicht geladen werden."
 
-#: src/App.jsx:18
+#: src/App.jsx:19
 #: src/pages/Reports.jsx:67
 msgid "Reports"
 msgstr "Berichte"
@@ -352,6 +364,10 @@ msgstr "Der Server ist nicht erreichbar."
 msgid "The timer is running for {trackedProject}. Stop it to start {selectedProject}."
 msgstr "Der Timer läuft für {trackedProject}. Stoppe ihn, um {selectedProject} zu starten."
 
+#: src/components/ThemeSwitcher.jsx:31
+msgid "Theme"
+msgstr "Farbschema"
+
 #: src/components/EntriesList.jsx:87
 msgid "Time"
 msgstr "Zeit"
@@ -377,11 +393,11 @@ msgstr "Timer konnte nicht gestartet werden."
 msgid "Timer could not be stopped."
 msgstr "Timer konnte nicht gestoppt werden."
 
-#: src/App.jsx:55
+#: src/App.jsx:56
 msgid "Timer started for {announcedProject}"
 msgstr "Timer gestartet für {announcedProject}"
 
-#: src/App.jsx:55
+#: src/App.jsx:56
 msgid "Timer stopped"
 msgstr "Timer gestoppt"
 
@@ -393,6 +409,6 @@ msgstr "Gesamt"
 msgid "Total hours"
 msgstr "Gesamtstunden"
 
-#: src/App.jsx:95
+#: src/App.jsx:97
 msgid "Try again"
 msgstr "Erneut versuchen"

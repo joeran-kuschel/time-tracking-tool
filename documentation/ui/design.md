@@ -1,24 +1,45 @@
 # Design
 
-The look of the UI: colors, type, shared styles and the page layout. The layout was drafted on a design canvas
-(Dashboard, Reports, Dashboard on a phone) and then built into the frontend.
+The look of the UI: colors, the light and dark theme, type, shared styles and the page layout. The layout and the dark
+theme were drafted on a design canvas (Dashboard, Reports, Dashboard on a phone, each light and dark) and then built into
+the frontend.
 
 ## Colors
 
-Defined once as Tailwind colors in `frontend/tailwind.config.js`; components use the names, never hex values.
+Components use Tailwind color names (`bg-paper`, `text-muted`, …), never hex values. `frontend/tailwind.config.js`
+maps each name to a CSS variable, and `frontend/src/index.css` sets the variables once for the light and once for the
+dark theme. Opacity modifiers like `bg-paper/70` keep working, because the variables hold plain `r g b` values.
 
-| Name | Value | Use |
-| --- | --- | --- |
-| `paper` | `#F4F2EC` | page background |
-| `surface` | `#FFFFFF` | cards, header, sidebar, inputs |
-| `ink` | `#1D1C1A` | text |
-| `muted` | `#5E5A52` | secondary text, labels of figures |
-| `line` / `line-soft` | `#E2DED4` / `#ECE8DF` | card borders, table rows |
-| `line-strong` | `#8A8477` | borders of inputs and buttons (3.7:1 on white) |
-| `accent` / `accent-dark` / `accent-soft` | `#0E5C58` / `#0A4441` / `#E3EFEC` | primary buttons, selection, links, focus ring |
-| `danger` / `danger-dark` / `danger-soft` / `danger-line` | `#B42318` / `#8F1C13` / `#FDECEA` / `#F3C4BF` | the running timer, Stop, delete, errors |
+| Name | Light | Dark | Use |
+| --- | --- | --- | --- |
+| `paper` | `#F4F2EC` | `#161513` | page background |
+| `surface` | `#FFFFFF` | `#201E1B` | cards, header, sidebar, inputs |
+| `ink` | `#1D1C1A` | `#EDEAE3` | text |
+| `muted` | `#5E5A52` | `#A8A296` | secondary text, labels of figures |
+| `line` / `line-soft` | `#E2DED4` / `#ECE8DF` | `#34312C` / `#2C2A26` | card borders, table rows |
+| `line-strong` | `#8A8477` | `#77715F` | borders of inputs and buttons |
+| `accent` | `#0E5C58` | `#5DB3AB` | primary buttons, selection, links, focus ring |
+| `accent-dark` | `#0A4441` | `#9AD9D2` | hover of primary buttons, text of the selected customer |
+| `accent-soft` | `#E3EFEC` | `#1C3431` | background of the selected customer |
+| `danger` | `#B42318` | `#F0566E` | the running timer, Stop, delete, errors |
+| `danger-dark` | `#8F1C13` | `#F57A8C` | hover of Stop and delete |
+| `danger-soft` / `danger-line` | `#FDECEA` / `#F3C4BF` | `#3A1A21` / `#6E3240` | running-timer bar, running entry, confirmations |
+| `on-fill` | `#FFFFFF` | `#0E0D0C` | text on `accent` and `danger` fills |
 
 Red is reserved for the running timer and for destructive actions, so a running timer stands out on every page.
+In the dark theme the fills are lighter and carry dark text (`on-fill`); the `-dark` shades are the hover colors, so
+they get lighter too. The dialog backdrop is plain black at 50 %, independent of the theme.
+
+## Light and dark theme
+
+- The header has a theme switch next to the language (*Farbschema* / *Theme*): **Hell** / *Light*, **Dunkel** /
+  *Dark* and **Wie das System** / *Like the system*. Without a choice, the app follows the operating system, and
+  switches along when the system does.
+- Switching needs no reload. The choice is stored in the browser (`localStorage`, key `theme`), like the language.
+- `theme.js` resolves the choice and sets `data-theme="light"` or `"dark"` on `<html>`; `main.jsx` does this before the
+  first render, so the page doesn't flash in the wrong theme. The dark theme also sets `color-scheme: dark`, so native
+  controls (selects, date and time pickers, scrollbars) are dark as well.
+- Code: `frontend/src/theme.js`, `components/ThemeSwitcher.jsx`. Tests: `theme.test.js`, `ThemeSwitcher.test.jsx`.
 Contrast values are listed in [Accessibility](accessibility.md).
 
 ## Type

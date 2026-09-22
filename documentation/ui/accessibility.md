@@ -32,10 +32,15 @@ The UI has to meet WCAG 2.2 level AA (see `CLAUDE.md`). This chapter lists what 
   `title` names the record, e.g. *Edit Muster GmbH*: it is the tooltip and the accessible name. There is deliberately no
   `aria-label` as well, so the title isn't exposed a second time as a description. The buttons are 32 × 32 px (at least
   24 × 24 px, WCAG 2.5.8); the month arrows use the same `title` pattern and are 44 px wide.
-- **Contrast** (calculated from the colors in [Design](design.md)): white on `accent` (Start, Save, selected project,
-  Download PDF) 7.8:1, the hourly rate on the selected project 6.7:1, the selected customer 9.3:1, `muted` text 6.9:1
-  on white and 6.1:1 on the page background, links 7.8:1, white on `danger` (Stop, Delete) 6.6:1, error text 6.6:1,
-  the edit and delete icons 9.0:1, borders of inputs and buttons 3.7:1 (at least 3:1, WCAG 1.4.11).
+- **Contrast**, measured in the browser from the theme colors in [Design](design.md), light / dark:
+  text on cards 17.0 / 13.8:1; `muted` text 6.9 / 6.6:1 on cards and 6.1 / 7.2:1 on the page background; text on
+  `accent` (Start, Save, selected project, Download PDF) 7.8 / 7.9:1; links 7.8 / 6.7:1; the selected customer
+  9.3 / 8.4:1; text on `danger` (Stop, Delete) 6.6 / 5.8:1; red text (errors, *running*) 6.6 / 5.0:1 on cards and
+  5.8 / 4.6:1 inside a delete confirmation; borders of inputs and buttons 3.7 / 3.4:1 (at least 3:1, WCAG 1.4.11);
+  the focus ring 7.0 / 7.4:1. Hover colors keep at least 7.4:1 in both themes.
+- **Theme switch:** a group named *Theme* with three icon buttons named by their `title` (*Light*, *Dark*, *Like the
+  system*); the active one is marked with `aria-pressed`. The dark theme sets `color-scheme: dark`, so native controls
+  stay readable.
 
 ## Missing
 

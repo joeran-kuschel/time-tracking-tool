@@ -2,6 +2,47 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Theme colors as "r g b" (see tailwind.config.js and documentation/ui/design.md).
+   theme.js sets data-theme on <html> to the chosen or the system theme. */
+:root {
+  --color-paper: 244 242 236;       /* #F4F2EC */
+  --color-surface: 255 255 255;     /* #FFFFFF */
+  --color-ink: 29 28 26;            /* #1D1C1A */
+  --color-muted: 94 90 82;          /* #5E5A52 */
+  --color-line: 226 222 212;        /* #E2DED4 */
+  --color-line-soft: 236 232 223;   /* #ECE8DF */
+  --color-line-strong: 138 132 119; /* #8A8477 */
+  --color-accent: 14 92 88;         /* #0E5C58 */
+  --color-accent-dark: 10 68 65;    /* #0A4441 */
+  --color-accent-soft: 227 239 236; /* #E3EFEC */
+  --color-danger: 180 35 24;        /* #B42318 */
+  --color-danger-dark: 143 28 19;   /* #8F1C13 */
+  --color-danger-soft: 253 236 234; /* #FDECEA */
+  --color-danger-line: 243 196 191; /* #F3C4BF */
+  --color-on-fill: 255 255 255;     /* #FFFFFF */
+  color-scheme: light;
+}
+
+/* Dark: fills get lighter and carry dark text; "dark" variants are the hover shades, so they get lighter too */
+:root[data-theme='dark'] {
+  --color-paper: 22 21 19;          /* #161513 */
+  --color-surface: 32 30 27;        /* #201E1B */
+  --color-ink: 237 234 227;         /* #EDEAE3 */
+  --color-muted: 168 162 150;       /* #A8A296 */
+  --color-line: 52 49 44;           /* #34312C */
+  --color-line-soft: 44 42 38;      /* #2C2A26 */
+  --color-line-strong: 119 113 95;  /* #77715F */
+  --color-accent: 93 179 171;       /* #5DB3AB */
+  --color-accent-dark: 154 217 210; /* #9AD9D2 */
+  --color-accent-soft: 28 52 49;    /* #1C3431 */
+  --color-danger: 240 86 110;       /* #F0566E */
+  --color-danger-dark: 245 122 140; /* #F57A8C */
+  --color-danger-soft: 58 26 33;    /* #3A1A21 */
+  --color-danger-line: 110 50 64;   /* #6E3240 */
+  --color-on-fill: 14 13 12;        /* #0E0D0C */
+  color-scheme: dark;
+}
+
 html, body, #root {
   height: 100%;
   margin: 0;

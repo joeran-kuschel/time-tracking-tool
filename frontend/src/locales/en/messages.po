@@ -76,11 +76,15 @@ msgstr "Customer could not be saved."
 msgid "Customers"
 msgstr "Customers"
 
-#: src/App.jsx:38
+#: src/App.jsx:39
 msgid "Customers could not be loaded."
 msgstr "Customers could not be loaded."
 
-#: src/App.jsx:17
+#: src/components/ThemeSwitcher.jsx:9
+msgid "Dark"
+msgstr "Dark"
+
+#: src/App.jsx:18
 #: src/pages/Dashboard.jsx:307
 msgid "Dashboard"
 msgstr "Dashboard"
@@ -190,12 +194,20 @@ msgstr "Hours this month"
 msgid "Language"
 msgstr "Language"
 
-#: src/App.jsx:58
+#: src/components/ThemeSwitcher.jsx:8
+msgid "Light"
+msgstr "Light"
+
+#: src/components/ThemeSwitcher.jsx:10
+msgid "Like the system"
+msgstr "Like the system"
+
+#: src/App.jsx:59
 #: src/pages/Reports.jsx:108
 msgid "Loading..."
 msgstr "Loading..."
 
-#: src/App.jsx:69
+#: src/App.jsx:70
 msgid "Main"
 msgstr "Main"
 
@@ -284,7 +296,7 @@ msgstr "Report {reportCustomer} – {reportPeriod}"
 msgid "Report could not be loaded."
 msgstr "Report could not be loaded."
 
-#: src/App.jsx:18
+#: src/App.jsx:19
 #: src/pages/Reports.jsx:67
 msgid "Reports"
 msgstr "Reports"
@@ -352,6 +364,10 @@ msgstr "The server is not reachable."
 msgid "The timer is running for {trackedProject}. Stop it to start {selectedProject}."
 msgstr "The timer is running for {trackedProject}. Stop it to start {selectedProject}."
 
+#: src/components/ThemeSwitcher.jsx:31
+msgid "Theme"
+msgstr "Theme"
+
 #: src/components/EntriesList.jsx:87
 msgid "Time"
 msgstr "Time"
@@ -377,11 +393,11 @@ msgstr "Timer could not be started."
 msgid "Timer could not be stopped."
 msgstr "Timer could not be stopped."
 
-#: src/App.jsx:55
+#: src/App.jsx:56
 msgid "Timer started for {announcedProject}"
 msgstr "Timer started for {announcedProject}"
 
-#: src/App.jsx:55
+#: src/App.jsx:56
 msgid "Timer stopped"
 msgstr "Timer stopped"
 
@@ -393,6 +409,6 @@ msgstr "Total"
 msgid "Total hours"
 msgstr "Total hours"
 
-#: src/App.jsx:95
+#: src/App.jsx:97
 msgid "Try again"
 msgstr "Try again"

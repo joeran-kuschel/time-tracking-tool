@@ -10,7 +10,7 @@ Feature documentation for the time tracking tool, split into UI and Backend. Eac
 - [Languages](ui/languages.md): German and English, switching without a reload, adding texts
 - [Error messages](ui/error-messages.md): how failed requests are shown
 - [Accessibility](ui/accessibility.md): what meets WCAG 2.2 AA and what is still missing
-- [Design](ui/design.md): colors, type, shared styles and the page layout
+- [Design](ui/design.md): colors, the light and dark theme, type, shared styles and the page layout
 
 ## Backend
 

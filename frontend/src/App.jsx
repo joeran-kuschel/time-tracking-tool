@@ -8,6 +8,7 @@ import { useActiveEntry } from './hooks/useActiveEntry'
 import ErrorMessage from './components/ErrorMessage'
 import LanguageSwitcher from './components/LanguageSwitcher'
 import RunningTimer from './components/RunningTimer'
+import ThemeSwitcher from './components/ThemeSwitcher'
 import Dashboard from './pages/Dashboard'
 import Reports from './pages/Reports'
 import { ui } from './ui'
@@ -82,6 +83,7 @@ function App() {
           </nav>
           <div className="ml-auto flex min-w-0 flex-wrap items-center gap-3">
             {timer.activeEntry && <RunningTimer entry={timer.activeEntry} onStop={stopFromHeader} />}
+            <ThemeSwitcher />
             <LanguageSwitcher />
           </div>
         </div>

@@ -20,7 +20,7 @@ const customerMessages = { saveFailed: msg`Customer could not be saved.`, delete
 const projectMessages = { saveFailed: msg`Project could not be saved.`, deleteFailed: msg`Project could not be deleted.`, stopTimerFirst }
 
 const chipClass = (selected) => `inline-flex min-h-[2.5rem] items-center gap-2 rounded-full border px-4 text-sm ${
-  selected ? 'border-accent bg-accent font-semibold text-white' : 'border-line-strong bg-surface text-ink hover:bg-paper'
+  selected ? 'border-accent bg-accent font-semibold text-on-fill' : 'border-line-strong bg-surface text-ink hover:bg-paper'
 }`
 
 function Dashboard({ customers, onCustomersChange, timer, onOpenReport }) {
@@ -205,7 +205,7 @@ function Dashboard({ customers, onCustomersChange, timer, onOpenReport }) {
               className={chipClass(selected)}
             >
               {project.name}
-              <span className={selected ? 'font-normal text-white/90' : 'text-muted'}>{formatRate(i18n, project.hourly_rate)}</span>
+              <span className={selected ? 'font-normal text-on-fill/90' : 'text-muted'}>{formatRate(i18n, project.hourly_rate)}</span>
             </button>
           )
         })}
