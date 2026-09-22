@@ -4,7 +4,7 @@ The tool is available in German and English. The language can be switched at any
 
 ## Switching
 
-- The navigation bar has two buttons, **Deutsch** and **English**. The active one is highlighted and marked with
+- The header has two buttons, **Deutsch** and **English**. The active one is highlighted and marked with
   `aria-pressed="true"`.
 - Switching changes all texts, dates, numbers and month names in place. Typed text, the selected customer and project,
   and a running timer stay as they are. Error messages that are already shown switch too.

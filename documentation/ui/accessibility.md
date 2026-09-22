@@ -4,16 +4,23 @@ The UI has to meet WCAG 2.2 level AA (see `CLAUDE.md`). This chapter lists what 
 
 ## In place
 
-- **Landmarks:** navigation (`<nav>`) and main content (`<main>`).
+- **Landmarks:** header, navigation (`<nav>`, *Main*), main content (`<main>`), the customer sidebar (`<aside>`) and
+  the running timer (a region named *Running timer*). Each page has one `<h1>`: the customer's name on the Dashboard
+  (visually hidden *Dashboard* without a customer), a visually hidden *Reports* on the Reports page.
+- **Navigation:** the current page is marked with `aria-current="page"` and an underline, not only by color.
 - **Language:** `<html lang>` follows the current language; the language buttons carry their own `lang`. See
   [Languages](languages.md).
-- **Keyboard:** all controls are buttons, inputs or selects in a logical tab order, with the browser's visible focus
-  ring. Focus stays on the timer button when the timer starts or stops. See [Timer](timer.md).
+- **Keyboard:** all controls are buttons, inputs or selects in a logical tab order, with one visible focus ring
+  (2 px `accent`, 7.0:1 on the page background). Focus stays on the timer button when the timer starts or stops;
+  stopping from the header moves focus to the page content. See [Timer](timer.md).
 - **Status and errors:** starting and stopping the timer is announced once through a status region; errors use
-  `role="alert"`. See [Error messages](error-messages.md).
-- **Labels:** all Dashboard fields have visible labels (`RecordForm`), grouped with a legend such as *New customer*.
+  `role="alert"`. On the Reports page, the month name is a polite live region, so the arrow buttons announce the new
+  month. See [Error messages](error-messages.md).
+- **Labels:** all fields have visible labels (`RecordForm`, the timer, the Reports page); edit forms are grouped with a
+  legend such as *Edit customer*. The month buttons on the Reports page are a group named *Month*.
   Validation errors mark their field with `aria-invalid` and are linked with `aria-describedby`.
-- **Selection:** the selected customer and project are marked with `aria-pressed`, not only by color.
+- **Selection:** the selected customer and project are marked with `aria-pressed`, not only by color. The customer of
+  the running timer has a red dot and *, timer running* in its button name.
 - **Editing and deleting:** forms and confirmations open in place and take focus; closing them returns focus to the
   button that opened them; Escape cancels.
 - **Dialogs:** adding uses modal dialogs on the native `<dialog>` element. The browser keeps focus inside and makes the
@@ -23,19 +30,19 @@ The UI has to meet WCAG 2.2 level AA (see `CLAUDE.md`). This chapter lists what 
   modal dialog.
 - **Icon buttons:** edit and delete show only an icon, which is hidden from screen readers (`aria-hidden`). The button's
   `title` names the record, e.g. *Edit Muster GmbH*: it is the tooltip and the accessible name. There is deliberately no
-  `aria-label` as well, so the title isn't exposed a second time as a description. The buttons are 34 × 34 px (at least
-  24 × 24 px, WCAG 2.5.8).
-- **Contrast** of the parts changed so far (measured in the browser): Start, **+ Add** and **Add time** 5.0:1, the
-  selected customer or project 6.7:1, the hourly rate 5.5:1 (selected) and 6.9:1,
-  the language buttons 6.7:1 and 10.3:1, the edit and delete icons 10.3:1 (at least 3:1 for graphics). Stop, delete and the error text are `red-700`, about 6.5:1 (calculated).
+  `aria-label` as well, so the title isn't exposed a second time as a description. The buttons are 32 × 32 px (at least
+  24 × 24 px, WCAG 2.5.8); the month arrows use the same `title` pattern and are 44 px wide.
+- **Contrast** (calculated from the colors in [Design](design.md)): white on `accent` (Start, Save, selected project,
+  Download PDF) 7.8:1, the hourly rate on the selected project 6.7:1, the selected customer 9.3:1, `muted` text 6.9:1
+  on white and 6.1:1 on the page background, links 7.8:1, white on `danger` (Stop, Delete) 6.6:1, error text 6.6:1,
+  the edit and delete icons 9.0:1, borders of inputs and buttons 3.7:1 (at least 3:1, WCAG 1.4.11).
 
 ## Missing
 
 From the UX review, not fixed yet:
 
-- The active navigation button uses white on `blue-500` (about 3.7:1), below the 4.5:1 minimum, and the current page
-  is shown only by color, without `aria-current`.
-- On the Reports page, the labels are not linked to their dropdowns.
+- The project bars in the month summary are hidden from screen readers; the hours next to them carry the information.
+  A screen reader user gets no share-of-total, only the hours.
 
 ## Testing
 

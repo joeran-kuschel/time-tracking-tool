@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest'
-import { render, screen, within } from './test/render'
+import { render, screen, waitFor, within } from './test/render'
 import userEvent from '@testing-library/user-event'
 import { axe } from './test/axe'
 import App from './App'
@@ -14,6 +14,7 @@ vi.mock('./api', async (importOriginal) => ({
     getActiveEntry: vi.fn(),
     getProjects: vi.fn(),
     getCustomerTimeEntries: vi.fn(),
+    getMonthlyReport: vi.fn(),
     deleteProject: vi.fn(),
     stopTimeEntry: vi.fn(),
     createTimeEntry: vi.fn(),
@@ -23,9 +24,12 @@ vi.mock('./api', async (importOriginal) => ({
 }))
 
 const running = {
-  id: 42, project_id: 7, project_name: 'Website', customer_id: 1, description: null,
+  id: 42, project_id: 7, project_name: 'Website', customer_id: 1, customer_name: 'Muster GmbH', description: null,
   start_time: new Date().toISOString(),
 }
+
+// The running timer in the header
+const runningTimer = (name = 'Laufender Timer') => screen.findByRole('region', { name })
 
 // The name field of the "new customer" form
 // Opens the "new customer" dialog and returns it
@@ -85,8 +89,9 @@ describe('App', () => {
     api.getActiveEntry.mockResolvedValue(running)
     render(<App />)
 
-    expect(await screen.findByText(/Timer läuft: Website/)).toBeInTheDocument()
+    expect(await runningTimer()).toHaveTextContent('Website')
     expect(screen.getByRole('button', { name: 'Stop' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Stop Timer' })).toBeInTheDocument()
   })
 
   test('after a reload, selects the customer and project of the running timer', async () => {
@@ -110,17 +115,61 @@ describe('App', () => {
 
     expect(await screen.findByRole('button', { name: 'Start' })).toHaveFocus()
     expect(screen.getByRole('status')).toHaveTextContent('Timer gestoppt')
-    expect(screen.queryByText(/Timer läuft/)).not.toBeInTheDocument()
+    expect(screen.queryByRole('region', { name: 'Laufender Timer' })).not.toBeInTheDocument()
+  })
+
+  test('stops the timer from the header on any page, moves focus to the page and announces it', async () => {
+    api.getCustomers.mockResolvedValue([])
+    api.getActiveEntry.mockResolvedValue(running)
+    api.stopTimeEntry.mockResolvedValue({ ...running, end_time: new Date().toISOString() })
+    render(<App />)
+    await runningTimer()
+    await userEvent.click(screen.getByRole('button', { name: 'Berichte' }))
+
+    await userEvent.click(screen.getByRole('button', { name: 'Stop Timer' }))
+
+    expect(api.stopTimeEntry).toHaveBeenCalledWith(42, expect.any(String))
+    expect(screen.queryByRole('region', { name: 'Laufender Timer' })).not.toBeInTheDocument()
+    expect(screen.getByRole('main')).toHaveFocus()
+    expect(screen.getByRole('status')).toHaveTextContent('Timer gestoppt')
+  })
+
+  test('starts the timer for the selected project, shows it in the header and reloads the entries', async () => {
+    api.getCustomers.mockResolvedValue([{ id: 1, name: 'Muster GmbH' }])
+    api.createTimeEntry.mockResolvedValue({ id: 42, project_id: 7, start_time: new Date().toISOString() })
+    render(<App />)
+    await userEvent.click(await screen.findByRole('button', { name: 'Muster GmbH' }))
+    await userEvent.click(await screen.findByRole('button', { name: /Website/, pressed: false }))
+
+    await userEvent.click(screen.getByRole('button', { name: 'Start' }))
+
+    expect(await runningTimer()).toHaveTextContent('Website · Muster GmbH')
+    expect(screen.getByRole('status')).toHaveTextContent('Timer gestartet für Website')
+    expect(screen.getByRole('button', { name: /^Muster GmbH\s*, Timer läuft$/, pressed: true })).toBeInTheDocument()
+    await waitFor(() => expect(api.getCustomerTimeEntries).toHaveBeenCalledTimes(2))
+  })
+
+  test('opens the report of the selected customer from the month summary', async () => {
+    api.getCustomers.mockResolvedValue([{ id: 1, name: 'Muster GmbH' }])
+    api.getMonthlyReport.mockResolvedValue({ entries: [], totalHours: '0.00' })
+    render(<App />)
+    await userEvent.click(await screen.findByRole('button', { name: 'Muster GmbH' }))
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Bericht öffnen' }))
+
+    expect(screen.getByRole('button', { name: 'Berichte' })).toHaveAttribute('aria-current', 'page')
+    expect(screen.getByLabelText('Kunde')).toHaveValue('1')
+    expect(api.getMonthlyReport).toHaveBeenCalledWith(1, new Date().getMonth() + 1, new Date().getFullYear())
   })
 
   test('keeps the running timer when switching pages', async () => {
     api.getCustomers.mockResolvedValue([])
     api.getActiveEntry.mockResolvedValue(running)
     render(<App />)
-    await screen.findByText(/Timer läuft: Website/)
+    await runningTimer()
 
     await userEvent.click(screen.getByRole('button', { name: 'Berichte' }))
-    expect(screen.getByText(/Timer läuft: Website/)).toBeInTheDocument()
+    expect(await runningTimer()).toHaveTextContent('Website')
 
     await userEvent.click(screen.getByRole('button', { name: 'Dashboard' }))
     expect(screen.getByRole('button', { name: 'Stop' })).toBeInTheDocument()
@@ -154,7 +203,7 @@ describe('App', () => {
     api.getCustomers.mockResolvedValue([])
     api.getActiveEntry.mockResolvedValue(running)
     render(<App />)
-    await screen.findByText(/Timer läuft: Website/)
+    await runningTimer()
 
     expect(await axe(document.body)).toHaveNoViolations()
   })
@@ -163,17 +212,18 @@ describe('App', () => {
     api.getCustomers.mockResolvedValue([{ id: 1, name: 'Muster GmbH' }])
     api.getActiveEntry.mockResolvedValue(running)
     render(<App />)
-    await screen.findByText(/Timer läuft: Website/)
+    await runningTimer()
     // typed into an inline edit form: while a modal dialog is open, the page behind it can't be used
     await userEvent.click(await screen.findByRole('button', { name: 'Muster GmbH bearbeiten' }))
-    const name = within(screen.getByRole('list', { name: 'Kunden' })).getByLabelText('Name')
+    const name = screen.getByLabelText('Name')
     await userEvent.type(name, ' AG')
 
     await userEvent.click(screen.getByRole('button', { name: 'English' }))
 
-    expect(screen.getByText(/Timer running: Website/)).toBeInTheDocument()
+    expect(await runningTimer('Running timer')).toHaveTextContent('Website')
     expect(screen.getByRole('button', { name: 'Stop' })).toBeInTheDocument()
-    expect(within(screen.getByRole('list', { name: 'Customers' })).getByLabelText('Name')).toHaveValue('Muster GmbH AG')
+    expect(screen.getByRole('group', { name: 'Edit customer' })).toBeInTheDocument()
+    expect(screen.getByLabelText('Name')).toHaveValue('Muster GmbH AG')
     expect(screen.getByRole('button', { name: 'Reports' })).toBeInTheDocument()
     expect(document.documentElement.lang).toBe('en')
     expect(api.getActiveEntry).toHaveBeenCalledTimes(1)
@@ -236,7 +286,7 @@ describe('App', () => {
     await screen.findByRole('heading', { name: 'Einträge für Website' })
 
     await userEvent.click(screen.getByRole('button', { name: 'Muster GmbH bearbeiten' }))
-    const name = within(screen.getByRole('list', { name: 'Kunden' })).getByLabelText('Name')
+    const name = screen.getByLabelText('Name')
     await userEvent.clear(name)
     await userEvent.type(name, 'Muster AG')
     await userEvent.click(screen.getByRole('button', { name: 'Speichern' }))
@@ -263,6 +313,7 @@ describe('App', () => {
     expect(api.deleteCustomer).toHaveBeenCalledWith(1)
     expect(await screen.findByText('Wähle einen Kunden')).toBeInTheDocument()
     expect(screen.queryByRole('heading', { name: /Einträge für/ })).not.toBeInTheDocument()
+    expect(screen.getByRole('list', { name: 'Kunden' })).toHaveFocus()
   })
 
   test('selecting a customer shows all its entries grouped by project, and a project narrows them', async () => {
@@ -307,12 +358,15 @@ describe('App', () => {
     render(<App />)
     await userEvent.click(await screen.findByRole('button', { name: 'Muster GmbH' }))
     await screen.findByText('Website-Arbeit')
+    expect(screen.queryByRole('button', { name: 'Website löschen' })).not.toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: /Website/, pressed: false }))
 
     await userEvent.click(screen.getByRole('button', { name: 'Website löschen' }))
     await userEvent.click(screen.getByRole('button', { name: 'Löschen' }))
 
     expect(await screen.findByText('Noch keine Einträge')).toBeInTheDocument()
     expect(api.getCustomerTimeEntries).toHaveBeenCalledTimes(2)
+    expect(screen.getByRole('group', { name: 'Projekte' })).toHaveFocus()
     expect(screen.queryByRole('button', { name: 'Zeit nachtragen' })).not.toBeInTheDocument()
   })
 

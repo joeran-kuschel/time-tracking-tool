@@ -18,8 +18,10 @@ description and can't be edited.
 - The running timer is loaded from the backend (`GET /api/time-entries/active`), not kept in the browser. It keeps
   running when you switch to **Berichte**, reload the page or close the tab.
 - The elapsed time is counted from the saved start time, so it is correct after a reload.
-- The navigation bar shows the running timer on every page: `Timer läuft: <Projekt> · 00:12:34`
-  (English: `Timer running: <project> · 00:12:34`).
+- The header shows the running timer on every page (*Laufender Timer* / *Running timer*): project, customer, elapsed
+  time and its own **Stop** button. Stopping there works on every page; afterwards focus moves to the page content,
+  because the button disappears with the timer. On narrow screens the customer is left out.
+- The timer panel shows *Läuft seit 10:02* (*Running since 10:02*) while the timer runs.
 - After a reload, the Dashboard selects the customer and project of the running timer.
 
 ## Only one timer at a time
@@ -39,14 +41,19 @@ description and can't be edited.
   timer panel is always shown, so focus is never lost when the selected project changes.
 - Without a project, **Start** uses `aria-disabled` instead of `disabled`, so it stays focusable, and its description
   points to the hint text.
-- Starting and stopping are announced once through a status region (*Timer gestartet für …* / *Timer started for …*,
-  *Timer gestoppt* / *Timer stopped*), in the current language. The ticking time itself is not announced.
+- Starting and stopping are announced once through one status region in `App`, whether they were triggered in the
+  panel or in the header (*Timer gestartet für …* / *Timer started for …*, *Timer gestoppt* / *Timer stopped*), in the
+  current language. The ticking time itself is not announced.
+- The header's Stop button shows *Stop* and is named *Stop Timer* / *Stop timer* (the second word is visually hidden),
+  so it can be told apart from the panel's **Stop**.
 - Errors are shown with `role="alert"`, so screen readers announce them.
-- Start (`green-700`) and Stop (`red-700`) meet WCAG AA contrast with white text.
+- Start (`accent`, 7.8:1) and Stop (`danger`, 6.6:1) meet WCAG AA contrast with white text.
 
 ## Code
 
-- `frontend/src/hooks/useActiveEntry.js`: loads, starts and stops the running timer; used once in `App`
-- `frontend/src/hooks/useElapsedTime.js`: elapsed time as `HH:MM:SS`, shared by the navigation bar and the timer
-- `frontend/src/components/Timer.jsx`: display only, no API calls
-- Tests: `Timer.test.jsx`, `useActiveEntry.test.js`, `useElapsedTime.test.js`, `App.test.jsx`
+- `frontend/src/hooks/useActiveEntry.js`: loads, starts and stops the running timer and keeps what to announce; used
+  once in `App`
+- `frontend/src/hooks/useElapsedTime.js`: elapsed time as `HH:MM:SS`, shared by the header and the timer panel
+- `frontend/src/components/Timer.jsx`: the timer panel, display only, no API calls
+- `frontend/src/components/RunningTimer.jsx`: the running timer in the header
+- Tests: `Timer.test.jsx`, `RunningTimer.test.jsx`, `useActiveEntry.test.js`, `useElapsedTime.test.js`, `App.test.jsx`

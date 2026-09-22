@@ -52,10 +52,11 @@ describe('useActiveEntry', () => {
     api.createTimeEntry.mockResolvedValue({ id: 42, project_id: 7, start_time: '2026-09-21T08:00:00Z' })
     const { result } = await renderLoaded()
 
-    await act(() => result.current.start(project, 'Konzept'))
+    await act(() => result.current.start(project, 'Konzept', { id: 1, name: 'Muster GmbH' }))
 
     expect(api.createTimeEntry).toHaveBeenCalledWith(7, expect.any(String), 'Konzept')
-    expect(result.current.activeEntry).toMatchObject({ id: 42, project_name: 'Website' })
+    expect(result.current.activeEntry).toMatchObject({ id: 42, project_name: 'Website', customer_id: 1, customer_name: 'Muster GmbH' })
+    expect(result.current.announcement).toEqual({ kind: 'started', projectName: 'Website' })
   })
 
   test('shows the other running timer when the backend refuses a second one', async () => {
@@ -67,6 +68,7 @@ describe('useActiveEntry', () => {
     await act(async () => { started = await result.current.start(project, '') })
 
     expect(started).toBeUndefined()
+    expect(result.current.announcement).toBeNull()
     expect(result.current.error).toBe('Timer konnte nicht gestartet werden. Es läuft bereits ein Timer.')
     expect(result.current.activeEntry).toEqual(running)
   })
@@ -81,6 +83,7 @@ describe('useActiveEntry', () => {
 
     expect(api.stopTimeEntry).toHaveBeenCalledWith(42, expect.any(String))
     expect(result.current.activeEntry).toBeNull()
+    expect(result.current.announcement).toEqual({ kind: 'stopped' })
   })
 
   test('keeps the entry active when stopping fails', async () => {
@@ -92,6 +95,7 @@ describe('useActiveEntry', () => {
     await act(() => result.current.stop())
 
     expect(result.current.activeEntry).toEqual(running)
+    expect(result.current.announcement).toBeNull()
     expect(result.current.error).toBe('Timer konnte nicht gestoppt werden. Bitte versuche es erneut.')
   })
 })

@@ -1,6 +1,5 @@
 import { PencilSquareIcon, TrashIcon } from '@heroicons/react/24/outline'
-
-const buttonClass = 'p-1.5 rounded border border-gray-300 text-gray-700 hover:bg-gray-100'
+import { ui } from '../ui'
 
 // Icon buttons to edit and delete a record. The title names the record, e.g. "Edit Muster GmbH":
 // it is the tooltip and, since the icons are hidden, the accessible name. An aria-label with the same
@@ -9,10 +8,10 @@ const buttonClass = 'p-1.5 rounded border border-gray-300 text-gray-700 hover:bg
 function RecordActions({ editLabel, deleteLabel, onEdit, onDelete, editButton, deleteButton }) {
   return (
     <>
-      <button type="button" ref={editButton} onClick={onEdit} title={editLabel} className={buttonClass}>
+      <button type="button" ref={editButton} onClick={onEdit} title={editLabel} className={ui.iconButton}>
         <PencilSquareIcon aria-hidden="true" className="h-5 w-5" />
       </button>
-      <button type="button" ref={deleteButton} onClick={onDelete} title={deleteLabel} className={buttonClass}>
+      <button type="button" ref={deleteButton} onClick={onDelete} title={deleteLabel} className={ui.iconButton}>
         <TrashIcon aria-hidden="true" className="h-5 w-5" />
       </button>
     </>

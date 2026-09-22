@@ -1,13 +1,15 @@
 import { useId, useRef } from 'react'
 import { msg } from '@lingui/core/macro'
 import { Trans, useLingui } from '@lingui/react/macro'
-import { formatHours, hoursBetween } from '../format'
+import { formatClock, formatDay, formatHours, hoursBetween } from '../format'
 import { useEditable } from '../hooks/useEditable'
 import EntryForm from './EntryForm'
 import ConfirmDelete from './ConfirmDelete'
 import RecordActions from './RecordActions'
 
 const dateTime = { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }
+const cell = 'px-3 py-1.5 border-b border-line-soft'
+const headCell = 'px-3 py-2 border-b border-line font-medium text-muted'
 
 const messages = {
   saveFailed: msg`Time entry could not be saved.`,
@@ -24,8 +26,8 @@ function EntryRow({ entry, projects, onUpdate, onDelete, onDeleted }) {
 
   if (editable.mode !== 'view') {
     return (
-      <tr className="border-b">
-        <td colSpan={5} className="px-4 py-3">
+      <tr>
+        <td colSpan={5} className={`${cell} py-3`}>
           {editable.mode === 'edit' ? (
             <EntryForm entry={entry} projects={projects} submitLabel={t`Save`} onSubmit={editable.save}
               onCancel={editable.cancel} error={editable.error} autoFocus />
@@ -39,12 +41,17 @@ function EntryRow({ entry, projects, onUpdate, onDelete, onDeleted }) {
   }
 
   return (
-    <tr className="border-b hover:bg-gray-50">
-      <td className="px-4 py-2">{start}</td>
-      <td className="px-4 py-2">{isRunning ? <Trans>Active</Trans> : i18n.date(entry.end_time, dateTime)}</td>
-      <td className="px-4 py-2 text-right">{formatHours(i18n, hoursBetween(entry.start_time, entry.end_time))}</td>
-      <td className="px-4 py-2 text-gray-600">{entry.description || '---'}</td>
-      <td className="px-4 py-2">
+    <tr className={isRunning ? 'bg-danger-soft/50' : 'hover:bg-paper/60'}>
+      <td className={`${cell} whitespace-nowrap`}>{formatDay(i18n, entry.start_time)}</td>
+      <td className={`${cell} whitespace-nowrap font-mono`}>
+        {formatClock(i18n, entry.start_time)} –{' '}
+        {isRunning
+          ? <span className="font-sans font-semibold text-danger"><Trans>running</Trans></span>
+          : formatClock(i18n, entry.end_time)}
+      </td>
+      <td className={`${cell} whitespace-nowrap text-right font-mono`}>{formatHours(i18n, hoursBetween(entry.start_time, entry.end_time))}</td>
+      <td className={cell}>{entry.description || <span className="text-muted">—</span>}</td>
+      <td className={cell}>
         {!isRunning && (
           <div className="flex justify-end gap-1">
             <RecordActions
@@ -70,17 +77,17 @@ function ProjectGroup({ project, entries, projects, onUpdate, onDelete, onDelete
 
   return (
     <div>
-      <h3 id={headingId} className="font-bold mb-2">
-        {project.name} <span className="font-normal text-gray-600">· {t`${total} total`}</span>
+      <h3 id={headingId} className="mb-1 font-semibold">
+        {project.name} <span className="font-normal text-muted">· {t`${total} total`}</span>
       </h3>
-      <table aria-labelledby={headingId} className="w-full text-sm">
+      <table aria-labelledby={headingId} className="w-full border-collapse text-sm">
         <thead>
-          <tr className="bg-gray-100 border-b">
-            <th className="px-4 py-2 text-left"><Trans>Start</Trans></th>
-            <th className="px-4 py-2 text-left"><Trans>End</Trans></th>
-            <th className="px-4 py-2 text-right"><Trans>Hours</Trans></th>
-            <th className="px-4 py-2 text-left"><Trans>Description</Trans></th>
-            <th className="px-4 py-2 text-right"><Trans>Actions</Trans></th>
+          <tr className="text-left">
+            <th scope="col" className={`${headCell} w-36`}><Trans>Date</Trans></th>
+            <th scope="col" className={`${headCell} w-36`}><Trans>Time</Trans></th>
+            <th scope="col" className={`${headCell} w-24 text-right`}><Trans>Hours</Trans></th>
+            <th scope="col" className={headCell}><Trans>Description</Trans></th>
+            <th scope="col" className={`${headCell} w-24 text-right`}><Trans>Actions</Trans></th>
           </tr>
         </thead>
         <tbody>
@@ -105,7 +112,7 @@ function EntriesList({ entries, projects, onUpdate, onDelete }) {
   return (
     <div ref={list} tabIndex={-1} className="overflow-x-auto space-y-6">
       {groups.length === 0 ? (
-        <p className="text-gray-500"><Trans>No entries yet</Trans></p>
+        <p className="text-muted"><Trans>No entries yet</Trans></p>
       ) : (
         groups.map((group) => (
           <ProjectGroup key={group.project.id} project={group.project} entries={group.entries} projects={projects}

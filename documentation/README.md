@@ -4,12 +4,13 @@ Feature documentation for the time tracking tool, split into UI and Backend. Eac
 
 ## UI
 
-- [Dashboard](ui/dashboard.md): customers, projects and the entries of a project
+- [Dashboard](ui/dashboard.md): customers, projects, the month summary and the entries of a customer
 - [Timer](ui/timer.md): starting and stopping, the running timer across pages and reloads
 - [Reports](ui/reports.md): monthly reports and the PDF download
 - [Languages](ui/languages.md): German and English, switching without a reload, adding texts
 - [Error messages](ui/error-messages.md): how failed requests are shown
 - [Accessibility](ui/accessibility.md): what meets WCAG 2.2 AA and what is still missing
+- [Design](ui/design.md): colors, type, shared styles and the page layout
 
 ## Backend
 

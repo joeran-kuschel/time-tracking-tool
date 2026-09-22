@@ -6,15 +6,15 @@ function LanguageSwitcher() {
   const { t, i18n } = useLingui()
 
   return (
-    <div role="group" aria-label={t`Language`} className="flex gap-1">
+    <div role="group" aria-label={t`Language`} className="flex gap-0.5 rounded-lg bg-paper p-0.5">
       {Object.entries(LANGUAGES).map(([code, name]) => (
         <button
           key={code}
           lang={code}
           aria-pressed={i18n.locale === code}
           onClick={() => switchLocale(code)}
-          className={`px-2 py-1 rounded text-sm border ${
-            i18n.locale === code ? 'bg-blue-700 border-blue-700 text-white' : 'border-gray-300 text-gray-700 hover:bg-gray-100'
+          className={`min-h-[2rem] rounded-md px-2.5 text-sm ${
+            i18n.locale === code ? 'bg-surface font-semibold text-ink shadow-sm' : 'text-muted hover:text-ink'
           }`}
         >
           {name}

@@ -1,6 +1,7 @@
 import { useEffect, useId, useRef } from 'react'
 import { Trans } from '@lingui/react/macro'
 import ErrorMessage from './ErrorMessage'
+import { ui } from '../ui'
 
 // Asks in place before deleting. Focus starts on Cancel, the safe choice; Escape cancels.
 function ConfirmDelete({ message, onConfirm, onCancel, error }) {
@@ -19,13 +20,13 @@ function ConfirmDelete({ message, onConfirm, onCancel, error }) {
   }
 
   return (
-    <div role="group" aria-labelledby={id} onKeyDown={handleKeyDown} className="space-y-2 rounded border border-red-200 bg-red-50 p-3">
-      <p id={id} className="text-sm text-gray-900">{message}</p>
+    <div role="group" aria-labelledby={id} onKeyDown={handleKeyDown} className="w-full space-y-3 rounded-lg border border-danger-line bg-danger-soft p-3">
+      <p id={id} className="text-sm text-ink">{message}</p>
       <div className="flex gap-2">
-        <button type="button" onClick={onConfirm} className="px-3 py-2 rounded text-sm bg-red-700 text-white hover:bg-red-800">
+        <button type="button" onClick={onConfirm} className={ui.buttonDanger}>
           <Trans>Delete</Trans>
         </button>
-        <button type="button" ref={cancelButton} onClick={onCancel} className="px-3 py-2 rounded text-sm border border-gray-300 bg-white text-gray-700 hover:bg-gray-100">
+        <button type="button" ref={cancelButton} onClick={onCancel} className={ui.buttonSecondary}>
           <Trans>Cancel</Trans>
         </button>
       </div>

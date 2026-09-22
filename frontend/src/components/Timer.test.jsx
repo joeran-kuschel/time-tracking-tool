@@ -22,7 +22,7 @@ describe('Timer', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Start' }))
 
     expect(onStart).toHaveBeenCalledWith('Konzept')
-    expect(screen.getByRole('status')).toHaveTextContent('Timer gestartet für Website')
+    expect(screen.getByLabelText('Beschreibung (optional)')).toHaveValue('')
   })
 
   test('keeps the description when starting fails', async () => {
@@ -32,20 +32,20 @@ describe('Timer', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Start' }))
 
     expect(screen.getByLabelText('Beschreibung (optional)')).toHaveValue('Konzept')
-    expect(screen.getByRole('status')).toHaveTextContent('')
   })
 
-  test('shows the running entry with its description and a Stop button', async () => {
+  test('shows the running entry with its start, its description and a Stop button', async () => {
     const onStop = vi.fn().mockResolvedValue({ id: 42 })
-    renderTimer({ activeEntry: running, onStop })
+    const startedAt = new Date(2026, 8, 22, 10, 2)
+    renderTimer({ activeEntry: { ...running, start_time: startedAt.toISOString() }, onStop })
 
     expect(screen.getByRole('heading', { name: 'Website' })).toBeInTheDocument()
+    expect(screen.getByText('Läuft seit 10:02')).toBeInTheDocument()
     expect(screen.getByLabelText('Beschreibung (optional)')).toHaveValue('Konzept')
 
     await userEvent.click(screen.getByRole('button', { name: 'Stop' }))
 
     expect(onStop).toHaveBeenCalled()
-    expect(screen.getByRole('status')).toHaveTextContent('Timer gestoppt')
   })
 
   test('keeps showing the running project when another project is selected', () => {
@@ -75,7 +75,7 @@ describe('Timer', () => {
     expect(start).toHaveFocus()
   })
 
-  test('keeps focus and announces the stop when no project is selected', async () => {
+  test('keeps focus on the button after stopping when no project is selected', async () => {
     // Parent that clears the running entry after stopping, like the Dashboard after a reload
     function Parent() {
       const [activeEntry, setActiveEntry] = useState(running)
@@ -90,7 +90,6 @@ describe('Timer', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Stop' }))
 
     expect(screen.getByRole('button', { name: 'Start' })).toHaveFocus()
-    expect(screen.getByRole('status')).toHaveTextContent('Timer gestoppt')
   })
 
   test('shows the error it is given', () => {

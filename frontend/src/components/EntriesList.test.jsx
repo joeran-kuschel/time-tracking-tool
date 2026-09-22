@@ -30,11 +30,16 @@ describe('EntriesList', () => {
     expect(screen.getByText('Noch keine Einträge')).toBeInTheDocument()
   })
 
-  test('shows hours for finished entries and marks running ones', () => {
-    render(<EntriesList entries={entries} projects={projects} />)
-    expect(screen.getByText('1,50 h')).toBeInTheDocument()
-    expect(screen.getByText('Aktiv')).toBeInTheDocument()
-    expect(screen.getByText('Konzept')).toBeInTheDocument()
+  test('shows day, start and end time and hours, and marks running entries', () => {
+    const local = [
+      { id: 1, project_id: 7, start_time: new Date(2026, 8, 21, 9, 0).toISOString(), end_time: new Date(2026, 8, 21, 12, 30).toISOString(), description: 'Konzept' },
+      { id: 2, project_id: 7, start_time: new Date(2026, 8, 22, 10, 2).toISOString(), end_time: null, description: null },
+    ]
+    render(<EntriesList entries={local} projects={projects} />)
+
+    const rows = screen.getAllByRole('row')
+    expect(rows[1]).toHaveTextContent('Mo., 21. Sept.09:00 – 12:303,50 hKonzept')
+    expect(rows[2]).toHaveTextContent('Di., 22. Sept.10:02 – läuft0,00 h')
   })
 
   test('has no detectable accessibility violations', async () => {

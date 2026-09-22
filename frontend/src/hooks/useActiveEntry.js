@@ -4,8 +4,11 @@ import { api } from '../api'
 import { useAction } from './useAction'
 
 // The running timer, loaded from the backend so it survives reloads and page switches.
+// announcement tells screen readers what the last start or stop did, wherever it was triggered:
+// { kind: 'started', projectName } or { kind: 'stopped' }.
 export function useActiveEntry() {
   const [activeEntry, setActiveEntry] = useState(null)
+  const [announcement, setAnnouncement] = useState(null)
   const [run, error] = useAction()
 
   const load = useCallback(async () => {
@@ -17,14 +20,16 @@ export function useActiveEntry() {
     load()
   }, [load])
 
-  const start = async (project, description) => {
+  // customer: the project's customer, shown next to the running timer
+  const start = async (project, description, customer) => {
     const entry = await run(
       () => api.createTimeEntry(project.id, new Date().toISOString(), description),
       msg`Timer could not be started.`,
       { 409: msg`A timer is already running.` }
     )
     if (entry) {
-      setActiveEntry({ ...entry, project_name: project.name })
+      setActiveEntry({ ...entry, project_name: project.name, customer_id: customer?.id, customer_name: customer?.name })
+      setAnnouncement({ kind: 'started', projectName: project.name })
       return entry
     }
     // Another tab may have started a timer; show it
@@ -38,9 +43,12 @@ export function useActiveEntry() {
       () => api.stopTimeEntry(activeEntry.id, new Date().toISOString()),
       msg`Timer could not be stopped.`
     )
-    if (stopped) setActiveEntry(null)
+    if (stopped) {
+      setActiveEntry(null)
+      setAnnouncement({ kind: 'stopped' })
+    }
     return stopped
   }
 
-  return { activeEntry, start, stop, error }
+  return { activeEntry, announcement, start, stop, error }
 }

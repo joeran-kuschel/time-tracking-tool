@@ -3,21 +3,26 @@ import { msg } from '@lingui/core/macro'
 import { render, screen } from '../test/render'
 import userEvent from '@testing-library/user-event'
 import { axe } from '../test/axe'
-import EditableList from './EditableList'
+import EditableRecord from './EditableRecord'
 import { ApiError } from '../api'
 
-const items = [{ id: 1, name: 'Muster GmbH', email: '' }, { id: 2, name: 'Neu AG', email: 'info@neu.de' }]
+const item = { id: 2, name: 'Neu AG', email: 'info@neu.de' }
 const form = {
+  legend: 'Kunde bearbeiten',
   fields: [{ name: 'name', label: 'Name', required: true }, { name: 'email', label: 'E-Mail (optional)', type: 'email' }],
-  toValues: (item) => ({ name: item.name, email: item.email }),
+  toValues: (record) => ({ name: record.name, email: record.email }),
 }
 const messages = { saveFailed: msg`Customer could not be saved.`, deleteFailed: msg`Customer could not be deleted.`, stopTimerFirst: msg`Stop the running timer first.` }
 
-function renderList(props) {
+function renderRecord(props) {
   return render(
-    <EditableList label="Kunden" items={items} selectedId={1} onSelect={vi.fn()} renderItem={(item) => item.name}
-      form={form} onUpdate={vi.fn().mockResolvedValue({ id: 1 })} onDelete={vi.fn().mockResolvedValue({ id: 1 })}
-      deleteMessage={(item) => `${item.name} löschen?`} messages={messages} {...props} />
+    <>
+      <EditableRecord item={item} form={form} onUpdate={vi.fn().mockResolvedValue({ id: 2 })} onDelete={vi.fn().mockResolvedValue({ id: 2 })}
+        deleteMessage={(record) => `${record.name} löschen?`} messages={messages} {...props}>
+        {(actions) => <div><h1>{item.name}</h1>{actions}</div>}
+      </EditableRecord>
+      <button type="button">Danach</button>
+    </>
   )
 }
 
@@ -25,22 +30,21 @@ beforeEach(() => {
   vi.spyOn(console, 'error').mockImplementation(() => {})
 })
 
-describe('EditableList', () => {
-  test('marks the selected item and selects another one', async () => {
-    const onSelect = vi.fn()
-    renderList({ onSelect })
+describe('EditableRecord', () => {
+  test('renders the record with its edit and delete buttons', () => {
+    renderRecord()
 
-    expect(screen.getByRole('button', { name: 'Muster GmbH' })).toHaveAttribute('aria-pressed', 'true')
-    expect(screen.getByRole('button', { name: 'Neu AG' })).toHaveAttribute('aria-pressed', 'false')
-    await userEvent.click(screen.getByRole('button', { name: 'Neu AG' }))
-    expect(onSelect).toHaveBeenCalledWith(items[1])
+    expect(screen.getByRole('heading', { name: 'Neu AG' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Neu AG bearbeiten' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Neu AG löschen' })).toBeInTheDocument()
   })
 
-  test('edits an item in place and returns focus to its edit button', async () => {
+  test('edits the record in place and returns focus to its edit button', async () => {
     const onUpdate = vi.fn().mockResolvedValue({ id: 2 })
-    renderList({ onUpdate })
+    renderRecord({ onUpdate })
 
     await userEvent.click(screen.getByRole('button', { name: 'Neu AG bearbeiten' }))
+    expect(screen.getByRole('group', { name: 'Kunde bearbeiten' })).toBeInTheDocument()
     const name = screen.getByLabelText('Name')
     expect(name).toHaveValue('Neu AG')
     expect(name).toHaveFocus()
@@ -49,38 +53,40 @@ describe('EditableList', () => {
     await userEvent.type(name, 'Neu GmbH')
     await userEvent.click(screen.getByRole('button', { name: 'Speichern' }))
 
-    expect(onUpdate).toHaveBeenCalledWith(items[1], { name: 'Neu GmbH', email: 'info@neu.de' })
+    expect(onUpdate).toHaveBeenCalledWith(item, { name: 'Neu GmbH', email: 'info@neu.de' })
     expect(screen.getByRole('button', { name: 'Neu AG bearbeiten' })).toHaveFocus()
   })
 
   test('keeps the form open with an error when saving fails, and forgets the error after cancelling', async () => {
-    renderList({ onUpdate: vi.fn().mockRejectedValue(new ApiError(500, 'boom')) })
+    renderRecord({ onUpdate: vi.fn().mockRejectedValue(new ApiError(500, 'boom')) })
 
-    await userEvent.click(screen.getByRole('button', { name: 'Muster GmbH bearbeiten' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Neu AG bearbeiten' }))
     await userEvent.click(screen.getByRole('button', { name: 'Speichern' }))
     expect(screen.getByRole('alert')).toHaveTextContent('Kunde konnte nicht gespeichert werden. Bitte versuche es erneut.')
 
     await userEvent.keyboard('{Escape}')
-    expect(screen.getByRole('button', { name: 'Muster GmbH bearbeiten' })).toHaveFocus()
-    await userEvent.click(screen.getByRole('button', { name: 'Muster GmbH bearbeiten' }))
+    expect(screen.getByRole('button', { name: 'Neu AG bearbeiten' })).toHaveFocus()
+    await userEvent.click(screen.getByRole('button', { name: 'Neu AG bearbeiten' }))
     expect(screen.queryByRole('alert')).not.toBeInTheDocument()
   })
 
-  test('deletes after a confirmation and moves focus to the list', async () => {
+  test('deletes after a confirmation and then calls onDeleted', async () => {
     const onDelete = vi.fn().mockResolvedValue({ id: 2 })
-    renderList({ onDelete })
+    const onDeleted = vi.fn(() => screen.getByRole('button', { name: 'Danach' }).focus())
+    renderRecord({ onDelete, onDeleted })
 
     await userEvent.click(screen.getByRole('button', { name: 'Neu AG löschen' }))
     expect(screen.getByRole('group', { name: 'Neu AG löschen?' })).toBeInTheDocument()
     await userEvent.click(screen.getByRole('button', { name: 'Löschen' }))
 
-    expect(onDelete).toHaveBeenCalledWith(items[1])
-    expect(screen.getByRole('list', { name: 'Kunden' })).toHaveFocus()
+    expect(onDelete).toHaveBeenCalledWith(item)
+    expect(onDeleted).toHaveBeenCalled()
+    expect(screen.getByRole('button', { name: 'Danach' })).toHaveFocus()
   })
 
   test('cancelling the deletion returns focus to the delete button', async () => {
     const onDelete = vi.fn()
-    renderList({ onDelete })
+    renderRecord({ onDelete })
 
     await userEvent.click(screen.getByRole('button', { name: 'Neu AG löschen' }))
     await userEvent.click(screen.getByRole('button', { name: 'Abbrechen' }))
@@ -90,22 +96,23 @@ describe('EditableList', () => {
   })
 
   test('explains that a running timer blocks the deletion', async () => {
-    renderList({ onDelete: vi.fn().mockRejectedValue(new ApiError(409, 'Stop the running timer before deleting')) })
+    renderRecord({ onDelete: vi.fn().mockRejectedValue(new ApiError(409, 'Stop the running timer before deleting')) })
 
-    await userEvent.click(screen.getByRole('button', { name: 'Muster GmbH löschen' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Neu AG löschen' }))
     await userEvent.click(screen.getByRole('button', { name: 'Löschen' }))
 
     expect(screen.getByRole('alert')).toHaveTextContent('Kunde konnte nicht gelöscht werden. Stoppe zuerst den laufenden Timer.')
   })
 
   test('has no detectable accessibility violations in all modes', async () => {
-    const { container } = renderList()
+    const { container } = renderRecord()
     expect(await axe(container)).toHaveNoViolations()
 
     await userEvent.click(screen.getByRole('button', { name: 'Neu AG bearbeiten' }))
     expect(await axe(container)).toHaveNoViolations()
 
-    await userEvent.click(screen.getByRole('button', { name: 'Muster GmbH löschen' }))
+    await userEvent.keyboard('{Escape}')
+    await userEvent.click(screen.getByRole('button', { name: 'Neu AG löschen' }))
     expect(await axe(container)).toHaveNoViolations()
   })
 })

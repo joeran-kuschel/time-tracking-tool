@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useId, useRef } from 'react'
 import { PlusIcon } from '@heroicons/react/24/outline'
 import { msg } from '@lingui/core/macro'
 import { Trans, useLingui } from '@lingui/react/macro'
@@ -6,19 +6,24 @@ import { api } from '../api'
 import { useAction } from '../hooks/useAction'
 import ErrorMessage from '../components/ErrorMessage'
 import Timer from '../components/Timer'
+import MonthSummary from '../components/MonthSummary'
 import EntriesList from '../components/EntriesList'
-import EditableList from '../components/EditableList'
+import EditableRecord from '../components/EditableRecord'
 import RecordForm from '../components/RecordForm'
 import EntryForm from '../components/EntryForm'
 import Modal from '../components/Modal'
 import { formatRate } from '../format'
+import { ui } from '../ui'
 
 const stopTimerFirst = msg`Stop the running timer first.`
 const customerMessages = { saveFailed: msg`Customer could not be saved.`, deleteFailed: msg`Customer could not be deleted.`, stopTimerFirst }
-const addButtonClass = 'inline-flex items-center gap-1 px-3 py-2 rounded text-sm bg-green-700 text-white hover:bg-green-800'
 const projectMessages = { saveFailed: msg`Project could not be saved.`, deleteFailed: msg`Project could not be deleted.`, stopTimerFirst }
 
-function Dashboard({ customers, onCustomersChange, timer }) {
+const chipClass = (selected) => `inline-flex min-h-[2.5rem] items-center gap-2 rounded-full border px-4 text-sm ${
+  selected ? 'border-accent bg-accent font-semibold text-white' : 'border-line-strong bg-surface text-ink hover:bg-paper'
+}`
+
+function Dashboard({ customers, onCustomersChange, timer, onOpenReport }) {
   // Only ids are kept, so a renamed customer or project shows its new name right away
   const [selectedCustomerId, setSelectedCustomerId] = useState(null)
   const [selectedProjectId, setSelectedProjectId] = useState(null)
@@ -30,6 +35,11 @@ function Dashboard({ customers, onCustomersChange, timer }) {
   const [runProjectAction, projectError] = useAction()
   const [runEntriesAction, entriesError] = useAction()
   const { t, i18n } = useLingui()
+  // After deleting, focus moves to the list the record was in
+  const customerList = useRef(null)
+  const projectGroup = useRef(null)
+  const customersHeadingId = useId()
+  const entriesHeadingId = useId()
 
   const selectedCustomer = customers.find((c) => c.id === selectedCustomerId) ?? null
   const selectedProject = projects.find((p) => p.id === selectedProjectId) ?? null
@@ -52,6 +62,15 @@ function Dashboard({ customers, onCustomersChange, timer }) {
       if (customer) setSelectedCustomerId(customer.id)
     }
   }, [customers, timer.activeEntry])
+
+  // Reload the entries when a timer starts or stops, also from the header, so the running entry shows up right away
+  const activeId = timer.activeEntry?.id
+  const previousActiveId = useRef(activeId)
+  useEffect(() => {
+    if (previousActiveId.current === activeId) return
+    previousActiveId.current = activeId
+    refreshEntries()
+  }, [activeId])
 
   // Keeps the selected project if it still exists, else selects the running timer's project, else none
   const loadProjects = async (customerId) => {
@@ -83,7 +102,7 @@ function Dashboard({ customers, onCustomersChange, timer }) {
     { name: 'name', label: t`Name`, required: true },
     { name: 'email', label: t`Email (optional)`, type: 'email' },
   ]
-  const customerForm = { fields: customerFields, toValues: (c) => ({ name: c.name, email: c.email ?? '' }) }
+  const customerForm = { legend: t`Edit customer`, fields: customerFields, toValues: (c) => ({ name: c.name, email: c.email ?? '' }) }
 
   const addCustomer = async ({ name, email }) => {
     const created = await runAdd(() => api.createCustomer(name.trim(), email.trim()), msg`Customer could not be created.`)
@@ -112,7 +131,7 @@ function Dashboard({ customers, onCustomersChange, timer }) {
     { name: 'name', label: t`Name`, required: true },
     { name: 'hourlyRate', label: t`Hourly rate (€)`, type: 'number', min: 0, step: 0.01 },
   ]
-  const projectForm = { fields: projectFields, toValues: (p) => ({ name: p.name, hourlyRate: String(Number(p.hourly_rate)) }) }
+  const projectForm = { legend: t`Edit project`, fields: projectFields, toValues: (p) => ({ name: p.name, hourlyRate: String(Number(p.hourly_rate)) }) }
   const toRate = (value) => (value === '' ? 0 : Number(value))
 
   const addProject = async ({ name, hourlyRate }) => {
@@ -164,112 +183,163 @@ function Dashboard({ customers, onCustomersChange, timer }) {
     return created
   }
 
-  // Reload the list after start/stop, so the running entry shows up right away
-  const withEntriesRefresh = (action) => async (...args) => {
-    const result = await action(...args)
-    if (result) refreshEntries()
-    return result
-  }
-
   const visibleEntries = selectedProject ? entries.filter((e) => e.project_id === selectedProject.id) : entries
   const entriesOf = selectedProject?.name ?? selectedCustomer?.name
 
-  return (
-    <>
-    <div className="space-y-6">
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Customers Section */}
-        <div className="bg-white rounded-lg shadow p-6">
-          <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
-            <h2 className="text-lg font-bold"><Trans>Customers</Trans></h2>
-            <button onClick={() => openDialog('customer')} className={addButtonClass}>
-              <PlusIcon aria-hidden="true" className="h-4 w-4" />
-              <Trans>New customer</Trans>
+  // The project filter; actions edit and delete the selected project
+  const projectFilter = (actions) => (
+    <div className="flex flex-wrap items-center gap-2">
+      <div ref={projectGroup} tabIndex={-1} role="group" aria-label={t`Projects`} className="flex flex-wrap items-center gap-2">
+        {projects.length > 0 && (
+          <button onClick={() => setSelectedProjectId(null)} aria-pressed={!selectedProject} className={chipClass(!selectedProject)}>
+            <Trans>All projects</Trans>
+          </button>
+        )}
+        {projects.map((project) => {
+          const selected = project.id === selectedProjectId
+          return (
+            <button
+              key={project.id}
+              onClick={() => setSelectedProjectId((current) => (current === project.id ? null : project.id))}
+              aria-pressed={selected}
+              className={chipClass(selected)}
+            >
+              {project.name}
+              <span className={selected ? 'font-normal text-white/90' : 'text-muted'}>{formatRate(i18n, project.hourly_rate)}</span>
             </button>
-          </div>
-          <EditableList
-            label={t`Customers`}
-            items={customers}
-            selectedId={selectedCustomerId}
-            onSelect={(customer) => setSelectedCustomerId(customer.id)}
-            renderItem={(customer) => customer.name}
-            form={customerForm}
-            onUpdate={updateCustomer}
-            onDelete={deleteCustomer}
-            deleteMessage={({ name: customerName }) => t`Delete ${customerName} and all its projects and time entries?`}
-            messages={customerMessages}
-          />
-        </div>
+          )
+        })}
+        <button
+          onClick={() => openDialog('project')}
+          className="inline-flex min-h-[2.5rem] items-center gap-1.5 rounded-full border border-dashed border-line-strong px-3.5 text-sm text-ink hover:bg-surface"
+        >
+          <PlusIcon aria-hidden="true" className="h-4 w-4" />
+          <Trans>New project</Trans>
+        </button>
+      </div>
+      {actions && <div className="ml-auto flex gap-1">{actions}</div>}
+    </div>
+  )
 
-        {/* Projects Section */}
-        <div className="bg-white rounded-lg shadow p-6">
-          <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
-            <h2 className="text-lg font-bold"><Trans>Projects</Trans></h2>
-            {selectedCustomer && (
-              <button onClick={() => openDialog('project')} className={addButtonClass}>
-                <PlusIcon aria-hidden="true" className="h-4 w-4" />
-                <Trans>New project</Trans>
-              </button>
-            )}
-          </div>
-          {selectedCustomer ? (
-            <>
-              <EditableList
-                label={t`Projects`}
-                items={projects}
-                selectedId={selectedProjectId}
-                onSelect={(project) => setSelectedProjectId((current) => (current === project.id ? null : project.id))}
-                renderItem={(project, selected) => (
-                  <>
-                    <div>{project.name}</div>
-                    <div className={`text-xs ${selected ? 'text-blue-100' : 'text-gray-600'}`}>{formatRate(i18n, project.hourly_rate)}</div>
-                  </>
-                )}
+  return (
+    <div className="flex flex-1 flex-col lg:flex-row">
+      <aside
+        aria-labelledby={customersHeadingId}
+        className="border-b border-line bg-surface p-4 lg:w-72 lg:shrink-0 lg:border-b-0 lg:border-r lg:py-6"
+      >
+        <div className="mb-3 flex items-center justify-between gap-2 px-2">
+          <h2 id={customersHeadingId} className={ui.eyebrow}><Trans>Customers</Trans></h2>
+          <button onClick={() => openDialog('customer')} title={t`New customer`} className={`${ui.iconButton} border border-line`}>
+            <PlusIcon aria-hidden="true" className="h-4 w-4" />
+          </button>
+        </div>
+        <ul ref={customerList} tabIndex={-1} aria-label={t`Customers`} className="flex flex-wrap gap-1 lg:flex-col">
+          {customers.map((customer) => {
+            const selected = customer.id === selectedCustomerId
+            const running = customer.id === timer.activeEntry?.customer_id
+            return (
+              <li key={customer.id} className="lg:w-full">
+                <button
+                  onClick={() => setSelectedCustomerId(customer.id)}
+                  aria-pressed={selected}
+                  className={`flex min-h-[2.75rem] w-full items-center gap-2.5 rounded-lg px-3 text-left text-[0.9375rem] ${
+                    selected ? 'bg-accent-soft font-semibold text-accent-dark' : 'text-ink hover:bg-paper'
+                  }`}
+                >
+                  <span className="flex-1 truncate">{customer.name}</span>
+                  {running && (
+                    <>
+                      <span aria-hidden="true" className="h-2 w-2 shrink-0 rounded-full bg-danger" />
+                      <span className="sr-only"><Trans>, timer running</Trans></span>
+                    </>
+                  )}
+                </button>
+              </li>
+            )
+          })}
+        </ul>
+      </aside>
+
+      <div className="flex min-w-0 flex-1 flex-col gap-5 p-4 sm:p-8">
+        {selectedCustomer ? (
+          <>
+            <EditableRecord
+              key={selectedCustomer.id}
+              item={selectedCustomer}
+              form={customerForm}
+              onUpdate={updateCustomer}
+              onDelete={deleteCustomer}
+              deleteMessage={({ name: customerName }) => t`Delete ${customerName} and all its projects and time entries?`}
+              messages={customerMessages}
+              onDeleted={() => customerList.current?.focus()}
+            >
+              {(actions) => (
+                <div className="flex flex-wrap items-end gap-3">
+                  <div className="min-w-0 flex-1">
+                    <h1 className="font-serif text-4xl font-semibold leading-tight">{selectedCustomer.name}</h1>
+                    {selectedCustomer.email && <p className="text-sm text-muted">{selectedCustomer.email}</p>}
+                  </div>
+                  <div className="flex gap-1">{actions}</div>
+                </div>
+              )}
+            </EditableRecord>
+
+            {selectedProject ? (
+              <EditableRecord
+                key={selectedProject.id}
+                item={selectedProject}
                 form={projectForm}
                 onUpdate={updateProject}
                 onDelete={deleteProject}
                 deleteMessage={({ name: projectName }) => t`Delete ${projectName} and all its time entries?`}
                 messages={projectMessages}
-              />
-              <ErrorMessage message={projectError} />
-            </>
-          ) : (
-            <p className="text-gray-500"><Trans>Select a customer</Trans></p>
-          )}
-        </div>
+                onDeleted={() => projectGroup.current?.focus()}
+              >
+                {projectFilter}
+              </EditableRecord>
+            ) : (
+              projectFilter(null)
+            )}
+            <ErrorMessage message={projectError} />
+          </>
+        ) : (
+          <>
+            <h1 className="sr-only"><Trans>Dashboard</Trans></h1>
+            <p className="text-muted"><Trans>Select a customer</Trans></p>
+          </>
+        )}
 
-        {/* Timer Section */}
-        <div className="bg-white rounded-lg shadow p-6">
+        <div className="grid gap-5 xl:grid-cols-[minmax(0,26rem)_minmax(0,1fr)]">
           <Timer
             project={selectedProject}
             activeEntry={timer.activeEntry}
-            onStart={withEntriesRefresh((description) => timer.start(selectedProject, description))}
-            onStop={withEntriesRefresh(timer.stop)}
+            onStart={(description) => timer.start(selectedProject, description, selectedCustomer)}
+            onStop={timer.stop}
             error={timer.error}
           />
+          {selectedCustomer && (
+            <MonthSummary entries={entries} projects={projects} onOpenReport={() => onOpenReport(selectedCustomer.id)} />
+          )}
         </div>
+
+        {/* All entries of the customer, or only those of the selected project */}
+        {selectedCustomer && (
+          <section aria-labelledby={entriesHeadingId} className={`${ui.card} flex flex-col gap-4`}>
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <h2 id={entriesHeadingId} className="text-lg font-semibold"><Trans>Entries for {entriesOf}</Trans></h2>
+              {projects.length > 0 && (
+                <button onClick={() => openDialog('entry')} className={ui.buttonSecondary}>
+                  <PlusIcon aria-hidden="true" className="h-4 w-4" />
+                  <Trans>Add time</Trans>
+                </button>
+              )}
+            </div>
+            <ErrorMessage message={entriesError} />
+            <EntriesList entries={visibleEntries} projects={projects} onUpdate={updateEntry} onDelete={deleteEntry} />
+          </section>
+        )}
       </div>
 
-      {/* Entries List */}
-      {/* All entries of the customer, or only those of the selected project */}
-      {selectedCustomer && (
-        <div className="bg-white rounded-lg shadow p-6 space-y-4">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <h2 className="text-lg font-bold"><Trans>Entries for {entriesOf}</Trans></h2>
-            {projects.length > 0 && (
-              <button onClick={() => openDialog('entry')} className={addButtonClass}>
-                <PlusIcon aria-hidden="true" className="h-4 w-4" />
-                <Trans>Add time</Trans>
-              </button>
-            )}
-          </div>
-          <ErrorMessage message={entriesError} />
-          <EntriesList entries={visibleEntries} projects={projects} onUpdate={updateEntry} onDelete={deleteEntry} />
-        </div>
-      )}
-    </div>
-
-      {/* Outside the space-y container, whose margins would pull the dialogs off center */}
       <Modal title={t`New customer`} open={dialog === 'customer'} onClose={closeDialog}>
         <RecordForm fields={customerFields} initialValues={{ name: '', email: '' }} submitLabel={t`Save`}
           onSubmit={addCustomer} onCancel={closeDialog} error={addError} />
@@ -282,7 +352,7 @@ function Dashboard({ customers, onCustomersChange, timer }) {
         <EntryForm projects={projects} projectId={selectedProjectId ?? projects[0]?.id} submitLabel={t`Save`}
           onSubmit={addEntry} onCancel={closeDialog} error={addError} />
       </Modal>
-    </>
+    </div>
   )
 }
 
