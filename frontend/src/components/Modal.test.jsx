@@ -5,7 +5,7 @@ import userEvent from '@testing-library/user-event'
 import { axe } from '../test/axe'
 import Modal from './Modal'
 
-// Opens the modal from a button, like the Dashboard does
+// Opens the modal from a button, like the Time tracking page does
 function Harness({ onClose = () => {} }) {
   const [open, setOpen] = useState(false)
   const close = () => {

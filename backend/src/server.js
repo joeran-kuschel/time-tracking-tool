@@ -7,6 +7,7 @@ const customerRoutes = require('./routes/customers');
 const projectRoutes = require('./routes/projects');
 const timeEntryRoutes = require('./routes/timeEntries');
 const reportRoutes = require('./routes/reports');
+const dashboardRoutes = require('./routes/dashboard');
 const { redactConnectionString } = require('./config/redact');
 
 const app = express();
@@ -22,6 +23,7 @@ app.use('/api/customers', customerRoutes);
 app.use('/api/projects', projectRoutes);
 app.use('/api/time-entries', timeEntryRoutes);
 app.use('/api/reports', reportRoutes);
+app.use('/api/dashboard', dashboardRoutes);
 
 // Health check
 app.get('/health', (req, res) => {

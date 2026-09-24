@@ -5,8 +5,8 @@ The UI has to meet WCAG 2.2 level AA (see `CLAUDE.md`). This chapter lists what 
 ## In place
 
 - **Landmarks:** header, navigation (`<nav>`, *Main*), main content (`<main>`), the customer sidebar (`<aside>`) and
-  the running timer (a region named *Running timer*). Each page has one `<h1>`: the customer's name on the Dashboard
-  (visually hidden *Dashboard* without a customer), a visually hidden *Reports* on the Reports page.
+  the running timer (a region named *Running timer*). Each page has one `<h1>`: *Dashboard* on the Dashboard, the customer's name on the Time tracking page
+  (visually hidden *Time tracking* without a customer), a visually hidden *Reports* on the Reports page.
 - **Navigation:** the current page is marked with `aria-current="page"` and an underline, not only by color.
 - **Language:** `<html lang>` follows the current language; the language buttons carry their own `lang`. See
   [Languages](languages.md).
@@ -16,6 +16,9 @@ The UI has to meet WCAG 2.2 level AA (see `CLAUDE.md`). This chapter lists what 
 - **Status and errors:** starting and stopping the timer is announced once through a status region; errors use
   `role="alert"`. On the Reports page, the month name is a polite live region, so the arrow buttons announce the new
   month. See [Error messages](error-messages.md).
+- **Dashboard:** the *Track time* tabs follow the WAI-ARIA tabs pattern (arrow keys, Home, End); the chart is one tab
+  stop whose bars are read with the arrow keys into a polite live region, and a visually hidden table lists the same
+  values; **Preview PDF** links say that they open a new tab. See [Dashboard](dashboard.md).
 - **Labels:** all fields have visible labels (`RecordForm`, the timer, the Reports page); edit forms are grouped with a
   legend such as *Edit customer*. The month buttons on the Reports page are a group named *Month*.
   Validation errors mark their field with `aria-invalid` and are linked with `aria-describedby`.

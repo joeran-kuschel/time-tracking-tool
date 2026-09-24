@@ -1,4 +1,4 @@
-// Locale-aware formatting of hours, amounts and times, shared by the dashboard and the report.
+// Locale-aware formatting of hours, amounts and times, shared by the time tracking page and the report.
 export function hoursBetween(startTime, endTime) {
   if (!endTime) return 0
   return (new Date(endTime) - new Date(startTime)) / (1000 * 60 * 60)

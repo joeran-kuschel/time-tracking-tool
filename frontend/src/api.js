@@ -27,6 +27,9 @@ async function request(path, { method = 'GET', body } = {}) {
   return data;
 }
 
+const pdfUrl = (customerId, month, year, locale) =>
+  `${API_URL}/reports/customer/${customerId}/pdf?month=${month}&year=${year}&lang=${locale}`;
+
 export const api = {
   // Customers
   getCustomers: () => request('/customers'),
@@ -72,10 +75,20 @@ export const api = {
   getMonthlyReport: (customerId, month, year) =>
     request(`/reports/customer/${customerId}?month=${month}&year=${year}`),
 
+  // status: 'draft', 'ready' or 'sent'
+  setReportStatus: (customerId, month, year, status) =>
+    request(`/reports/customer/${customerId}/status`, { method: 'PUT', body: { month, year, status } }),
+
+  // The PDF shown in the browser instead of downloaded
+  pdfPreviewUrl: (customerId, month, year, locale) => `${pdfUrl(customerId, month, year, locale)}&inline=1`,
+
+  // Dashboard: entries starting in [from, to), recent entries, all projects and last month's report statuses
+  getDashboard: (from, to, month, year) =>
+    request(`/dashboard?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}&month=${month}&year=${year}`),
+
   downloadPDF: async (customerId, month, year, locale) => {
-    const url = `${API_URL}/reports/customer/${customerId}/pdf?month=${month}&year=${year}&lang=${locale}`;
     const link = document.createElement('a');
-    link.href = url;
+    link.href = pdfUrl(customerId, month, year, locale);
     link.download = `abrechnung-${year}-${month}.pdf`;
     document.body.appendChild(link);
     link.click();

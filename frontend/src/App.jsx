@@ -10,19 +10,23 @@ import LanguageSwitcher from './components/LanguageSwitcher'
 import RunningTimer from './components/RunningTimer'
 import ThemeSwitcher from './components/ThemeSwitcher'
 import Dashboard from './pages/Dashboard'
+import TimeTracking from './pages/TimeTracking'
 import Reports from './pages/Reports'
 import { ui } from './ui'
 import './App.css'
 
 const pages = [
   { id: 'dashboard', label: msg`Dashboard` },
+  { id: 'time-tracking', label: msg`Time tracking` },
   { id: 'reports', label: msg`Reports` },
 ]
 
 function App() {
   const [currentPage, setCurrentPage] = useState('dashboard')
-  // The customer the Reports page opens with, set by "Open report" on the Dashboard
-  const [reportCustomerId, setReportCustomerId] = useState(null)
+  // What the Reports page opens with: { customerId, month, year }, set by "Open report" on another page
+  const [reportSelection, setReportSelection] = useState({})
+  // What the Time tracking page opens with: { customerId, projectId }, set from the dashboard
+  const [trackingSelection, setTrackingSelection] = useState({})
   const [customers, setCustomers] = useState([])
   const [loading, setLoading] = useState(true)
   const [run, error] = useAction()
@@ -46,9 +50,14 @@ function App() {
     if (await timer.stop()) main.current?.focus()
   }
 
-  const openReport = (customerId) => {
-    setReportCustomerId(customerId)
+  const openReport = (customerId = null, month, year) => {
+    setReportSelection({ customerId, month, year })
     setCurrentPage('reports')
+  }
+
+  const openTimeTracking = (customerId, projectId = null) => {
+    setTrackingSelection({ customerId, projectId })
+    setCurrentPage('time-tracking')
   }
 
   const announcedProject = timer.announcement?.projectName
@@ -98,15 +107,30 @@ function App() {
             </button>
           </div>
         )}
-        {/* On the Dashboard, the timer panel shows the timer's errors */}
-        {currentPage !== 'dashboard' && timer.error && (
+        {/* On the Dashboard and the Time tracking page, the timer panel shows the timer's errors */}
+        {currentPage === 'reports' && timer.error && (
           <div className="mx-4 mt-4 sm:mx-8"><ErrorMessage message={timer.error} /></div>
         )}
         {currentPage === 'dashboard' && (
-          <Dashboard customers={customers} onCustomersChange={loadCustomers} timer={timer} onOpenReport={openReport} />
+          <Dashboard timer={timer} onOpenTimeTracking={openTimeTracking} onOpenReports={openReport} />
+        )}
+        {currentPage === 'time-tracking' && (
+          <TimeTracking
+            customers={customers}
+            onCustomersChange={loadCustomers}
+            timer={timer}
+            onOpenReport={openReport}
+            initialCustomerId={trackingSelection.customerId}
+            initialProjectId={trackingSelection.projectId}
+          />
         )}
         {currentPage === 'reports' && (
-          <Reports customers={customers} initialCustomerId={reportCustomerId} />
+          <Reports
+            customers={customers}
+            initialCustomerId={reportSelection.customerId}
+            initialMonth={reportSelection.month}
+            initialYear={reportSelection.year}
+          />
         )}
       </main>
 

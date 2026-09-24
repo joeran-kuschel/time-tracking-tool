@@ -1,7 +1,7 @@
 # Design
 
 The look of the UI: colors, the light and dark theme, type, shared styles and the page layout. The layout and the dark
-theme were drafted on a design canvas (Dashboard, Reports, Dashboard on a phone, each light and dark) and then built into
+theme were drafted on a design canvas (Time tracking, Reports, Time tracking on a phone, each light and dark) and then built into
 the frontend.
 
 ## Colors
@@ -60,10 +60,12 @@ focus ring (`:focus-visible`, 2 px `accent`) for every control.
 
 ## Layout
 
-- **Header** (every page): app name, the page navigation (*Dashboard*, *Reports*), the running timer with its own
+- **Header** (every page): app name, the page navigation (*Dashboard*, *Time tracking*, *Reports*), the running timer with its own
   **Stop** button, and the language switch. See [Timer](timer.md).
-- **Dashboard:** customers in a sidebar on the left; to the right the selected customer's name, the project filter,
-  the timer and the month summary side by side, and the entries below. See [Dashboard](dashboard.md).
+- **Dashboard:** track time next to four key figures, the hours chart next to hours per customer, the billing table
+  next to the recent entries. See [Dashboard](dashboard.md).
+- **Time tracking:** customers in a sidebar on the left; to the right the selected customer's name, the project filter,
+  the timer and the month summary side by side, and the entries below. See [Time tracking](time-tracking.md).
 - **Reports:** customer and month above a report card with figures, the entries table and totals. See
   [Reports](reports.md).
 

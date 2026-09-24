@@ -13,19 +13,29 @@ const cell = 'px-3 py-3 border-b border-line-soft'
 const headCell = 'px-3 py-2.5 border-b border-ink text-sm font-medium text-muted'
 const footCell = 'px-3 py-3.5 border-t border-ink font-semibold'
 
+const statuses = [
+  { value: 'draft', label: msg`Draft` },
+  { value: 'ready', label: msg`Ready to send` },
+  { value: 'sent', label: msg`Sent` },
+]
+
 // A customer's month: the report loads as soon as customer or month change.
-// initialCustomerId preselects a customer, e.g. from "Open report" on the Dashboard.
-function Reports({ customers, initialCustomerId = null }) {
+// initialCustomerId, initialMonth and initialYear preselect them, e.g. from "Open report" on another page;
+// without a month, the current one opens.
+function Reports({ customers, initialCustomerId = null, initialMonth, initialYear }) {
   const [customerId, setCustomerId] = useState(initialCustomerId)
   const [period, setPeriod] = useState(() => {
+    if (initialMonth && initialYear) return { year: initialYear, month: initialMonth }
     const today = new Date()
     return { year: today.getFullYear(), month: today.getMonth() + 1 }
   })
   const [report, setReport] = useState(null)
   const [loading, setLoading] = useState(false)
   const [run, error] = useAction()
+  const [runStatus, statusError] = useAction()
   const { t, i18n } = useLingui()
   const customerFieldId = useId()
+  const statusFieldId = useId()
   const monthLabelId = useId()
   const reportHeadingId = useId()
 
@@ -54,6 +64,14 @@ function Reports({ customers, initialCustomerId = null }) {
     } catch (err) {
       console.error('Failed to download PDF:', err)
     }
+  }
+
+  const changeStatus = async (status) => {
+    const saved = await runStatus(
+      () => api.setReportStatus(customerId, period.month, period.year, status),
+      msg`Report status could not be saved.`
+    )
+    if (saved) setReport((current) => ({ ...current, status: saved.status }))
   }
 
   const customer = customers.find((c) => c.id === customerId)
@@ -96,6 +114,20 @@ function Reports({ customers, initialCustomerId = null }) {
         </div>
 
         {hasEntries && (
+          <div>
+            <label htmlFor={statusFieldId} className={ui.label}><Trans>Status</Trans></label>
+            <select
+              id={statusFieldId}
+              value={report.status ?? 'draft'}
+              onChange={(e) => changeStatus(e.target.value)}
+              className={`${ui.input} w-48`}
+            >
+              {statuses.map((s) => <option key={s.value} value={s.value}>{i18n._(s.label)}</option>)}
+            </select>
+          </div>
+        )}
+
+        {hasEntries && (
           <button onClick={handleDownloadPDF} className={`${ui.buttonPrimary} ml-auto min-h-[2.75rem]`}>
             <ArrowDownTrayIcon aria-hidden="true" className="h-5 w-5" />
             <Trans>Download PDF</Trans>
@@ -104,6 +136,7 @@ function Reports({ customers, initialCustomerId = null }) {
       </div>
 
       <ErrorMessage message={error} />
+      <ErrorMessage message={statusError} />
       {!customerId && <p className="text-muted"><Trans>Select a customer to see the report.</Trans></p>}
       {loading && <p className="text-muted"><Trans>Loading...</Trans></p>}
 

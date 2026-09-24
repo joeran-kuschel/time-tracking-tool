@@ -112,3 +112,37 @@ describe('TimeEntry.getByCustomerId', () => {
     expect(entries.map((e) => e.project_name)).toEqual(['App', 'Website', 'Website']);
   });
 });
+
+describe('TimeEntry.getInRange and getRecent', () => {
+  let projectId;
+
+  beforeEach(async () => {
+    mockPool = createTestPool();
+    projectId = await createProject();
+  });
+
+  test('returns the entries of all customers that start in the range, with project, rate and customer', async () => {
+    await TimeEntry.create(projectId, '2026-08-31T23:00:00Z', '2026-09-01T00:30:00Z', 'vorher');
+    await TimeEntry.create(projectId, '2026-09-02T08:00:00Z', '2026-09-02T09:00:00Z', 'zweiter');
+    await TimeEntry.create(projectId, '2026-09-01T08:00:00Z', null, 'läuft');
+    await TimeEntry.create(projectId, '2026-10-01T00:00:00Z', '2026-10-01T01:00:00Z', 'danach');
+
+    const entries = await TimeEntry.getInRange('2026-09-01T00:00:00Z', '2026-10-01T00:00:00Z');
+
+    expect(entries.map((e) => e.description)).toEqual(['läuft', 'zweiter']);
+    expect(entries[0]).toMatchObject({ project_name: 'Projekt', customer_name: 'Kunde' });
+    expect(entries[0]).toHaveProperty('hourly_rate');
+  });
+
+  test('returns the latest finished entries, newest first, up to the limit', async () => {
+    for (let day = 1; day <= 4; day++) {
+      await TimeEntry.create(projectId, `2026-09-0${day}T08:00:00Z`, `2026-09-0${day}T09:00:00Z`, `Tag ${day}`);
+    }
+    await TimeEntry.create(projectId, '2026-09-05T08:00:00Z', null, 'läuft');
+
+    const recent = await TimeEntry.getRecent(3);
+
+    expect(recent.map((e) => e.description)).toEqual(['Tag 4', 'Tag 3', 'Tag 2']);
+    expect(recent[0].customer_name).toBe('Kunde');
+  });
+});

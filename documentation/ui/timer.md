@@ -1,6 +1,6 @@
 # Timer
 
-The timer on the Dashboard tracks working time for one project at a time.
+The timer on the Time tracking page tracks working time for one project at a time.
 
 ## Starting and stopping
 
@@ -22,7 +22,7 @@ description and can't be edited.
   time and its own **Stop** button. Stopping there works on every page; afterwards focus moves to the page content,
   because the button disappears with the timer. On narrow screens the customer is left out.
 - The timer panel shows *Läuft seit 10:02* (*Running since 10:02*) while the timer runs.
-- After a reload, the Dashboard selects the customer and project of the running timer.
+- After a reload, the Time tracking page selects the customer and project of the running timer.
 
 ## Only one timer at a time
 

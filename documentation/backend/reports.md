@@ -9,7 +9,8 @@ All paths are under `/api/reports`.
 | Method | Path | Purpose |
 |---|---|---|
 | `GET` | `/customer/:customerId?month=M&year=YYYY` | The report as JSON |
-| `GET` | `/customer/:customerId/pdf?month=M&year=YYYY&lang=de\|en` | The report as a PDF download |
+| `GET` | `/customer/:customerId/pdf?month=M&year=YYYY&lang=de\|en` | The report as a PDF download; with `&inline=1` the browser shows it instead (the Dashboard's **Preview PDF**) |
+| `PUT` | `/customer/:customerId/status` | Sets the report status, see below |
 
 `month` (1–12) and `year` are required (`400` otherwise).
 
@@ -22,13 +23,15 @@ All paths are under `/api/reports`.
   "year": 2026,
   "entries": [{ "id": 1, "start_time": "…", "end_time": "…", "description": "…",
                 "project_name": "Website", "hourly_rate": "80.00", "customer_name": "Muster GmbH", "customer_id": 1 }],
-  "totalHours": "1.50"
+  "totalHours": "1.50",
+  "status": "draft"
 }
 ```
 
 - Entries are all entries of the customer's projects whose **start time** lies in the month, newest first.
 - Running entries (no `end_time`) are included and count as 0 hours.
 - `totalHours` is a string with two decimals.
+- `status` is the report status of that customer and month.
 
 ## PDF report
 
@@ -38,6 +41,18 @@ All paths are under `/api/reports`.
 - The file name follows the language too: `time-report-<customer>-<year>-<month>.pdf` or
   `abrechnung-<customer>-<year>-<month>.pdf`.
 - `404` if the customer doesn't exist or has no entries in the month.
+
+## Report status
+
+Each customer's monthly report has a status: `draft`, `ready` or `sent`. It is set by hand on the Reports page and
+counted on the Dashboard (*Reports sent*).
+
+`PUT /api/reports/customer/:customerId/status` with `{ "month": 8, "year": 2026, "status": "sent" }` stores it and
+answers `{ "customer_id": 1, "year": 2026, "month": 8, "status": "sent" }`. `400` for a missing or invalid month, year
+or status; `404` for an unknown customer.
+
+Stored in the table `report_status` (migration `002_report_status.sql`, see [Database](database.md)). A month without a
+row is a `draft`. The status is deleted with its customer.
 
 ## Limits
 
@@ -50,5 +65,6 @@ All paths are under `/api/reports`.
 ## Code
 
 `backend/src/routes/reports.js`, `controllers/reportController.js`, `utils/pdfGenerator.js`,
-`models/TimeEntry.js` (`getByCustomerIdAndMonth`). Tests: `tests/pdfGenerator.test.js`,
+`models/TimeEntry.js` (`getByCustomerIdAndMonth`), `models/ReportStatus.js`, `utils/period.js`. Tests:
+`tests/reportStatus.model.test.js`, `tests/pdfGenerator.test.js`,
 `tests/pdfGenerator.real.test.js`, `tests/reportController.test.js`.

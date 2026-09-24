@@ -5,13 +5,14 @@ instead.
 
 ## Schema
 
-Defined in `backend/migrations/001_init_schema.sql`:
+Defined in `backend/migrations/001_init_schema.sql` and `002_report_status.sql`:
 
 | Table | Columns | Relations |
 |---|---|---|
 | `customers` | `id`, `name`, `email`, `created_at`, `updated_at` | |
 | `projects` | `id`, `customer_id`, `name`, `hourly_rate` (decimal 10,2, default 0), `created_at`, `updated_at` | `customer_id` → `customers`, `ON DELETE CASCADE` |
 | `time_entries` | `id`, `project_id`, `start_time`, `end_time` (null while running), `description`, `created_at`, `updated_at` | `project_id` → `projects`, `ON DELETE CASCADE` |
+| `report_status` | `customer_id`, `year`, `month` (1–12), `status` (`draft`, `ready` or `sent`), `updated_at`; primary key `(customer_id, year, month)` | `customer_id` → `customers`, `ON DELETE CASCADE` |
 
 Indexes: `projects(customer_id)`, `time_entries(project_id)`, `time_entries(start_time)`.
 
@@ -20,7 +21,10 @@ Indexes: `projects(customer_id)`, `time_entries(project_id)`, `time_entries(star
 - In the cluster, Postgres runs the files from the `postgres-init-scripts` ConfigMap on its **first** start with an
   empty volume. `k8s/generate-init-scripts.sh` generates that ConfigMap (`k8s/postgres-init-scripts.yaml`) from
   `backend/migrations/`. Run it after every change to a migration; a test fails if the two differ.
-- An existing volume doesn't run new migrations; apply them by hand.
+- An existing volume doesn't run new migrations; apply them by hand. The migrations use `IF NOT EXISTS`, so running
+  one twice does no harm. For the in-cluster database, back up first (`k8s/backup-db.sh`), then:
+  `kubectl -n time-tracking exec -i deploy/postgres -- psql -U <user> -d <database> < backend/migrations/002_report_status.sql`
+  (user and database from the Secret `postgres-secret`).
 - Docker Compose mounts `backend/migrations/` directly as init scripts.
 
 ## Connection

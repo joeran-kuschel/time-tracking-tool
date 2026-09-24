@@ -54,6 +54,7 @@ describe('api', () => {
     ['updateTimeEntry', [5, { endTime: 'e', startTime: 's' }], '/time-entries/5', 'PATCH', { endTime: 'e', startTime: 's' }],
     ['deleteTimeEntry', [5], '/time-entries/5', 'DELETE', undefined],
     ['createTimeEntry', [7, 's', 'Konzept', 'e'], '/time-entries', 'POST', { projectId: 7, startTime: 's', description: 'Konzept', endTime: 'e' }],
+    ['setReportStatus', [1, 8, 2026, 'sent'], '/reports/customer/1/status', 'PUT', { month: 8, year: 2026, status: 'sent' }],
   ])('%s calls %s', async (name, args, path, method, body) => {
     const fetch = mockFetch(200, { id: 1 })
     await api[name](...args)
@@ -73,6 +74,19 @@ describe('api', () => {
     expect(append.mock.calls[0][0].href).toMatch(/\/reports\/customer\/1\/pdf\?month=9&year=2026&lang=en$/)
     expect(click).toHaveBeenCalled()
     vi.restoreAllMocks()
+  })
+
+  test('builds the URL of the PDF preview', () => {
+    expect(api.pdfPreviewUrl(1, 9, 2026, 'de')).toMatch(/\/reports\/customer\/1\/pdf\?month=9&year=2026&lang=de&inline=1$/)
+  })
+
+  test('asks for the dashboard of a range and month', async () => {
+    const fetch = mockFetch(200, {})
+    await api.getDashboard('2026-08-31T22:00:00.000Z', '2026-09-30T22:00:00.000Z', 9, 2026)
+
+    expect(fetch.mock.calls[0][0]).toMatch(
+      /\/dashboard\?from=2026-08-31T22%3A00%3A00\.000Z&to=2026-09-30T22%3A00%3A00\.000Z&month=9&year=2026$/
+    )
   })
 
   test('throws an ApiError with status and backend message on error responses', async () => {

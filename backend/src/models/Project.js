@@ -9,6 +9,17 @@ class Project {
     return result.rows;
   }
 
+  // All projects with their customer's name, ordered by customer, then project
+  static async getAllWithCustomer() {
+    const result = await pool.query(
+      `SELECT p.*, c.name as customer_name
+       FROM projects p
+       JOIN customers c ON p.customer_id = c.id
+       ORDER BY c.name, p.name`
+    );
+    return result.rows;
+  }
+
   static async getById(id) {
     const result = await pool.query('SELECT * FROM projects WHERE id = $1', [id]);
     return result.rows[0];

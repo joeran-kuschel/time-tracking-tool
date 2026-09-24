@@ -31,3 +31,21 @@ describe('Project.update', () => {
     expect(await Project.update(9999, 'Website', 80)).toBeUndefined();
   });
 });
+
+describe('Project.getAllWithCustomer', () => {
+  beforeEach(() => {
+    mockPool = createTestPool();
+  });
+
+  test('returns all projects with their customer, ordered by customer and project', async () => {
+    const berger = await mockPool.query("INSERT INTO customers (name) VALUES ('Berger') RETURNING id");
+    const anders = await mockPool.query("INSERT INTO customers (name) VALUES ('Anders') RETURNING id");
+    await Project.create(berger.rows[0].id, 'Website', 85);
+    await Project.create(anders.rows[0].id, 'Shop', 90);
+    await Project.create(anders.rows[0].id, 'App', 95);
+
+    const projects = await Project.getAllWithCustomer();
+
+    expect(projects.map((p) => `${p.customer_name} · ${p.name}`)).toEqual(['Anders · App', 'Anders · Shop', 'Berger · Website']);
+  });
+});

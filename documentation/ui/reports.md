@@ -10,7 +10,14 @@ The **Reports** page (German: **Berichte**) shows a customer's time entries of o
 3. **Download PDF** downloads the same report as a PDF, in the language the UI currently uses. It is only shown when the
    month has entries. See [Reports API](../backend/reports.md).
 
-**Open report** in the Dashboard's month summary opens this page with that customer already selected.
+4. **Status** (*Draft*, *Ready to send*, *Sent*; German: *Entwurf*, *Bereit zum Versand*, *Verschickt*) records where
+   the report of this customer and month stands. Changing it saves right away; if saving fails, the select keeps the
+   old status and an error shows. Only shown when the month has entries. The Dashboard counts the sent reports of the
+   previous month and lists the others. See [Reports API](../backend/reports.md#report-status).
+
+**Open report** in the month summary on the Time tracking page opens this page with that customer already selected.
+On the Dashboard, **Monthly reports** opens it without a customer, and **Open report** in the billing notice opens it
+with the customer and last month selected.
 
 While a report loads, the previous one is hidden and the page says *Loading...*, so an old report never shows under a
 new customer or month.

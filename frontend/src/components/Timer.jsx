@@ -9,7 +9,8 @@ import ErrorMessage from './ErrorMessage'
 // Shows the running timer, or a start form for the selected project.
 // It stays mounted without a project, and Start and Stop are the same button element,
 // so focus survives starting and stopping. The app announces both (useActiveEntry).
-function Timer({ project, activeEntry, onStart, onStop, error }) {
+// bare: without card and "Timer" heading, for a place that already names it (the dashboard's Timer tab).
+function Timer({ project, activeEntry, onStart, onStop, error, bare = false }) {
   const [description, setDescription] = useState('')
   const { t, i18n } = useLingui()
   const headingId = useId()
@@ -29,17 +30,23 @@ function Timer({ project, activeEntry, onStart, onStop, error }) {
   const projectName = trackedProject ?? selectedProject
   const since = isRunning ? formatClock(i18n, activeEntry.start_time) : null
 
+  const Wrapper = bare ? 'div' : 'section'
   return (
-    <section aria-labelledby={headingId} className={`${ui.card} flex flex-col gap-4`}>
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <h2 id={headingId} className={ui.eyebrow}><Trans>Timer</Trans></h2>
-        {isRunning && (
-          <p className="flex items-center gap-1.5 text-sm font-semibold text-danger">
-            <span aria-hidden="true" className="h-2 w-2 rounded-full bg-danger" />
-            <Trans>Running since {since}</Trans>
-          </p>
-        )}
-      </div>
+    <Wrapper
+      aria-labelledby={bare ? undefined : headingId}
+      className={`${bare ? '' : ui.card} flex flex-col gap-4`}
+    >
+      {(!bare || isRunning) && (
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          {!bare && <h2 id={headingId} className={ui.eyebrow}><Trans>Timer</Trans></h2>}
+          {isRunning && (
+            <p className="flex items-center gap-1.5 text-sm font-semibold text-danger">
+              <span aria-hidden="true" className="h-2 w-2 rounded-full bg-danger" />
+              <Trans>Running since {since}</Trans>
+            </p>
+          )}
+        </div>
+      )}
 
       {projectName && <h3 className="text-lg font-semibold">{projectName}</h3>}
 
@@ -91,7 +98,7 @@ function Timer({ project, activeEntry, onStart, onStop, error }) {
       </div>
 
       <ErrorMessage message={error} />
-    </section>
+    </Wrapper>
   )
 }
 

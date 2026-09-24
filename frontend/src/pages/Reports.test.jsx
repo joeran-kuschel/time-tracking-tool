@@ -8,7 +8,7 @@ import { switchLocale } from '../i18n'
 
 vi.mock('../api', async (importOriginal) => ({
   ...(await importOriginal()),
-  api: { getMonthlyReport: vi.fn(), downloadPDF: vi.fn() },
+  api: { getMonthlyReport: vi.fn(), downloadPDF: vi.fn(), setReportStatus: vi.fn() },
 }))
 
 const customers = [{ id: 1, name: 'Muster GmbH' }, { id: 2, name: 'Neu AG' }]
@@ -61,6 +61,48 @@ describe('Reports', () => {
     expect(screen.getByLabelText('Kunde')).toHaveValue('2')
     expect(await screen.findByRole('heading', { name: 'Abrechnung Neu AG – September 2026' })).toBeInTheDocument()
     expect(api.getMonthlyReport).toHaveBeenCalledWith(2, 9, 2026)
+  })
+
+  test('opens with the month it is given', async () => {
+    api.getMonthlyReport.mockResolvedValue(report)
+    render(<Reports customers={customers} initialCustomerId={1} initialMonth={8} initialYear={2026} />)
+
+    expect(screen.getByRole('group', { name: 'Monat' })).toHaveTextContent('August 2026')
+    expect(api.getMonthlyReport).toHaveBeenCalledWith(1, 8, 2026)
+  })
+
+  test('shows the status of the report and saves a new one', async () => {
+    api.getMonthlyReport.mockResolvedValue({ ...report, status: 'ready' })
+    api.setReportStatus.mockResolvedValue({ customer_id: 1, month: 9, year: 2026, status: 'sent' })
+    render(<Reports customers={customers} initialCustomerId={1} />)
+    const status = await screen.findByLabelText('Status')
+    expect(status).toHaveValue('ready')
+    expect([...status.options].map((o) => o.textContent)).toEqual(['Entwurf', 'Bereit zum Versand', 'Verschickt'])
+
+    await userEvent.selectOptions(status, 'Verschickt')
+
+    expect(api.setReportStatus).toHaveBeenCalledWith(1, 9, 2026, 'sent')
+    expect(status).toHaveValue('sent')
+  })
+
+  test('keeps the status and shows an error when saving it fails', async () => {
+    api.getMonthlyReport.mockResolvedValue({ ...report, status: 'draft' })
+    api.setReportStatus.mockRejectedValue(new ApiError(500, 'boom'))
+    render(<Reports customers={customers} initialCustomerId={1} />)
+    const status = await screen.findByLabelText('Status')
+
+    await userEvent.selectOptions(status, 'Verschickt')
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('Status der Abrechnung konnte nicht gespeichert werden.')
+    expect(status).toHaveValue('draft')
+  })
+
+  test('shows no status for a month without entries', async () => {
+    api.getMonthlyReport.mockResolvedValue({ entries: [], totalHours: '0.00', status: 'draft' })
+    render(<Reports customers={customers} initialCustomerId={1} />)
+
+    expect(await screen.findByText('Keine Einträge für diesen Zeitraum')).toBeInTheDocument()
+    expect(screen.queryByLabelText('Status')).not.toBeInTheDocument()
   })
 
   test('steps through the months, across the turn of the year', async () => {

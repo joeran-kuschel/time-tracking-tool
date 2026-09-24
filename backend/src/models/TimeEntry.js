@@ -1,5 +1,11 @@
 const pool = require('../config/database');
 
+// Entries with their project, hourly rate and customer, for reports and the dashboard
+const WITH_PROJECT_AND_CUSTOMER = `SELECT te.*, p.name as project_name, p.hourly_rate, c.name as customer_name, c.id as customer_id
+       FROM time_entries te
+       JOIN projects p ON te.project_id = p.id
+       JOIN customers c ON p.customer_id = c.id`;
+
 class TimeEntry {
   static async create(projectId, startTime, endTime, description) {
     const result = await pool.query(
@@ -69,13 +75,33 @@ class TimeEntry {
     const endDate = new Date(year, month, 0, 23, 59, 59);
 
     const result = await pool.query(
-      `SELECT te.*, p.name as project_name, p.hourly_rate, c.name as customer_name, c.id as customer_id
-       FROM time_entries te
-       JOIN projects p ON te.project_id = p.id
-       JOIN customers c ON p.customer_id = c.id
+      `${WITH_PROJECT_AND_CUSTOMER}
        WHERE c.id = $1 AND te.start_time >= $2 AND te.start_time <= $3
        ORDER BY te.start_time DESC`,
       [customerId, startDate, endDate]
+    );
+    return result.rows;
+  }
+
+  // Entries of all customers that start in [from, to), running ones included, oldest first
+  static async getInRange(from, to) {
+    const result = await pool.query(
+      `${WITH_PROJECT_AND_CUSTOMER}
+       WHERE te.start_time >= $1 AND te.start_time < $2
+       ORDER BY te.start_time`,
+      [from, to]
+    );
+    return result.rows;
+  }
+
+  // The latest finished entries of all customers, newest first
+  static async getRecent(limit) {
+    const result = await pool.query(
+      `${WITH_PROJECT_AND_CUSTOMER}
+       WHERE te.end_time IS NOT NULL
+       ORDER BY te.start_time DESC
+       LIMIT $1`,
+      [limit]
     );
     return result.rows;
   }

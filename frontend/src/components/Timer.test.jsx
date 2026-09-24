@@ -76,7 +76,7 @@ describe('Timer', () => {
   })
 
   test('keeps focus on the button after stopping when no project is selected', async () => {
-    // Parent that clears the running entry after stopping, like the Dashboard after a reload
+    // Parent that clears the running entry after stopping, like the Time tracking page after a reload
     function Parent() {
       const [activeEntry, setActiveEntry] = useState(running)
       const onStop = async () => {
@@ -90,6 +90,15 @@ describe('Timer', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Stop' }))
 
     expect(screen.getByRole('button', { name: 'Start' })).toHaveFocus()
+  })
+
+  test('bare, it drops the card heading but still shows that it runs', () => {
+    const { rerender } = renderTimer({ bare: true })
+    expect(screen.queryByRole('heading', { name: 'Timer' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('region')).not.toBeInTheDocument()
+
+    rerender(<Timer project={website} activeEntry={running} onStart={vi.fn()} onStop={vi.fn()} error={null} bare />)
+    expect(screen.getByText(/^Läuft seit/)).toBeInTheDocument()
   })
 
   test('shows the error it is given', () => {
