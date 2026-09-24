@@ -25,6 +25,12 @@ describe('RunningTimer', () => {
     expect(onStop).toHaveBeenCalled()
   })
 
+  test('marks the Stop button as disabled while the stop is being sent', () => {
+    render(<RunningTimer entry={running} onStop={vi.fn()} busy />)
+
+    expect(screen.getByRole('button', { name: 'Stop Timer' })).toHaveAttribute('aria-disabled', 'true')
+  })
+
   test('has no detectable accessibility violations', async () => {
     const { container } = render(<RunningTimer entry={running} onStop={vi.fn()} />)
     expect(await axe(container)).toHaveNoViolations()

@@ -45,13 +45,18 @@ function TimeTracking({ customers, onCustomersChange, timer, onOpenReport, initi
   const selectedCustomer = customers.find((c) => c.id === selectedCustomerId) ?? null
   const selectedProject = projects.find((p) => p.id === selectedProjectId) ?? null
 
+  // The customer shown now; answers that arrive for a customer selected before are dropped
+  const shownCustomerId = useRef(selectedCustomerId)
+
   useEffect(() => {
+    shownCustomerId.current = selectedCustomerId
+    // Nothing of the previous customer stays, so Start waits for this customer's projects
     setEntries([])
+    setProjects([])
     if (selectedCustomerId) {
       loadProjects(selectedCustomerId)
       loadEntries(selectedCustomerId)
     } else {
-      setProjects([])
       setSelectedProjectId(null)
     }
   }, [selectedCustomerId])
@@ -76,7 +81,7 @@ function TimeTracking({ customers, onCustomersChange, timer, onOpenReport, initi
   // Keeps the selected project if it still exists, else selects the running timer's project, else none
   const loadProjects = async (customerId) => {
     const data = await runProjectAction(() => api.getProjects(customerId), msg`Projects could not be loaded.`)
-    if (!data) return
+    if (!data || customerId !== shownCustomerId.current) return
     setProjects(data)
     setSelectedProjectId((current) => {
       const keep = (id) => data.some((p) => p.id === id) && id
@@ -87,7 +92,7 @@ function TimeTracking({ customers, onCustomersChange, timer, onOpenReport, initi
   // All entries of the customer; a selected project only narrows what is shown
   const loadEntries = async (customerId) => {
     const data = await runEntriesAction(() => api.getCustomerTimeEntries(customerId), msg`Entries could not be loaded.`)
-    if (data) setEntries(data)
+    if (data && customerId === shownCustomerId.current) setEntries(data)
   }
 
   const refreshEntries = () => selectedCustomerId && loadEntries(selectedCustomerId)
@@ -317,6 +322,7 @@ function TimeTracking({ customers, onCustomersChange, timer, onOpenReport, initi
             onStart={(description) => timer.start(selectedProject, description, selectedCustomer)}
             onStop={timer.stop}
             error={timer.error}
+            busy={timer.busy}
           />
           {selectedCustomer && (
             <MonthSummary entries={entries} projects={projects} onOpenReport={() => onOpenReport(selectedCustomer.id)} />

@@ -52,6 +52,10 @@ describe('database connection config', () => {
     expect(configMap.data.DB_SSL).toBe('false');
   });
 
+  test('allows the frontend of the local install to use the API', () => {
+    expect(configMap.data.CORS_ORIGIN).toBe('http://localhost');
+  });
+
   test('backend loads both the ConfigMap and the database Secret', () => {
     const deployment = find(loadManifests('backend.yaml'), 'Deployment', 'backend');
     const container = deployment.spec.template.spec.containers.find((c) => c.name === 'backend');

@@ -3,6 +3,10 @@ const Project = require('../models/Project');
 
 const isValidTime = (value) => typeof value === 'string' && !Number.isNaN(Date.parse(value));
 
+// Postgres error code of a unique index; for time entries only one_running_timer can raise it on insert
+const UNIQUE_VIOLATION = '23505';
+const TIMER_RUNNING = { error: 'A timer is already running' };
+
 exports.create = async (req, res) => {
   try {
     const { projectId, startTime, endTime, description } = req.body;
@@ -18,14 +22,18 @@ exports.create = async (req, res) => {
       return res.status(400).json({ error: 'endTime must be after startTime' });
     }
 
-    // Only one timer may run at a time; finished entries can always be added
+    // Only one timer may run at a time; finished entries can always be added.
+    // The index one_running_timer catches two starts that pass this check at the same time.
     if (!endTime && await TimeEntry.getActive()) {
-      return res.status(409).json({ error: 'A timer is already running' });
+      return res.status(409).json(TIMER_RUNNING);
     }
 
     const entry = await TimeEntry.create(projectId, startTime, endTime || null, description);
     res.status(201).json(entry);
   } catch (err) {
+    if (err.code === UNIQUE_VIOLATION) {
+      return res.status(409).json(TIMER_RUNNING);
+    }
     console.error(err);
     res.status(500).json({ error: 'Failed to create time entry' });
   }

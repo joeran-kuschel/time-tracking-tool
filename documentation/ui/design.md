@@ -51,6 +51,9 @@ services and works offline:
 - **IBM Plex Mono** (400, 500): times, durations and amounts in tables (`font-mono`), so digits line up
 - **Newsreader** (500, 600): customer name, report title and large figures (`font-serif`)
 
+The PDF report uses IBM Plex Sans too (400 and 600), from font files in the backend, see
+[Reports API](../backend/reports.md#pdf-report).
+
 ## Shared styles
 
 `frontend/src/ui.js` holds the class strings that more than one component needs: `buttonPrimary`, `buttonSecondary`,

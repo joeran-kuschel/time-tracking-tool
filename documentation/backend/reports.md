@@ -8,11 +8,22 @@ All paths are under `/api/reports`.
 
 | Method | Path | Purpose |
 |---|---|---|
-| `GET` | `/customer/:customerId?month=M&year=YYYY` | The report as JSON |
-| `GET` | `/customer/:customerId/pdf?month=M&year=YYYY&lang=de\|en` | The report as a PDF download; with `&inline=1` the browser shows it instead (the Dashboard's **Preview PDF**) |
+| `GET` | `/customer/:customerId?month=M&year=YYYY&tz=Europe/Berlin` | The report as JSON |
+| `GET` | `/customer/:customerId/pdf?month=M&year=YYYY&lang=de\|en&tz=Europe/Berlin` | The report as a PDF download; with `&inline=1` the browser shows it instead (the Dashboard's **Preview PDF**) |
 | `PUT` | `/customer/:customerId/status` | Sets the report status, see below |
 
-`month` (1–12) and `year` are required (`400` otherwise).
+`month` (1–12) and `year` are required; a missing or invalid value answers `400` (`month=abc`, `month=13`).
+
+## Time zone
+
+`tz` is the browser's IANA time zone (the frontend sends `Intl.DateTimeFormat().resolvedOptions().timeZone`). A month
+runs from midnight on the 1st to midnight on the 1st of the next month **in that time zone**, so the report has the
+same entries as the Dashboard and the Time tracking page. An entry started at 00:30 on 1 October in Berlin belongs to
+October. Without `tz`, or with an unknown one, the month is taken in UTC.
+
+`utils/period.js` turns month, year and time zone into a UTC range with `monthRange`; the queries select entries with
+`from <= start_time < to`. Times are stored as UTC, and the backend runs in UTC (`process.env.TZ` is set in
+`server.js`), because `pg` reads `TIMESTAMP` columns as local time.
 
 ## JSON report
 
@@ -36,10 +47,19 @@ All paths are under `/api/reports`.
 ## PDF report
 
 - Title, month, customer, a table (date, project, hours, description) and the total hours.
+- Each row is as tall as its tallest cell: long project names and descriptions wrap inside their column. A row that
+  doesn't fit starts a new page, which repeats the column titles.
+- Dates are shown in the `tz` time zone.
+- The font is IBM Plex Sans (regular and semibold), the app's font. The files are in `backend/assets/fonts/` (complete
+  WOFF files from `@ibm/plex-sans` 1.1.0, with their SIL Open Font License in `OFL.txt`) and are copied into the Docker
+  image. They cover Central European letters (`Ł`, `ź`, `Š`), Greek and Cyrillic, which pdfkit's built-in Helvetica
+  lacks. pdfkit embeds only the letters a report uses.
 - The texts and formats follow `lang` (`de` or `en`); without it or with another value, the PDF is German, as it was
   before translation. See [Translation](translation.md).
 - The file name follows the language too: `time-report-<customer>-<year>-<month>.pdf` or
   `abrechnung-<customer>-<year>-<month>.pdf`.
+- The `Content-Disposition` header is built with the `content-disposition` package: quotes are escaped, and names
+  outside Latin-1 (`Łódź`, `€`) get an additional UTF-8 file name (`filename*=UTF-8''…`).
 - `404` if the customer doesn't exist or has no entries in the month.
 
 ## Report status
@@ -56,15 +76,11 @@ row is a `draft`. The status is deleted with its customer.
 
 ## Limits
 
-- Month boundaries are computed in the server's time zone, which is UTC in the container. An entry started between
-  00:00 and 02:00 German time on the 1st of a month counts toward the previous month.
 - Amounts (hours × hourly rate) are not shown yet.
-- Customer names with characters outside Latin-1 (for example `€`) in the file name are not encoded for the
-  `Content-Disposition` header.
 
 ## Code
 
 `backend/src/routes/reports.js`, `controllers/reportController.js`, `utils/pdfGenerator.js`,
-`models/TimeEntry.js` (`getByCustomerIdAndMonth`), `models/ReportStatus.js`, `utils/period.js`. Tests:
-`tests/reportStatus.model.test.js`, `tests/pdfGenerator.test.js`,
+`models/TimeEntry.js` (`getByCustomerIdInRange`), `models/ReportStatus.js`, `utils/period.js`. Tests:
+`tests/reportStatus.model.test.js`, `tests/pdfGenerator.test.js`, `tests/period.test.js`, `tests/timeEntry.model.test.js`,
 `tests/pdfGenerator.real.test.js`, `tests/reportController.test.js`.

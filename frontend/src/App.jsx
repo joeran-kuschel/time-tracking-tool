@@ -91,7 +91,7 @@ function App() {
             ))}
           </nav>
           <div className="ml-auto flex min-w-0 flex-wrap items-center gap-3">
-            {timer.activeEntry && <RunningTimer entry={timer.activeEntry} onStop={stopFromHeader} />}
+            {timer.activeEntry && <RunningTimer entry={timer.activeEntry} onStop={stopFromHeader} busy={timer.busy} />}
             <ThemeSwitcher />
             <LanguageSwitcher />
           </div>

@@ -146,3 +146,50 @@ describe('TimeEntry.getInRange and getRecent', () => {
     expect(recent[0].customer_name).toBe('Kunde');
   });
 });
+
+describe('TimeEntry.getByCustomerIdInRange', () => {
+  let projectId;
+
+  beforeEach(async () => {
+    mockPool = createTestPool();
+    projectId = await createProject();
+  });
+
+  test('returns the customer\'s entries that start in [from, to), up to the last millisecond', async () => {
+    // October in Berlin: 2026-09-30T22:00Z to 2026-10-31T23:00Z
+    await TimeEntry.create(projectId, '2026-09-30T21:59:59Z', '2026-09-30T23:00:00Z', 'September');
+    await TimeEntry.create(projectId, '2026-09-30T22:30:00Z', '2026-09-30T23:30:00Z', '00:30 am 1. Oktober');
+    await TimeEntry.create(projectId, '2026-10-31T22:59:59.500Z', '2026-10-31T23:30:00Z', 'letzte Sekunde');
+    await TimeEntry.create(projectId, '2026-10-31T23:00:00Z', '2026-10-31T23:30:00Z', 'November');
+
+    const entries = await TimeEntry.getByCustomerIdInRange(1, { from: '2026-09-30T22:00:00.000Z', to: '2026-10-31T23:00:00.000Z' });
+
+    expect(entries.map((e) => e.description)).toEqual(['letzte Sekunde', '00:30 am 1. Oktober']);
+    expect(entries[0]).toMatchObject({ project_name: 'Projekt', customer_name: 'Kunde' });
+  });
+});
+
+describe('the one_running_timer index', () => {
+  let projectId;
+
+  beforeEach(async () => {
+    mockPool = createTestPool();
+    projectId = await createProject();
+  });
+
+  test('refuses a second running entry, even without the controller\'s check', async () => {
+    await TimeEntry.create(projectId, '2026-09-21T08:00:00Z', null, 'läuft');
+
+    await expect(TimeEntry.create(projectId, '2026-09-21T08:00:01Z', null, 'doppelt')).rejects.toMatchObject({ code: '23505' });
+  });
+
+  test('allows any number of finished entries, and a new timer once the old one is stopped', async () => {
+    const running = await TimeEntry.create(projectId, '2026-09-21T08:00:00Z', null, 'läuft');
+    await TimeEntry.create(projectId, '2026-09-20T08:00:00Z', '2026-09-20T09:00:00Z', 'fertig 1');
+    await TimeEntry.create(projectId, '2026-09-19T08:00:00Z', '2026-09-19T09:00:00Z', 'fertig 2');
+
+    await TimeEntry.update(running.id, { endTime: '2026-09-21T09:00:00Z' });
+
+    await expect(TimeEntry.create(projectId, '2026-09-21T10:00:00Z', null, 'neu')).resolves.toMatchObject({ description: 'neu' });
+  });
+});

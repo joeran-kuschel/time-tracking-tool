@@ -49,13 +49,14 @@ describe('ReportStatus', () => {
   });
 
   test('lists the customers with entries in a month, with their status', async () => {
-    const sent = await customerWithEntry('Berger', new Date(2026, 7, 14, 9));
-    await customerWithEntry('Anders AG', new Date(2026, 7, 31, 17));
-    await customerWithEntry('Nur September', new Date(2026, 8, 1, 9));
+    // August in Berlin: 2026-07-31T22:00Z to 2026-08-31T22:00Z
+    const sent = await customerWithEntry('Berger', '2026-08-14T07:00:00Z');
+    await customerWithEntry('Anders AG', '2026-07-31T22:30:00Z');
+    await customerWithEntry('Nur September', '2026-08-31T22:30:00Z');
     await customerWithEntry('Ohne Einträge');
     await ReportStatus.set(sent, 2026, 8, 'sent');
 
-    expect(await ReportStatus.forMonth(2026, 8)).toEqual([
+    expect(await ReportStatus.forMonth(2026, 8, { from: '2026-07-31T22:00:00.000Z', to: '2026-08-31T22:00:00.000Z' })).toEqual([
       expect.objectContaining({ customer_name: 'Anders AG', status: 'draft' }),
       expect.objectContaining({ customer_name: 'Berger', status: 'sent' }),
     ]);

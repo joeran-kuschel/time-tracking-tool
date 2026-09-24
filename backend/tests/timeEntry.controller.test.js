@@ -137,6 +137,17 @@ describe('timeEntryController.create', () => {
     expect(TimeEntry.create).not.toHaveBeenCalled();
   });
 
+  test('answers 409 when another start wins the race and the database refuses the second timer', async () => {
+    TimeEntry.getActive.mockResolvedValue(undefined);
+    TimeEntry.create.mockRejectedValue(Object.assign(new Error('duplicate key'), { code: '23505' }));
+    const res = mockResponse();
+
+    await controller.create({ body }, res);
+
+    expect(res.status).toHaveBeenCalledWith(409);
+    expect(res.json).toHaveBeenCalledWith({ error: 'A timer is already running' });
+  });
+
   test('refuses a manual entry whose end is not after its start', async () => {
     const res = mockResponse();
 

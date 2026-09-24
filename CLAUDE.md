@@ -94,10 +94,12 @@ Docker Desktop publishes the LoadBalancer services on localhost: frontend at htt
 ## Configuration
 
 - `k8s/configmap.yaml` holds:
-  - the ConfigMap `time-tracking-config` (`NODE_ENV`, `DB_SSL`)
+  - the ConfigMap `time-tracking-config` (`NODE_ENV`, `DB_SSL`, `VITE_API_URL`, `CORS_ORIGIN`)
   - the Secret `time-tracking-db` (`DATABASE_URL`)
   - the Secret `postgres-secret` (Postgres credentials)
 - `DB_SSL` (`"true"`/`"false"`) turns SSL on for the database connection, independent of `NODE_ENV`. Keep it `"false"` for the in-cluster Postgres, which has no SSL. Logic: `backend/src/config/ssl.js`.
+- `CORS_ORIGIN` depends on the install: the comma-separated addresses the frontend is opened at. Only these may call the API from a browser; without it, none can. Set it together with `VITE_API_URL`. The API setup is in `backend/src/app.js`; `server.js` only starts it.
+- The backend runs in UTC (`process.env.TZ` in `server.js`): times are stored as UTC and `pg` reads `TIMESTAMP` as local time. Month limits for reports follow the browser's time zone (`tz` query parameter, `monthRange` in `utils/period.js`).
 - Credentials in the repo (`password`) are local placeholders only.
 
 ## Migrations

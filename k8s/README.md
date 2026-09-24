@@ -65,6 +65,38 @@ kubectl port-forward -n time-tracking svc/backend 3000:3000
 
 Dann: `http://localhost:8080`
 
+## Erlaubte Adressen (CORS_ORIGIN)
+
+Die API nimmt Anfragen aus dem Browser nur von den Adressen an, unter denen das Frontend geöffnet wird. Das hängt von der Installation ab und steht in `configmap.yaml` im ConfigMap `time-tracking-config`, zusammen mit `VITE_API_URL`:
+
+```yaml
+data:
+  VITE_API_URL: "http://localhost:3000/api"
+  CORS_ORIGIN: "http://localhost"            # mehrere Adressen mit Komma trennen
+```
+
+Mit Port Forward auf 8080 (siehe oben) gehört `http://localhost:8080` dazu. Ohne `CORS_ORIGIN` kann kein Browser die API nutzen; das Backend schreibt dann beim Start eine Warnung ins Log. Nach einer Änderung:
+
+```bash
+kubectl apply -f k8s/configmap.yaml
+kubectl rollout restart deployment/backend -n time-tracking
+```
+
+## Neue Migrationen auf bestehender Datenbank
+
+Postgres führt die Init-Scripts nur beim ersten Start mit leerem Volume aus. Eine neue Migration muss auf einer bestehenden Datenbank von Hand eingespielt werden, vorher ein Backup machen:
+
+```bash
+./k8s/backup-db.sh
+kubectl -n time-tracking exec -i deploy/postgres -- sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB"' < backend/migrations/003_one_running_timer.sql
+```
+
+`003_one_running_timer.sql` erlaubt nur noch einen laufenden Timer. Sie schlägt fehl, wenn schon mehr als ein Eintrag ohne Ende existiert. Vorher prüfen und überzählige Timer stoppen oder löschen:
+
+```bash
+kubectl -n time-tracking exec deploy/postgres -- sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "SELECT id, project_id, start_time FROM time_entries WHERE end_time IS NULL"'
+```
+
 ## Remote PostgreSQL
 
 Um Remote-Datenbank zu nutzen:

@@ -1,42 +1,20 @@
-require('dotenv').config();
-const express = require('express');
-const cors = require('cors');
-const bodyParser = require('body-parser');
+// Times are stored as UTC in TIMESTAMP columns, which pg reads as local time: the process must run in UTC,
+// also with `npm run dev` on a machine in another time zone. Set before anything creates a Date.
+process.env.TZ = 'UTC';
 
-const customerRoutes = require('./routes/customers');
-const projectRoutes = require('./routes/projects');
-const timeEntryRoutes = require('./routes/timeEntries');
-const reportRoutes = require('./routes/reports');
-const dashboardRoutes = require('./routes/dashboard');
+require('dotenv').config();
+const { createApp, parseOrigins } = require('./app');
 const { redactConnectionString } = require('./config/redact');
 
-const app = express();
 const PORT = process.env.PORT || 3000;
+const corsOrigins = parseOrigins(process.env.CORS_ORIGIN);
 
-// Middleware
-app.use(cors());
-app.use(bodyParser.json());
-app.use(bodyParser.urlencoded({ extended: true }));
-
-// Routes
-app.use('/api/customers', customerRoutes);
-app.use('/api/projects', projectRoutes);
-app.use('/api/time-entries', timeEntryRoutes);
-app.use('/api/reports', reportRoutes);
-app.use('/api/dashboard', dashboardRoutes);
-
-// Health check
-app.get('/health', (req, res) => {
-  res.json({ status: 'OK' });
-});
-
-// Error handling
-app.use((err, req, res, next) => {
-  console.error(err.stack);
-  res.status(500).json({ error: 'Internal server error' });
-});
-
-app.listen(PORT, () => {
+createApp({ corsOrigins }).listen(PORT, () => {
   console.log(`Time tracking API running on port ${PORT}`);
   console.log(`Database: ${redactConnectionString(process.env.DATABASE_URL)}`);
+  if (corsOrigins.length > 0) {
+    console.log(`Allowed origins: ${corsOrigins.join(', ')}`);
+  } else {
+    console.warn('CORS_ORIGIN is not set: no browser app can use the API. Set it to the address of the frontend.');
+  }
 });

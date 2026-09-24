@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest'
-import { render, screen, waitFor, within } from './test/render'
+import { act, render, screen, waitFor, within } from './test/render'
 import userEvent from '@testing-library/user-event'
 import { axe } from './test/axe'
 import App from './App'
@@ -406,6 +406,31 @@ describe('App', () => {
     expect(screen.getByRole('heading', { name: 'Einträge für Muster GmbH' })).toBeInTheDocument()
     expect(screen.getByText('App-Arbeit')).toBeInTheDocument()
     expect(api.getCustomerTimeEntries).toHaveBeenCalledTimes(1)
+  })
+
+  test('ignores late answers for a customer that is no longer selected', async () => {
+    api.getCustomers.mockResolvedValue([{ id: 1, name: 'Muster GmbH' }, { id: 2, name: 'Berger' }])
+    const late = {}
+    api.getProjects.mockImplementation((id) => (id === 1
+      ? new Promise((resolve) => { late.projects = resolve })
+      : Promise.resolve([{ id: 9, name: 'Pflege', hourly_rate: '85.00' }])))
+    api.getCustomerTimeEntries.mockImplementation((id) => (id === 1
+      ? new Promise((resolve) => { late.entries = resolve })
+      : Promise.resolve([{ id: 3, project_id: 9, start_time: '2026-09-22T13:00:00Z', end_time: '2026-09-22T14:00:00Z', description: 'Berger-Arbeit' }])))
+    await renderTimeTracking()
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Muster GmbH' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Berger' }))
+    await screen.findByText('Berger-Arbeit')
+    await act(async () => {
+      late.projects([{ id: 7, name: 'Website', hourly_rate: '80.00' }])
+      late.entries([{ id: 2, project_id: 7, start_time: '2026-09-21T10:00:00Z', end_time: '2026-09-21T12:00:00Z', description: 'Muster-Arbeit' }])
+    })
+
+    expect(screen.getByRole('heading', { name: 'Berger' })).toBeInTheDocument()
+    expect(screen.getByText('Berger-Arbeit')).toBeInTheDocument()
+    expect(screen.queryByText('Muster-Arbeit')).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /Website/ })).not.toBeInTheDocument()
   })
 
   test('deleting a project reloads the entries of the customer', async () => {

@@ -59,6 +59,30 @@ describe('useActiveEntry', () => {
     expect(result.current.announcement).toEqual({ kind: 'started', projectName: 'Website' })
   })
 
+  test('sends only one start for a double click, and is busy until it is answered', async () => {
+    api.getActiveEntry.mockResolvedValue(null)
+    let answer
+    api.createTimeEntry.mockReturnValue(new Promise((resolve) => { answer = resolve }))
+    const { result } = await renderLoaded()
+
+    let first
+    let second
+    act(() => {
+      first = result.current.start(project, '')
+      second = result.current.start(project, '')
+    })
+    expect(result.current.busy).toBe(true)
+    await act(async () => {
+      answer({ id: 42, project_id: 7, start_time: '2026-09-21T08:00:00Z' })
+      await Promise.all([first, second])
+    })
+
+    expect(api.createTimeEntry).toHaveBeenCalledTimes(1)
+    expect(await second).toBeUndefined()
+    expect(result.current.busy).toBe(false)
+    expect(result.current.activeEntry).toMatchObject({ id: 42 })
+  })
+
   test('shows the other running timer when the backend refuses a second one', async () => {
     api.getActiveEntry.mockResolvedValueOnce(null).mockResolvedValueOnce(running)
     api.createTimeEntry.mockRejectedValue(new ApiError(409, 'A timer is already running'))
@@ -84,6 +108,18 @@ describe('useActiveEntry', () => {
     expect(api.stopTimeEntry).toHaveBeenCalledWith(42, expect.any(String))
     expect(result.current.activeEntry).toBeNull()
     expect(result.current.announcement).toEqual({ kind: 'stopped' })
+  })
+
+  test('sends only one stop for a double click', async () => {
+    api.getActiveEntry.mockResolvedValue(running)
+    api.stopTimeEntry.mockResolvedValue({ ...running, end_time: '2026-09-21T09:00:00Z' })
+    const { result } = renderHook(() => useActiveEntry())
+    await waitFor(() => expect(result.current.activeEntry).toEqual(running))
+
+    await act(() => Promise.all([result.current.stop(), result.current.stop()]))
+
+    expect(api.stopTimeEntry).toHaveBeenCalledTimes(1)
+    expect(result.current.activeEntry).toBeNull()
   })
 
   test('keeps the entry active when stopping fails', async () => {

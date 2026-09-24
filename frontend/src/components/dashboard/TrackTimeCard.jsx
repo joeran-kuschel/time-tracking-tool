@@ -69,7 +69,7 @@ function TrackTimeCard({ projects, defaultProjectId, timer, onSaved }) {
       {timer.activeEntry?.customer_name && (
         <p className="text-sm text-muted">{timer.activeEntry.customer_name}</p>
       )}
-      <Timer project={project} activeEntry={timer.activeEntry} onStart={start} onStop={stop} error={timer.error} bare />
+      <Timer project={project} activeEntry={timer.activeEntry} onStart={start} onStop={stop} error={timer.error} busy={timer.busy} bare />
       {saved && !timer.activeEntry && (
         <p className="text-sm text-muted"><Trans>Saved {savedHours} to {savedProject}.</Trans></p>
       )}

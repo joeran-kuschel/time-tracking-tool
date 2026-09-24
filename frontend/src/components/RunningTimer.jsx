@@ -4,7 +4,8 @@ import { useElapsedTime } from '../hooks/useElapsedTime'
 
 // The running timer in the header, on every page: project, customer, elapsed time and a Stop button.
 // The button reads "Stop" and is named "Stop timer", to tell it apart from the Stop button of the timer panel.
-function RunningTimer({ entry, onStop }) {
+// busy: the stop is being sent; the button is marked disabled (useActiveEntry ignores further clicks).
+function RunningTimer({ entry, onStop, busy = false }) {
   const { t } = useLingui()
   const elapsedTime = useElapsedTime(entry.start_time)
 
@@ -22,7 +23,8 @@ function RunningTimer({ entry, onStop }) {
       <button
         type="button"
         onClick={onStop}
-        className="inline-flex min-h-[2rem] shrink-0 items-center gap-1.5 rounded-full bg-danger px-3.5 text-sm font-semibold text-on-fill hover:bg-danger-dark"
+        aria-disabled={busy}
+        className="aria-disabled:opacity-70 inline-flex min-h-[2rem] shrink-0 items-center gap-1.5 rounded-full bg-danger px-3.5 text-sm font-semibold text-on-fill hover:bg-danger-dark"
       >
         <StopIcon aria-hidden="true" className="h-3 w-3" />
         <Trans>Stop <span className="sr-only">timer</span></Trans>

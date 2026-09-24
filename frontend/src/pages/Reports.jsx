@@ -33,6 +33,7 @@ function Reports({ customers, initialCustomerId = null, initialMonth, initialYea
   const [loading, setLoading] = useState(false)
   const [run, error] = useAction()
   const [runStatus, statusError] = useAction()
+  const [runDownload, downloadError] = useAction()
   const { t, i18n } = useLingui()
   const customerFieldId = useId()
   const statusFieldId = useId()
@@ -58,13 +59,8 @@ function Reports({ customers, initialCustomerId = null, initialMonth, initialYea
     setPeriod({ year: date.getFullYear(), month: date.getMonth() + 1 })
   }
 
-  const handleDownloadPDF = async () => {
-    try {
-      await api.downloadPDF(customerId, period.month, period.year, i18n.locale)
-    } catch (err) {
-      console.error('Failed to download PDF:', err)
-    }
-  }
+  const handleDownloadPDF = () =>
+    runDownload(() => api.downloadPDF(customerId, period.month, period.year, i18n.locale), msg`PDF could not be downloaded.`)
 
   const changeStatus = async (status) => {
     const saved = await runStatus(
@@ -137,6 +133,7 @@ function Reports({ customers, initialCustomerId = null, initialMonth, initialYea
 
       <ErrorMessage message={error} />
       <ErrorMessage message={statusError} />
+      <ErrorMessage message={downloadError} />
       {!customerId && <p className="text-muted"><Trans>Select a customer to see the report.</Trans></p>}
       {loading && <p className="text-muted"><Trans>Loading...</Trans></p>}
 

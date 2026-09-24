@@ -10,6 +10,10 @@ The timer on the Time tracking page tracks working time for one project at a tim
    timer stays stopped.
 4. Press **Stop**. If stopping fails, the timer keeps running and shows an error, so you can try again.
 
+While a start or stop is being sent, **Start**, **Stop** and the header's Stop button are marked `aria-disabled` and
+dimmed, and further clicks do nothing (`busy` in `useActiveEntry`). A double click therefore sends one request, not two.
+The backend also refuses a second running timer on its own, see [Time entries API](../backend/time-entries.md#creating-entries).
+
 The description is saved when the timer starts and kept when it stops. While the timer runs, the field shows the saved
 description and can't be edited.
 

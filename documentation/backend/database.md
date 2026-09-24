@@ -5,7 +5,7 @@ instead.
 
 ## Schema
 
-Defined in `backend/migrations/001_init_schema.sql` and `002_report_status.sql`:
+Defined in `backend/migrations/001_init_schema.sql`, `002_report_status.sql` and `003_one_running_timer.sql`:
 
 | Table | Columns | Relations |
 |---|---|---|
@@ -14,7 +14,12 @@ Defined in `backend/migrations/001_init_schema.sql` and `002_report_status.sql`:
 | `time_entries` | `id`, `project_id`, `start_time`, `end_time` (null while running), `description`, `created_at`, `updated_at` | `project_id` → `projects`, `ON DELETE CASCADE` |
 | `report_status` | `customer_id`, `year`, `month` (1–12), `status` (`draft`, `ready` or `sent`), `updated_at`; primary key `(customer_id, year, month)` | `customer_id` → `customers`, `ON DELETE CASCADE` |
 
-Indexes: `projects(customer_id)`, `time_entries(project_id)`, `time_entries(start_time)`.
+Indexes: `projects(customer_id)`, `time_entries(project_id)`, `time_entries(start_time)`, and the partial unique index
+`one_running_timer`, which allows only one time entry without `end_time` (one running timer, see
+[Time entries API](time-entries.md#creating-entries)).
+
+Times are stored as UTC in `TIMESTAMP` columns (without time zone). The backend runs in UTC so that `pg` reads them
+back correctly.
 
 ## Migrations
 
@@ -25,6 +30,9 @@ Indexes: `projects(customer_id)`, `time_entries(project_id)`, `time_entries(star
   one twice does no harm. For the in-cluster database, back up first (`k8s/backup-db.sh`), then:
   `kubectl -n time-tracking exec -i deploy/postgres -- psql -U <user> -d <database> < backend/migrations/002_report_status.sql`
   (user and database from the Secret `postgres-secret`).
+- `003_one_running_timer.sql` fails on a database that already has more than one running entry. Check first, and stop
+  or delete the extra entries before applying it:
+  `kubectl -n time-tracking exec deploy/postgres -- sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "SELECT id, project_id, start_time FROM time_entries WHERE end_time IS NULL"'`
 - Docker Compose mounts `backend/migrations/` directly as init scripts.
 
 ## Connection

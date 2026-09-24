@@ -23,8 +23,9 @@ class ReportStatus {
     return result.rows[0];
   }
 
-  // Every customer with time entries in the month, with the status of its report, ordered by name
-  static async forMonth(year, month) {
+  // Every customer with time entries in the month, with the status of its report, ordered by name.
+  // range: the month as { from, to } in the user's time zone (monthRange in utils/period.js)
+  static async forMonth(year, month, { from, to }) {
     const result = await pool.query(
       `SELECT DISTINCT c.id AS customer_id, c.name AS customer_name, COALESCE(rs.status, 'draft') AS status
        FROM customers c
@@ -33,7 +34,7 @@ class ReportStatus {
        LEFT JOIN report_status rs ON rs.customer_id = c.id AND rs.year = $1 AND rs.month = $2
        WHERE te.start_time >= $3 AND te.start_time < $4
        ORDER BY customer_name`,
-      [year, month, new Date(year, month - 1, 1), new Date(year, month, 1)]
+      [year, month, from, to]
     );
     return result.rows;
   }

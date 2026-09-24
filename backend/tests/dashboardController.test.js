@@ -33,7 +33,7 @@ describe('dashboardController.get', () => {
 
     expect(TimeEntry.getInRange).toHaveBeenCalledWith(query.from, query.to);
     expect(TimeEntry.getRecent).toHaveBeenCalledWith(5);
-    expect(ReportStatus.forMonth).toHaveBeenCalledWith(2026, 8);
+    expect(ReportStatus.forMonth).toHaveBeenCalledWith(2026, 8, { from: '2026-08-01T00:00:00.000Z', to: '2026-09-01T00:00:00.000Z' });
     expect(res.json).toHaveBeenCalledWith({
       entries: [{ id: 1 }],
       recent: [{ id: 2 }],
@@ -45,7 +45,13 @@ describe('dashboardController.get', () => {
   test('takes December of the year before for January', async () => {
     await controller.get({ query: { ...query, month: '1' } }, mockResponse());
 
-    expect(ReportStatus.forMonth).toHaveBeenCalledWith(2025, 12);
+    expect(ReportStatus.forMonth).toHaveBeenCalledWith(2025, 12, expect.anything());
+  });
+
+  test('limits last month by the browser\'s time zone', async () => {
+    await controller.get({ query: { ...query, tz: 'Europe/Berlin' } }, mockResponse());
+
+    expect(ReportStatus.forMonth).toHaveBeenCalledWith(2026, 8, { from: '2026-07-31T22:00:00.000Z', to: '2026-08-31T22:00:00.000Z' });
   });
 
   test.each([

@@ -177,6 +177,16 @@ describe('Reports', () => {
     expect(api.downloadPDF).toHaveBeenCalledWith(1, 10, 2026, 'en')
   })
 
+  test('shows an error on the page when the download fails', async () => {
+    api.getMonthlyReport.mockResolvedValue(report)
+    api.downloadPDF.mockRejectedValue(new ApiError(500, 'Failed to generate PDF report'))
+    render(<Reports customers={customers} initialCustomerId={1} />)
+
+    await userEvent.click(await screen.findByRole('button', { name: 'PDF herunterladen' }))
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('PDF konnte nicht heruntergeladen werden. Bitte versuche es erneut.')
+  })
+
   test('has no detectable accessibility violations', async () => {
     api.getMonthlyReport.mockResolvedValue(report)
     const { container } = render(<Reports customers={customers} initialCustomerId={1} />)

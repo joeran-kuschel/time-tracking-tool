@@ -25,6 +25,14 @@ describe('Timer', () => {
     expect(screen.getByLabelText('Beschreibung (optional)')).toHaveValue('')
   })
 
+  test('marks Start and Stop as disabled while a start or stop is being sent', () => {
+    const { rerender } = renderTimer({ busy: true })
+    expect(screen.getByRole('button', { name: 'Start' })).toHaveAttribute('aria-disabled', 'true')
+
+    rerender(<Timer project={website} activeEntry={running} onStart={vi.fn()} onStop={vi.fn()} error={null} busy />)
+    expect(screen.getByRole('button', { name: 'Stop' })).toHaveAttribute('aria-disabled', 'true')
+  })
+
   test('keeps the description when starting fails', async () => {
     renderTimer({ onStart: vi.fn().mockResolvedValue(undefined) })
 

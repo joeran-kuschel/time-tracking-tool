@@ -70,15 +70,13 @@ class TimeEntry {
     return result.rows[0];
   }
 
-  static async getByCustomerIdAndMonth(customerId, year, month) {
-    const startDate = new Date(year, month - 1, 1);
-    const endDate = new Date(year, month, 0, 23, 59, 59);
-
+  // A customer's entries that start in [from, to) (ISO strings, see monthRange in utils/period.js), newest first
+  static async getByCustomerIdInRange(customerId, { from, to }) {
     const result = await pool.query(
       `${WITH_PROJECT_AND_CUSTOMER}
-       WHERE c.id = $1 AND te.start_time >= $2 AND te.start_time <= $3
+       WHERE c.id = $1 AND te.start_time >= $2 AND te.start_time < $3
        ORDER BY te.start_time DESC`,
-      [customerId, startDate, endDate]
+      [customerId, from, to]
     );
     return result.rows;
   }

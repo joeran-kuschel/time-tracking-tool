@@ -27,9 +27,11 @@ Times must be valid dates (`400` otherwise). An entry added by hand (with `endTi
 Only one timer may run at a time. Creating an entry **without** `endTime` while another entry has no `end_time` answers
 `409` with `{ "error": "A timer is already running" }`. Entries **with** `endTime` can always be added.
 
-The check runs in the controller, not in the database. Two start requests at exactly the same moment could both pass.
-For a single-user tool this is very unlikely. A partial unique index would close the gap:
-`CREATE UNIQUE INDEX ON time_entries ((true)) WHERE end_time IS NULL`.
+The controller checks this first, for a clear answer. Two start requests at the same moment (a double click) could
+both pass that check, so the database enforces the rule as well: the partial unique index `one_running_timer`
+(migration `003_one_running_timer.sql`) allows at most one entry without `end_time`. When it refuses an insert
+(Postgres error `23505`), the controller answers the same `409`. The frontend also sends only one start or stop at a
+time, see [Timer](../ui/timer.md).
 
 ## Updating entries
 
@@ -58,7 +60,8 @@ instead.
 
 ## Tests
 
-- `backend/tests/timeEntry.model.test.js`: SQL against the real schema in pg-mem
+- `backend/tests/timeEntry.model.test.js`: SQL against the real schema in pg-mem, including the `one_running_timer`
+  index
 - `backend/tests/timeEntry.controller.test.js`: status codes, the one-timer rule, editing, moving, deleting and the
   description handling
 - `backend/tests/timeEntry.routes.test.js`: route order and the customer route

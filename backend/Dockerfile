@@ -8,8 +8,9 @@ COPY package*.json ./
 # Install dependencies
 RUN npm ci --omit=dev
 
-# Copy application
+# Copy application and the fonts of the PDF report
 COPY src ./src
+COPY assets ./assets
 
 # Create migrations directory
 RUN mkdir -p migrations

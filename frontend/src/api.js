@@ -8,27 +8,56 @@ export class ApiError extends Error {
   }
 }
 
+// Sends a request; answers that aren't ok throw ApiError with the backend's error message
+async function send(url, options) {
+  let response;
+  try {
+    response = await fetch(url, options);
+  } catch {
+    throw new ApiError(0, 'Server not reachable');
+  }
+
+  if (!response.ok) {
+    const data = await response.json().catch(() => null);
+    throw new ApiError(response.status, data?.error || response.statusText);
+  }
+  return response;
+}
+
 async function request(path, { method = 'GET', body } = {}) {
   const options = body === undefined
     ? { method }
     : { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) };
 
-  let response;
-  try {
-    response = await fetch(`${API_URL}${path}`, options);
-  } catch {
-    throw new ApiError(0, 'Server not reachable');
-  }
-
-  const data = await response.json().catch(() => null);
-  if (!response.ok) {
-    throw new ApiError(response.status, data?.error || response.statusText);
-  }
-  return data;
+  const response = await send(`${API_URL}${path}`, options);
+  return response.json().catch(() => null);
 }
 
+// The file name from a Content-Disposition header, preferring the UTF-8 form (filename*=UTF-8''…)
+export function fileNameFrom(header) {
+  const utf8 = header?.match(/filename\*=UTF-8''([^;]+)/i);
+  if (utf8) return decodeURIComponent(utf8[1]);
+  const quoted = header?.match(/filename="((?:[^"\\]|\\.)*)"/);
+  return quoted ? quoted[1].replace(/\\(.)/g, '$1') : 'report.pdf';
+}
+
+// Saves a blob as a file through a temporary link
+function saveFile(blob, fileName) {
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = fileName;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  setTimeout(() => URL.revokeObjectURL(url), 0);
+}
+
+// The browser's time zone (e.g. "Europe/Berlin"): the backend limits months by it, like the dashboard does
+const timeZone = () => encodeURIComponent(Intl.DateTimeFormat().resolvedOptions().timeZone);
+
 const pdfUrl = (customerId, month, year, locale) =>
-  `${API_URL}/reports/customer/${customerId}/pdf?month=${month}&year=${year}&lang=${locale}`;
+  `${API_URL}/reports/customer/${customerId}/pdf?month=${month}&year=${year}&lang=${locale}&tz=${timeZone()}`;
 
 export const api = {
   // Customers
@@ -73,7 +102,7 @@ export const api = {
 
   // Reports
   getMonthlyReport: (customerId, month, year) =>
-    request(`/reports/customer/${customerId}?month=${month}&year=${year}`),
+    request(`/reports/customer/${customerId}?month=${month}&year=${year}&tz=${timeZone()}`),
 
   // status: 'draft', 'ready' or 'sent'
   setReportStatus: (customerId, month, year, status) =>
@@ -84,14 +113,11 @@ export const api = {
 
   // Dashboard: entries starting in [from, to), recent entries, all projects and last month's report statuses
   getDashboard: (from, to, month, year) =>
-    request(`/dashboard?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}&month=${month}&year=${year}`),
+    request(`/dashboard?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}&month=${month}&year=${year}&tz=${timeZone()}`),
 
+  // Loads the PDF first, so a failed download throws ApiError instead of leaving the page
   downloadPDF: async (customerId, month, year, locale) => {
-    const link = document.createElement('a');
-    link.href = pdfUrl(customerId, month, year, locale);
-    link.download = `abrechnung-${year}-${month}.pdf`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    const response = await send(pdfUrl(customerId, month, year, locale), { method: 'GET' });
+    saveFile(await response.blob(), fileNameFrom(response.headers.get('Content-Disposition')));
   }
 };

@@ -30,7 +30,7 @@ function mockResponse() {
 describe('reportController.generatePDF', () => {
   beforeEach(() => {
     Customer.getById.mockResolvedValue({ id: 1, name: 'Muster' });
-    TimeEntry.getByCustomerIdAndMonth.mockResolvedValue([{ id: 1 }]);
+    TimeEntry.getByCustomerIdInRange.mockResolvedValue([{ id: 1 }]);
   });
 
   test('generates the PDF and its file name in the requested language', async () => {
@@ -38,7 +38,7 @@ describe('reportController.generatePDF', () => {
 
     await controller.generatePDF({ params: { customerId: '1' }, query: { month: '3', year: '2026', lang: 'en' } }, res);
 
-    expect(generateReportPDF).toHaveBeenCalledWith([{ id: 1 }], 'Muster', '3', '2026', 'en');
+    expect(generateReportPDF).toHaveBeenCalledWith([{ id: 1 }], { customerName: 'Muster', month: 3, year: 2026, locale: 'en', timeZone: 'UTC' });
     expect(res.headers['Content-Disposition']).toBe('attachment; filename="time-report-Muster-2026-3.pdf"');
   });
 
@@ -49,12 +49,46 @@ describe('reportController.generatePDF', () => {
 
     expect(res.headers['Content-Disposition']).toBe('attachment; filename="abrechnung-Muster-2026-3.pdf"');
   });
+
+  test.each([
+    ['Łódź Media', `attachment; filename="abrechnung-?ód? Media-2026-3.pdf"; filename*=UTF-8''abrechnung-%C5%81%C3%B3d%C5%BA%20Media-2026-3.pdf`],
+    ['Café "Zur Post"', 'attachment; filename="abrechnung-Café \\"Zur Post\\"-2026-3.pdf"'],
+  ])('sends a valid file name for the customer %p', async (name, header) => {
+    Customer.getById.mockResolvedValue({ id: 1, name });
+    const res = mockResponse();
+
+    await controller.generatePDF({ params: { customerId: '1' }, query: { month: '3', year: '2026' } }, res);
+
+    expect(res.headers['Content-Disposition']).toBe(header);
+    expect(res.send).toHaveBeenCalled();
+  });
+
+  test('takes the month and the dates in the browser\'s time zone', async () => {
+    const res = mockResponse();
+
+    await controller.generatePDF({ params: { customerId: '1' }, query: { month: '10', year: '2026', tz: 'Europe/Berlin' } }, res);
+
+    expect(TimeEntry.getByCustomerIdInRange).toHaveBeenCalledWith('1', { from: '2026-09-30T22:00:00.000Z', to: '2026-10-31T23:00:00.000Z' });
+    expect(generateReportPDF).toHaveBeenCalledWith([{ id: 1 }], expect.objectContaining({ timeZone: 'Europe/Berlin' }));
+  });
+
+  test.each([
+    { month: 'abc' }, { month: '13' }, { year: undefined },
+  ])('answers 400 for %p', async (change) => {
+    Customer.getById.mockClear();
+    const res = mockResponse();
+
+    await controller.generatePDF({ params: { customerId: '1' }, query: { month: '3', year: '2026', ...change } }, res);
+
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(Customer.getById).not.toHaveBeenCalled();
+  });
 });
 
 describe('reportController.generatePDF preview', () => {
   beforeEach(() => {
     Customer.getById.mockResolvedValue({ id: 1, name: 'Muster' });
-    TimeEntry.getByCustomerIdAndMonth.mockResolvedValue([{ id: 1 }]);
+    TimeEntry.getByCustomerIdInRange.mockResolvedValue([{ id: 1 }]);
   });
 
   test('sends the PDF inline with inline=1, so the browser shows it', async () => {
@@ -68,7 +102,7 @@ describe('reportController.generatePDF preview', () => {
 
 describe('reportController.getMonthlyReport', () => {
   test('includes the status of the report', async () => {
-    TimeEntry.getByCustomerIdAndMonth.mockResolvedValue([]);
+    TimeEntry.getByCustomerIdInRange.mockResolvedValue([]);
     ReportStatus.get.mockResolvedValue('ready');
     const res = mockResponse();
 
@@ -76,6 +110,27 @@ describe('reportController.getMonthlyReport', () => {
 
     expect(ReportStatus.get).toHaveBeenCalledWith('1', 2026, 8);
     expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ status: 'ready', month: 8, year: 2026 }));
+  });
+
+  test('loads the month in the browser\'s time zone', async () => {
+    TimeEntry.getByCustomerIdInRange.mockResolvedValue([]);
+    const res = mockResponse();
+
+    await controller.getMonthlyReport({ params: { customerId: '1' }, query: { month: '10', year: '2026', tz: 'Europe/Berlin' } }, res);
+
+    expect(TimeEntry.getByCustomerIdInRange).toHaveBeenCalledWith('1', { from: '2026-09-30T22:00:00.000Z', to: '2026-10-31T23:00:00.000Z' });
+  });
+
+  test.each([
+    { month: 'abc' }, { month: '0' }, { year: '20x6' },
+  ])('answers 400 for %p', async (change) => {
+    TimeEntry.getByCustomerIdInRange.mockClear();
+    const res = mockResponse();
+
+    await controller.getMonthlyReport({ params: { customerId: '1' }, query: { month: '8', year: '2026', ...change } }, res);
+
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(TimeEntry.getByCustomerIdInRange).not.toHaveBeenCalled();
   });
 });
 

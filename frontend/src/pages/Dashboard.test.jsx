@@ -146,7 +146,7 @@ describe('Dashboard', () => {
     expect(first).toHaveTextContent(/Muster GmbH25,00 h80,00\s€\/h, 95,00\s€\/h452,50\s€PDF ansehen/)
     expect(total).toHaveTextContent(/Gesamt9,00 h792,50\s€/)
     const preview = within(first).getByRole('link', { name: 'PDF ansehen für Muster GmbH (öffnet in einem neuen Tab)' })
-    expect(preview).toHaveAttribute('href', expect.stringMatching(/\/reports\/customer\/1\/pdf\?month=9&year=2026&lang=de&inline=1$/))
+    expect(preview).toHaveAttribute('href', expect.stringMatching(/\/reports\/customer\/1\/pdf\?month=9&year=2026&lang=de&tz=[^&]+&inline=1$/))
     expect(preview).toHaveAttribute('target', '_blank')
 
     expect(screen.getByText('August: 1 von 2 Abrechnungen verschickt.')).toBeInTheDocument()

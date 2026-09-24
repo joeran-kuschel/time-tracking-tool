@@ -5,12 +5,13 @@ hours and amounts (`frontend/src/dashboard.js`).
 
 ## Endpoint
 
-`GET /api/dashboard?from=ISO&to=ISO&month=M&year=YYYY`
+`GET /api/dashboard?from=ISO&to=ISO&month=M&year=YYYY&tz=Europe/Berlin`
 
 | Parameter | Meaning |
 |---|---|
 | `from`, `to` | Entries whose start time lies in `[from, to)`. The client sends its month plus the current week, which can reach into the month before or after (`dashboardRange`). |
 | `month`, `year` | The dashboard's month; the report statuses are for the month before it. |
+| `tz` | The browser's time zone. It sets where last month begins and ends for the report statuses, as in the [Reports API](reports.md#time-zone). Optional; UTC without it. |
 
 `400` when a parameter is missing, a date is invalid, `from` is not before `to`, or the month is not 1–12.
 

@@ -19,6 +19,9 @@ screens the sidebar sits above the main area (see [Design](design.md)).
     can't be undone. While the running timer belongs to the customer, deleting fails with *Stop the running timer
     first.* After deleting, focus moves to the customer list.
 - Without a selected customer, the main area says *Select a customer* and only shows the timer.
+- Switching to another customer clears the previous customer's projects and entries at once, and answers that arrive
+  late for a customer that is no longer selected are ignored. So clicking quickly through customers never shows one
+  customer's entries under another's name, and **Start** waits until the new customer's projects are loaded.
 
 ## Projects
 

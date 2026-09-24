@@ -10,7 +10,8 @@ import ErrorMessage from './ErrorMessage'
 // It stays mounted without a project, and Start and Stop are the same button element,
 // so focus survives starting and stopping. The app announces both (useActiveEntry).
 // bare: without card and "Timer" heading, for a place that already names it (the dashboard's Timer tab).
-function Timer({ project, activeEntry, onStart, onStop, error, bare = false }) {
+// busy: a start or stop is being sent; the button stays focusable but is marked disabled.
+function Timer({ project, activeEntry, onStart, onStop, error, busy = false, bare = false }) {
   const [description, setDescription] = useState('')
   const { t, i18n } = useLingui()
   const headingId = useId()
@@ -82,15 +83,15 @@ function Timer({ project, activeEntry, onStart, onStop, error, bare = false }) {
         {!isRunning ? (
           <button
             onClick={handleStart}
-            aria-disabled={!canStart}
+            aria-disabled={!canStart || busy}
             aria-describedby={canStart ? undefined : 'timer-hint'}
-            className={`${canStart ? ui.buttonPrimary : `${ui.buttonSecondary} cursor-not-allowed text-muted`} flex-1 min-h-[3.25rem] text-base`}
+            className={`${canStart ? ui.buttonPrimary : `${ui.buttonSecondary} cursor-not-allowed text-muted`} flex-1 min-h-[3.25rem] text-base aria-disabled:opacity-70`}
           >
             <PlayIcon aria-hidden="true" className="h-4 w-4" />
             <Trans>Start</Trans>
           </button>
         ) : (
-          <button onClick={onStop} className={`${ui.buttonDanger} flex-1 min-h-[3.25rem] text-base`}>
+          <button onClick={onStop} aria-disabled={busy} className={`${ui.buttonDanger} flex-1 min-h-[3.25rem] text-base aria-disabled:opacity-70`}>
             <StopIcon aria-hidden="true" className="h-4 w-4" />
             <Trans>Stop</Trans>
           </button>

@@ -8,6 +8,9 @@ data:
   # "true" for remote databases that require SSL, "false" for the in-cluster Postgres
   DB_SSL: "false"
   VITE_API_URL: "http://localhost:3000/api"
+  # Addresses the frontend is opened at, comma-separated; only these may use the API from a browser.
+  # Set per install, together with VITE_API_URL (e.g. "https://zeit.example.de").
+  CORS_ORIGIN: "http://localhost"
 
 ---
 apiVersion: v1
