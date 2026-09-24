@@ -18,6 +18,7 @@ Time tracking tool for freelancers: track working time per customer and project,
 - During development, only run new tests and the tests affected by the changed code, not the entire test suite (see "Single test file / test name" under Commands)
 - Do not commit and push without being asked
 - Run the entire test suite (backend and frontend) before committing code
+- Before every merge, run the `code-reviewer` agent (`.claude/agents/code-reviewer.md`) on the new and changed code, i.e. everything the merge brings in. Fix its findings or discuss them before merging
 
 ## Current decisions
 
