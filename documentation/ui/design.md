@@ -58,6 +58,14 @@ services and works offline:
 numbers). New components use these instead of repeating Tailwind classes. `index.css` sets the page colors and one
 focus ring (`:focus-visible`, 2 px `accent`) for every control.
 
+## Favicon
+
+`frontend/public/favicon.svg` is the header's clock (Heroicons `ClockIcon`, stroke 2 so it reads at 16 px) in the
+accent color. An SVG file can't use the theme names, so it repeats the two accent values from `index.css`: `#0E5C58`,
+and `#5DB3AB` under `prefers-color-scheme: dark`, so it stays visible on dark browser tabs. It follows the system
+theme, not the app's theme switch. nginx caches `.svg` files for 30 days, so after changing the icon a browser may need
+a hard reload. Test: `src/favicon.test.js`.
+
 ## Layout
 
 - **Header** (every page): app name, the page navigation (*Dashboard*, *Time tracking*, *Reports*), the running timer with its own
