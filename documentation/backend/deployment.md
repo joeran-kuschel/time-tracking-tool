@@ -37,7 +37,8 @@ port clash. `k8s/ingress.yaml` serves `time-tracking.local` and routes by path:
   `CLAUDE.md` and `k8s/README.md`). Other apps add their own Ingress with their own host to the same controller.
 - Docker Desktop publishes the controller's LoadBalancer on ports 80 and 443 of **all network interfaces**, not only
   localhost. Anyone on the same network who sends `Host: time-tracking.local` reaches the API, which has no login.
-  Only the macOS firewall (blocking incoming connections) keeps them out.
+  The macOS firewall is off by default. Turned on with "Block all incoming connections", it should keep them out,
+  but that is untested.
 - `time-tracking.local` has to point to the Mac: add `127.0.0.1 time-tracking.local` and `::1 time-tracking.local` to
   `/etc/hosts`. Without the `::1` line, macOS first asks the network for the `.local` name (mDNS), which can take a few
   seconds.

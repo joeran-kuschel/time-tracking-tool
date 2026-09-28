@@ -97,7 +97,7 @@ kubectl -n time-tracking rollout restart deployment/backend deployment/frontend
 
 The database volume lives inside the kind node: a Docker Desktop update or cluster reset deletes it, and so does `kubectl delete namespace time-tracking`. Back up first with `k8s/backup-db.sh`; an hourly launchd job does this automatically (details, restore: `documentation/backend/database-backups.md`).
 
-The tool is served at http://time-tracking.local through the Ingress (`k8s/ingress.yaml`): `/api/...` and `/health` go to the backend, everything else to the frontend. Frontend and backend are ClusterIP services without a host port, so other apps in the cluster can have their own host. Docker Desktop publishes the ingress controller's LoadBalancer on ports 80 and 443 of all network interfaces, not only localhost: the API has no login, so only the macOS firewall keeps other devices on the network out.
+The tool is served at http://time-tracking.local through the Ingress (`k8s/ingress.yaml`): `/api/...` and `/health` go to the backend, everything else to the frontend. Frontend and backend are ClusterIP services without a host port, so other apps in the cluster can have their own host. Docker Desktop publishes the ingress controller's LoadBalancer on ports 80 and 443 of all network interfaces, not only localhost: the API has no login, so other devices on the network can reach it. The macOS firewall is off by default; turned on with "Block all incoming connections", it should keep them out, but that is untested.
 
 ## Configuration
 

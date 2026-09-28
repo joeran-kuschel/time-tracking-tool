@@ -19,7 +19,7 @@ docker build -t time-tracking-backend:latest ./backend
 docker build -t time-tracking-frontend:latest ./frontend
 ```
 
-Docker Desktop betreibt Kubernetes im kind-Modus mit eigenem Image-Speicher. Wegen `imagePullPolicy: Never` müssen die Images deshalb in den Cluster-Knoten importiert werden:
+Docker Desktop betreibt Kubernetes im kind-Modus mit eigenem Image-Speicher. Wegen `imagePullPolicy: Never` müssen die Images in den Cluster-Knoten importiert werden:
 
 ```bash
 for img in time-tracking-backend time-tracking-frontend; do
@@ -80,7 +80,7 @@ Frontend: http://time-tracking.local
 
 Die API liegt unter derselben Adresse: http://time-tracking.local/api, Health-Check unter http://time-tracking.local/health. Frontend und Backend haben keinen eigenen Port auf dem Mac; `ingress.yaml` leitet `/api` und `/health` ans Backend weiter, alles andere ans Frontend.
 
-**Achtung:** Docker Desktop öffnet die Ports 80 und 443 des Ingress-Controllers auf allen Netzwerkschnittstellen, nicht nur auf `localhost`. Wer im selben Netzwerk ist, erreicht damit die API, und die hat keinen Login. Nur die macOS-Firewall (eingehende Verbindungen blockieren) hält andere Geräte fern.
+**Achtung:** Docker Desktop öffnet die Ports 80 und 443 des Ingress-Controllers auf allen Netzwerkschnittstellen, nicht nur auf `localhost`. Wer im selben Netzwerk ist, erreicht damit die API, und die hat keinen Login. Die macOS-Firewall ist standardmäßig aus. Eingeschaltet (Systemeinstellungen → Netzwerk → Firewall einschalten, dann unter „Optionen …“ „Alle eingehenden Verbindungen blockieren“) sollte sie andere Geräte fernhalten; getestet ist das nicht.
 
 Nach neuen Images:
 
@@ -90,14 +90,14 @@ kubectl -n time-tracking rollout restart deployment/backend deployment/frontend
 
 ## Erlaubte Adressen (CORS_ORIGIN)
 
-Die API nimmt Anfragen aus dem Browser nur von den Adressen an, unter denen das Frontend geöffnet wird. Das hängt von der Installation ab und steht in `configmap.yaml` im ConfigMap `time-tracking-config`. Ein anderer Hostname muss auch in `ingress.yaml` geändert werden:
+Die API nimmt Anfragen aus dem Browser nur von den Adressen an, unter denen das Frontend geöffnet wird. Das hängt von der Installation ab und steht in `configmap.yaml` in der ConfigMap `time-tracking-config`. Ein anderer Hostname muss auch in `ingress.yaml` geändert werden:
 
 ```yaml
 data:
   CORS_ORIGIN: "http://time-tracking.local"     # mehrere Adressen mit Komma trennen
 ```
 
-Die Adresse der API (`VITE_API_URL`) steht nicht im ConfigMap, sondern wird beim Bauen ins Frontend-Image geschrieben (`docker build --build-arg VITE_API_URL=...`). Der Standard `/api` zeigt auf denselben Host wie das Frontend und muss bei einem anderen Hostnamen nicht geändert werden.
+Die Adresse der API (`VITE_API_URL`) steht nicht in der ConfigMap, sondern wird beim Bauen ins Frontend-Image geschrieben (`docker build --build-arg VITE_API_URL=...`). Der Standard `/api` zeigt auf denselben Host wie das Frontend und muss bei einem anderen Hostnamen nicht geändert werden.
 
 Ohne `CORS_ORIGIN` kann kein Browser die API nutzen; das Backend schreibt dann beim Start eine Warnung ins Log. Nach einer Änderung:
 
@@ -125,7 +125,7 @@ kubectl -n time-tracking exec deploy/postgres -- sh -c 'psql -U "$POSTGRES_USER"
 
 Um Remote-Datenbank zu nutzen:
 
-1. In `configmap.yaml` das Secret `time-tracking-db` und das ConfigMap anpassen:
+1. In `configmap.yaml` das Secret `time-tracking-db` und die ConfigMap anpassen:
 ```yaml
 # Secret time-tracking-db
 stringData:

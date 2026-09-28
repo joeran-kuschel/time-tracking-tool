@@ -65,7 +65,7 @@ docker build -t time-tracking-backend:latest ./backend
 docker build -t time-tracking-frontend:latest ./frontend
 ```
 
-Docker Desktop betreibt Kubernetes im kind-Modus mit eigenem Image-Speicher. Wegen `imagePullPolicy: Never` müssen die Images deshalb in den Cluster-Knoten importiert werden:
+Docker Desktop betreibt Kubernetes im kind-Modus mit eigenem Image-Speicher. Wegen `imagePullPolicy: Never` müssen die Images in den Cluster-Knoten importiert werden:
 
 ```bash
 for img in time-tracking-backend time-tracking-frontend; do
@@ -87,6 +87,14 @@ kubectl apply -f k8s/ingress.yaml
 
 Vorher einmal pro Cluster den Ingress-Controller installieren und `time-tracking.local` in `/etc/hosts` eintragen, siehe `k8s/README.md`.
 
+Nach neuen Images:
+
+```bash
+kubectl -n time-tracking rollout restart deployment/backend deployment/frontend
+```
+
+**Achtung:** Docker Desktop öffnet die Ports 80 und 443 auf allen Netzwerkschnittstellen. Wer im selben Netzwerk ist, erreicht damit die API, und die hat keinen Login. Details und Firewall: `k8s/README.md`.
+
 ### 4. Browser öffnen
 
 http://time-tracking.local
@@ -99,7 +107,7 @@ Für Production, nutze Remote PostgreSQL:
 DATABASE_URL=postgresql://user:pass@db.example.com:5432/time_tracking docker-compose up
 ```
 
-Oder in Kubernetes: Aktualisiere das Secret `time-tracking-db` und setze `DB_SSL` im ConfigMap (`k8s/configmap.yaml`):
+Oder in Kubernetes: Aktualisiere das Secret `time-tracking-db` und setze `DB_SSL` in der ConfigMap (`k8s/configmap.yaml`):
 
 ```yaml
 stringData:
