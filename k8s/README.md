@@ -21,7 +21,24 @@ docker build -t time-tracking-frontend:latest .
 cd ..
 ```
 
-### 3. Ressourcen deployen
+### 3. Ingress-Controller installieren (einmal pro Cluster)
+
+Das Tool läuft unter einem eigenen Hostnamen, http://time-tracking.local, statt auf Ports von `localhost`. So können weitere Apps im selben Cluster laufen, jede mit eigenem Hostnamen. Dafür braucht der Cluster einen Ingress-Controller mit der Klasse `nginx`:
+
+```bash
+helm upgrade --install ingress-nginx ingress-nginx \
+  --repo https://kubernetes.github.io/ingress-nginx --version 4.15.1 \
+  --namespace ingress-nginx --create-namespace
+```
+
+Der Name muss auf den Mac zeigen. Einmalig in `/etc/hosts` eintragen (braucht sudo). Ohne die `::1`-Zeile fragt macOS bei `.local`-Namen erst im Netzwerk nach, das dauert einige Sekunden:
+
+```bash
+sudo sed -i '' '/[[:space:]]time-tracking\.local$/d' /etc/hosts
+printf '127.0.0.1 time-tracking.local\n::1 time-tracking.local\n' | sudo tee -a /etc/hosts
+```
+
+### 4. Ressourcen deployen
 
 ```bash
 kubectl apply -f k8s/namespace.yaml
@@ -30,6 +47,7 @@ kubectl apply -f k8s/postgres-init-scripts.yaml
 kubectl apply -f k8s/postgres.yaml
 kubectl apply -f k8s/backend.yaml
 kubectl apply -f k8s/frontend.yaml
+kubectl apply -f k8s/ingress.yaml
 ```
 
 ### Migrationen
@@ -43,39 +61,30 @@ Nach Änderungen an den Migrationen neu generieren:
 
 Postgres führt die Scripts nur beim ersten Start mit leerem Volume aus.
 
-### 4. Status prüfen
+### 5. Status prüfen
 
 ```bash
 kubectl get all -n time-tracking
 kubectl logs -n time-tracking -l app=backend
 ```
 
-### 5. Zugriff auf App
+### 6. Zugriff auf App
 
-Mit Minikube:
-```bash
-minikube service frontend -n time-tracking
-```
+Frontend: http://time-tracking.local
 
-Mit Port Forward:
-```bash
-kubectl port-forward -n time-tracking svc/frontend 8080:80
-kubectl port-forward -n time-tracking svc/backend 3000:3000
-```
-
-Dann: `http://localhost:8080`
+Die API liegt unter derselben Adresse: http://time-tracking.local/api, Health-Check unter http://time-tracking.local/health. Frontend und Backend haben keinen eigenen Port auf dem Mac; `ingress.yaml` leitet `/api` und `/health` ans Backend weiter, alles andere ans Frontend.
 
 ## Erlaubte Adressen (CORS_ORIGIN)
 
-Die API nimmt Anfragen aus dem Browser nur von den Adressen an, unter denen das Frontend geöffnet wird. Das hängt von der Installation ab und steht in `configmap.yaml` im ConfigMap `time-tracking-config`, zusammen mit `VITE_API_URL`:
+Die API nimmt Anfragen aus dem Browser nur von den Adressen an, unter denen das Frontend geöffnet wird. Das hängt von der Installation ab und steht in `configmap.yaml` im ConfigMap `time-tracking-config`, zusammen mit `VITE_API_URL`. Ein anderer Hostname muss auch in `ingress.yaml` geändert werden:
 
 ```yaml
 data:
-  VITE_API_URL: "http://localhost:3000/api"
-  CORS_ORIGIN: "http://localhost"            # mehrere Adressen mit Komma trennen
+  VITE_API_URL: "/api"                          # gleicher Host wie das Frontend
+  CORS_ORIGIN: "http://time-tracking.local"     # mehrere Adressen mit Komma trennen
 ```
 
-Mit Port Forward auf 8080 (siehe oben) gehört `http://localhost:8080` dazu. Ohne `CORS_ORIGIN` kann kein Browser die API nutzen; das Backend schreibt dann beim Start eine Warnung ins Log. Nach einer Änderung:
+Ohne `CORS_ORIGIN` kann kein Browser die API nutzen; das Backend schreibt dann beim Start eine Warnung ins Log. Nach einer Änderung:
 
 ```bash
 kubectl apply -f k8s/configmap.yaml

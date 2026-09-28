@@ -8,7 +8,8 @@ RUN npm ci
 
 COPY . .
 
-ARG VITE_API_URL=http://localhost:3000/api
+# Relative: in the cluster the Ingress serves the API on the frontend's host
+ARG VITE_API_URL=/api
 ENV VITE_API_URL=$VITE_API_URL
 
 RUN npm run build

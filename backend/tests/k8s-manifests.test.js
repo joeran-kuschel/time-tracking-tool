@@ -53,7 +53,11 @@ describe('database connection config', () => {
   });
 
   test('allows the frontend of the local install to use the API', () => {
-    expect(configMap.data.CORS_ORIGIN).toBe('http://localhost');
+    expect(configMap.data.CORS_ORIGIN).toBe('http://time-tracking.local');
+  });
+
+  test('the frontend calls the API on its own host', () => {
+    expect(configMap.data.VITE_API_URL).toBe('/api');
   });
 
   test('backend loads both the ConfigMap and the database Secret', () => {
@@ -64,4 +68,39 @@ describe('database connection config', () => {
       { secretRef: { name: 'time-tracking-db' } },
     ]));
   });
+});
+
+describe('ingress', () => {
+  const ingress = find(loadManifests('ingress.yaml'), 'Ingress', 'time-tracking');
+  const rule = ingress.spec.rules[0];
+  const route = (p) => rule.http.paths.find((entry) => entry.path === p);
+
+  test('serves the tool on its own host in the app namespace', () => {
+    expect(ingress.metadata.namespace).toBe('time-tracking');
+    expect(ingress.spec.ingressClassName).toBe('nginx');
+    expect(ingress.spec.rules).toHaveLength(1);
+    expect(rule.host).toBe('time-tracking.local');
+  });
+
+  test('the allowed CORS origin is the ingress host', () => {
+    const configMap = find(loadManifests('configmap.yaml'), 'ConfigMap', 'time-tracking-config');
+    expect(configMap.data.CORS_ORIGIN.split(',')).toContain(`http://${rule.host}`);
+  });
+
+  test.each([
+    ['/api', 'backend', 'Prefix', 'backend.yaml'],
+    ['/health', 'backend', 'Exact', 'backend.yaml'],
+    ['/', 'frontend', 'Prefix', 'frontend.yaml'],
+  ])('routes %s to the port of the %s service', (p, name, pathType, file) => {
+    const service = find(loadManifests(file), 'Service', name);
+    expect(route(p).pathType).toBe(pathType);
+    expect(route(p).backend.service).toEqual({ name, port: { number: service.spec.ports[0].port } });
+  });
+
+  test.each([['backend.yaml', 'backend'], ['frontend.yaml', 'frontend']])(
+    '%s is only reachable through the ingress, not on a host port',
+    (file, name) => {
+      expect(find(loadManifests(file), 'Service', name).spec.type).toBe('ClusterIP');
+    },
+  );
 });

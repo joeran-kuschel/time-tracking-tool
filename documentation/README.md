@@ -23,4 +23,4 @@ Feature documentation for the time tracking tool, split into UI and Backend. Eac
 - [Translation](backend/translation.md): the translated PDF report and adding texts
 - [Database](backend/database.md): schema, migrations, connection and the remote database option
 - [Database backups](backend/database-backups.md): hourly backups of the in-cluster database and how to restore them
-- [Deployment](backend/deployment.md): the Kubernetes setup on Docker Desktop
+- [Deployment](backend/deployment.md): the Kubernetes setup on Docker Desktop, served at http://time-tracking.local

@@ -1,0 +1,35 @@
+# Serves the tool at http://time-tracking.local, so other apps in the cluster can have
+# their own host instead of a port. Needs an ingress controller with the class "nginx"
+# (see k8s/README.md) and time-tracking.local pointing to 127.0.0.1 in /etc/hosts.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: time-tracking
+  namespace: time-tracking
+spec:
+  ingressClassName: nginx
+  rules:
+  - host: time-tracking.local
+    http:
+      paths:
+      - path: /api
+        pathType: Prefix
+        backend:
+          service:
+            name: backend
+            port:
+              number: 3000
+      - path: /health
+        pathType: Exact
+        backend:
+          service:
+            name: backend
+            port:
+              number: 3000
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: frontend
+            port:
+              number: 80

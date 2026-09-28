@@ -80,9 +80,15 @@ for img in time-tracking-backend time-tracking-frontend; do
   docker save "${img}:latest" | docker exec -i desktop-control-plane ctr --namespace k8s.io images import -
 done
 
+# Once per cluster: the ingress controller that serves http://time-tracking.local
+# (/etc/hosts needs "127.0.0.1 time-tracking.local" and "::1 time-tracking.local", see k8s/README.md)
+helm upgrade --install ingress-nginx ingress-nginx \
+  --repo https://kubernetes.github.io/ingress-nginx --version 4.15.1 \
+  --namespace ingress-nginx --create-namespace
+
 # Deploy in this order
 kubectl config use-context docker-desktop
-for f in namespace configmap postgres-init-scripts postgres backend frontend; do kubectl apply -f k8s/$f.yaml; done
+for f in namespace configmap postgres-init-scripts postgres backend frontend ingress; do kubectl apply -f k8s/$f.yaml; done
 
 # Pick up new images
 kubectl -n time-tracking rollout restart deployment/backend deployment/frontend
@@ -90,7 +96,7 @@ kubectl -n time-tracking rollout restart deployment/backend deployment/frontend
 
 The database volume lives inside the kind node: a Docker Desktop update or cluster reset deletes it, and so does `kubectl delete namespace time-tracking`. Back up first with `k8s/backup-db.sh`; an hourly launchd job does this automatically (details, restore: `documentation/backend/database-backups.md`).
 
-Docker Desktop publishes the LoadBalancer services on localhost: frontend at http://localhost, API at http://localhost:3000 (`/health`, `/api/...`).
+The tool is served at http://time-tracking.local through the Ingress (`k8s/ingress.yaml`): `/api/...` and `/health` go to the backend, everything else to the frontend. Frontend and backend are ClusterIP services without a host port, so other apps in the cluster can have their own host. Docker Desktop publishes the ingress controller's LoadBalancer on localhost ports 80 and 443.
 
 ## Configuration
 
@@ -99,7 +105,7 @@ Docker Desktop publishes the LoadBalancer services on localhost: frontend at htt
   - the Secret `time-tracking-db` (`DATABASE_URL`)
   - the Secret `postgres-secret` (Postgres credentials)
 - `DB_SSL` (`"true"`/`"false"`) turns SSL on for the database connection, independent of `NODE_ENV`. Keep it `"false"` for the in-cluster Postgres, which has no SSL. Logic: `backend/src/config/ssl.js`.
-- `CORS_ORIGIN` depends on the install: the comma-separated addresses the frontend is opened at. Only these may call the API from a browser; without it, none can. Set it together with `VITE_API_URL`. The API setup is in `backend/src/app.js`; `server.js` only starts it.
+- `CORS_ORIGIN` depends on the install: the comma-separated addresses the frontend is opened at. Only these may call the API from a browser; without it, none can. Set it together with `VITE_API_URL` and the host in `k8s/ingress.yaml`. `VITE_API_URL` is built into the frontend image (Dockerfile default `/api`, the frontend's own host). The API setup is in `backend/src/app.js`; `server.js` only starts it.
 - The backend runs in UTC (`process.env.TZ` in `server.js`): times are stored as UTC and `pg` reads `TIMESTAMP` as local time. Month limits for reports follow the browser's time zone (`tz` query parameter, `monthRange` in `utils/period.js`).
 - Credentials in the repo (`password`) are local placeholders only.
 

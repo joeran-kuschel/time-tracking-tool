@@ -75,15 +75,14 @@ kubectl apply -f k8s/postgres-init-scripts.yaml
 kubectl apply -f k8s/postgres.yaml
 kubectl apply -f k8s/backend.yaml
 kubectl apply -f k8s/frontend.yaml
+kubectl apply -f k8s/ingress.yaml
 ```
 
-### 4. Forwarding für lokalen Zugriff
+Vorher einmal pro Cluster den Ingress-Controller installieren und `time-tracking.local` in `/etc/hosts` eintragen, siehe `k8s/README.md`.
 
-```bash
-kubectl port-forward -n time-tracking svc/frontend 8080:80
-```
+### 4. Browser öffnen
 
-Dann: `http://localhost:8080`
+http://time-tracking.local
 
 ## Remote-Datenbank
 

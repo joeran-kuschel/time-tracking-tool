@@ -62,7 +62,8 @@ metadata:
   name: backend
   namespace: time-tracking
 spec:
-  type: LoadBalancer
+  # Reached through the Ingress (ingress.yaml), not published on the host
+  type: ClusterIP
   ports:
   - port: 3000
     targetPort: 3000
