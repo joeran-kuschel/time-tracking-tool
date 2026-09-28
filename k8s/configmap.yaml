@@ -7,10 +7,8 @@ data:
   NODE_ENV: "production"
   # "true" for remote databases that require SSL, "false" for the in-cluster Postgres
   DB_SSL: "false"
-  # The Ingress serves the API on the frontend's host, so the frontend calls it on the same address
-  VITE_API_URL: "/api"
   # Addresses the frontend is opened at, comma-separated; only these may use the API from a browser.
-  # Set per install, together with VITE_API_URL and the host in ingress.yaml (e.g. "https://zeit.example.de").
+  # Set per install, together with the host in ingress.yaml (e.g. "https://zeit.example.de").
   CORS_ORIGIN: "http://time-tracking.local"
 
 ---

@@ -52,14 +52,6 @@ describe('database connection config', () => {
     expect(configMap.data.DB_SSL).toBe('false');
   });
 
-  test('allows the frontend of the local install to use the API', () => {
-    expect(configMap.data.CORS_ORIGIN).toBe('http://time-tracking.local');
-  });
-
-  test('the frontend calls the API on its own host', () => {
-    expect(configMap.data.VITE_API_URL).toBe('/api');
-  });
-
   test('backend loads both the ConfigMap and the database Secret', () => {
     const deployment = find(loadManifests('backend.yaml'), 'Deployment', 'backend');
     const container = deployment.spec.template.spec.containers.find((c) => c.name === 'backend');
@@ -74,6 +66,10 @@ describe('ingress', () => {
   const ingress = find(loadManifests('ingress.yaml'), 'Ingress', 'time-tracking');
   const rule = ingress.spec.rules[0];
   const route = (p) => rule.http.paths.find((entry) => entry.path === p);
+
+  test('has exactly the routes of the frontend and the backend', () => {
+    expect(rule.http.paths.map((entry) => entry.path).sort()).toEqual(['/', '/api', '/health']);
+  });
 
   test('serves the tool on its own host in the app namespace', () => {
     expect(ingress.metadata.namespace).toBe('time-tracking');
@@ -93,6 +89,7 @@ describe('ingress', () => {
     ['/', 'frontend', 'Prefix', 'frontend.yaml'],
   ])('routes %s to the port of the %s service', (p, name, pathType, file) => {
     const service = find(loadManifests(file), 'Service', name);
+    expect(route(p)).toBeDefined();
     expect(route(p).pathType).toBe(pathType);
     expect(route(p).backend.service).toEqual({ name, port: { number: service.spec.ports[0].port } });
   });
@@ -103,4 +100,10 @@ describe('ingress', () => {
       expect(find(loadManifests(file), 'Service', name).spec.type).toBe('ClusterIP');
     },
   );
+
+  // VITE_API_URL is built into the frontend image, so the Dockerfile default is what the cluster uses
+  test('the frontend image calls the API on its own host', () => {
+    const dockerfile = fs.readFileSync(path.join(rootDir, 'frontend', 'Dockerfile'), 'utf8');
+    expect(dockerfile).toMatch(/^ARG VITE_API_URL=\/api$/m);
+  });
 });

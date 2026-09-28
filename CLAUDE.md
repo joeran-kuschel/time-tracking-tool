@@ -17,6 +17,7 @@ Time tracking tool for freelancers: track working time per customer and project,
 - The tool is available in German and English. Use a gettext-style translation tool; switching the language must not reload the page
 - During development, only run new tests and the tests affected by the changed code, not the entire test suite (see "Single test file / test name" under Commands)
 - Do not commit and push without being asked
+- Every code change (fix, new feature, refactoring) goes into its own branch, which is merged back into `main` once finished. Never commit code changes to `main` directly
 - Run the entire test suite (backend and frontend) before committing code
 - Before every merge, run the `code-reviewer` agent (`.claude/agents/code-reviewer.md`) on the new and changed code, i.e. everything the merge brings in. Fix its findings or discuss them before merging
 
@@ -82,7 +83,7 @@ done
 
 # Once per cluster: the ingress controller that serves http://time-tracking.local
 # (/etc/hosts needs "127.0.0.1 time-tracking.local" and "::1 time-tracking.local", see k8s/README.md)
-helm upgrade --install ingress-nginx ingress-nginx \
+helm --kube-context docker-desktop upgrade --install ingress-nginx ingress-nginx \
   --repo https://kubernetes.github.io/ingress-nginx --version 4.15.1 \
   --namespace ingress-nginx --create-namespace
 
@@ -96,16 +97,17 @@ kubectl -n time-tracking rollout restart deployment/backend deployment/frontend
 
 The database volume lives inside the kind node: a Docker Desktop update or cluster reset deletes it, and so does `kubectl delete namespace time-tracking`. Back up first with `k8s/backup-db.sh`; an hourly launchd job does this automatically (details, restore: `documentation/backend/database-backups.md`).
 
-The tool is served at http://time-tracking.local through the Ingress (`k8s/ingress.yaml`): `/api/...` and `/health` go to the backend, everything else to the frontend. Frontend and backend are ClusterIP services without a host port, so other apps in the cluster can have their own host. Docker Desktop publishes the ingress controller's LoadBalancer on localhost ports 80 and 443.
+The tool is served at http://time-tracking.local through the Ingress (`k8s/ingress.yaml`): `/api/...` and `/health` go to the backend, everything else to the frontend. Frontend and backend are ClusterIP services without a host port, so other apps in the cluster can have their own host. Docker Desktop publishes the ingress controller's LoadBalancer on ports 80 and 443 of all network interfaces, not only localhost: the API has no login, so only the macOS firewall keeps other devices on the network out.
 
 ## Configuration
 
 - `k8s/configmap.yaml` holds:
-  - the ConfigMap `time-tracking-config` (`NODE_ENV`, `DB_SSL`, `VITE_API_URL`, `CORS_ORIGIN`)
+  - the ConfigMap `time-tracking-config` (`NODE_ENV`, `DB_SSL`, `CORS_ORIGIN`)
   - the Secret `time-tracking-db` (`DATABASE_URL`)
   - the Secret `postgres-secret` (Postgres credentials)
 - `DB_SSL` (`"true"`/`"false"`) turns SSL on for the database connection, independent of `NODE_ENV`. Keep it `"false"` for the in-cluster Postgres, which has no SSL. Logic: `backend/src/config/ssl.js`.
-- `CORS_ORIGIN` depends on the install: the comma-separated addresses the frontend is opened at. Only these may call the API from a browser; without it, none can. Set it together with `VITE_API_URL` and the host in `k8s/ingress.yaml`. `VITE_API_URL` is built into the frontend image (Dockerfile default `/api`, the frontend's own host). The API setup is in `backend/src/app.js`; `server.js` only starts it.
+- `CORS_ORIGIN` depends on the install: the comma-separated addresses the frontend is opened at. Only these may call the API from a browser; without it, none can. Set it together with the host in `k8s/ingress.yaml`.
+- `VITE_API_URL` is a build argument of the frontend image, not a ConfigMap value. The Dockerfile default `/api` is the frontend's own host, so it needs no change when the host changes. Docker Compose passes `http://localhost:3000/api`. The API setup is in `backend/src/app.js`; `server.js` only starts it.
 - The backend runs in UTC (`process.env.TZ` in `server.js`): times are stored as UTC and `pg` reads `TIMESTAMP` as local time. Month limits for reports follow the browser's time zone (`tz` query parameter, `monthRange` in `utils/period.js`).
 - Credentials in the repo (`password`) are local placeholders only.
 

@@ -4,21 +4,27 @@ Kubernetes Manifests für das Time-Tracking Tool.
 
 ## Setup
 
-### 1. Minikube starten
+### 1. Cluster auswählen
+
+Das Tool läuft im Kubernetes von Docker Desktop (in den Docker-Desktop-Einstellungen aktivieren):
 
 ```bash
-minikube start
-eval $(minikube docker-env)
+kubectl config use-context docker-desktop
 ```
 
-### 2. Docker Images bauen
+### 2. Docker Images bauen und in den Cluster laden
 
 ```bash
-cd backend
-docker build -t time-tracking-backend:latest .
-cd ../frontend
-docker build -t time-tracking-frontend:latest .
-cd ..
+docker build -t time-tracking-backend:latest ./backend
+docker build -t time-tracking-frontend:latest ./frontend
+```
+
+Docker Desktop betreibt Kubernetes im kind-Modus mit eigenem Image-Speicher. Wegen `imagePullPolicy: Never` müssen die Images deshalb in den Cluster-Knoten importiert werden:
+
+```bash
+for img in time-tracking-backend time-tracking-frontend; do
+  docker save "${img}:latest" | docker exec -i desktop-control-plane ctr --namespace k8s.io images import -
+done
 ```
 
 ### 3. Ingress-Controller installieren (einmal pro Cluster)
@@ -26,7 +32,7 @@ cd ..
 Das Tool läuft unter einem eigenen Hostnamen, http://time-tracking.local, statt auf Ports von `localhost`. So können weitere Apps im selben Cluster laufen, jede mit eigenem Hostnamen. Dafür braucht der Cluster einen Ingress-Controller mit der Klasse `nginx`:
 
 ```bash
-helm upgrade --install ingress-nginx ingress-nginx \
+helm --kube-context docker-desktop upgrade --install ingress-nginx ingress-nginx \
   --repo https://kubernetes.github.io/ingress-nginx --version 4.15.1 \
   --namespace ingress-nginx --create-namespace
 ```
@@ -74,15 +80,24 @@ Frontend: http://time-tracking.local
 
 Die API liegt unter derselben Adresse: http://time-tracking.local/api, Health-Check unter http://time-tracking.local/health. Frontend und Backend haben keinen eigenen Port auf dem Mac; `ingress.yaml` leitet `/api` und `/health` ans Backend weiter, alles andere ans Frontend.
 
+**Achtung:** Docker Desktop öffnet die Ports 80 und 443 des Ingress-Controllers auf allen Netzwerkschnittstellen, nicht nur auf `localhost`. Wer im selben Netzwerk ist, erreicht damit die API, und die hat keinen Login. Nur die macOS-Firewall (eingehende Verbindungen blockieren) hält andere Geräte fern.
+
+Nach neuen Images:
+
+```bash
+kubectl -n time-tracking rollout restart deployment/backend deployment/frontend
+```
+
 ## Erlaubte Adressen (CORS_ORIGIN)
 
-Die API nimmt Anfragen aus dem Browser nur von den Adressen an, unter denen das Frontend geöffnet wird. Das hängt von der Installation ab und steht in `configmap.yaml` im ConfigMap `time-tracking-config`, zusammen mit `VITE_API_URL`. Ein anderer Hostname muss auch in `ingress.yaml` geändert werden:
+Die API nimmt Anfragen aus dem Browser nur von den Adressen an, unter denen das Frontend geöffnet wird. Das hängt von der Installation ab und steht in `configmap.yaml` im ConfigMap `time-tracking-config`. Ein anderer Hostname muss auch in `ingress.yaml` geändert werden:
 
 ```yaml
 data:
-  VITE_API_URL: "/api"                          # gleicher Host wie das Frontend
   CORS_ORIGIN: "http://time-tracking.local"     # mehrere Adressen mit Komma trennen
 ```
+
+Die Adresse der API (`VITE_API_URL`) steht nicht im ConfigMap, sondern wird beim Bauen ins Frontend-Image geschrieben (`docker build --build-arg VITE_API_URL=...`). Der Standard `/api` zeigt auf denselben Host wie das Frontend und muss bei einem anderen Hostnamen nicht geändert werden.
 
 Ohne `CORS_ORIGIN` kann kein Browser die API nutzen; das Backend schreibt dann beim Start eine Warnung ins Log. Nach einer Änderung:
 

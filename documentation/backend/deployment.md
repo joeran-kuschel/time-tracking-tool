@@ -14,8 +14,9 @@ The tool runs on the local Kubernetes cluster of Docker Desktop, in the namespac
 - At startup the backend logs which database it uses, with the password replaced by `***`
   (`backend/src/config/redact.js`). Values that aren't a URL with a host are not logged at all, since they could still
   contain the password.
-- The frontend calls the API at `VITE_API_URL`, built into the image (default `/api`, the same host as the frontend).
-  Docker Compose builds it with `http://localhost:3000/api`, since it publishes the backend on port 3000.
+- The frontend calls the API at `VITE_API_URL`, a build argument of the frontend image (default `/api`, the same host
+  as the frontend), not a ConfigMap value. Docker Compose builds it with `http://localhost:3000/api`, since it publishes
+  the backend on port 3000.
 - Browsers may only use the API from the origins in `CORS_ORIGIN` (see below). Request bodies must be JSON; form data
   is not read, because an HTML form on another site could send it without a CORS check.
 - The backend runs in UTC (`process.env.TZ` is set in `server.js`). Stored times are UTC, and `pg` reads `TIMESTAMP`
@@ -33,14 +34,16 @@ port clash. `k8s/ingress.yaml` serves `time-tracking.local` and routes by path:
 | everything else | `frontend`, port 80 |
 
 - It needs an ingress controller with the class `nginx`, installed once per cluster (ingress-nginx via Helm, command in
-  `CLAUDE.md` and `k8s/README.md`). Docker Desktop publishes its LoadBalancer on localhost ports 80 and 443. Other apps
-  add their own Ingress with their own host to the same controller.
+  `CLAUDE.md` and `k8s/README.md`). Other apps add their own Ingress with their own host to the same controller.
+- Docker Desktop publishes the controller's LoadBalancer on ports 80 and 443 of **all network interfaces**, not only
+  localhost. Anyone on the same network who sends `Host: time-tracking.local` reaches the API, which has no login.
+  Only the macOS firewall (blocking incoming connections) keeps them out.
 - `time-tracking.local` has to point to the Mac: add `127.0.0.1 time-tracking.local` and `::1 time-tracking.local` to
   `/etc/hosts`. Without the `::1` line, macOS first asks the network for the `.local` name (mDNS), which can take a few
   seconds.
 - Since frontend and API share the host, the frontend calls the API at the relative path `/api`.
 - Tests: `tests/k8s-manifests.test.js` checks the routes, that they point at the services' ports, that the host is the
-  allowed CORS origin and that the services are not published on a host port.
+  allowed CORS origin, that the services are not published on a host port and that the frontend image calls `/api`.
 
 ## Build and deploy
 
@@ -60,7 +63,7 @@ See [Database](database.md) for `DATABASE_URL` and `DB_SSL`. `NODE_ENV` is `prod
 `CORS_ORIGIN` depends on where the tool is installed: the addresses the frontend is opened at, comma-separated, for
 example `http://localhost` or `https://zeit.example.de,http://localhost:5173`. Only these origins may call the API from
 a browser; others get no CORS permission, so a website opened in the same browser can't read or change the data. Set
-it together with `VITE_API_URL` and the host in `k8s/ingress.yaml`:
+it together with the host in `k8s/ingress.yaml`:
 
 | Where | Setting |
 |---|---|

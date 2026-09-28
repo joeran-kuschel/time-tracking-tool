@@ -21,7 +21,7 @@ Ausführliche Dokumentation (Englisch) aller Features: [`documentation/`](docume
 - **Backend**: Node.js + Express
 - **Datenbank**: PostgreSQL
 - **Container**: Docker
-- **Orchestration**: Kubernetes (minikube/Docker Desktop K8s)
+- **Orchestration**: Kubernetes (Docker Desktop)
 
 ## Quick Start (Lokal)
 
@@ -52,18 +52,25 @@ http://localhost
 
 ## Kubernetes Deployment (Lokal)
 
-### 1. Minikube starten
+### 1. Cluster auswählen
 
 ```bash
-minikube start
-eval $(minikube docker-env)
+kubectl config use-context docker-desktop
 ```
 
-### 2. Images bauen
+### 2. Images bauen und in den Cluster laden
 
 ```bash
 docker build -t time-tracking-backend:latest ./backend
 docker build -t time-tracking-frontend:latest ./frontend
+```
+
+Docker Desktop betreibt Kubernetes im kind-Modus mit eigenem Image-Speicher. Wegen `imagePullPolicy: Never` müssen die Images deshalb in den Cluster-Knoten importiert werden:
+
+```bash
+for img in time-tracking-backend time-tracking-frontend; do
+  docker save "${img}:latest" | docker exec -i desktop-control-plane ctr --namespace k8s.io images import -
+done
 ```
 
 ### 3. K8s Ressourcen erstellen
