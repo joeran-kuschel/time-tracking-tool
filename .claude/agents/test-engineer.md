@@ -32,8 +32,8 @@ For every changed behavior, think through:
 3. **Errors:** the backend answering `4xx`/`5xx` or being unreachable (`ApiError` with status `0`), and what the
    user then sees (`ErrorMessage`, `role="alert"`). Business rules that answer `409`, such as a second running timer
    or deleting something that contains the running timer.
-4. **Bug fixes:** a test that fails without the fix. Check this by reasoning through the old code, or by running the
-   test against it with `git stash` only if the working tree is otherwise clean, and restore it right after.
+4. **Bug fixes:** a test that fails without the fix. Check this by reasoning through the old code (`git show
+   main:<file>`); don't stash or check out production files to run the test against it.
 
 Test behavior, not implementation: what a caller gets back, what a user sees and can do. Don't assert on internal
 state, private helpers or exact class strings.
@@ -48,8 +48,8 @@ state, private helpers or exact class strings.
 - **Backend routes and app:** follow `tests/timeEntry.routes.test.js` and `tests/app.test.js`.
 - **k8s manifests:** parse them with `js-yaml` (`tests/k8s-manifests.test.js`). Shell scripts in `k8s/` are tested
   against a fake `kubectl`/`launchctl` on the `PATH` (`tests/db-backup-scripts.test.js`).
-- **Backend translation:** PDF texts are checked through `activateLocale()` and the generator, as in
-  `tests/pdfGenerator.test.js`.
+- **Backend translation:** PDF texts are checked by passing `locale` to `generateReportPDF`, as in
+  `tests/pdfGenerator.test.js`; `activateLocale()` itself is tested in `tests/i18n.test.js`.
 - **Frontend:** tests live next to the component (`Foo.test.jsx`). Import `render`/`renderHook` and `screen` from
   `src/test/render.jsx` (it adds the `I18nProvider`), and `axe` from `src/test/axe.js`. Use `@testing-library/user-event`
   for interaction. Query by role and accessible name (`getByRole('button', { name: … })`), which also checks the

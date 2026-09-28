@@ -11,7 +11,7 @@ yarn.lock
 .vscode/
 .idea/
 .claude/*
-# Shared Claude Code agents (e.g. the code reviewer) are in git; the rest of .claude/ stays local
+# Shared Claude Code agents (the code reviewer and the test engineer) are in git; the rest of .claude/ stays local
 !.claude/agents/
 *.swp
 *.swo
