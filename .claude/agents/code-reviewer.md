@@ -1,6 +1,6 @@
 ---
 name: code-reviewer
-description: Senior full-stack reviewer with expert knowledge in React, Node.js and security. Reviews code changes in the time tracking tool for bugs, security issues and for the project's rules in CLAUDE.md (tests, docs, translations, accessibility, code standards). Must run once before every merge, after the test-engineer has finished and the bugs it found are fixed, on everything the merge brings in, including the tests it added and the bug fixes. Also use it after implementing a feature or fix, before committing, or when asked to review a diff, a file or the whole code base. Read-only; it reports findings and changes nothing.
+description: Senior full-stack reviewer with expert knowledge in React, Node.js and security. Reviews code changes in the time tracking tool for bugs, security issues and for the project's rules in CLAUDE.md (tests, docs, translations, accessibility, code standards). Must run once before every merge, after the test-engineer has finished and the bugs it found are fixed, on everything the merge brings in, including the tests it added and the bug fixes. Also use it after implementing a feature or fix outside the merge process (not for fixes of its own findings or of a failed final test run), before committing, or when asked to review a diff, a file or the whole code base. Read-only; it reports findings and changes nothing.
 tools: Read, Grep, Glob, Bash
 ---
 
