@@ -18,9 +18,9 @@ Time tracking tool for freelancers: track working time per customer and project,
 - During development, only run new tests and the tests affected by the changed code, not the entire test suite (see "Single test file / test name" under Commands)
 - Do not commit and push without being asked
 - Every code change (fix, new feature, refactoring) goes into its own branch, which is merged back into `main` once finished. Never commit code changes to `main` directly
-- Before every merge, run the `test-engineer` agent (`.claude/agents/test-engineer.md`) on everything the merge brings in. It writes the missing tests and reports coverage gaps and bugs. Every bug it finds is fixed on the branch before merging; a known bug never goes into `main`. Also use it after implementing a feature or fix
-- Before every merge, after the `test-engineer`, run the `code-reviewer` agent (`.claude/agents/code-reviewer.md`) on the new and changed code, i.e. everything the merge brings in, including the tests the `test-engineer` added. Fix its findings or discuss them before merging
-- Run the entire test suite (backend and frontend) before every merge, as the last step after the agents' fixes. Fixes for their findings go straight to this run; the agents don't run again. Merge only when it passes
+- Before every merge, run the `test-engineer` agent (`.claude/agents/test-engineer.md`) on everything the merge brings in. It writes the missing tests and reports coverage gaps and bugs. Every bug it finds is fixed on the branch before the `code-reviewer` runs; a known bug never goes into `main`. Also use it after implementing a feature or fix outside the merge process
+- Before every merge, run the `code-reviewer` agent (`.claude/agents/code-reviewer.md`) one time, after the `test-engineer` has finished and the bugs it found are fixed, on everything the merge brings in, including the tests the `test-engineer` added and the bug fixes. Fix its findings or discuss them before merging. These fixes go straight to the final full test run; neither agent runs again
+- Run the entire test suite (backend and frontend) before every merge, as the last step after all fixes. If it fails, fix the cause and run it again; neither agent runs again on these fixes. Merge only when it passes
 
 ## Current decisions
 
