@@ -10,7 +10,7 @@
     "extract": "lingui extract --clean"
   },
   "keywords": [],
-  "author": "Jöran Kuschel",
+  "author": "Jöran Kuschel <joeran@joerankuschel.de>",
   "license": "MIT",
   "dependencies": {
     "@lingui/core": "^5.9.5",
