@@ -1,6 +1,7 @@
 {
   "name": "time-tracking-frontend",
   "version": "0.1.0",
+  "author": "Jöran Kuschel <joeran@joerankuschel.de>",
   "type": "module",
   "scripts": {
     "dev": "vite",
