@@ -171,4 +171,4 @@ cd frontend && npm install && npm test
 
 ## Lizenz
 
-MIT
+MIT, siehe [LICENSE](LICENSE).
