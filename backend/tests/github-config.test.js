@@ -37,6 +37,42 @@ describe('test workflow', () => {
   });
 });
 
+describe('dependabot', () => {
+  const config = yaml.load(read('.github/dependabot.yml'));
+  const byEcosystem = (ecosystem) => config.updates.filter((u) => u['package-ecosystem'] === ecosystem);
+
+  test('checks both npm packages and the GitHub Actions weekly', () => {
+    expect(byEcosystem('npm').map((u) => u.directory).sort()).toEqual(['/backend', '/frontend']);
+    expect(byEcosystem('github-actions').map((u) => u.directory)).toEqual(['/']);
+    config.updates.forEach((u) => expect(u.schedule.interval).toBe('weekly'));
+  });
+
+  test('every checked directory has a package.json, and the workflows exist', () => {
+    byEcosystem('npm').forEach((u) => expect(fs.existsSync(path.join(rootDir, u.directory, 'package.json'))).toBe(true));
+    const workflows = fs.readdirSync(path.join(rootDir, '.github', 'workflows'));
+    expect(workflows.filter((f) => f.endsWith('.yml')).length).toBeGreaterThan(0);
+  });
+
+  test('groups minor and patch updates for every entry', () => {
+    config.updates.forEach((u) => expect(u.groups['minor-and-patch']['update-types']).toEqual(['minor', 'patch']));
+  });
+
+  test('keeps the pinned major versions of Vite, Vitest and Lingui', () => {
+    const frontend = byEcosystem('npm').find((u) => u.directory === '/frontend');
+    const ignored = frontend.ignore.map((i) => i['dependency-name']).sort();
+    expect(ignored).toEqual(['@lingui/*', 'vite', 'vitest']);
+    frontend.ignore.forEach((i) => expect(i['update-types']).toEqual(['version-update:semver-major']));
+  });
+
+  test('the ignored majors are still the pinned ones in frontend/package.json', () => {
+    const { dependencies, devDependencies } = JSON.parse(read('frontend/package.json'));
+    const all = { ...dependencies, ...devDependencies };
+    expect(all.vite).toMatch(/^\^4\./);
+    expect(all.vitest).toMatch(/^\^0\.34\./);
+    expect(all['@lingui/core']).toMatch(/^\^5\./);
+  });
+});
+
 describe('issue templates', () => {
   const dir = path.join(rootDir, '.github', 'ISSUE_TEMPLATE');
 
