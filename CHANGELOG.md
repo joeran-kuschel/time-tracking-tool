@@ -7,6 +7,7 @@ How to write an entry and cut a release: [documentation/backend/changelog.md](do
 
 ### Added
 
+- Tooling: the repository has a GitHub test workflow, issue and pull request templates, `CONTRIBUTING.md` and `SECURITY.md`; the README warns that the API has no login.
 - Tooling: every backend and frontend test run ends with a timing report: time per test file, the 10 slowest tests (`TEST_TIMINGS=all` for every test) and the time of the entire run.
 
 ### Changed
