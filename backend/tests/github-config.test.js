@@ -20,14 +20,14 @@ describe('test workflow', () => {
   });
 
   test('runs the backend and the frontend suite', () => {
-    expect(job.strategy.matrix.package.sort()).toEqual(['backend', 'frontend']);
+    expect([...job.strategy.matrix.package].sort()).toEqual(['backend', 'frontend']);
     expect(job.defaults.run['working-directory']).toBe('${{ matrix.package }}');
     expect(steps).toEqual(expect.arrayContaining(['npm ci', 'npm test']));
   });
 
   test('uses Node 22 or newer, the version the project needs', () => {
     const setup = job.steps.find((s) => s.uses && s.uses.startsWith('actions/setup-node'));
-    expect(Number(setup.with['node-version'])).toBeGreaterThanOrEqual(22);
+    expect(parseInt(setup.with['node-version'], 10)).toBeGreaterThanOrEqual(22);
   });
 
   test('every package has the lock file npm ci needs', () => {
@@ -64,9 +64,11 @@ describe('community files', () => {
     expect(read('SECURITY.md')).toMatch(/no authentication/);
   });
 
-  test('every link to a file in CONTRIBUTING.md points to an existing file', () => {
-    const links = [...read('CONTRIBUTING.md').matchAll(/\]\(((?!https?:)[^)#]+)\)/g)].map((m) => m[1]);
-    expect(links.length).toBeGreaterThan(0);
-    links.forEach((link) => expect(fs.existsSync(path.join(rootDir, link))).toBe(true));
-  });
+  test.each(['README.md', 'CONTRIBUTING.md', 'SECURITY.md', '.github/pull_request_template.md'])(
+    'every relative link in %s points to an existing file',
+    (file) => {
+      const links = [...read(file).matchAll(/\]\(((?!https?:|#)[^)#]+)\)/g)].map((m) => m[1]);
+      links.forEach((link) => expect(fs.existsSync(path.join(rootDir, path.dirname(file), link))).toBe(true));
+    }
+  );
 });

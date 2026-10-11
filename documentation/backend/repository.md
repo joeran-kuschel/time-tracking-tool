@@ -4,8 +4,8 @@ What the repository contains for contributors and for the public GitHub page.
 
 ## Continuous integration
 
-`.github/workflows/test.yml` runs the `Tests` workflow on every push to `main` and on every pull request. Two jobs run
-in parallel, one per package (`backend`, `frontend`): `npm ci`, then `npm test` on Node 22. The workflow only has read
+`.github/workflows/test.yml` runs the `Tests` workflow on every push to `main` and on every pull request. One job with a
+matrix runs for each package (`backend`, `frontend`) in parallel: `npm ci`, then `npm test` on Node 22. The workflow only has read
 access to the repository (`permissions: contents: read`). A failing job fails the check.
 
 ## Templates
@@ -18,11 +18,13 @@ access to the repository (`permissions: contents: read`). A failing job fails th
 ## Community files
 
 - `CONTRIBUTING.md`: setup and the rules for changes.
-- `SECURITY.md`: how to report a vulnerability, and the warning that the API has no login.
+- `SECURITY.md`: how to report a vulnerability, and the warning that the API has no login. Private vulnerability
+  reporting has to be switched on in the repository's security settings, or the report link shows a 404.
 - `LICENSE`: MIT.
 
 ## Test
 
 `backend/tests/github-config.test.js` checks that the workflow is valid YAML, runs both test suites with `npm ci`, has
-read-only permissions and uses Node 22 or newer; that the issue templates have a name and a label; and that the files
-named above exist.
+read-only permissions and uses Node 22 or newer; that the issue templates have a name and a label; that the files
+named above exist; and that relative links in `README.md`, `CONTRIBUTING.md`, `SECURITY.md` and the pull request
+template point to existing files.
