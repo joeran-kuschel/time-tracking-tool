@@ -93,7 +93,7 @@ and whenever the timer starts or stops (also from the header). The date is taken
 - `App.jsx`: `openTimeTracking(customerId, projectId)` and `openReport(customerId, month, year)`; the Time tracking and
   Reports pages take them as `initial…` props
 
-Tests: `dashboard.test.js`, `pages/Dashboard.test.jsx`, `components/Tabs.test.jsx`, and the page flows in
+Tests (in `frontend/tests/`): `dashboard.test.js`, `pages/Dashboard.test.jsx`, `components/Tabs.test.jsx`, and the page flows in
 `App.test.jsx`.
 
 ## Not built yet

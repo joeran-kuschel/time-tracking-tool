@@ -114,4 +114,4 @@ Loading or saving failures are shown next to the part they belong to. See [Error
 - `components/Modal.jsx`: the add dialogs
 - `components/EntryForm.jsx`, `entryTime.js`: the time entry form and its local date/time conversion
 - `components/EntriesList.jsx`, `components/ConfirmDelete.jsx`, `hooks/useEditable.js`: editing and deleting in place
-- Tests: `App.test.jsx` and a test file next to each component, hook and module
+- Tests: `frontend/tests/App.test.jsx` and a test file per component, hook and module in `frontend/tests/`, mirroring `src/`

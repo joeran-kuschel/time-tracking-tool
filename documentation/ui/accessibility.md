@@ -54,6 +54,6 @@ From the UX review, not fixed yet:
 
 ## Testing
 
-- Component tests run automatic checks with axe (`vitest-axe`, `frontend/src/test/axe.js`). jsdom can't render colors,
+- Component tests run automatic checks with axe (`vitest-axe`, `frontend/tests/support/axe.js`). jsdom can't render colors,
   so contrast is checked by hand in a real browser.
 - New UI parts are checked with the keyboard in the browser before they are committed.

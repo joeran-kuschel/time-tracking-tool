@@ -43,8 +43,8 @@ files, commit or deploy; you report findings.
    CORS or body parsing that lets other sites act on the API, secrets in code or logs.
 3. **Project rules from CLAUDE.md.**
    - **Tests:** every change has tests. Backend: model tests with real SQL in pg-mem (`tests/helpers/testDb.js`),
-     controller tests with a mocked model and a fake `res`. Frontend: tests next to the component, `render` from
-     `src/test/render.jsx`, `axe` from `src/test/axe.js`. A bug fix needs a test that fails without the fix.
+     controller tests with a mocked model and a fake `res`. Frontend: tests in `frontend/tests/` mirroring `src/`, `render` from
+     `tests/support/render.jsx`, `axe` from `tests/support/axe.js`. A bug fix needs a test that fails without the fix.
    - **Documentation:** every feature is documented in `documentation/ui/` or `documentation/backend/` (English).
      `README.md` and `k8s/README.md` stay German. Flag docs that the change makes wrong.
    - **Translations:** visible texts are English Lingui macros; messages shown later (errors) are lazy `msg`
@@ -57,6 +57,8 @@ files, commit or deploy; you report findings.
      strings live in `src/ui.js`.
    - **Backend patterns:** `routes → controllers → models`; business rules in controllers, SQL in models. Times are
      stored as UTC and the backend runs in UTC; month limits follow the browser's time zone (`tz`, `monthRange`).
+   - **Changelog:** every feature, fix or removal has an entry under `Unreleased` in `CHANGELOG.md`, written for the
+     app's user (`documentation/backend/changelog.md`).
    - **Migrations:** a new or changed file in `backend/migrations/` needs `./k8s/generate-init-scripts.sh`, and a note
      on applying it by hand to an existing database.
    - **Configuration:** new settings go into `k8s/configmap.yaml`, `docker-compose.yml`, `.env.example` and the docs.

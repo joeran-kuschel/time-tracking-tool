@@ -37,5 +37,5 @@ Errors from the PDF download are not shown.
 
 ## Code
 
-`frontend/src/api.js`, `hooks/useAction.js`, `components/ErrorMessage.jsx`. Tests: `api.test.js`,
+`frontend/src/api.js`, `hooks/useAction.js`, `components/ErrorMessage.jsx`. Tests (in `frontend/tests/`): `api.test.js`,
 `hooks/useAction.test.js`, `App.test.jsx`.

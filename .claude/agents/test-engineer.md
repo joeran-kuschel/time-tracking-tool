@@ -35,6 +35,10 @@ For every changed behavior, think through:
 4. **Bug fixes:** a test that fails without the fix. Check this by reasoning through the old code (`git show
    main:<file>`); don't stash or check out production files to run the test against it.
 
+5. **Known bugs:** if a bug is found and the user decides to fix it later, write the test for the correct behavior and
+   mark it `test.failing` (Jest) or `it.fails` (Vitest) with a `// BUG:` comment saying what is wrong. Remove the
+   marker when the bug is fixed. A bug that is fixed on the branch needs no marker.
+
 Test behavior, not implementation: what a caller gets back, what a user sees and can do. Don't assert on internal
 state, private helpers or exact class strings.
 
@@ -50,15 +54,15 @@ state, private helpers or exact class strings.
   against a fake `kubectl`/`launchctl` on the `PATH` (`tests/db-backup-scripts.test.js`).
 - **Backend translation:** PDF texts are checked by passing `locale` to `generateReportPDF`, as in
   `tests/pdfGenerator.test.js`; `activateLocale()` itself is tested in `tests/i18n.test.js`.
-- **Frontend:** tests live next to the component (`Foo.test.jsx`). Import `render`/`renderHook` and `screen` from
-  `src/test/render.jsx` (it adds the `I18nProvider`), and `axe` from `src/test/axe.js`. Use `@testing-library/user-event`
+- **Frontend:** tests live in `frontend/tests/`, mirroring `src/` (`tests/components/Foo.test.jsx`), and import the source via `@/`. Import `render`/`renderHook` and `screen` from
+  `tests/support/render.jsx` (it adds the `I18nProvider`), and `axe` from `tests/support/axe.js`. Use `@testing-library/user-event`
   for interaction. Query by role and accessible name (`getByRole('button', { name: … })`), which also checks the
   markup is accessible. Tests run in German by default, so expected texts are the German ones.
 - **Accessibility:** every new component or view gets an `axe` check. Test keyboard use and focus where it matters:
   focus returned after closing, cancelling or deleting, Escape cancelling forms. jsdom can't check color contrast or
-  real `<dialog>` behavior (`showModal()` is stubbed in `src/test/setup.js`); list these under "not covered".
+  real `<dialog>` behavior (`showModal()` is stubbed in `tests/support/setup.js`); list these under "not covered".
 - **API calls:** mock `api.js` functions, not `fetch`, unless you are testing `api.js` itself.
-- **Translations:** if the change adds texts, `src/locales/catalogs.test.js` and `backend/tests/i18n.test.js` already
+- **Translations:** if the change adds texts, `frontend/tests/locales/catalogs.test.js` and `backend/tests/i18n.test.js` already
   fail when a text isn't extracted or lacks a German translation. Report that as a finding; don't edit `.po` files.
 
 Keep tests lean: shared setup in a small helper at the top of the file (like `call()` in

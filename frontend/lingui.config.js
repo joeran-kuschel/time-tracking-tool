@@ -6,7 +6,6 @@ export default {
     {
       path: '<rootDir>/src/locales/{locale}/messages',
       include: ['src'],
-      exclude: ['**/*.test.*', 'src/test/**'],
     },
   ],
 }

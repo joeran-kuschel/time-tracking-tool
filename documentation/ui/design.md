@@ -39,7 +39,7 @@ they get lighter too. The dialog backdrop is plain black at 50 %, independent of
 - `theme.js` resolves the choice and sets `data-theme="light"` or `"dark"` on `<html>`; `main.jsx` does this before the
   first render, so the page doesn't flash in the wrong theme. The dark theme also sets `color-scheme: dark`, so native
   controls (selects, date and time pickers, scrollbars) are dark as well.
-- Code: `frontend/src/theme.js`, `components/ThemeSwitcher.jsx`. Tests: `theme.test.js`, `ThemeSwitcher.test.jsx`.
+- Code: `frontend/src/theme.js`, `components/ThemeSwitcher.jsx`. Tests (in `frontend/tests/`): `theme.test.js`, `ThemeSwitcher.test.jsx`.
 Contrast values are listed in [Accessibility](accessibility.md).
 
 ## Type
@@ -67,7 +67,7 @@ focus ring (`:focus-visible`, 2 px `accent`) for every control.
 accent color. An SVG file can't use the theme names, so it repeats the two accent values from `index.css`: `#0E5C58`,
 and `#5DB3AB` under `prefers-color-scheme: dark`, so it stays visible on dark browser tabs. It follows the system
 theme, not the app's theme switch. nginx caches `.svg` files for 30 days, so after changing the icon a browser may need
-a hard reload. Test: `src/favicon.test.js`.
+a hard reload. Test: `frontend/tests/favicon.test.js`.
 
 ## Layout
 

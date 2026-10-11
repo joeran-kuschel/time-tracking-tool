@@ -46,4 +46,4 @@ and `€142.50` in English.
 
 ## Code
 
-`frontend/src/pages/Reports.jsx`, `summary.js`, `format.js`. Tests: `pages/Reports.test.jsx`, `summary.test.js`.
+`frontend/src/pages/Reports.jsx`, `summary.js`, `format.js`. Tests (in `frontend/tests/`): `pages/Reports.test.jsx`, `summary.test.js`.
