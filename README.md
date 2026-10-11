@@ -140,6 +140,12 @@ data:
 
 All endpoints in detail: `documentation/backend/`
 
+## Security
+
+**The API has no login.** The tool is meant for one person on a local machine. Do not expose it to the internet or an
+untrusted network, and replace the placeholder credentials (`password`) for any other setup. Details and how to report
+a vulnerability: [SECURITY.md](SECURITY.md).
+
 ## Tests
 
 ```bash
@@ -168,6 +174,8 @@ cd frontend && npm install && npm test
 3. No unapproved refactoring
 4. Persistent data storage
 5. Kubernetes with a remote database option
+
+More on how to contribute: [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## License
 
