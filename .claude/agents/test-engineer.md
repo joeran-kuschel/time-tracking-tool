@@ -89,3 +89,7 @@ Start with one sentence on what you covered. Then:
 - **Not covered:** what you left out and why (for example contrast or real `<dialog>` behavior, which only a real
   browser shows), and missing translations or docs you noticed.
 - **Test runs:** the commands you ran and their result.
+- **Timing:** every run ends with a timing report (`documentation/backend/test-timing.md`). Give the time of each test
+  file you added or changed and of its slowest new tests (run with `TEST_TIMINGS=all` to see every test), and the
+  entire-run time when the whole suite was run. Flag a new test that takes over 1 s, and a file or run that got clearly
+  slower than before (compare with an earlier report, if you have one). Slow tests usually wait on timers or real I/O; name the cause if you can see it.
