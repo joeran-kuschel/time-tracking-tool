@@ -33,8 +33,8 @@ Time tracking tool for freelancers: track working time per customer and project,
 
 - Use the in-cluster (local) Postgres for now. Keep the remote database option working, but it is not in use.
 - Target cluster: Docker Desktop Kubernetes (kube context `docker-desktop`).
-- User-facing docs (README.md, k8s/README.md) are written in German. Keep them in German.
-- Feature documentation in `documentation/` is written in English. `docs/` is separate: local reports only, not in git.
+- Everything is written in English: README.md, k8s/README.md, `documentation/`, code comments and the changelog. The repo is meant to be public.
+- Feature documentation lives in `documentation/`. `docs/` is separate: local reports only, not in git.
 - Translation tool: LinguiJS 5 (gettext `.po` files, language switch at runtime). English is the source language in the code; German comes from `de/messages.po`. Lingui 6 would need Vite 6+.
 
 ## Stack

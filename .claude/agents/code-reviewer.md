@@ -46,7 +46,7 @@ files, commit or deploy; you report findings.
      controller tests with a mocked model and a fake `res`. Frontend: tests in `frontend/tests/` mirroring `src/`, `render` from
      `tests/support/render.jsx`, `axe` from `tests/support/axe.js`. A bug fix needs a test that fails without the fix.
    - **Documentation:** every feature is documented in `documentation/ui/` or `documentation/backend/` (English).
-     `README.md` and `k8s/README.md` stay German. Flag docs that the change makes wrong.
+     `README.md` and `k8s/README.md` are English like all other docs. Flag docs that the change makes wrong.
    - **Translations:** visible texts are English Lingui macros; messages shown later (errors) are lazy `msg`
      descriptors translated at render time. New texts need `npm run extract` and a German `msgstr` in
      `frontend/src/locales/de/messages.po`. Backend texts use `i18n._({ id, message })` right after `activateLocale()`.

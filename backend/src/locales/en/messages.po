@@ -14,41 +14,41 @@ msgstr ""
 "Plural-Forms: \n"
 
 #. js-lingui-explicit-id
-#: src/utils/pdfGenerator.js:44
+#: src/utils/pdfGenerator.js:71
 msgid "report.customer"
 msgstr "Customer: {customerName}"
 
 #. js-lingui-explicit-id
-#: src/utils/pdfGenerator.js:57
+#: src/utils/pdfGenerator.js:78
 msgid "report.date"
 msgstr "Date"
 
 #. js-lingui-explicit-id
-#: src/utils/pdfGenerator.js:60
+#: src/utils/pdfGenerator.js:81
 msgid "report.description"
 msgstr "Description"
 
 #. js-lingui-explicit-id
-#: src/utils/pdfGenerator.js:59
+#: src/utils/pdfGenerator.js:80
 msgid "report.hours"
 msgstr "Hours"
 
 #. js-lingui-explicit-id
-#: src/utils/pdfGenerator.js:58
+#: src/utils/pdfGenerator.js:79
 msgid "report.project"
 msgstr "Project"
 
 #. js-lingui-explicit-id
-#: src/utils/pdfGenerator.js:39
+#: src/utils/pdfGenerator.js:66
 msgid "report.title"
 msgstr "TIME REPORT"
 
 #. js-lingui-explicit-id
-#: src/utils/pdfGenerator.js:17
+#: src/utils/pdfGenerator.js:18
 msgid "report.filename"
 msgstr "time-report"
 
 #. js-lingui-explicit-id
-#: src/utils/pdfGenerator.js:96
+#: src/utils/pdfGenerator.js:112
 msgid "report.total"
 msgstr "TOTAL HOURS:"

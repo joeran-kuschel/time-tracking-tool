@@ -48,7 +48,7 @@ port clash. `k8s/ingress.yaml` serves `time-tracking.local` and routes by path:
 
 ## Build and deploy
 
-The exact commands are in `CLAUDE.md` (English) and `k8s/README.md` (German). In short:
+The exact commands are in `CLAUDE.md` and `k8s/README.md`. In short:
 
 1. Build both images. The Dockerfiles install exactly the versions in `package-lock.json` (`npm ci`).
 2. Load them into the cluster node. Docker Desktop runs Kubernetes in **kind** mode, which has its own image store,

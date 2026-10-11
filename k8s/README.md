@@ -1,25 +1,25 @@
 # Kubernetes Deployment
 
-Kubernetes Manifests für das Time-Tracking Tool.
+Kubernetes manifests for the time tracking tool.
 
 ## Setup
 
-### 1. Cluster auswählen
+### 1. Select the cluster
 
-Das Tool läuft im Kubernetes von Docker Desktop (in den Docker-Desktop-Einstellungen aktivieren):
+The tool runs in the Kubernetes of Docker Desktop (enable it in the Docker Desktop settings):
 
 ```bash
 kubectl config use-context docker-desktop
 ```
 
-### 2. Docker Images bauen und in den Cluster laden
+### 2. Build the Docker images and load them into the cluster
 
 ```bash
 docker build -t time-tracking-backend:latest ./backend
 docker build -t time-tracking-frontend:latest ./frontend
 ```
 
-Docker Desktop betreibt Kubernetes im kind-Modus mit eigenem Image-Speicher. Wegen `imagePullPolicy: Never` müssen die Images in den Cluster-Knoten importiert werden:
+Docker Desktop runs Kubernetes in kind mode, which has its own image store. Because of `imagePullPolicy: Never`, the images have to be imported into the cluster node:
 
 ```bash
 for img in time-tracking-backend time-tracking-frontend; do
@@ -27,9 +27,9 @@ for img in time-tracking-backend time-tracking-frontend; do
 done
 ```
 
-### 3. Ingress-Controller installieren (einmal pro Cluster)
+### 3. Install the ingress controller (once per cluster)
 
-Das Tool läuft unter einem eigenen Hostnamen, http://time-tracking.local, statt auf Ports von `localhost`. So können weitere Apps im selben Cluster laufen, jede mit eigenem Hostnamen. Dafür braucht der Cluster einen Ingress-Controller mit der Klasse `nginx`:
+The tool runs under its own host name, http://time-tracking.local, instead of on `localhost` ports. This way more apps can run in the same cluster, each with its own host name. For that, the cluster needs an ingress controller with the class `nginx`:
 
 ```bash
 helm --kube-context docker-desktop upgrade --install ingress-nginx ingress-nginx \
@@ -37,14 +37,14 @@ helm --kube-context docker-desktop upgrade --install ingress-nginx ingress-nginx
   --namespace ingress-nginx --create-namespace
 ```
 
-Der Name muss auf den Mac zeigen. Einmalig in `/etc/hosts` eintragen (braucht sudo). Ohne die `::1`-Zeile fragt macOS bei `.local`-Namen erst im Netzwerk nach, das dauert einige Sekunden:
+The name has to point to your Mac. Add it to `/etc/hosts` once (needs sudo). Without the `::1` line, macOS asks the network for `.local` names first, which takes a few seconds:
 
 ```bash
 sudo sed -i '' '/[[:space:]]time-tracking\.local$/d' /etc/hosts
 printf '127.0.0.1 time-tracking.local\n::1 time-tracking.local\n' | sudo tee -a /etc/hosts
 ```
 
-### 4. Ressourcen deployen
+### 4. Deploy the resources
 
 ```bash
 kubectl apply -f k8s/namespace.yaml
@@ -56,66 +56,66 @@ kubectl apply -f k8s/frontend.yaml
 kubectl apply -f k8s/ingress.yaml
 ```
 
-### Migrationen
+### Migrations
 
-Die Init-Scripts für Postgres (`postgres-init-scripts.yaml`) werden aus `backend/migrations/` generiert.
-Nach Änderungen an den Migrationen neu generieren:
+The init scripts for Postgres (`postgres-init-scripts.yaml`) are generated from `backend/migrations/`.
+After changing the migrations, regenerate them:
 
 ```bash
 ./k8s/generate-init-scripts.sh
 ```
 
-Postgres führt die Scripts nur beim ersten Start mit leerem Volume aus.
+Postgres runs the scripts only on first start with an empty volume.
 
-### 5. Status prüfen
+### 5. Check the status
 
 ```bash
 kubectl get all -n time-tracking
 kubectl logs -n time-tracking -l app=backend
 ```
 
-### 6. Zugriff auf App
+### 6. Access the app
 
 Frontend: http://time-tracking.local
 
-Die API liegt unter derselben Adresse: http://time-tracking.local/api, Health-Check unter http://time-tracking.local/health. Frontend und Backend haben keinen eigenen Port auf dem Mac; `ingress.yaml` leitet `/api` und `/health` ans Backend weiter, alles andere ans Frontend.
+The API is at the same address: http://time-tracking.local/api, health check at http://time-tracking.local/health. Frontend and backend have no port of their own on the Mac; `ingress.yaml` forwards `/api` and `/health` to the backend and everything else to the frontend.
 
-**Achtung:** Docker Desktop öffnet die Ports 80 und 443 des Ingress-Controllers auf allen Netzwerkschnittstellen, nicht nur auf `localhost`. Wer im selben Netzwerk ist, erreicht damit die API, und die hat keinen Login. Die macOS-Firewall ist standardmäßig aus. Eingeschaltet (Systemeinstellungen → Netzwerk → Firewall einschalten, dann unter „Optionen …“ „Alle eingehenden Verbindungen blockieren“) sollte sie andere Geräte fernhalten; getestet ist das nicht.
+**Warning:** Docker Desktop opens ports 80 and 443 of the ingress controller on all network interfaces, not only on `localhost`. Anyone on the same network can reach the API, and it has no login. The macOS firewall is off by default. Turned on (System Settings → Network → Firewall, then "Options…" → "Block all incoming connections"), it should keep other devices out; this is untested.
 
-Nach neuen Images:
+After building new images:
 
 ```bash
 kubectl -n time-tracking rollout restart deployment/backend deployment/frontend
 ```
 
-## Erlaubte Adressen (CORS_ORIGIN)
+## Allowed Origins (CORS_ORIGIN)
 
-Die API nimmt Anfragen aus dem Browser nur von den Adressen an, unter denen das Frontend geöffnet wird. Das hängt von der Installation ab und steht in `configmap.yaml` in der ConfigMap `time-tracking-config`. Ein anderer Hostname muss auch in `ingress.yaml` geändert werden:
+The API accepts requests from the browser only from the addresses the frontend is opened at. This depends on the installation and is set in `configmap.yaml` in the ConfigMap `time-tracking-config`. A different host name must also be changed in `ingress.yaml`:
 
 ```yaml
 data:
-  CORS_ORIGIN: "http://time-tracking.local"     # mehrere Adressen mit Komma trennen
+  CORS_ORIGIN: "http://time-tracking.local"     # separate several addresses with commas
 ```
 
-Die Adresse der API (`VITE_API_URL`) steht nicht in der ConfigMap, sondern wird beim Bauen ins Frontend-Image geschrieben (`docker build --build-arg VITE_API_URL=...`). Der Standard `/api` zeigt auf denselben Host wie das Frontend und muss bei einem anderen Hostnamen nicht geändert werden.
+The API address (`VITE_API_URL`) is not in the ConfigMap but is written into the frontend image at build time (`docker build --build-arg VITE_API_URL=...`). The default `/api` points to the same host as the frontend and needs no change for a different host name.
 
-Ohne `CORS_ORIGIN` kann kein Browser die API nutzen; das Backend schreibt dann beim Start eine Warnung ins Log. Nach einer Änderung:
+Without `CORS_ORIGIN`, no browser can use the API; the backend then logs a warning at startup. After a change:
 
 ```bash
 kubectl apply -f k8s/configmap.yaml
 kubectl rollout restart deployment/backend -n time-tracking
 ```
 
-## Neue Migrationen auf bestehender Datenbank
+## New Migrations on an Existing Database
 
-Postgres führt die Init-Scripts nur beim ersten Start mit leerem Volume aus. Eine neue Migration muss auf einer bestehenden Datenbank von Hand eingespielt werden, vorher ein Backup machen:
+Postgres runs the init scripts only on first start with an empty volume. A new migration has to be applied by hand to an existing database; make a backup first:
 
 ```bash
 ./k8s/backup-db.sh
 kubectl -n time-tracking exec -i deploy/postgres -- sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB"' < backend/migrations/003_one_running_timer.sql
 ```
 
-`003_one_running_timer.sql` erlaubt nur noch einen laufenden Timer. Sie schlägt fehl, wenn schon mehr als ein Eintrag ohne Ende existiert. Vorher prüfen und überzählige Timer stoppen oder löschen:
+`003_one_running_timer.sql` allows only one running timer. It fails if more than one entry without an end already exists. Check first and stop or delete the surplus timers:
 
 ```bash
 kubectl -n time-tracking exec deploy/postgres -- sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "SELECT id, project_id, start_time FROM time_entries WHERE end_time IS NULL"'
@@ -123,9 +123,9 @@ kubectl -n time-tracking exec deploy/postgres -- sh -c 'psql -U "$POSTGRES_USER"
 
 ## Remote PostgreSQL
 
-Um Remote-Datenbank zu nutzen:
+To use a remote database:
 
-1. In `configmap.yaml` das Secret `time-tracking-db` und die ConfigMap anpassen:
+1. In `configmap.yaml`, adjust the Secret `time-tracking-db` and the ConfigMap:
 ```yaml
 # Secret time-tracking-db
 stringData:
@@ -136,10 +136,10 @@ data:
   DB_SSL: "true"
 ```
 
-Das Schema muss auf der Remote-Datenbank einmalig selbst angelegt werden
-(`backend/migrations/*.sql`), die Init-Scripts laufen nur für die Postgres im Cluster.
+You have to create the schema on the remote database yourself, once
+(`backend/migrations/*.sql`); the init scripts run only for the Postgres in the cluster.
 
-2. Neu deployen:
+2. Deploy again:
 ```bash
 kubectl apply -f k8s/configmap.yaml
 kubectl rollout restart deployment/backend -n time-tracking
@@ -147,19 +147,19 @@ kubectl rollout restart deployment/backend -n time-tracking
 
 ## Backups
 
-Die Datenbank liegt im Cluster. Ein Docker-Desktop-Update oder ein Cluster-Reset löscht sie. Deshalb gibt es stündliche Backups nach `~/TimeTrackingBackups`:
+The database lives in the cluster. A Docker Desktop update or a cluster reset deletes it. That is why there are hourly backups to `~/TimeTrackingBackups`:
 
 ```bash
-./k8s/install-backup-job.sh                # stündliches Backup einrichten
-./k8s/backup-db.sh                         # Backup sofort erstellen
-./k8s/restore-db.sh <backup.sql.gz>        # Backup zurückspielen (ersetzt alle Daten)
+./k8s/install-backup-job.sh                # set up the hourly backup
+./k8s/backup-db.sh                         # create a backup right now
+./k8s/restore-db.sh <backup.sql.gz>        # restore a backup (replaces all data)
 ```
 
 Details: `documentation/backend/database-backups.md`
 
 ## Cleanup
 
-**Achtung:** Das löscht auch alle Daten in der Datenbank. Vorher ein Backup erstellen.
+**Warning:** This also deletes all data in the database. Create a backup first.
 
 ```bash
 ./k8s/backup-db.sh
