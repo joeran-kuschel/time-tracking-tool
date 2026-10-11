@@ -8,6 +8,16 @@ What the repository contains for contributors and for the public GitHub page.
 matrix runs for each package (`backend`, `frontend`) in parallel: `npm ci`, then `npm test` on Node 22. The workflow only has read
 access to the repository (`permissions: contents: read`). A failing job fails the check.
 
+## Dependency updates
+
+`.github/dependabot.yml` has Dependabot check once a week for new versions of the backend packages, the frontend
+packages and the GitHub Actions in the workflow. Minor and patch updates of one ecosystem come as a single pull
+request; the `Tests` workflow runs on it like on any other. Major updates of `vite`, `vitest` and `@lingui/*` are
+ignored on purpose: Vite 4 and Vitest 0.34 are pinned, and Lingui 6 needs Vite 6 or newer (see `CLAUDE.md`).
+
+Version updates need no setting. Dependabot alerts and security updates are switched on in the repository's security
+settings; the file does not enable them.
+
 ## Templates
 
 - `.github/ISSUE_TEMPLATE/`: bug report and feature request. Blank issues are off; the contact link sends
@@ -25,6 +35,7 @@ access to the repository (`permissions: contents: read`). A failing job fails th
 ## Test
 
 `backend/tests/github-config.test.js` checks that the workflow is valid YAML, runs both test suites with `npm ci`, has
-read-only permissions and uses Node 22 or newer; that the issue templates have a name and a label; that the files
+read-only permissions and uses Node 22 or newer; that the issue templates have a name and a label; that
+Dependabot covers both packages and the workflow and keeps the pinned major versions; that the files
 named above exist; and that relative links in `README.md`, `CONTRIBUTING.md`, `SECURITY.md` and the pull request
 template point to existing files.

@@ -12,6 +12,7 @@ How to write an entry and cut a release: [documentation/backend/changelog.md](do
 ### Changed
 
 - Tooling: GitHub test workflow, issue and pull request templates, `CONTRIBUTING.md` and `SECURITY.md`.
+- Tooling: Dependabot checks the dependencies and GitHub Actions weekly.
 - The README warns that the API has no login.
 - Tooling: the `test-engineer` agent reports test timings: the time of the test files it adds, their slowest tests and, for a full run, the entire-run time.
 - Tooling: the frontend tests moved from next to the code into `frontend/tests/`, mirroring `src/`.

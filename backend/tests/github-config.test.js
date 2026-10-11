@@ -37,6 +37,29 @@ describe('test workflow', () => {
   });
 });
 
+describe('dependabot', () => {
+  const config = yaml.load(read('.github/dependabot.yml'));
+  const byEcosystem = (ecosystem) => config.updates.filter((u) => u['package-ecosystem'] === ecosystem);
+
+  test('checks both npm packages and the GitHub Actions weekly', () => {
+    expect(byEcosystem('npm').map((u) => u.directory).sort()).toEqual(['/backend', '/frontend']);
+    expect(byEcosystem('github-actions').map((u) => u.directory)).toEqual(['/']);
+    config.updates.forEach((u) => expect(u.schedule.interval).toBe('weekly'));
+  });
+
+  test('every checked directory has a package.json or the workflows', () => {
+    byEcosystem('npm').forEach((u) => expect(fs.existsSync(path.join(rootDir, u.directory, 'package.json'))).toBe(true));
+    expect(fs.existsSync(path.join(rootDir, '.github', 'workflows'))).toBe(true);
+  });
+
+  test('keeps the pinned major versions of Vite, Vitest and Lingui', () => {
+    const frontend = byEcosystem('npm').find((u) => u.directory === '/frontend');
+    const ignored = frontend.ignore.map((i) => i['dependency-name']).sort();
+    expect(ignored).toEqual(['@lingui/*', 'vite', 'vitest']);
+    frontend.ignore.forEach((i) => expect(i['update-types']).toEqual(['version-update:semver-major']));
+  });
+});
+
 describe('issue templates', () => {
   const dir = path.join(rootDir, '.github', 'ISSUE_TEMPLATE');
 
