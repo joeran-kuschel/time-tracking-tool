@@ -47,9 +47,14 @@ describe('dependabot', () => {
     config.updates.forEach((u) => expect(u.schedule.interval).toBe('weekly'));
   });
 
-  test('every checked directory has a package.json or the workflows', () => {
+  test('every checked directory has a package.json, and the workflows exist', () => {
     byEcosystem('npm').forEach((u) => expect(fs.existsSync(path.join(rootDir, u.directory, 'package.json'))).toBe(true));
-    expect(fs.existsSync(path.join(rootDir, '.github', 'workflows'))).toBe(true);
+    const workflows = fs.readdirSync(path.join(rootDir, '.github', 'workflows'));
+    expect(workflows.filter((f) => f.endsWith('.yml')).length).toBeGreaterThan(0);
+  });
+
+  test('groups minor and patch updates for every entry', () => {
+    config.updates.forEach((u) => expect(u.groups['minor-and-patch']['update-types']).toEqual(['minor', 'patch']));
   });
 
   test('keeps the pinned major versions of Vite, Vitest and Lingui', () => {
@@ -57,6 +62,14 @@ describe('dependabot', () => {
     const ignored = frontend.ignore.map((i) => i['dependency-name']).sort();
     expect(ignored).toEqual(['@lingui/*', 'vite', 'vitest']);
     frontend.ignore.forEach((i) => expect(i['update-types']).toEqual(['version-update:semver-major']));
+  });
+
+  test('the ignored majors are still the pinned ones in frontend/package.json', () => {
+    const { dependencies, devDependencies } = JSON.parse(read('frontend/package.json'));
+    const all = { ...dependencies, ...devDependencies };
+    expect(all.vite).toMatch(/^\^4\./);
+    expect(all.vitest).toMatch(/^\^0\.34\./);
+    expect(all['@lingui/core']).toMatch(/^\^5\./);
   });
 });
 
