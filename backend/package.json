@@ -16,7 +16,7 @@
   "author": "Jöran Kuschel <joeran@joerankuschel.de>",
   "license": "MIT",
   "dependencies": {
-    "@lingui/core": "^5.9.5",
+    "@lingui/core": "^6.9.0",
     "@lingui/format-po": "^5.9.5",
     "@lingui/message-utils": "^5.9.5",
     "content-disposition": "^0.5.4",
