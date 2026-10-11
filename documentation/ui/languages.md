@@ -35,10 +35,10 @@ The tool is available in German and English. The language can be switched at any
 2. Run `npm run extract` in `frontend/`.
 3. Fill in the German `msgstr` in `src/locales/de/messages.po`.
 
-`src/locales/catalogs.test.js` fails if a text is not extracted, a German translation is missing or a placeholder like
+`tests/locales/catalogs.test.js` fails if a text is not extracted, a German translation is missing or a placeholder like
 `{projectName}` got lost in the translation.
 
 ## Code
 
-`frontend/src/i18n.js`, `components/LanguageSwitcher.jsx`, `format.js`, `lingui.config.js`. Tests: `i18n.test.js`,
+`frontend/src/i18n.js`, `components/LanguageSwitcher.jsx`, `format.js`, `lingui.config.js`. Tests (in `frontend/tests/`): `i18n.test.js`,
 `components/LanguageSwitcher.test.jsx`, `format.test.js`, `locales/catalogs.test.js`, `App.test.jsx`.

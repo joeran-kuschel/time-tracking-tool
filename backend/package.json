@@ -9,6 +9,9 @@
     "test": "jest",
     "extract": "lingui extract --clean"
   },
+  "jest": {
+    "reporters": ["default", "<rootDir>/tests/helpers/timingReporter.js"]
+  },
   "keywords": [],
   "author": "Jöran Kuschel <joeran@joerankuschel.de>",
   "license": "MIT",

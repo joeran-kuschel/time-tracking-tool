@@ -60,4 +60,4 @@ description and can't be edited.
 - `frontend/src/hooks/useElapsedTime.js`: elapsed time as `HH:MM:SS`, shared by the header and the timer panel
 - `frontend/src/components/Timer.jsx`: the timer panel, display only, no API calls
 - `frontend/src/components/RunningTimer.jsx`: the running timer in the header
-- Tests: `Timer.test.jsx`, `RunningTimer.test.jsx`, `useActiveEntry.test.js`, `useElapsedTime.test.js`, `App.test.jsx`
+- Tests (in `frontend/tests/`): `components/Timer.test.jsx`, `RunningTimer.test.jsx`, `useActiveEntry.test.js`, `useElapsedTime.test.js`, `App.test.jsx`

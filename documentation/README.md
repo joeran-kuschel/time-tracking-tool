@@ -24,3 +24,5 @@ Feature documentation for the time tracking tool, split into UI and Backend. Eac
 - [Database](backend/database.md): schema, migrations, connection and the remote database option
 - [Database backups](backend/database-backups.md): hourly backups of the in-cluster database and how to restore them
 - [Deployment](backend/deployment.md): the Kubernetes setup on Docker Desktop, served at http://time-tracking.local
+- [Changelog](backend/changelog.md): how `CHANGELOG.md` is kept and checked
+- [Test timing](backend/test-timing.md): how long each test file, the slowest tests and the entire run take
