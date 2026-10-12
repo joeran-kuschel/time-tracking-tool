@@ -20,6 +20,11 @@ function createApp({ corsOrigins }) {
 
   app.use(cors({ origin: corsOrigins, exposedHeaders: ['Content-Disposition'] }));
   app.use(express.json());
+  // Express 5 leaves req.body undefined without a parsed body; the controllers expect an object
+  app.use((req, res, next) => {
+    req.body ??= {};
+    next();
+  });
 
   app.use('/api/customers', customerRoutes);
   app.use('/api/projects', projectRoutes);

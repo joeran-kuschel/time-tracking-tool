@@ -1,6 +1,5 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+@config "../tailwind.config.js";
 
 /* Theme colors as "r g b" (see tailwind.config.js and documentation/ui/design.md).
    theme.js sets data-theme on <html> to the chosen or the system theme. */

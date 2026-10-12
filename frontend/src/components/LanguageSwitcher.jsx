@@ -14,7 +14,7 @@ function LanguageSwitcher() {
           aria-pressed={i18n.locale === code}
           onClick={() => switchLocale(code)}
           className={`min-h-[2rem] rounded-md px-2.5 text-sm ${
-            i18n.locale === code ? 'bg-surface font-semibold text-ink shadow-sm' : 'text-muted hover:text-ink'
+            i18n.locale === code ? 'bg-surface font-semibold text-ink shadow-xs' : 'text-muted hover:text-ink'
           }`}
         >
           {name}

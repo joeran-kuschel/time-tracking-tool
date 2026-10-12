@@ -41,8 +41,8 @@ function MonthSummary({ entries, projects, onOpenReport, now = new Date() }) {
           {summary.projects.map(({ project, hours }) => (
             <li key={project.id} className="flex items-center gap-3">
               <span className="w-40 shrink-0 truncate">{project.name}</span>
-              <span aria-hidden="true" className="flex h-2 flex-1 rounded bg-line-soft">
-                <span className="rounded bg-accent" style={{ width: `${(hours / summary.hours) * 100}%` }} />
+              <span aria-hidden="true" className="flex h-2 flex-1 rounded-sm bg-line-soft">
+                <span className="rounded-sm bg-accent" style={{ width: `${(hours / summary.hours) * 100}%` }} />
               </span>
               <span className="w-20 shrink-0 text-right font-mono">{formatHours(i18n, hours)}</span>
             </li>

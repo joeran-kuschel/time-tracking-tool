@@ -10,15 +10,33 @@
     "extract": "lingui extract --clean"
   },
   "jest": {
-    "reporters": ["default", "<rootDir>/tests/helpers/timingReporter.js"]
+    "reporters": [
+      "default",
+      "<rootDir>/tests/helpers/timingReporter.js"
+    ],
+    "transform": {
+      "\\.m?js$": [
+        "babel-jest",
+        {
+          "plugins": [
+            "@babel/plugin-transform-modules-commonjs"
+          ],
+          "babelrc": false,
+          "configFile": false
+        }
+      ]
+    },
+    "transformIgnorePatterns": [
+      "/node_modules/(?!(@lingui|@messageformat|content-disposition)/)"
+    ]
   },
   "keywords": [],
   "author": "Jöran Kuschel <joeran@joerankuschel.de>",
   "license": "MIT",
   "dependencies": {
     "@lingui/core": "^6.9.0",
-    "@lingui/format-po": "^5.9.5",
-    "@lingui/message-utils": "^5.9.5",
+    "@lingui/format-po": "^6.9.1",
+    "@lingui/message-utils": "^6.9.1",
     "content-disposition": "^3.0.0",
     "cors": "^2.8.5",
     "dotenv": "^16.3.1",
@@ -27,6 +45,7 @@
     "pg": "^8.23.1"
   },
   "devDependencies": {
+    "@babel/plugin-transform-modules-commonjs": "^7.29.7",
     "@lingui/cli": "^6.9.0",
     "jest": "^29.7.0",
     "js-yaml": "^4.3.2",

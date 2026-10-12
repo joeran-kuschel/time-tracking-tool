@@ -12,11 +12,8 @@ access to the repository (`permissions: contents: read`). A failing job fails th
 
 `.github/dependabot.yml` has Dependabot check once a week for new versions of the backend packages, the frontend
 packages and the GitHub Actions in the workflow. Minor and patch updates of one entry (backend, frontend, Actions) come as a single
-pull request; the `Tests` workflow runs on it like on any other. Major updates of `vite`, `vitest` and `@lingui/*` are
-ignored on purpose: Vite 4 and Vitest 0.34 are pinned, and Lingui 6 needs Vite 6 or newer (see `CLAUDE.md`).
-
-Other major updates still arrive as separate pull requests and may fail the tests; a minor update of a 0.x package
-(like `vitest-axe`) can be breaking too. Version updates need no setting. Dependabot alerts and security updates are switched on in the repository's security
+pull request; the `Tests` workflow runs on it like on any other. Major updates arrive as separate pull requests and may fail the tests; a minor update of a 0.x package (like
+`vitest-axe`) can be breaking too. Version updates need no setting. Dependabot alerts and security updates are switched on in the repository's security
 settings; the file does not enable them.
 
 ## Templates
@@ -37,6 +34,6 @@ settings; the file does not enable them.
 
 `backend/tests/github-config.test.js` checks that the workflow is valid YAML, runs both test suites with `npm ci`, has
 read-only permissions and uses Node 22 or newer; that the issue templates have a name and a label; that
-Dependabot covers both packages and the workflow and keeps the pinned major versions; that the files
+Dependabot covers both packages and the workflow; that the files
 named above exist; and that relative links in `README.md`, `CONTRIBUTING.md`, `SECURITY.md` and the pull request
 template point to existing files.

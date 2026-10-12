@@ -56,21 +56,6 @@ describe('dependabot', () => {
   test('groups minor and patch updates for every entry', () => {
     config.updates.forEach((u) => expect(u.groups['minor-and-patch']['update-types']).toEqual(['minor', 'patch']));
   });
-
-  test('keeps the pinned major versions of Vite, Vitest and Lingui', () => {
-    const frontend = byEcosystem('npm').find((u) => u.directory === '/frontend');
-    const ignored = frontend.ignore.map((i) => i['dependency-name']).sort();
-    expect(ignored).toEqual(['@lingui/*', 'vite', 'vitest']);
-    frontend.ignore.forEach((i) => expect(i['update-types']).toEqual(['version-update:semver-major']));
-  });
-
-  test('the ignored majors are still the pinned ones in frontend/package.json', () => {
-    const { dependencies, devDependencies } = JSON.parse(read('frontend/package.json'));
-    const all = { ...dependencies, ...devDependencies };
-    expect(all.vite).toMatch(/^\^4\./);
-    expect(all.vitest).toMatch(/^\^0\.34\./);
-    expect(all['@lingui/core']).toMatch(/^\^5\./);
-  });
 });
 
 describe('issue templates', () => {

@@ -29,8 +29,8 @@ function ByCustomer({ rows, now, onSelect }) {
                   <span className="truncate font-medium">{row.name}</span>
                   <span className="shrink-0 font-mono text-sm">{formatHours(i18n, row.hours)}</span>
                 </span>
-                <span aria-hidden="true" className="flex h-2 w-full rounded bg-line-soft">
-                  <span className="rounded bg-accent" style={{ width: `${(row.hours / most) * 100}%` }} />
+                <span aria-hidden="true" className="flex h-2 w-full rounded-sm bg-line-soft">
+                  <span className="rounded-sm bg-accent" style={{ width: `${(row.hours / most) * 100}%` }} />
                 </span>
                 <span className="text-sm text-muted">
                   {row.projects.map((p) => p.project.name).join(', ')} · {formatAmount(i18n, row.amount)}

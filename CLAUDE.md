@@ -35,7 +35,7 @@ Time tracking tool for freelancers: track working time per customer and project,
 - Target cluster: Docker Desktop Kubernetes (kube context `docker-desktop`).
 - Everything is written in English: README.md, k8s/README.md, `documentation/`, code comments and the changelog. The repo is meant to be public.
 - Feature documentation lives in `documentation/`. `docs/` is separate: local reports only, not in git.
-- Translation tool: LinguiJS 5 (gettext `.po` files, language switch at runtime). English is the source language in the code; German comes from `de/messages.po`. Lingui 6 would need Vite 6+.
+- Translation tool: LinguiJS 6 (gettext `.po` files, language switch at runtime). English is the source language in the code; German comes from `de/messages.po`. Lingui 6 is ESM-only: the frontend uses its native macro transform (`lingui({ macroTransform: true })` in `vite.config.js`), the CommonJS backend loads it with `require()` (Node 22+) and Jest transforms it (`transformIgnorePatterns` in `backend/package.json`).
 
 ## Stack
 
@@ -128,13 +128,13 @@ The tool is served at http://time-tracking.local through the Ingress (`k8s/ingre
 ## Testing
 
 - Backend tests live in `backend/tests/` and use Jest. Patterns: model tests run real SQL against the migrations in pg-mem (`tests/helpers/testDb.js`); controller tests mock the model and use a fake `res`; `js-yaml` checks the k8s manifests; the shell scripts in `k8s/` are tested against a fake `kubectl`/`launchctl` on the `PATH`.
-- Frontend tests live in `frontend/tests/`, mirroring `src/` (`tests/components/Foo.test.jsx` tests `src/components/Foo.jsx`; source is imported via the `@/` alias) and use Vitest 0.34 (the last version that supports Vite 4), React Testing Library and vitest-axe. Import `axe` from `tests/support/axe.js`.
+- Frontend tests live in `frontend/tests/`, mirroring `src/` (`tests/components/Foo.test.jsx` tests `src/components/Foo.jsx`; source is imported via the `@/` alias) and use Vitest, React Testing Library and vitest-axe. Import `axe` from `tests/support/axe.js`.
 - axe runs in jsdom, where color contrast can't be checked. Check contrast in a real browser.
 - Frontend tests import `render`/`renderHook` from `tests/support/render.jsx`, which adds the `I18nProvider`. Tests run in German by default; `frontend/tests/locales/catalogs.test.js` (and `backend/tests/i18n.test.js`) fail when a text is not extracted or a German translation is missing.
 - Both test runs end with a timing report (per file, slowest tests, entire run; `TEST_TIMINGS=all` lists every test): `documentation/backend/test-timing.md`.
-- The frontend test script sets `NODE_OPTIONS=--no-experimental-webstorage`: Node 22+ has its own `localStorage` global, which hides jsdom's in Vitest 0.34.
+- The frontend test script sets `NODE_OPTIONS=--no-experimental-webstorage`: Node 22+ has its own `localStorage` global, which hid jsdom's in older Vitest versions. The current Vitest and jsdom pass without it, so it may be removed.
 
 ## Known open issues
 
 - `backend.yaml` has a `wait-for-db` init container that waits for host `postgres`. With a remote database the backend would never start.
-- `npm audit` in `frontend/` reports vulnerabilities in dev tools only (Vitest 0.34, esbuild via Vite 4); the production image doesn't contain them. Fixing needs Vite 6+ and a current Vitest.
+- `npm audit` in `frontend/` reports vulnerabilities in dev tools only (`braces` via `@lingui/cli`); `npm audit --omit=dev` finds none in either package. `backend/` lists more dev-tool findings (Jest and its dependencies).
