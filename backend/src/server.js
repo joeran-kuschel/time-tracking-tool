@@ -2,7 +2,7 @@
 // also with `npm run dev` on a machine in another time zone. Set before anything creates a Date.
 process.env.TZ = 'UTC';
 
-require('dotenv').config();
+require('dotenv').config({ quiet: true });
 const { createApp, parseOrigins } = require('./app');
 const { redactConnectionString } = require('./config/redact');
 
