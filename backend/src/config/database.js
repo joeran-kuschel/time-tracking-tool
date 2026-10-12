@@ -1,5 +1,5 @@
 const { Pool } = require('pg');
-require('dotenv').config();
+require('dotenv').config({ quiet: true });
 const { getSslConfig } = require('./ssl');
 
 const pool = new Pool({
