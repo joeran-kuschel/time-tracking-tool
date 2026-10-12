@@ -33,6 +33,9 @@
   "keywords": [],
   "author": "Jöran Kuschel <joeran@joerankuschel.de>",
   "license": "MIT",
+  "engines": {
+    "node": ">=22.22.2"
+  },
   "dependencies": {
     "@lingui/core": "^6.9.0",
     "@lingui/format-po": "^6.9.1",

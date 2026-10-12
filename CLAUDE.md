@@ -59,7 +59,7 @@ Feature details, endpoints and known gaps are documented per feature in `documen
 
 ## Commands
 
-Use Node 22+ locally; the Docker images use Node 24. There is no linter configured.
+Use Node 22.22.2+ locally; the Docker images use Node 24. There is no linter configured.
 
 ```bash
 # Tests
@@ -132,7 +132,7 @@ The tool is served at http://time-tracking.local through the Ingress (`k8s/ingre
 - axe runs in jsdom, where color contrast can't be checked. Check contrast in a real browser.
 - Frontend tests import `render`/`renderHook` from `tests/support/render.jsx`, which adds the `I18nProvider`. Tests run in German by default; `frontend/tests/locales/catalogs.test.js` (and `backend/tests/i18n.test.js`) fail when a text is not extracted or a German translation is missing.
 - Both test runs end with a timing report (per file, slowest tests, entire run; `TEST_TIMINGS=all` lists every test): `documentation/backend/test-timing.md`.
-- The frontend test script sets `NODE_OPTIONS=--no-experimental-webstorage`: Node 22+ has its own `localStorage` global, which hid jsdom's in older Vitest versions. The current Vitest and jsdom pass without it, so it may be removed.
+- The frontend test script sets `NODE_OPTIONS=--no-experimental-webstorage`: Node 22+ has its own `localStorage` global, which hid jsdom's in older Vitest versions.
 
 ## Known open issues
 

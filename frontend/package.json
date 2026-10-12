@@ -3,6 +3,9 @@
   "version": "0.1.0",
   "author": "Jöran Kuschel <joeran@joerankuschel.de>",
   "license": "MIT",
+  "engines": {
+    "node": ">=22.22.2"
+  },
   "type": "module",
   "scripts": {
     "dev": "vite",

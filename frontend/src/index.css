@@ -54,7 +54,15 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* One visible focus ring for every control */
-:focus-visible {
-  @apply outline outline-2 outline-offset-2 outline-accent;
+/* In the base layer, so utilities like focus:outline-none on <main> still win (Tailwind 4 layers its utilities) */
+@layer base {
+  /* One visible focus ring for every control */
+  :focus-visible {
+    @apply outline outline-2 outline-offset-2 outline-accent;
+  }
+
+  /* Tailwind 4 no longer gives buttons a pointer cursor */
+  button:not(:disabled) {
+    cursor: pointer;
+  }
 }
