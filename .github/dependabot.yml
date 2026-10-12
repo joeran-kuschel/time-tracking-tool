@@ -7,6 +7,10 @@ updates:
     groups:
       minor-and-patch:
         update-types: [minor, patch]
+    ignore:
+      # Jest runs on Babel 7, so version 8 of this plugin can't work with it
+      - dependency-name: "@babel/plugin-transform-modules-commonjs"
+        update-types: [version-update:semver-major]
 
   - package-ecosystem: npm
     directory: /frontend

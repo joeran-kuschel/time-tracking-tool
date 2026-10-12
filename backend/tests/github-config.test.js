@@ -53,6 +53,15 @@ describe('dependabot', () => {
     expect(workflows.filter((f) => f.endsWith('.yml')).length).toBeGreaterThan(0);
   });
 
+  test('ignores major updates of the Babel plugin, which Jest 30 can only use in version 7', () => {
+    const backend = byEcosystem('npm').find((u) => u.directory === '/backend');
+    expect(backend.ignore).toEqual([
+      { 'dependency-name': '@babel/plugin-transform-modules-commonjs', 'update-types': ['version-update:semver-major'] },
+    ]);
+    const { devDependencies } = JSON.parse(read('backend/package.json'));
+    expect(devDependencies['@babel/plugin-transform-modules-commonjs']).toMatch(/^\^7\./);
+  });
+
   test('groups minor and patch updates for every entry', () => {
     config.updates.forEach((u) => expect(u.groups['minor-and-patch']['update-types']).toEqual(['minor', 'patch']));
   });
