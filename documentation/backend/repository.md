@@ -11,9 +11,14 @@ access to the repository (`permissions: contents: read`). A failing job fails th
 ## Dependency updates
 
 `.github/dependabot.yml` has Dependabot check once a week for new versions of the backend packages, the frontend
-packages and the GitHub Actions in the workflow. Minor and patch updates of one entry (backend, frontend, Actions) come as a single
-pull request; the `Tests` workflow runs on it like on any other. Major updates arrive as separate pull requests and may fail the tests; a minor update of a 0.x package (like
-`vitest-axe`) can be breaking too. Version updates need no setting. Dependabot alerts and security updates are switched on in the repository's security
+packages and the GitHub Actions in the workflow. Minor and patch updates of one entry (backend, frontend, Actions)
+come as a single pull request; the `Tests` workflow runs on it like on any other.
+
+Major updates arrive as separate pull requests and may fail the tests. A minor update of a 0.x package (like
+`vitest-axe`) can be breaking too. Major updates of `@babel/plugin-transform-modules-commonjs` in the backend are
+ignored, because Jest runs on Babel 7.
+
+Version updates need no setting. Dependabot alerts and security updates are switched on in the repository's security
 settings; the file does not enable them.
 
 ## Templates

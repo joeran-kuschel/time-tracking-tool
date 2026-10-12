@@ -11,6 +11,7 @@ How to write an entry and cut a release: [documentation/backend/changelog.md](do
 
 ### Changed
 
+- Tooling: Dependabot no longer proposes major updates of the Babel plugin that Jest needs in version 7.
 - Tooling: test and config packages updated (Jest 30, jest-dom 7, js-yaml 5, dotenv 18).
 - Tooling: dependencies updated to their latest major versions (React 19, Vite 8, Vitest 5, Tailwind CSS 4, Lingui 6, Express 5, jsdom 30).
 - PDF report downloads: file names with accents or other non-ASCII letters now show a plain `?` in the basic file name; the full name stays in the extended `filename*` that browsers use. A plain ASCII file name is sent without quotes.
