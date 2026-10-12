@@ -4,7 +4,7 @@ Thanks for your interest. This is a small project for freelancers; issues and pu
 
 ## Setup
 
-See the [README](README.md) for running the tool locally. Use Node 22 or newer.
+See the [README](README.md) for running the tool locally. Use Node 22.22.2 or newer (`engines` in both `package.json` files).
 
 ```bash
 cd backend && npm install && npm test

@@ -15,14 +15,6 @@ updates:
     groups:
       minor-and-patch:
         update-types: [minor, patch]
-    ignore:
-      # Vite 4 and Vitest 0.34 are pinned, and Lingui 6 needs Vite 6+ (see CLAUDE.md)
-      - dependency-name: vite
-        update-types: [version-update:semver-major]
-      - dependency-name: vitest
-        update-types: [version-update:semver-major]
-      - dependency-name: "@lingui/*"
-        update-types: [version-update:semver-major]
 
   - package-ecosystem: github-actions
     directory: /

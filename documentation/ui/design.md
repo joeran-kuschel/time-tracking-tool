@@ -6,7 +6,7 @@ the frontend.
 
 ## Colors
 
-Components use Tailwind color names (`bg-paper`, `text-muted`, …), never hex values. `frontend/tailwind.config.js`
+Components use Tailwind color names (`bg-paper`, `text-muted`, …), never hex values. `frontend/tailwind.config.js` (loaded by `@config` in `index.css`, since Tailwind 4 has no config discovery)
 maps each name to a CSS variable, and `frontend/src/index.css` sets the variables once for the light and once for the
 dark theme. Opacity modifiers like `bg-paper/70` keep working, because the variables hold plain `r g b` values.
 

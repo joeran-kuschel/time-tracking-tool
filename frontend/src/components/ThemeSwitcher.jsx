@@ -37,7 +37,7 @@ function ThemeSwitcher() {
           aria-pressed={choice === value}
           onClick={() => choose(value)}
           className={`inline-flex min-h-[2rem] w-8 items-center justify-center rounded-md ${
-            choice === value ? 'bg-surface text-ink shadow-sm' : 'text-muted hover:text-ink'
+            choice === value ? 'bg-surface text-ink shadow-xs' : 'text-muted hover:text-ink'
           }`}
         >
           <Icon aria-hidden="true" className="h-4 w-4" />

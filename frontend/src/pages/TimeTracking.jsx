@@ -39,8 +39,14 @@ function TimeTracking({ customers, onCustomersChange, timer, onOpenReport, initi
   // After deleting, focus moves to the list the record was in
   const customerList = useRef(null)
   const projectGroup = useRef(null)
+  // The project filter is rendered anew once the selected project is gone, so focus it after that render
+  const [projectFocusRequest, setProjectFocusRequest] = useState(0)
   const customersHeadingId = useId()
   const entriesHeadingId = useId()
+
+  useEffect(() => {
+    if (projectFocusRequest) projectGroup.current?.focus()
+  }, [projectFocusRequest])
 
   const selectedCustomer = customers.find((c) => c.id === selectedCustomerId) ?? null
   const selectedProject = projects.find((p) => p.id === selectedProjectId) ?? null
@@ -299,7 +305,7 @@ function TimeTracking({ customers, onCustomersChange, timer, onOpenReport, initi
                 onDelete={deleteProject}
                 deleteMessage={({ name: projectName }) => t`Delete ${projectName} and all its time entries?`}
                 messages={projectMessages}
-                onDeleted={() => projectGroup.current?.focus()}
+                onDeleted={() => setProjectFocusRequest((n) => n + 1)}
               >
                 {projectFilter}
               </EditableRecord>

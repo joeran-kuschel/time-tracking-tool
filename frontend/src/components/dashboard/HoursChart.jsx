@@ -89,7 +89,7 @@ function HoursChart({ entries, now }) {
               aria-pressed={view === v.id}
               onClick={() => switchView(v.id)}
               className={`min-h-[2.75rem] rounded-md px-3.5 text-sm ${
-                view === v.id ? 'bg-surface font-semibold text-ink shadow-sm' : 'text-muted hover:text-ink'
+                view === v.id ? 'bg-surface font-semibold text-ink shadow-xs' : 'text-muted hover:text-ink'
               }`}
             >
               {i18n._(v.label)}
@@ -124,7 +124,7 @@ function HoursChart({ entries, now }) {
                 className="relative flex h-full flex-1 items-end justify-center"
               >
                 <div
-                  className={`w-[62%] rounded-t-sm ${index === active ? 'bg-accent-dark' : 'bg-accent'} ${
+                  className={`w-[62%] rounded-t-xs ${index === active ? 'bg-accent-dark' : 'bg-accent'} ${
                     index === active ? 'outline outline-2 outline-offset-1 outline-ink' : ''
                   }`}
                   style={{ height: `${(bar.hours / scale) * 100}%` }}

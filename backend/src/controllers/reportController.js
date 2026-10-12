@@ -1,4 +1,4 @@
-const contentDisposition = require('content-disposition');
+const { create: contentDisposition } = require('content-disposition');
 const TimeEntry = require('../models/TimeEntry');
 const Customer = require('../models/Customer');
 const ReportStatus = require('../models/ReportStatus');

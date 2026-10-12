@@ -39,7 +39,7 @@ describe('reportController.generatePDF', () => {
     await controller.generatePDF({ params: { customerId: '1' }, query: { month: '3', year: '2026', lang: 'en' } }, res);
 
     expect(generateReportPDF).toHaveBeenCalledWith([{ id: 1 }], { customerName: 'Muster', month: 3, year: 2026, locale: 'en', timeZone: 'UTC' });
-    expect(res.headers['Content-Disposition']).toBe('attachment; filename="time-report-Muster-2026-3.pdf"');
+    expect(res.headers['Content-Disposition']).toBe('attachment; filename=time-report-Muster-2026-3.pdf');
   });
 
   test('keeps the German file name without a language', async () => {
@@ -47,12 +47,12 @@ describe('reportController.generatePDF', () => {
 
     await controller.generatePDF({ params: { customerId: '1' }, query: { month: '3', year: '2026' } }, res);
 
-    expect(res.headers['Content-Disposition']).toBe('attachment; filename="abrechnung-Muster-2026-3.pdf"');
+    expect(res.headers['Content-Disposition']).toBe('attachment; filename=abrechnung-Muster-2026-3.pdf');
   });
 
   test.each([
-    ['Łódź Media', `attachment; filename="abrechnung-?ód? Media-2026-3.pdf"; filename*=UTF-8''abrechnung-%C5%81%C3%B3d%C5%BA%20Media-2026-3.pdf`],
-    ['Café "Zur Post"', 'attachment; filename="abrechnung-Café \\"Zur Post\\"-2026-3.pdf"'],
+    ['Łódź Media', `attachment; filename="abrechnung-??d? Media-2026-3.pdf"; filename*=UTF-8''abrechnung-%C5%81%C3%B3d%C5%BA%20Media-2026-3.pdf`],
+    ['Café "Zur Post"', `attachment; filename="abrechnung-Caf? \\"Zur Post\\"-2026-3.pdf"; filename*=UTF-8''abrechnung-Caf%C3%A9%20%22Zur%20Post%22-2026-3.pdf`],
   ])('sends a valid file name for the customer %p', async (name, header) => {
     Customer.getById.mockResolvedValue({ id: 1, name });
     const res = mockResponse();
@@ -96,7 +96,7 @@ describe('reportController.generatePDF preview', () => {
 
     await controller.generatePDF({ params: { customerId: '1' }, query: { month: '3', year: '2026', lang: 'en', inline: '1' } }, res);
 
-    expect(res.headers['Content-Disposition']).toBe('inline; filename="time-report-Muster-2026-3.pdf"');
+    expect(res.headers['Content-Disposition']).toBe('inline; filename=time-report-Muster-2026-3.pdf');
   });
 });
 
