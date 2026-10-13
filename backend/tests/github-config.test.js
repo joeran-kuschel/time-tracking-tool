@@ -30,6 +30,12 @@ describe('test workflow', () => {
     expect(parseInt(setup.with['node-version'], 10)).toBeGreaterThanOrEqual(22);
   });
 
+  test('produces the checks the ruleset "Protect main" requires, as documented', () => {
+    const names = job.strategy.matrix.package.map((pkg) => job.name.replace('${{ matrix.package }}', pkg)).sort();
+    expect(names).toEqual(['backend tests', 'frontend tests']);
+    names.forEach((name) => expect(read('documentation/backend/repository.md')).toContain(`\`${name}\``));
+  });
+
   test('every package has the lock file npm ci needs', () => {
     ['backend', 'frontend'].forEach((pkg) => {
       expect(fs.existsSync(path.join(rootDir, pkg, 'package-lock.json'))).toBe(true);

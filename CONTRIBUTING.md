@@ -16,7 +16,8 @@ While working, run only the tests affected by your change, for example
 
 ## Rules for changes
 
-- Work in a branch; do not commit to `main` directly.
+- Work in a branch and open a pull request. `main` is protected: it takes no direct pushes, and the checks `backend tests`
+  and `frontend tests` have to pass before a pull request can be merged.
 - Plan first, and open an issue for larger changes before writing code.
 - No refactoring that is unrelated to your change.
 - Add tests for everything you implement. Model tests run against pg-mem, so no Postgres is needed.

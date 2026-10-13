@@ -13,6 +13,7 @@ How to write an entry and cut a release: [documentation/backend/changelog.md](do
 
 ### Changed
 
+- Tooling: changes reach `main` through pull requests; `main` is protected and needs the passing checks `backend tests` and `frontend tests`.
 - Tooling: new documentation chapter "Browser review": how to review a change in the browser with a throwaway database and sample data, also for branches in a git worktree. A test checks that every documentation chapter is linked from the index.
 - Screen readers now read each project's and customer's share of the month's hours (e.g. "70 % of total") next to the hours in the month summary and in "By customer" on the Dashboard.
 - Tooling: the repository has a Code of Conduct (Contributor Covenant 2.1).

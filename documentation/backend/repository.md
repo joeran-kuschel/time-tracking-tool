@@ -8,6 +8,16 @@ What the repository contains for contributors and for the public GitHub page.
 matrix runs for each package (`backend`, `frontend`) in parallel: `npm ci`, then `npm test` on Node 22. The workflow only has read
 access to the repository (`permissions: contents: read`). A failing job fails the check.
 
+## Branch protection
+
+The ruleset "Protect main" on GitHub protects `main`: changes arrive only through a pull request, the checks
+`backend tests` and `frontend tests` of the `Tests` workflow have to pass, and `main` cannot be force-pushed or deleted.
+A pull request needs no approving review (the maintainer is the only one), and the branch does not have to be up to
+date with `main` before it is merged. The maintainer's Admin role can bypass the ruleset; the working rules still say
+to use pull requests (`CLAUDE.md`). The ruleset allows merge, squash and rebase; the habit is a merge commit
+(`gh pr merge --merge`). The repository setting "Delete branch on merge" is on, so GitHub deletes the branch afterwards.
+A pull request names the issue it implements with `Closes #<number>`.
+
 ## Dependency updates
 
 `.github/dependabot.yml` has Dependabot check once a week for new versions of the backend packages, the frontend
@@ -40,7 +50,8 @@ settings; the file does not enable them.
 
 `backend/tests/github-config.test.js` checks that the workflow is valid YAML, runs both test suites with `npm ci`, has
 read-only permissions and uses Node 22 or newer; that the issue templates have a name and a label; that Dependabot
-covers both packages and the workflow; that the files named above exist; that the Code of Conduct names a contact and is
+covers both packages and the workflow; that the files named above exist; that the check names the ruleset requires (`backend tests`, `frontend tests`) are the ones
+the workflow produces; that the Code of Conduct names a contact and is
 linked from `README.md` and `CONTRIBUTING.md`; and that relative links in `README.md`, `CONTRIBUTING.md`,
 `CODE_OF_CONDUCT.md`, `SECURITY.md` and the pull request template point to existing files.
 
