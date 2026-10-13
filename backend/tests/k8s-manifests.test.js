@@ -1,4 +1,5 @@
 const fs = require('fs');
+const os = require('os');
 const path = require('path');
 const yaml = require('js-yaml');
 const { spawnSync } = require('child_process');
@@ -60,6 +61,54 @@ describe('database connection config', () => {
       { configMapRef: { name: 'time-tracking-config' } },
       { secretRef: { name: 'time-tracking-db' } },
     ]));
+  });
+
+  describe('wait-for-db init container', () => {
+    const deployment = find(loadManifests('backend.yaml'), 'Deployment', 'backend');
+    const init = deployment.spec.template.spec.initContainers.find((c) => c.name === 'wait-for-db');
+    const script = init.command.join('\n');
+
+    test('gets DATABASE_URL from the same Secret as the backend', () => {
+      expect(init.env).toEqual([
+        { name: 'DATABASE_URL', valueFrom: { secretKeyRef: { name: 'time-tracking-db', key: 'DATABASE_URL' } } },
+      ]);
+    });
+
+    test('waits for the database in DATABASE_URL, not for a hardcoded host', () => {
+      expect(script).toMatch(/pg_isready\s+-d\s+"\$DATABASE_URL"/);
+      expect(script).not.toMatch(/postgres\b.*-p|-h\s|-U\s|timetracking/);
+    });
+
+    test('runs the script with sh -c, in an image that ships pg_isready', () => {
+      expect(init.command.slice(0, 2)).toEqual(['sh', '-c']);
+      expect(init.image).toMatch(/^postgres:/);
+    });
+
+    test('retries pg_isready with the URL until it succeeds, then exits 0', () => {
+      const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'fake-pg-'));
+      const log = path.join(dir, 'calls.log');
+      const counter = path.join(dir, 'count');
+      fs.writeFileSync(path.join(dir, 'pg_isready'), [
+        '#!/bin/sh',
+        `echo "$@" >> "${log}"`,
+        `n=$(cat "${counter}" 2>/dev/null || echo 0); n=$((n+1)); echo $n > "${counter}"`,
+        '[ "$n" -ge 3 ]',
+      ].join('\n'), { mode: 0o755 });
+      fs.writeFileSync(path.join(dir, 'sleep'), '#!/bin/sh\n', { mode: 0o755 }); // skip the real waits
+      const url = 'postgresql://user:secret@db.example.com:5432/app';
+      try {
+        const result = spawnSync('sh', ['-c', init.command[2]], {
+          env: { ...process.env, PATH: `${dir}:${process.env.PATH}`, DATABASE_URL: url },
+          encoding: 'utf8',
+          timeout: 10000,
+        });
+        expect(result.status).toBe(0);
+        expect(fs.readFileSync(log, 'utf8').trim().split('\n')).toEqual(Array(3).fill(`-d ${url}`));
+        expect(result.stdout + result.stderr).not.toContain('secret');
+      } finally {
+        fs.rmSync(dir, { recursive: true, force: true });
+      }
+    });
   });
 });
 

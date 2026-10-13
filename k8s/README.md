@@ -190,6 +190,8 @@ data:
 You have to create the schema on the remote database yourself, once
 (`backend/migrations/*.sql`); the init scripts run only for the Postgres in the cluster.
 
+The backend's `wait-for-db` init container waits for the database in `DATABASE_URL`, so it works with the remote one too.
+
 2. Deploy again:
 ```bash
 kubectl apply -f k8s/configmap.yaml

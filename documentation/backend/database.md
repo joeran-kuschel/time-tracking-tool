@@ -53,8 +53,11 @@ SSL is decided by `DB_SSL` alone, not by `NODE_ENV` (`backend/src/config/ssl.js`
 2. Apply the schema to the remote database by hand (`backend/migrations/*.sql`).
 3. Apply the manifests and restart the backend.
 
-The backend's `wait-for-db` init container still waits for the in-cluster host `postgres`, so with a remote
-database the backend currently doesn't start. This is a known open issue.
+The backend's `wait-for-db` init container (`k8s/backend.yaml`) waits for the database in `DATABASE_URL`, read from
+the same Secret as the backend: `pg_isready -d "$DATABASE_URL"`. So it waits for the in-cluster Postgres and for a
+remote database alike. `pg_isready` only checks that the server accepts connections, so it needs no login and `DB_SSL`
+does not matter. It prints only host and port, never the password; the URL itself is not echoed. The URL is an argument of `pg_isready`, so it is visible in the process list inside
+the pod, where the backend already holds it in its environment.
 
 ## Data safety
 
