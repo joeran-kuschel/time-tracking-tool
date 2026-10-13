@@ -8,6 +8,12 @@ export function formatHours(i18n, hours) {
   return `${i18n.number(Number(hours), { minimumFractionDigits: 2, maximumFractionDigits: 2 })} h`
 }
 
+// "42 %" / "42%": the part's share of the total, 0 when the total is 0
+export function formatShare(i18n, part, total) {
+  const ratio = Number(total) > 0 ? Number(part) / Number(total) : 0
+  return i18n.number(ratio, { style: 'percent', maximumFractionDigits: 0 })
+}
+
 export function formatAmount(i18n, amount) {
   return i18n.number(Number(amount), { style: 'currency', currency: 'EUR' })
 }

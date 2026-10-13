@@ -44,6 +44,7 @@ Next to the timer, a card sums up the selected customer's current month (e.g. *S
 - **Hours this month**, **Billable amount** (hours × hourly rate of each entry's project) and the number of
   **Entries**. Only finished entries count; a running timer is added once it stops.
 - One bar per project with its hours, in the order of the projects. Projects without hours this month are left out.
+  The bar is decorative; screen readers read each project's share of the month's hours after the hours (*70 % of total*).
 - *No time recorded this month yet.* when there is nothing to sum up.
 - **Open report** opens the Reports page for this customer and the current month.
 

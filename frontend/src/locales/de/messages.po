@@ -13,6 +13,10 @@ msgstr ""
 "Language-Team: \n"
 "Plural-Forms: \n"
 
+#: src/components/ShareOfTotal.jsx:8
+msgid ", {share} of total"
+msgstr ", {share} vom Gesamtwert"
+
 #: src/pages/TimeTracking.jsx:265
 msgid ", timer running"
 msgstr ", Timer läuft"
@@ -83,7 +87,7 @@ msgstr "Betrag (netto)"
 msgid "Bars, use the arrow keys to read the values"
 msgstr "Balken, mit den Pfeiltasten die Werte lesen"
 
-#: src/components/MonthSummary.jsx:17
+#: src/components/MonthSummary.jsx:18
 msgid "Billable amount"
 msgstr "Abrechenbarer Betrag"
 
@@ -95,7 +99,7 @@ msgstr "Abrechenbar im {monthName}"
 msgid "Billing · {monthName}"
 msgstr "Abrechnung · {monthName}"
 
-#: src/components/dashboard/ByCustomer.jsx:16
+#: src/components/dashboard/ByCustomer.jsx:18
 msgid "By customer · {monthName}"
 msgstr "Nach Kunde · {monthName}"
 
@@ -251,7 +255,7 @@ msgstr "Ende (nächster Tag)"
 msgid "End must be after start."
 msgstr "Das Ende muss nach dem Start liegen."
 
-#: src/components/MonthSummary.jsx:18
+#: src/components/MonthSummary.jsx:19
 msgid "Entries"
 msgstr "Einträge"
 
@@ -294,7 +298,7 @@ msgstr "Stunden pro Woche"
 msgid "Hours per week, {monthName}"
 msgstr "Stunden pro Woche, {monthName}"
 
-#: src/components/MonthSummary.jsx:16
+#: src/components/MonthSummary.jsx:17
 msgid "Hours this month"
 msgstr "Stunden diesen Monat"
 
@@ -398,13 +402,13 @@ msgid "No entries yet."
 msgstr "Noch keine Einträge."
 
 #: src/components/dashboard/BillingTable.jsx:36
-#: src/components/dashboard/ByCustomer.jsx:18
-#: src/components/MonthSummary.jsx:52
+#: src/components/dashboard/ByCustomer.jsx:20
+#: src/components/MonthSummary.jsx:53
 msgid "No time recorded this month yet."
 msgstr "In diesem Monat ist noch keine Zeit erfasst."
 
 #: src/components/dashboard/BillingTable.jsx:110
-#: src/components/MonthSummary.jsx:26
+#: src/components/MonthSummary.jsx:27
 msgid "Open report"
 msgstr "Bericht öffnen"
 

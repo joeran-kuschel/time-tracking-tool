@@ -1,6 +1,7 @@
 import { useId } from 'react'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { formatAmount, formatHours } from '../../format'
+import ShareOfTotal from '../ShareOfTotal'
 import { ui } from '../../ui'
 
 // Hours of the month per customer as horizontal bars, with projects and amount.
@@ -9,6 +10,7 @@ function ByCustomer({ rows, now, onSelect }) {
   const { i18n } = useLingui()
   const headingId = useId()
   const monthName = i18n.date(now, { month: 'long' })
+  const total = rows.reduce((sum, r) => sum + r.hours, 0)
   const most = Math.max(...rows.map((r) => r.hours), 0)
 
   return (
@@ -27,7 +29,7 @@ function ByCustomer({ rows, now, onSelect }) {
               >
                 <span className="flex w-full items-baseline justify-between gap-3">
                   <span className="truncate font-medium">{row.name}</span>
-                  <span className="shrink-0 font-mono text-sm">{formatHours(i18n, row.hours)}</span>
+                  <span className="shrink-0 font-mono text-sm">{formatHours(i18n, row.hours)}<ShareOfTotal hours={row.hours} total={total} /></span>
                 </span>
                 <span aria-hidden="true" className="flex h-2 w-full rounded-sm bg-line-soft">
                   <span className="rounded-sm bg-accent" style={{ width: `${(row.hours / most) * 100}%` }} />

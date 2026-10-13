@@ -2,6 +2,7 @@ import { describe, expect, test, vi } from 'vitest'
 import { render, screen, within } from '../support/render'
 import userEvent from '@testing-library/user-event'
 import { axe } from '../support/axe'
+import { i18n } from '@/i18n'
 import MonthSummary from '@/components/MonthSummary'
 
 const now = new Date(2026, 8, 22, 12, 0)
@@ -29,6 +30,19 @@ describe('MonthSummary', () => {
     expect(within(perProject[0]).getByText('Website')).toBeInTheDocument()
     expect(perProject[0]).toHaveTextContent('3,50 h')
     expect(perProject[1]).toHaveTextContent('1,50 h')
+  })
+
+  test("gives screen readers each project's share of the total", () => {
+    render(<MonthSummary entries={entries} projects={projects} onOpenReport={vi.fn()} now={now} />)
+    const perProject = screen.getAllByRole('listitem')
+    expect(perProject[0]).toHaveTextContent('3,50 h, 70 % vom Gesamtwert')
+    expect(perProject[1]).toHaveTextContent('1,50 h, 30 % vom Gesamtwert')
+  })
+
+  test('words the share in the active language', () => {
+    i18n.activate('en')
+    render(<MonthSummary entries={entries} projects={projects} onOpenReport={vi.fn()} now={now} />)
+    expect(screen.getAllByRole('listitem')[0]).toHaveTextContent('3.50 h, 70% of total')
   })
 
   test('says so when nothing is recorded this month', () => {

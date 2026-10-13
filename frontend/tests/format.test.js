@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest'
 import { i18n } from '@/i18n'
-import { formatAmount, formatClock, formatDay, formatHours, formatRate, hoursBetween } from '@/format'
+import { formatAmount, formatClock, formatDay, formatHours, formatRate, formatShare, hoursBetween } from '@/format'
 
 describe('hoursBetween', () => {
   test('returns the hours between start and end', () => {
@@ -30,5 +30,19 @@ describe('formats follow the language', () => {
     expect(formatAmount(i18n, 1197.5)).toBe('€1,197.50')
     expect(formatDay(i18n, new Date(2026, 8, 21, 9, 5))).toBe('Mon, Sep 21')
     expect(formatClock(i18n, new Date(2026, 8, 21, 13, 5))).toBe('13:05')
+  })
+})
+
+describe('formatShare', () => {
+  test('formats the share as a whole percentage in the active language', () => {
+    i18n.activate('de')
+    expect(formatShare(i18n, 3.5, 5)).toBe('70\u00a0%')
+    i18n.activate('en')
+    expect(formatShare(i18n, 3.5, 5)).toBe('70%')
+  })
+
+  test('is 0 when the total is 0', () => {
+    i18n.activate('en')
+    expect(formatShare(i18n, 0, 0)).toBe('0%')
   })
 })

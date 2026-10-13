@@ -41,16 +41,12 @@ The UI has to meet WCAG 2.2 level AA (see `CLAUDE.md`). This chapter lists what 
   9.3 / 8.4:1; text on `danger` (Stop, Delete) 6.6 / 5.8:1; red text (errors, *running*) 6.6 / 5.0:1 on cards and
   5.8 / 4.6:1 inside a delete confirmation; borders of inputs and buttons 3.7 / 3.4:1 (at least 3:1, WCAG 1.4.11);
   the focus ring 7.0 / 7.4:1. Hover colors keep at least 7.4:1 in both themes.
+- **Bars with a share of the total:** the project bars in the month summary and the customer bars on the Dashboard
+  are decorative (`aria-hidden`). Next to the hours a visually hidden text gives the share of the total, e.g. *3.50 h,
+  70 % of total* (`ShareOfTotal`, `formatShare` in `format.js`; 0 % when the total is 0).
 - **Theme switch:** a group named *Theme* with three icon buttons named by their `title` (*Light*, *Dark*, *Like the
   system*); the active one is marked with `aria-pressed`. The dark theme sets `color-scheme: dark`, so native controls
   stay readable.
-
-## Missing
-
-From the UX review, not fixed yet:
-
-- The project bars in the month summary are hidden from screen readers; the hours next to them carry the information.
-  A screen reader user gets no share-of-total, only the hours.
 
 ## Testing
 
