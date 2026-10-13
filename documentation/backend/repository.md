@@ -43,3 +43,7 @@ read-only permissions and uses Node 22 or newer; that the issue templates have a
 covers both packages and the workflow; that the files named above exist; that the Code of Conduct names a contact and is
 linked from `README.md` and `CONTRIBUTING.md`; and that relative links in `README.md`, `CONTRIBUTING.md`,
 `CODE_OF_CONDUCT.md`, `SECURITY.md` and the pull request template point to existing files.
+
+`backend/tests/documentation.test.js` checks that every chapter under `documentation/ui/` and `documentation/backend/` is linked
+once from `documentation/README.md`, that every link there points to an existing file, and that the `documentation/…md`
+paths named in `CLAUDE.md` exist.
