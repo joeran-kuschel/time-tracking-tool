@@ -13,6 +13,7 @@ How to write an entry and cut a release: [documentation/backend/changelog.md](do
 
 ### Changed
 
+- Screen readers now read each project's and customer's share of the month's hours (e.g. "70 % of total") next to the hours in the month summary and in "By customer" on the Dashboard.
 - Tooling: the repository has a Code of Conduct (Contributor Covenant 2.1).
 - Tooling: fixed a test of `k8s/setup-tls.sh` that failed at random; its fake `openssl` now reads its input like the real one.
 - The API answers `401` without a login for everything except `/health`. Anything else that calls it, such as scripts, has to log in first (`POST /api/auth/login`) and send the cookie.

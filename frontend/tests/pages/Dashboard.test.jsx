@@ -131,8 +131,8 @@ describe('Dashboard', () => {
     const section = within(await screen.findByRole('region', { name: 'Nach Kunde · September' }))
 
     const buttons = section.getAllByRole('button')
-    expect(buttons[0]).toHaveTextContent(/Muster GmbH5,00 hWebsite, Shop · 452,50\s€/)
-    expect(buttons[1]).toHaveTextContent(/Berger4,00 hPflege · 340,00\s€/)
+    expect(buttons[0]).toHaveTextContent(/Muster GmbH5,00 h, 56 % vom GesamtwertWebsite, Shop · 452,50\s€/)
+    expect(buttons[1]).toHaveTextContent(/Berger4,00 h, 44 % vom GesamtwertPflege · 340,00\s€/)
 
     await userEvent.click(buttons[1])
     expect(onOpenTimeTracking).toHaveBeenCalledWith(2)

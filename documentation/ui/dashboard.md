@@ -59,7 +59,8 @@ Bars for the month, with a **Days / Weeks** switch (buttons with `aria-pressed`)
 ## By customer
 
 Hours per customer this month as horizontal bars, most hours first, with the projects and the amount. Selecting a
-customer opens it on the Time tracking page.
+customer opens it on the Time tracking page. The bar is decorative; screen readers read the customer's share of all
+hours of the month after the hours (*70 % of total*).
 
 ## Billing
 

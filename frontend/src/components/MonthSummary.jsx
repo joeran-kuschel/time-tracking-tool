@@ -2,6 +2,7 @@ import { useId } from 'react'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { formatAmount, formatHours } from '../format'
 import { inMonth, summarize } from '../summary'
+import ShareOfTotal from './ShareOfTotal'
 import { ui } from '../ui'
 
 // The current month of a customer: hours, billable amount (hours × hourly rate), entries and hours per project.
@@ -44,7 +45,7 @@ function MonthSummary({ entries, projects, onOpenReport, now = new Date() }) {
               <span aria-hidden="true" className="flex h-2 flex-1 rounded-sm bg-line-soft">
                 <span className="rounded-sm bg-accent" style={{ width: `${(hours / summary.hours) * 100}%` }} />
               </span>
-              <span className="w-20 shrink-0 text-right font-mono">{formatHours(i18n, hours)}</span>
+              <span className="w-20 shrink-0 text-right font-mono">{formatHours(i18n, hours)}<ShareOfTotal hours={hours} total={summary.hours} /></span>
             </li>
           ))}
         </ul>
