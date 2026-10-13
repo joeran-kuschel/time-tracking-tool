@@ -39,7 +39,7 @@ settings; the file does not enable them.
 ## Test
 
 `backend/tests/github-config.test.js` checks that the workflow is valid YAML, runs both test suites with `npm ci`, has
-read-only permissions and uses Node 22 or newer; that the issue templates have a name and a label; that
-Dependabot covers both packages and the workflow; that the files
-named above exist, including the Code of Conduct; and that relative links in `README.md`, `CONTRIBUTING.md`, `SECURITY.md` and the pull request
-template point to existing files.
+read-only permissions and uses Node 22 or newer; that the issue templates have a name and a label; that Dependabot
+covers both packages and the workflow; that the files named above exist; that the Code of Conduct names a contact and is
+linked from `README.md` and `CONTRIBUTING.md`; and that relative links in `README.md`, `CONTRIBUTING.md`,
+`CODE_OF_CONDUCT.md`, `SECURITY.md` and the pull request template point to existing files.

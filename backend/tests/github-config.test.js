@@ -90,10 +90,12 @@ describe('community files', () => {
     expect(read(file).trim().length).toBeGreaterThan(0);
   });
 
-  test('CODE_OF_CONDUCT.md names a contact for reports, and CONTRIBUTING.md and README.md link to it', () => {
-    expect(read('CODE_OF_CONDUCT.md')).toMatch(/reported to the community leaders[\s\S]*@[\w.-]+\.\w+/);
-    expect(read('CONTRIBUTING.md')).toContain('(CODE_OF_CONDUCT.md)');
-    expect(read('README.md')).toContain('(CODE_OF_CONDUCT.md)');
+  test('CODE_OF_CONDUCT.md names an email address for reports', () => {
+    expect(read('CODE_OF_CONDUCT.md')).toMatch(/responsible for enforcement at\s+[\w.+-]+@[\w.-]+\.\w+/);
+  });
+
+  test.each(['CONTRIBUTING.md', 'README.md'])('%s links to the Code of Conduct', (file) => {
+    expect(read(file)).toContain('(CODE_OF_CONDUCT.md)');
   });
 
   test('SECURITY.md says what the login protects and what it does not', () => {

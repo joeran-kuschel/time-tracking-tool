@@ -7,13 +7,13 @@ How to write an entry and cut a release: [documentation/backend/changelog.md](do
 
 ### Added
 
-- Tooling: the repository has a Code of Conduct (Contributor Covenant 2.1).
 - Login: the tool asks for an email and a password and has a *Log out* button in the header. There is one user; create it (and change the password later) with `node src/scripts/set-user.js you@example.com`, which asks for the password: at least 10 characters with a capital letter, a number and a special character. You stay logged in for up to 30 days, or until you have not used the tool for 14 days. After 10 failed logins the login is blocked for up to 15 minutes. Existing installs: see "Upgrading an Existing Install to the Login" in `k8s/README.md`.
 - The tool is served over HTTPS at https://time-tracking.local; http redirects to it. `k8s/setup-tls.sh` creates a certificate your browsers trust (needs `mkcert`). Existing installs run it once and restart the backend, see "Upgrading an Existing Install to HTTPS" in `k8s/README.md`.
 - Tooling: every backend and frontend test run ends with a timing report: time per test file, the 10 slowest tests (`TEST_TIMINGS=all` for every test) and the time of the entire run.
 
 ### Changed
 
+- Tooling: the repository has a Code of Conduct (Contributor Covenant 2.1).
 - Tooling: fixed a test of `k8s/setup-tls.sh` that failed at random; its fake `openssl` now reads its input like the real one.
 - The API answers `401` without a login for everything except `/health`. Anything else that calls it, such as scripts, has to log in first (`POST /api/auth/login`) and send the cookie.
 - Tooling: Dependabot no longer proposes major updates of the Babel plugin that Jest needs in version 7.
