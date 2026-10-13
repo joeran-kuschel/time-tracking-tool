@@ -89,7 +89,7 @@ for img in time-tracking-backend time-tracking-frontend; do
   docker save "${img}:latest" | docker exec -i desktop-control-plane ctr --namespace k8s.io images import -
 done
 
-# Once per cluster: the ingress controller that serves http://time-tracking.local
+# Once per cluster: the ingress controller that serves https://time-tracking.local
 # (/etc/hosts needs "127.0.0.1 time-tracking.local" and "::1 time-tracking.local", see k8s/README.md)
 helm --kube-context docker-desktop upgrade --install ingress-nginx ingress-nginx \
   --repo https://kubernetes.github.io/ingress-nginx --version 4.15.1 \
@@ -97,7 +97,9 @@ helm --kube-context docker-desktop upgrade --install ingress-nginx ingress-nginx
 
 # Deploy in this order
 kubectl config use-context docker-desktop
-for f in namespace configmap postgres-init-scripts postgres backend frontend ingress; do kubectl apply -f k8s/$f.yaml; done
+# setup-tls.sh (needs mkcert) creates the certificate Secret the ingress uses; it must run after the namespace and before the ingress
+kubectl apply -f k8s/namespace.yaml && ./k8s/setup-tls.sh
+for f in configmap postgres-init-scripts postgres backend frontend ingress; do kubectl apply -f k8s/$f.yaml; done
 
 # Pick up new images
 kubectl -n time-tracking rollout restart deployment/backend deployment/frontend
@@ -105,7 +107,7 @@ kubectl -n time-tracking rollout restart deployment/backend deployment/frontend
 
 The database volume lives inside the kind node: a Docker Desktop update or cluster reset deletes it, and so does `kubectl delete namespace time-tracking`. Back up first with `k8s/backup-db.sh`; an hourly launchd job does this automatically (details, restore: `documentation/backend/database-backups.md`).
 
-The tool is served at http://time-tracking.local through the Ingress (`k8s/ingress.yaml`): `/api/...` and `/health` go to the backend, everything else to the frontend. Frontend and backend are ClusterIP services without a host port, so other apps in the cluster can have their own host. Docker Desktop publishes the ingress controller's LoadBalancer on ports 80 and 443 of all network interfaces, not only localhost: the API has no login, so other devices on the network can reach it. The macOS firewall is off by default; turned on with "Block all incoming connections", it should keep them out, but that is untested.
+The tool is served at https://time-tracking.local through the Ingress (`k8s/ingress.yaml`; plain http redirects to https, the certificate comes from mkcert via `k8s/setup-tls.sh`): `/api/...` and `/health` go to the backend, everything else to the frontend. Frontend and backend are ClusterIP services without a host port, so other apps in the cluster can have their own host. Docker Desktop publishes the ingress controller's LoadBalancer on ports 80 and 443 of all network interfaces, not only localhost: the API has no login, so other devices on the network can reach it. The macOS firewall is off by default; turned on with "Block all incoming connections", it should keep them out, but that is untested.
 
 ## Configuration
 

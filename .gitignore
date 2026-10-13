@@ -2,6 +2,10 @@
 node_modules/
 yarn.lock
 
+# Certificates and keys (the TLS key must never be committed)
+*.pem
+*.key
+
 # Environment variables
 .env
 .env.local
