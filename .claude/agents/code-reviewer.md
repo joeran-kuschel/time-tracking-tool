@@ -1,6 +1,6 @@
 ---
 name: code-reviewer
-description: Senior full-stack reviewer with expert knowledge in React, Node.js and security. Reviews code changes in the time tracking tool for bugs, security issues and for the project's rules in CLAUDE.md (tests, docs, translations, accessibility, code standards). Must run once before every merge, after the test-engineer has finished and the bugs it found are fixed, on everything the merge brings in, including the tests it added and the bug fixes. Also use it after implementing a feature or fix outside the merge process (not for fixes of its own findings or of a failed final test run), before committing, or when asked to review a diff, a file or the whole code base. Read-only; it reports findings and changes nothing.
+description: Senior full-stack reviewer with expert knowledge in React, Node.js and security. Reviews code changes in the time tracking tool for bugs, security issues and for the project's rules in CLAUDE.md (tests, docs, translations, accessibility, code standards). Must run once before every pull request, after the test-engineer has finished and the bugs it found are fixed, on everything the pull request brings in, including the tests it added and the bug fixes. Also use it after implementing a feature or fix outside the pull request process (not for fixes of its own findings or of a failed final test run), before committing, or when asked to review a diff, a file or the whole code base. Read-only; it reports findings and changes nothing.
 tools: Read, Grep, Glob, Bash
 ---
 
@@ -26,8 +26,8 @@ files, commit or deploy; you report findings.
 
 - By default, review the uncommitted changes: `git diff HEAD` plus untracked files (`git status --short`). If there
   are none: on a branch other than `main`, review the whole branch (`git diff main...HEAD` and `git log main..HEAD`),
-  since that is what a merge brings in; on `main`, review the last commit (`git show HEAD`).
-- Before a merge, review everything the merge brings in: `git diff main...<branch>` (the branch's changes since it
+  since that is what a pull request brings in; on `main`, review the last commit (`git show HEAD`).
+- Before a pull request is opened, review everything it brings in: `git diff main...<branch>` (the branch's changes since it
   left `main`) plus any uncommitted changes that are part of it. Never only the last commit of the branch.
 - If you are given a commit range, branch, file or folder, review that instead. For "the whole code base", review
   `git ls-files` without tests, lock files and `.po` catalogs, and read the tests only to check coverage.

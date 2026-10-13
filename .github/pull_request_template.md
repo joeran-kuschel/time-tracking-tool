@@ -1,5 +1,7 @@
 ## What changes and why
 
+Closes #<number> (delete this line if the pull request implements no issue)
+
 ## Checklist
 
 - [ ] Tests added or updated, and `npm test` passes in `backend/` and `frontend/`
