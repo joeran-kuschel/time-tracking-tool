@@ -46,12 +46,20 @@ spec:
       initContainers:
       - name: wait-for-db
         image: postgres:15-alpine
+        # The same database as the backend: from the DATABASE_URL Secret, in the cluster or remote.
+        # pg_isready only prints host and port, never the password.
+        env:
+        - name: DATABASE_URL
+          valueFrom:
+            secretKeyRef:
+              name: time-tracking-db
+              key: DATABASE_URL
         command:
         - sh
         - -c
         - |
-          until pg_isready -h postgres -p 5432 -U timetracking; do
-            echo 'Warte auf PostgreSQL...'
+          until pg_isready -d "$DATABASE_URL"; do
+            echo 'Waiting for PostgreSQL...'
             sleep 1
           done
 

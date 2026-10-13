@@ -30,3 +30,4 @@ How to write an entry and cut a release: [documentation/backend/changelog.md](do
 ### Fixed
 
 - Creating a project for a customer that does not exist now answers `400` ("Customer not found") instead of a server error `500`. The same goes for a customer id that is not a number.
+- With a remote database, the backend now starts: it waits for the database in `DATABASE_URL` instead of always for the in-cluster Postgres.

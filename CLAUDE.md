@@ -139,5 +139,4 @@ The tool is served at https://time-tracking.local through the Ingress (`k8s/ingr
 
 ## Known open issues
 
-- `backend.yaml` has a `wait-for-db` init container that waits for host `postgres`. With a remote database the backend would never start.
 - `npm audit` in `frontend/` reports vulnerabilities in dev tools only (`braces` via `@lingui/cli`); `npm audit --omit=dev` finds none in either package. `backend/` lists more dev-tool findings (Jest and its dependencies).
