@@ -21,7 +21,7 @@ const pages = [
   { id: 'reports', label: msg`Reports` },
 ]
 
-function App() {
+function App({ onLogout, logoutError, focusOnStart }) {
   const [currentPage, setCurrentPage] = useState('dashboard')
   // What the Reports page opens with: { customerId, month, year }, set by "Open report" on another page
   const [reportSelection, setReportSelection] = useState({})
@@ -44,6 +44,11 @@ function App() {
     if (data) setCustomers(data)
     setLoading(false)
   }
+
+  // After a login the login form is gone, so focus moves to the page instead of falling back to the top
+  useEffect(() => {
+    if (focusOnStart && !loading) main.current?.focus()
+  }, [focusOnStart, loading])
 
   // The header's Stop button disappears with the timer, so focus moves to the page
   const stopFromHeader = async () => {
@@ -94,11 +99,13 @@ function App() {
             {timer.activeEntry && <RunningTimer entry={timer.activeEntry} onStop={stopFromHeader} busy={timer.busy} />}
             <ThemeSwitcher />
             <LanguageSwitcher />
+            <button onClick={onLogout} className={ui.buttonSecondary}><Trans>Log out</Trans></button>
           </div>
         </div>
       </header>
 
       <main ref={main} tabIndex={-1} className="flex flex-1 flex-col focus:outline-none">
+        {logoutError && <div className="mx-4 mt-4 sm:mx-8"><ErrorMessage message={logoutError} /></div>}
         {error && (
           <div className="m-4 flex flex-wrap items-center gap-4 rounded-lg border border-danger-line bg-danger-soft p-4 sm:mx-8">
             <ErrorMessage message={error} />

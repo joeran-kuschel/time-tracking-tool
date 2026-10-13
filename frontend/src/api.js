@@ -8,28 +8,34 @@ export class ApiError extends Error {
   }
 }
 
-// Sends a request; answers that aren't ok throw ApiError with the backend's error message
-async function send(url, options) {
+// Called when a request is answered with 401 although the user was logged in: the session has ended
+let sessionEndedHandler = () => {}
+export const onSessionEnded = (handler) => { sessionEndedHandler = handler }
+
+// Sends a request with the login cookie; answers that aren't ok throw ApiError with the backend's error message.
+// endsSession: false for the requests where 401 is an expected answer (login, asking for the session)
+async function send(url, options, { endsSession = true } = {}) {
   let response;
   try {
-    response = await fetch(url, options);
+    response = await fetch(url, { credentials: 'include', ...options });
   } catch {
     throw new ApiError(0, 'Server not reachable');
   }
 
   if (!response.ok) {
+    if (response.status === 401 && endsSession) sessionEndedHandler();
     const data = await response.json().catch(() => null);
     throw new ApiError(response.status, data?.error || response.statusText);
   }
   return response;
 }
 
-async function request(path, { method = 'GET', body } = {}) {
+async function request(path, { method = 'GET', body, endsSession } = {}) {
   const options = body === undefined
     ? { method }
     : { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) };
 
-  const response = await send(`${API_URL}${path}`, options);
+  const response = await send(`${API_URL}${path}`, options, { endsSession });
   return response.json().catch(() => null);
 }
 
@@ -60,6 +66,24 @@ const pdfUrl = (customerId, month, year, locale) =>
   `${API_URL}/reports/customer/${customerId}/pdf?month=${month}&year=${year}&lang=${locale}&tz=${timeZone()}`;
 
 export const api = {
+  // Login. 401 means the credentials are wrong (or, for getSession, that nobody is logged in)
+  login: (email, password) =>
+    request('/auth/login', { method: 'POST', body: { email, password }, endsSession: false }),
+
+  // A 401 means the session was already gone, which is what logging out wants
+  logout: () =>
+    request('/auth/logout', { method: 'POST', endsSession: false }).catch((err) => {
+      if (err.status === 401) return null;
+      throw err;
+    }),
+
+  // { email } of the logged-in user, or null when nobody is logged in
+  getSession: () =>
+    request('/auth/me', { endsSession: false }).catch((err) => {
+      if (err.status === 401) return null
+      throw err
+    }),
+
   // Customers
   getCustomers: () => request('/customers'),
 

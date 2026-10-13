@@ -62,6 +62,10 @@ launchctl print gui/$(id -u)/com.timetracking.db-backup | grep -E "state|last ex
 
 ## Limits
 
+- A backup contains the password hash and the session hashes (see [Authentication](authentication.md)). They are not
+  usable as a password or a session, but keep the backup folder as private as the data. A restore brings back the
+  sessions of that time; they end like any other session, and `set-user` ends all of them.
+
 - Up to one hour of data can be lost between two backups.
 - No backups are taken while the Mac is off or the cluster is down.
 - Backups stay on this Mac. If Time Machine is turned on, it includes the folder; otherwise there is no second copy.

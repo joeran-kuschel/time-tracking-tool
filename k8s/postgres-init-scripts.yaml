@@ -50,6 +50,24 @@ data:
     -- Only one timer may run at a time: at most one time entry without an end.
     -- The backend checks this before starting a timer; the index also stops two requests that arrive at once.
     CREATE UNIQUE INDEX IF NOT EXISTS one_running_timer ON time_entries ((end_time IS NULL)) WHERE end_time IS NULL;
+  004_auth.sql: |
+    -- The user of the tool and their login sessions. The email is stored in lower case.
+    -- A session is identified by the SHA-256 hash of the token in the cookie, so a leaked database or backup
+    -- doesn't contain a usable token. expires_at is the idle expiry and moves forward while the session is used.
+    CREATE TABLE IF NOT EXISTS users (
+      id SERIAL PRIMARY KEY,
+      email VARCHAR(255) NOT NULL UNIQUE,
+      password_hash TEXT NOT NULL,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
+
+    CREATE TABLE IF NOT EXISTS sessions (
+      token_hash VARCHAR(64) PRIMARY KEY,
+      user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      created_at TIMESTAMP NOT NULL,
+      expires_at TIMESTAMP NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS sessions_user_id ON sessions (user_id);
 kind: ConfigMap
 metadata:
   name: postgres-init-scripts

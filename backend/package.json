@@ -7,7 +7,8 @@
     "start": "node src/server.js",
     "dev": "nodemon src/server.js",
     "test": "jest",
-    "extract": "lingui extract --clean"
+    "extract": "lingui extract --clean",
+    "set-user": "node src/scripts/set-user.js"
   },
   "jest": {
     "reporters": [
@@ -44,6 +45,7 @@
     "cors": "^2.8.5",
     "dotenv": "^18.0.6",
     "express": "^5.2.1",
+    "express-rate-limit": "^8.7.1",
     "pdfkit": "^0.20.2",
     "pg": "^8.23.1"
   },

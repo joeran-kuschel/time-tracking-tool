@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
-import { api, ApiError, fileNameFrom } from '@/api'
+import { api, ApiError, fileNameFrom, onSessionEnded } from '@/api'
 
 function mockFetch(status, body) {
   const fetch = vi.fn().mockResolvedValue({
@@ -20,6 +20,7 @@ beforeEach(() => {
 afterEach(() => {
   vi.unstubAllGlobals()
   vi.restoreAllMocks()
+  onSessionEnded(() => {})
 })
 
 describe('api', () => {
@@ -43,7 +44,7 @@ describe('api', () => {
     const fetch = mockFetch(200, [])
     await api.getCustomerTimeEntries(3)
     expect(fetch.mock.calls[0][0]).toMatch(/\/time-entries\/customer\/3$/)
-    expect(fetch.mock.calls[0][1]).toEqual({ method: 'GET' })
+    expect(fetch.mock.calls[0][1]).toEqual({ credentials: 'include', method: 'GET' })
   })
 
   test('asks for the running entry', async () => {
@@ -155,5 +156,183 @@ describe('api', () => {
 
     expect(error).toBeInstanceOf(ApiError)
     expect(error.status).toBe(0)
+  })
+})
+
+describe('login', () => {
+  test.each([
+    ['getCustomers', []],
+    ['createCustomer', ['Kunde', 'a@b.de']],
+    ['deleteProject', [3]],
+    ['getDashboard', ['f', 't', 9, 2026]],
+    ['downloadPDF', [1, 9, 2026, 'de']],
+  ])('%s sends the login cookie', async (name, args) => {
+    const fetch = mockFetch(200, {})
+    if (name === 'downloadPDF') {
+      fetch.mockResolvedValue({ ok: true, status: 200, blob: async () => new Blob(), headers: { get: () => null } })
+      vi.stubGlobal('URL', { createObjectURL: () => 'blob:x', revokeObjectURL: () => {} })
+    }
+    await api[name](...args)
+
+    expect(fetch.mock.calls[0][1].credentials).toBe('include')
+  })
+
+  test('sends email and password as JSON', async () => {
+    const fetch = mockFetch(200, { email: 'me@example.com' })
+
+    await expect(api.login('me@example.com', 'Secret-1!')).resolves.toEqual({ email: 'me@example.com' })
+
+    const [url, options] = fetch.mock.calls[0]
+    expect(url).toMatch(/\/auth\/login$/)
+    expect(options.method).toBe('POST')
+    expect(JSON.parse(options.body)).toEqual({ email: 'me@example.com', password: 'Secret-1!' })
+  })
+
+  test('logs out with a POST', async () => {
+    const fetch = mockFetch(204)
+    await api.logout()
+
+    expect(fetch.mock.calls[0][0]).toMatch(/\/auth\/logout$/)
+    expect(fetch.mock.calls[0][1].method).toBe('POST')
+  })
+
+  test('asks who is logged in', async () => {
+    const fetch = mockFetch(200, { email: 'me@example.com' })
+
+    await expect(api.getSession()).resolves.toEqual({ email: 'me@example.com' })
+    expect(fetch.mock.calls[0][0]).toMatch(/\/auth\/me$/)
+  })
+
+  test('answers null when nobody is logged in, without ending a session', async () => {
+    mockFetch(401, { error: 'Not logged in' })
+    const ended = vi.fn()
+    onSessionEnded(ended)
+
+    await expect(api.getSession()).resolves.toBeNull()
+    expect(ended).not.toHaveBeenCalled()
+  })
+
+  test.each([[0], [500]])('still throws when asking who is logged in fails with status %i', async (status) => {
+    if (status === 0) vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new TypeError('network')))
+    else mockFetch(status, { error: 'Failed' })
+
+    const error = await api.getSession().catch((err) => err)
+
+    expect(error).toBeInstanceOf(ApiError)
+    expect(error.status).toBe(status)
+  })
+
+  test('a wrong password throws the 401 without ending a session', async () => {
+    mockFetch(401, { error: 'Wrong email or password' })
+    const ended = vi.fn()
+    onSessionEnded(ended)
+
+    const error = await api.login('me@example.com', 'wrong').catch((err) => err)
+
+    expect(error.status).toBe(401)
+    expect(ended).not.toHaveBeenCalled()
+  })
+
+  test('a logout answered with 401 counts as logged out', async () => {
+    mockFetch(401, { error: 'Not logged in' })
+
+    await expect(api.logout()).resolves.toBeNull()
+  })
+
+  test.each([[0], [500]])('a logout that fails with status %i throws', async (status) => {
+    if (status === 0) vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new TypeError('network')))
+    else mockFetch(status, { error: 'Failed' })
+
+    const error = await api.logout().catch((err) => err)
+
+    expect(error).toBeInstanceOf(ApiError)
+    expect(error.status).toBe(status)
+  })
+
+  test('a failed logout does not end the session either', async () => {
+    mockFetch(401, { error: 'Not logged in' })
+    const ended = vi.fn()
+    onSessionEnded(ended)
+
+    await api.logout().catch(() => {})
+
+    expect(ended).not.toHaveBeenCalled()
+  })
+
+  test.each([
+    ['getCustomers', []],
+    ['createCustomer', ['Kunde']],
+    ['getDashboard', ['f', 't', 9, 2026]],
+    ['downloadPDF', [1, 9, 2026, 'de']],
+  ])('a 401 from %s says the session has ended and still throws', async (name, args) => {
+    mockFetch(401, { error: 'Not logged in' })
+    const ended = vi.fn()
+    onSessionEnded(ended)
+
+    const error = await api[name](...args).catch((err) => err)
+
+    expect(ended).toHaveBeenCalledTimes(1)
+    expect(error).toBeInstanceOf(ApiError)
+    expect(error.status).toBe(401)
+  })
+
+  test.each([403, 404, 500])('a %i does not end the session', async (status) => {
+    mockFetch(status, { error: 'Failed' })
+    const ended = vi.fn()
+    onSessionEnded(ended)
+
+    await api.getCustomers().catch(() => {})
+
+    expect(ended).not.toHaveBeenCalled()
+  })
+
+  test('a 401 with no JSON body still ends the session', async () => {
+    mockFetch(401)
+    const ended = vi.fn()
+    onSessionEnded(ended)
+
+    const error = await api.getCustomers().catch((err) => err)
+
+    expect(ended).toHaveBeenCalledTimes(1)
+    expect(error.status).toBe(401)
+  })
+
+  test('an unreachable server does not end the session', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new TypeError('network')))
+    const ended = vi.fn()
+    onSessionEnded(ended)
+
+    await api.getCustomers().catch(() => {})
+
+    expect(ended).not.toHaveBeenCalled()
+  })
+
+  test('a handler that was replaced is not called any more', async () => {
+    mockFetch(401, {})
+    const first = vi.fn()
+    const second = vi.fn()
+    onSessionEnded(first)
+    onSessionEnded(second)
+
+    await api.getCustomers().catch(() => {})
+
+    expect(first).not.toHaveBeenCalled()
+    expect(second).toHaveBeenCalledTimes(1)
+  })
+
+  test('the login keeps the cookie setting and the JSON header', async () => {
+    const fetch = mockFetch(200, { email: 'me@example.com' })
+    await api.login('me@example.com', 'x')
+
+    expect(fetch.mock.calls[0][1].credentials).toBe('include')
+    expect(fetch.mock.calls[0][1].headers).toEqual({ 'Content-Type': 'application/json' })
+  })
+
+  test('the logout and the session check send the cookie too', async () => {
+    const fetch = mockFetch(200, {})
+    await api.logout()
+    await api.getSession()
+
+    expect(fetch.mock.calls.map(([, options]) => options.credentials)).toEqual(['include', 'include'])
   })
 })

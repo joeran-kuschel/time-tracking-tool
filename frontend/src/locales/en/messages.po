@@ -108,6 +108,10 @@ msgstr "Cancel"
 msgid "Chart view"
 msgstr "Chart view"
 
+#: src/pages/Login.jsx:11
+msgid "Check email and password."
+msgstr "Check email and password."
+
 #: src/components/dashboard/BillingTable.jsx:42
 #: src/pages/Reports.jsx:85
 msgid "Customer"
@@ -227,6 +231,10 @@ msgstr "Edit project"
 msgid "Edit the entry from {start}"
 msgstr "Edit the entry from {start}"
 
+#: src/pages/Login.jsx:21
+msgid "Email"
+msgstr "Email"
+
 #: src/pages/TimeTracking.jsx:115
 msgid "Email (optional)"
 msgstr "Email (optional)"
@@ -306,13 +314,31 @@ msgstr "Light"
 msgid "Like the system"
 msgstr "Like the system"
 
-#: src/App.jsx:68
+#: src/App.jsx:73
+#: src/components/AuthGate.jsx:66
 #: src/pages/Dashboard.jsx:70
 #: src/pages/Reports.jsx:138
 msgid "Loading..."
 msgstr "Loading..."
 
-#: src/App.jsx:79
+#: src/pages/Login.jsx:47
+#: src/pages/Login.jsx:52
+msgid "Log in"
+msgstr "Log in"
+
+#: src/App.jsx:102
+msgid "Log out"
+msgstr "Log out"
+
+#: src/components/AuthGate.jsx:47
+msgid "Logging out failed."
+msgstr "Logging out failed."
+
+#: src/pages/Login.jsx:28
+msgid "Login failed."
+msgstr "Login failed."
+
+#: src/App.jsx:84
 msgid "Main"
 msgstr "Main"
 
@@ -385,6 +411,10 @@ msgstr "Open report"
 #: src/components/dashboard/BillingTable.jsx:107
 msgid "Open report for {customerName}"
 msgstr "Open report for {customerName}"
+
+#: src/pages/Login.jsx:22
+msgid "Password"
+msgstr "Password"
 
 #: src/pages/Reports.jsx:63
 msgid "PDF could not be downloaded."
@@ -541,6 +571,10 @@ msgstr "Stop <0>timer</0>"
 msgid "Stop the running timer first."
 msgstr "Stop the running timer first."
 
+#: src/components/AuthGate.jsx:29
+msgid "The login status could not be checked."
+msgstr "The login status could not be checked."
+
 #: src/hooks/useAction.js:5
 msgid "The server is not reachable."
 msgstr "The server is not reachable."
@@ -594,17 +628,21 @@ msgstr "Timer could not be started."
 msgid "Timer could not be stopped."
 msgstr "Timer could not be stopped."
 
-#: src/App.jsx:65
+#: src/App.jsx:70
 msgid "Timer started for {announcedProject}"
 msgstr "Timer started for {announcedProject}"
 
-#: src/App.jsx:65
+#: src/App.jsx:70
 msgid "Timer stopped"
 msgstr "Timer stopped"
 
 #: src/components/dashboard/HoursChart.jsx:35
 msgid "Today"
 msgstr "Today"
+
+#: src/pages/Login.jsx:12
+msgid "Too many failed attempts. Try again in a few minutes."
+msgstr "Too many failed attempts. Try again in a few minutes."
 
 #: src/components/dashboard/BillingTable.jsx:83
 #: src/pages/Reports.jsx:203
@@ -620,7 +658,8 @@ msgstr "Total hours"
 msgid "Track time"
 msgstr "Track time"
 
-#: src/App.jsx:106
+#: src/App.jsx:113
+#: src/components/AuthGate.jsx:62
 #: src/pages/Dashboard.jsx:67
 msgid "Try again"
 msgstr "Try again"
@@ -648,3 +687,7 @@ msgstr "Week {week}, {range}"
 #: src/components/dashboard/HoursChart.jsx:10
 msgid "Weeks"
 msgstr "Weeks"
+
+#: src/pages/Login.jsx:48
+msgid "Your session has ended. Please log in again."
+msgstr "Your session has ended. Please log in again."

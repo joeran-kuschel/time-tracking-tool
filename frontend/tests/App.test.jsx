@@ -57,6 +57,35 @@ beforeEach(() => {
 })
 
 describe('App', () => {
+  test('has a logout button in the header that calls onLogout', async () => {
+    api.getCustomers.mockResolvedValue([])
+    const onLogout = vi.fn()
+    render(<App onLogout={onLogout} />)
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Abmelden' }))
+
+    expect(onLogout).toHaveBeenCalledTimes(1)
+  })
+
+  test('moves focus to the page content after a login, but not otherwise', async () => {
+    api.getCustomers.mockResolvedValue([])
+    const first = render(<App onLogout={() => {}} focusOnStart />)
+    await screen.findByRole('button', { name: 'Abmelden' })
+    await waitFor(() => expect(screen.getByRole('main')).toHaveFocus())
+    first.unmount()
+
+    render(<App onLogout={() => {}} />)
+    await screen.findByRole('button', { name: 'Abmelden' })
+    expect(screen.getByRole('main')).not.toHaveFocus()
+  })
+
+  test('shows why logging out failed', async () => {
+    api.getCustomers.mockResolvedValue([])
+    render(<App onLogout={() => {}} logoutError="Abmelden fehlgeschlagen. Bitte versuche es erneut." />)
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('Abmelden fehlgeschlagen.')
+  })
+
   test('shows an error with a retry button when customers fail to load', async () => {
     api.getCustomers.mockRejectedValue(new ApiError(0, 'unreachable'))
     render(<App />)
