@@ -5,7 +5,7 @@ instead.
 
 ## Schema
 
-Defined in `backend/migrations/001_init_schema.sql`, `002_report_status.sql` and `003_one_running_timer.sql`:
+Defined in `backend/migrations/001_init_schema.sql`, `002_report_status.sql`, `003_one_running_timer.sql` and `004_auth.sql`:
 
 | Table | Columns | Relations |
 |---|---|---|
@@ -13,10 +13,13 @@ Defined in `backend/migrations/001_init_schema.sql`, `002_report_status.sql` and
 | `projects` | `id`, `customer_id`, `name`, `hourly_rate` (decimal 10,2, default 0), `created_at`, `updated_at` | `customer_id` → `customers`, `ON DELETE CASCADE` |
 | `time_entries` | `id`, `project_id`, `start_time`, `end_time` (null while running), `description`, `created_at`, `updated_at` | `project_id` → `projects`, `ON DELETE CASCADE` |
 | `report_status` | `customer_id`, `year`, `month` (1–12), `status` (`draft`, `ready` or `sent`), `updated_at`; primary key `(customer_id, year, month)` | `customer_id` → `customers`, `ON DELETE CASCADE` |
+| `users` | `id`, `email` (unique, lower case), `password_hash`, `created_at` | |
+| `sessions` | `token_hash` (SHA-256 of the cookie's token, primary key), `user_id`, `created_at`, `expires_at` (idle expiry) | `user_id` → `users`, `ON DELETE CASCADE` |
 
 Indexes: `projects(customer_id)`, `time_entries(project_id)`, `time_entries(start_time)`, and the partial unique index
 `one_running_timer`, which allows only one time entry without `end_time` (one running timer, see
-[Time entries API](time-entries.md#creating-entries)).
+[Time entries API](time-entries.md#creating-entries)), and `sessions(user_id)`. How `users` and `sessions` are used:
+[Authentication](authentication.md).
 
 Times are stored as UTC in `TIMESTAMP` columns (without time zone). The backend runs in UTC so that `pg` reads them
 back correctly.

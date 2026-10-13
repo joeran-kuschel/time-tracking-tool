@@ -90,8 +90,9 @@ describe('community files', () => {
     expect(read(file).trim().length).toBeGreaterThan(0);
   });
 
-  test('SECURITY.md warns that the API has no login', () => {
-    expect(read('SECURITY.md')).toMatch(/no authentication/);
+  test('SECURITY.md says what the login protects and what it does not', () => {
+    expect(read('SECURITY.md')).toMatch(/needs a login/);
+    expect(read('SECURITY.md')).toMatch(/no second factor/);
   });
 
   test.each(['README.md', 'CONTRIBUTING.md', 'SECURITY.md', '.github/pull_request_template.md'])(

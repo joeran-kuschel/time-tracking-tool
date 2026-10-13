@@ -1,9 +1,12 @@
 jest.mock('../src/models/Customer');
+jest.mock('../src/models/Session');
 
 const Customer = require('../src/models/Customer');
+const Session = require('../src/models/Session');
 const { createApp, parseOrigins } = require('../src/app');
 
 const FRONTEND = 'http://localhost';
+const LOGGED_IN = { Cookie: 'session=abc' };
 let server;
 let baseUrl;
 
@@ -20,6 +23,7 @@ afterAll((done) => {
 
 beforeEach(() => {
   jest.clearAllMocks();
+  Session.findUser.mockResolvedValue({ id: 1, email: 'me@example.com' });
   Customer.create.mockResolvedValue({ id: 1, name: 'Muster' });
   Customer.delete.mockResolvedValue({ id: 1 });
 });
@@ -30,6 +34,12 @@ describe('CORS', () => {
 
     expect(response.headers.get('access-control-allow-origin')).toBe(FRONTEND);
     expect(response.headers.get('access-control-expose-headers')).toBe('Content-Disposition');
+  });
+
+  test('lets the frontend send the login cookie', async () => {
+    const response = await fetch(`${baseUrl}/health`, { headers: { Origin: FRONTEND } });
+
+    expect(response.headers.get('access-control-allow-credentials')).toBe('true');
   });
 
   test('gives other origins no permission to read answers', async () => {
@@ -53,7 +63,7 @@ describe('request bodies', () => {
   test('reads JSON', async () => {
     const response = await fetch(`${baseUrl}/api/customers`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...LOGGED_IN },
       body: JSON.stringify({ name: 'Muster' }),
     });
 
@@ -64,12 +74,33 @@ describe('request bodies', () => {
   test('ignores form data, which other sites can send without a CORS check', async () => {
     const response = await fetch(`${baseUrl}/api/customers`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded', Origin: 'https://evil.example' },
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded', ...LOGGED_IN },
       body: 'name=Spam',
     });
 
     expect(response.status).toBe(400);
     expect(Customer.create).not.toHaveBeenCalled();
+  });
+
+  test('refuses a change that comes from a page on another origin, even with a valid session', async () => {
+    const response = await fetch(`${baseUrl}/api/customers`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded', Origin: 'https://evil.example', ...LOGGED_IN },
+      body: 'name=Spam',
+    });
+
+    expect(response.status).toBe(403);
+    expect(Customer.create).not.toHaveBeenCalled();
+  });
+
+  test('accepts a change from the frontend\'s origin', async () => {
+    const response = await fetch(`${baseUrl}/api/customers`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Origin: FRONTEND, ...LOGGED_IN },
+      body: JSON.stringify({ name: 'Muster' }),
+    });
+
+    expect(response.status).toBe(201);
   });
 });
 

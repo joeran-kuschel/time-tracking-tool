@@ -31,7 +31,7 @@ settings; the file does not enable them.
 ## Community files
 
 - `CONTRIBUTING.md`: setup and the rules for changes.
-- `SECURITY.md`: how to report a vulnerability, and the warning that the API has no login. Private vulnerability
+- `SECURITY.md`: how to report a vulnerability, and what the login does and does not protect. Private vulnerability
   reporting has to be switched on in the repository's security settings, or the report link shows a 404.
 - `LICENSE`: MIT.
 

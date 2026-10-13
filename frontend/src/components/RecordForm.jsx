@@ -5,7 +5,7 @@ import { ui } from '../ui'
 
 
 // A form with visible labels for creating and editing records.
-// fields: [{ name, label, type ('text', 'email', 'number', 'date', 'time', 'textarea' or 'select'), required, options, min, step }]
+// fields: [{ name, label, type ('text', 'email', 'password', 'number', 'date', 'time', 'textarea' or 'select'), required, options, min, step, autoComplete }]
 // onSubmit(values) resolves truthy on success; a form without onCancel then resets for the next record.
 // With onCancel, the form has a Cancel button and Escape cancels.
 // validate(values) returns { field, message } to block submitting, or null.
@@ -54,7 +54,7 @@ function RecordForm({ legend, fields, initialValues, submitLabel, onSubmit, onCa
         </select>
       )
     }
-    return <input {...props} type={field.type ?? 'text'} min={field.min} step={field.step} />
+    return <input {...props} type={field.type ?? 'text'} min={field.min} step={field.step} autoComplete={field.autoComplete} />
   }
 
   return (

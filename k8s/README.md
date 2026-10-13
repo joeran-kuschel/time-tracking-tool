@@ -88,15 +88,25 @@ kubectl get all -n time-tracking
 kubectl logs -n time-tracking -l app=backend
 ```
 
-### 7. Access the app
+### 7. Create the user
 
-Frontend: https://time-tracking.local (http://time-tracking.local redirects to it)
+Nobody can use the tool before a user exists. The script asks for the password on the terminal (not shown, twice): at least 10 characters with a capital letter, a number and a special character. Once the backend is running (step 6):
+
+```bash
+kubectl -n time-tracking exec -it deploy/backend -- node src/scripts/set-user.js you@example.com
+```
+
+Run the same command again to change the password; it ends all sessions. More: `documentation/backend/authentication.md`.
+
+### 8. Access the app
+
+Frontend: https://time-tracking.local (http://time-tracking.local redirects to it); log in with the user from step 7
 
 The API is at the same address: https://time-tracking.local/api, health check at https://time-tracking.local/health. Frontend and backend have no port of their own on the Mac; `ingress.yaml` forwards `/api` and `/health` to the backend and everything else to the frontend.
 
 **Other devices:** a phone or another computer trusts the certificate only after mkcert's root CA is installed there. Find the file with `mkcert -CAROOT` (`rootCA.pem`), copy it to the device and install it as a trusted certificate. Never share `rootCA-key.pem`.
 
-**Warning:** Docker Desktop opens ports 80 and 443 of the ingress controller on all network interfaces, not only on `localhost`. Anyone on the same network can reach the API, and it has no login. The macOS firewall is off by default. Turned on (System Settings → Network → Firewall, then "Options…" → "Block all incoming connections"), it should keep other devices out; this is untested.
+**Warning:** Docker Desktop opens ports 80 and 443 of the ingress controller on all network interfaces, not only on `localhost`. Anyone on the same network can reach the login page and the API; without a login session, the API answers `401`. The macOS firewall is off by default. Turned on (System Settings → Network → Firewall, then "Options…" → "Block all incoming connections"), it should keep other devices out; this is untested.
 
 After building new images:
 
@@ -133,6 +143,19 @@ kubectl rollout restart deployment/backend -n time-tracking
 ```
 
 Apply the ingress only after the Secret exists; otherwise ingress-nginx serves its own fallback certificate, which browsers reject.
+
+## Upgrading an Existing Install to the Login
+
+An install from before the login has no `users` and `sessions` tables. Back up, apply the migration, rebuild and load the images (step 2), restart, and create the user:
+
+```bash
+./k8s/backup-db.sh
+kubectl -n time-tracking exec -i deploy/postgres -- sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB"' < backend/migrations/004_auth.sql
+kubectl -n time-tracking rollout restart deployment/backend deployment/frontend
+kubectl -n time-tracking exec -it deploy/backend -- node src/scripts/set-user.js you@example.com
+```
+
+Until the user exists, the tool shows the login page and nobody can log in.
 
 ## New Migrations on an Existing Database
 

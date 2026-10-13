@@ -6,6 +6,7 @@ Feature documentation for the time tracking tool, split into UI and Backend. Eac
 
 - [Dashboard](ui/dashboard.md): the start page with timer, key figures, chart, billing and recent entries
 - [Time tracking](ui/time-tracking.md): customers, projects, the month summary and the entries of a customer
+- [Login](ui/login.md): the login page, the logout button and what happens when a session ends
 - [Timer](ui/timer.md): starting and stopping, the running timer across pages and reloads
 - [Reports](ui/reports.md): monthly reports, their status and the PDF download
 - [Languages](ui/languages.md): German and English, switching without a reload, adding texts
@@ -15,6 +16,7 @@ Feature documentation for the time tracking tool, split into UI and Backend. Eac
 
 ## Backend
 
+- [Authentication](backend/authentication.md): the single user, sessions, passwords, the `set-user` script and the protection against abuse
 - [Customers API](backend/customers.md)
 - [Projects API](backend/projects.md)
 - [Time entries API](backend/time-entries.md): endpoints, the one-timer rule and how descriptions are kept

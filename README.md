@@ -94,7 +94,13 @@ After building new images:
 kubectl -n time-tracking rollout restart deployment/backend deployment/frontend
 ```
 
-**Warning:** Docker Desktop opens ports 80 and 443 on all network interfaces. Anyone on the same network can reach the API, and it has no login. Details and firewall: `k8s/README.md`.
+**Warning:** Docker Desktop opens ports 80 and 443 on all network interfaces. Anyone on the same network can reach the login page; the API answers `401` without a login. Details and firewall: `k8s/README.md`.
+
+Create the user once (asks for the password on the terminal), then log in at the address below:
+
+```bash
+kubectl -n time-tracking exec -it deploy/backend -- node src/scripts/set-user.js you@example.com
+```
 
 ### 4. Open the browser
 
@@ -143,9 +149,9 @@ All endpoints in detail: `documentation/backend/`
 
 ## Security
 
-**The API has no login.** The tool is meant for one person on a local machine. Do not expose it to the internet or an
-untrusted network, and replace the placeholder credentials (`password`) for any other setup. Details and how to report
-a vulnerability: [SECURITY.md](SECURITY.md).
+The API needs a login (one user, a session cookie, served over HTTPS in the cluster). The tool is still meant for one
+person on a local machine: do not expose it to the internet, and replace the placeholder credentials (`password`) for
+any other setup. Details and how to report a vulnerability: [SECURITY.md](SECURITY.md).
 
 ## Tests
 
