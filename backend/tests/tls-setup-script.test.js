@@ -23,8 +23,9 @@ while [ $# -gt 0 ]; do
   shift
 done
 `;
-// Fake openssl: logs its arguments; "x509 -checkend" fails when $FAKE_EXPIRING is set
-const fakeOpenssl = '#!/bin/bash\necho "$@" >> "$FAKE_DIR/openssl.log"\n[ -z "${FAKE_EXPIRING:-}" ]\n';
+// Fake openssl: logs its arguments; "x509 -checkend" fails when $FAKE_EXPIRING is set.
+// It reads stdin like the real one: if it exited first, the script's base64 pipe could break (pipefail) at random.
+const fakeOpenssl = '#!/bin/bash\necho "$@" >> "$FAKE_DIR/openssl.log"\ncat > /dev/null\n[ -z "${FAKE_EXPIRING:-}" ]\n';
 
 let dir;
 
