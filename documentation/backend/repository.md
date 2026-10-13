@@ -8,6 +8,14 @@ What the repository contains for contributors and for the public GitHub page.
 matrix runs for each package (`backend`, `frontend`) in parallel: `npm ci`, then `npm test` on Node 22. The workflow only has read
 access to the repository (`permissions: contents: read`). A failing job fails the check.
 
+## Branch protection
+
+The ruleset "Protect main" on GitHub protects `main`: changes arrive only through a pull request, the checks
+`backend tests` and `frontend tests` of the `Tests` workflow have to pass, and `main` cannot be force-pushed or deleted.
+The maintainer's Admin role can bypass the ruleset; the working rules still say to use pull requests
+(`CLAUDE.md`). Pull requests are merged with a merge commit, and GitHub deletes the branch afterwards. A pull request
+names the issue it implements with `Closes #<number>`.
+
 ## Dependency updates
 
 `.github/dependabot.yml` has Dependabot check once a week for new versions of the backend packages, the frontend
