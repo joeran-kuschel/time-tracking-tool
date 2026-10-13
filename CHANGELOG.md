@@ -7,6 +7,7 @@ How to write an entry and cut a release: [documentation/backend/changelog.md](do
 
 ### Added
 
+- The tool is served over HTTPS at https://time-tracking.local; http redirects to it. `k8s/setup-tls.sh` creates a certificate your browsers trust (needs `mkcert`). Existing installs run it once and restart the backend, see "Upgrading an Existing Install to HTTPS" in `k8s/README.md`.
 - Tooling: every backend and frontend test run ends with a timing report: time per test file, the 10 slowest tests (`TEST_TIMINGS=all` for every test) and the time of the entire run.
 
 ### Changed

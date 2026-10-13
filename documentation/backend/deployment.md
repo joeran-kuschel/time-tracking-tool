@@ -6,8 +6,8 @@ The tool runs on the local Kubernetes cluster of Docker Desktop, in the namespac
 
 | Deployment | Image | Service | Address |
 |---|---|---|---|
-| `frontend` | `time-tracking-frontend:latest` (nginx serving the Vite build) | ClusterIP, port 80 | http://time-tracking.local |
-| `backend` | `time-tracking-backend:latest` (Node.js 24) | ClusterIP, port 3000 | http://time-tracking.local/api, `/health` |
+| `frontend` | `time-tracking-frontend:latest` (nginx serving the Vite build) | ClusterIP, port 80 | https://time-tracking.local |
+| `backend` | `time-tracking-backend:latest` (Node.js 24) | ClusterIP, port 3000 | https://time-tracking.local/api, `/health` |
 | `postgres` | `postgres:15-alpine` | ClusterIP, port 5432 | inside the cluster only |
 
 - The backend answers `GET /health` with `{"status":"OK"}`; Kubernetes uses it for liveness and readiness probes.
@@ -43,8 +43,22 @@ port clash. `k8s/ingress.yaml` serves `time-tracking.local` and routes by path:
   `/etc/hosts`. Without the `::1` line, macOS first asks the network for the `.local` name (mDNS), which can take a few
   seconds.
 - Since frontend and API share the host, the frontend calls the API at the relative path `/api`.
-- Tests: `tests/k8s-manifests.test.js` checks the routes, that they point at the services' ports, that the host is the
-  allowed CORS origin, that the services are not published on a host port and that the frontend image calls `/api`.
+- The ingress terminates TLS (HTTPS on port 443); frontend and backend stay plain HTTP inside the cluster. The `tls:`
+  block uses the Secret `time-tracking-tls`, which `k8s/setup-tls.sh` creates with a certificate from
+  [mkcert](https://github.com/FiloSottile/mkcert) (the script's steps, renewal and other devices: `k8s/README.md`).
+  The annotation `ssl-redirect: "true"` redirects plain HTTP to HTTPS. The key lives only in the cluster; `*.pem` and
+  `*.key` are in `.gitignore` as a safety net. Docker Compose and `npm run dev` stay on `http://localhost`, which
+  browsers treat as a secure context.
+- `setup-tls.sh` does nothing while the Secret's certificate is valid for more than 30 days (`--force` creates a new
+  one; use it after changing the host, because only the expiry is checked). It must run before the ingress is applied,
+  otherwise ingress-nginx serves its own fallback certificate.
+- Tests: `tests/k8s-manifests.test.js` checks the routes, that they point at the services' ports, that the host (over
+  `https`) is the allowed CORS origin, that TLS and the redirect are set and the Secret name matches the script, that
+  the services are not published on a host port and that the frontend image calls `/api`.
+  `tests/tls-setup-script.test.js` runs `setup-tls.sh` against a fake `kubectl`, `mkcert` and `openssl`: creating the
+  Secret, skipping while it is valid, renewing when it expires, `--force`, rejecting unknown arguments, the environment
+  settings, stopping before the trust store is touched when the cluster is unreachable, that the temporary key files
+  are removed (also on failure) and the hint when `mkcert` is missing.
 
 ## Build and deploy
 
@@ -68,7 +82,7 @@ it together with the host in `k8s/ingress.yaml`:
 
 | Where | Setting |
 |---|---|
-| Kubernetes | ConfigMap `time-tracking-config` in `k8s/configmap.yaml` (default `http://time-tracking.local`) |
+| Kubernetes | ConfigMap `time-tracking-config` in `k8s/configmap.yaml` (default `https://time-tracking.local`) |
 | Docker Compose | `CORS_ORIGIN` in `.env` (default `http://localhost`) |
 | `npm run dev` | `CORS_ORIGIN` in `backend/.env`, e.g. `http://localhost:5173` for the Vite dev server |
 

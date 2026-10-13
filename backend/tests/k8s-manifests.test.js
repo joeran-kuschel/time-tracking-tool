@@ -1,6 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 const yaml = require('js-yaml');
+const { spawnSync } = require('child_process');
 
 const rootDir = path.join(__dirname, '..', '..');
 const k8sDir = path.join(rootDir, 'k8s');
@@ -80,7 +81,15 @@ describe('ingress', () => {
 
   test('the allowed CORS origin is the ingress host', () => {
     const configMap = find(loadManifests('configmap.yaml'), 'ConfigMap', 'time-tracking-config');
-    expect(configMap.data.CORS_ORIGIN.split(',')).toContain(`http://${rule.host}`);
+    expect(configMap.data.CORS_ORIGIN.split(',')).toContain(`https://${rule.host}`);
+  });
+
+  test('serves the host over TLS with the Secret that setup-tls.sh creates and redirects http', () => {
+    const script = fs.readFileSync(path.join(k8sDir, 'setup-tls.sh'), 'utf8');
+    expect(script).toContain(`TLS_HOST="\${TLS_HOST:-${rule.host}}"`);
+    expect(script).toContain(`TLS_SECRET="\${TLS_SECRET:-${ingress.spec.tls[0].secretName}}"`);
+    expect(ingress.spec.tls).toEqual([{ hosts: [rule.host], secretName: 'time-tracking-tls' }]);
+    expect(ingress.metadata.annotations['nginx.ingress.kubernetes.io/ssl-redirect']).toBe('true');
   });
 
   test.each([
@@ -105,5 +114,38 @@ describe('ingress', () => {
   test('the frontend image calls the API on its own host', () => {
     const dockerfile = fs.readFileSync(path.join(rootDir, 'frontend', 'Dockerfile'), 'utf8');
     expect(dockerfile).toMatch(/^ARG VITE_API_URL=\/api$/m);
+  });
+});
+
+describe('TLS files and docs', () => {
+  const read = (...parts) => fs.readFileSync(path.join(rootDir, ...parts), 'utf8');
+  const ignored = (file) => spawnSync('git', ['check-ignore', '-q', file], { cwd: rootDir }).status === 0;
+
+  test.each(['k8s/tls.key', 'tls.crt.pem', 'rootCA-key.pem', 'time-tracking.local+1-key.pem'])(
+    'git ignores the certificate file %s',
+    (file) => expect(ignored(file)).toBe(true),
+  );
+
+  test('git still tracks no file that the *.pem and *.key rules would ignore', () => {
+    const tracked = spawnSync('git', ['ls-files', '*.pem', '*.key'], { cwd: rootDir, encoding: 'utf8' });
+    expect(tracked.stdout.trim()).toBe('');
+  });
+
+  test('setup-tls.sh is executable', () => {
+    expect(fs.statSync(path.join(k8sDir, 'setup-tls.sh')).mode & 0o111).not.toBe(0);
+  });
+
+  test.each([['README.md'], ['k8s/README.md']])('%s creates the Secret before it applies the ingress', (file) => {
+    const text = read(file);
+    expect(text.indexOf('setup-tls.sh')).toBeGreaterThan(-1);
+    expect(text.indexOf('setup-tls.sh')).toBeLessThan(text.indexOf('kubectl apply -f k8s/ingress.yaml'));
+  });
+
+  test('no document still names the tool at its plain http address, except the redirect note', () => {
+    const files = ['README.md', 'k8s/README.md', 'documentation/README.md', 'documentation/backend/deployment.md', 'k8s/ingress.yaml', 'k8s/configmap.yaml'];
+    files.forEach((file) => {
+      const stale = read(file).split('\n').filter((line) => line.includes('http://time-tracking.local') && !/redirect/i.test(line));
+      expect(stale).toEqual([]);
+    });
   });
 });

@@ -9,7 +9,7 @@ data:
   DB_SSL: "false"
   # Addresses the frontend is opened at, comma-separated; only these may use the API from a browser.
   # Set per install, together with the host in ingress.yaml (e.g. "https://zeit.example.de").
-  CORS_ORIGIN: "http://time-tracking.local"
+  CORS_ORIGIN: "https://time-tracking.local"
 
 ---
 apiVersion: v1

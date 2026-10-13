@@ -29,7 +29,7 @@ done
 
 ### 3. Install the ingress controller (once per cluster)
 
-The tool runs under its own host name, http://time-tracking.local, instead of on `localhost` ports. This way more apps can run in the same cluster, each with its own host name. For that, the cluster needs an ingress controller with the class `nginx`:
+The tool runs under its own host name, https://time-tracking.local, instead of on `localhost` ports. This way more apps can run in the same cluster, each with its own host name. For that, the cluster needs an ingress controller with the class `nginx`:
 
 ```bash
 helm --kube-context docker-desktop upgrade --install ingress-nginx ingress-nginx \
@@ -44,7 +44,21 @@ sudo sed -i '' '/[[:space:]]time-tracking\.local$/d' /etc/hosts
 printf '127.0.0.1 time-tracking.local\n::1 time-tracking.local\n' | sudo tee -a /etc/hosts
 ```
 
-### 4. Deploy the resources
+### 4. Create the TLS certificate (once)
+
+The tool is served over HTTPS; plain HTTP is redirected. [mkcert](https://github.com/FiloSottile/mkcert) makes a certificate that your browsers trust without a warning. The script installs mkcert's local CA (macOS asks for your password once), creates the certificate and stores it as the Secret `time-tracking-tls` that `ingress.yaml` uses. The namespace has to exist first:
+
+```bash
+brew install mkcert
+kubectl apply -f k8s/namespace.yaml
+./k8s/setup-tls.sh
+```
+
+Run the script again at any time: it does nothing while the certificate is valid for more than 30 days and creates a new one before that. `./k8s/setup-tls.sh --force` creates a new one anyway; use it after changing the host name, because the script checks only the expiry date. Firefox needs `brew install nss` before the first run to trust the CA. The private key exists only in the cluster, never in the repository.
+
+### 5. Deploy the resources
+
+The Secret from step 4 has to exist before `ingress.yaml` is applied.
 
 ```bash
 kubectl apply -f k8s/namespace.yaml
@@ -67,18 +81,20 @@ After changing the migrations, regenerate them:
 
 Postgres runs the scripts only on first start with an empty volume.
 
-### 5. Check the status
+### 6. Check the status
 
 ```bash
 kubectl get all -n time-tracking
 kubectl logs -n time-tracking -l app=backend
 ```
 
-### 6. Access the app
+### 7. Access the app
 
-Frontend: http://time-tracking.local
+Frontend: https://time-tracking.local (http://time-tracking.local redirects to it)
 
-The API is at the same address: http://time-tracking.local/api, health check at http://time-tracking.local/health. Frontend and backend have no port of their own on the Mac; `ingress.yaml` forwards `/api` and `/health` to the backend and everything else to the frontend.
+The API is at the same address: https://time-tracking.local/api, health check at https://time-tracking.local/health. Frontend and backend have no port of their own on the Mac; `ingress.yaml` forwards `/api` and `/health` to the backend and everything else to the frontend.
+
+**Other devices:** a phone or another computer trusts the certificate only after mkcert's root CA is installed there. Find the file with `mkcert -CAROOT` (`rootCA.pem`), copy it to the device and install it as a trusted certificate. Never share `rootCA-key.pem`.
 
 **Warning:** Docker Desktop opens ports 80 and 443 of the ingress controller on all network interfaces, not only on `localhost`. Anyone on the same network can reach the API, and it has no login. The macOS firewall is off by default. Turned on (System Settings → Network → Firewall, then "Options…" → "Block all incoming connections"), it should keep other devices out; this is untested.
 
@@ -94,7 +110,7 @@ The API accepts requests from the browser only from the addresses the frontend i
 
 ```yaml
 data:
-  CORS_ORIGIN: "http://time-tracking.local"     # separate several addresses with commas
+  CORS_ORIGIN: "https://time-tracking.local"    # separate several addresses with commas
 ```
 
 The API address (`VITE_API_URL`) is not in the ConfigMap but is written into the frontend image at build time (`docker build --build-arg VITE_API_URL=...`). The default `/api` points to the same host as the frontend and needs no change for a different host name.
@@ -105,6 +121,18 @@ Without `CORS_ORIGIN`, no browser can use the API; the backend then logs a warni
 kubectl apply -f k8s/configmap.yaml
 kubectl rollout restart deployment/backend -n time-tracking
 ```
+
+## Upgrading an Existing Install to HTTPS
+
+An install from before TLS needs three steps: create the Secret, then apply the changed manifests and restart the backend, because `CORS_ORIGIN` is now `https://time-tracking.local`:
+
+```bash
+./k8s/setup-tls.sh
+kubectl apply -f k8s/configmap.yaml -f k8s/ingress.yaml
+kubectl rollout restart deployment/backend -n time-tracking
+```
+
+Apply the ingress only after the Secret exists; otherwise ingress-nginx serves its own fallback certificate, which browsers reject.
 
 ## New Migrations on an Existing Database
 

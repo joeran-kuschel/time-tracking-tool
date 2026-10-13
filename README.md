@@ -77,6 +77,7 @@ done
 
 ```bash
 kubectl apply -f k8s/namespace.yaml
+./k8s/setup-tls.sh
 kubectl apply -f k8s/configmap.yaml
 kubectl apply -f k8s/postgres-init-scripts.yaml
 kubectl apply -f k8s/postgres.yaml
@@ -85,7 +86,7 @@ kubectl apply -f k8s/frontend.yaml
 kubectl apply -f k8s/ingress.yaml
 ```
 
-Once per cluster, install the ingress controller first and add `time-tracking.local` to `/etc/hosts`, see `k8s/README.md`.
+Once per cluster, install the ingress controller first and add `time-tracking.local` to `/etc/hosts`, see `k8s/README.md`. `setup-tls.sh` needs `mkcert` (`brew install mkcert`) and creates the certificate for HTTPS.
 
 After building new images:
 
@@ -97,7 +98,7 @@ kubectl -n time-tracking rollout restart deployment/backend deployment/frontend
 
 ### 4. Open the browser
 
-http://time-tracking.local
+https://time-tracking.local
 
 ## Remote Database
 
