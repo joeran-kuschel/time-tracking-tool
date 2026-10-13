@@ -71,6 +71,29 @@ describe('projectController', () => {
     expect(Project.update).not.toHaveBeenCalled();
   });
 
+  test('create answers 400 for a customer that does not exist', async () => {
+    Customer.getById.mockResolvedValue(undefined);
+    const res = await call(projects.create, { body: { customerId: 99, name: 'Web', hourlyRate: 80 } });
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(res.json).toHaveBeenCalledWith({ error: 'Customer not found' });
+    expect(Project.create).not.toHaveBeenCalled();
+  });
+
+  test.each([['abc'], ['1e0'], [true], [99999999999]])('create answers 400 without a lookup for the customerId %p', async (customerId) => {
+    const res = await call(projects.create, { body: { customerId, name: 'Web' } });
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(Customer.getById).not.toHaveBeenCalled();
+    expect(Project.create).not.toHaveBeenCalled();
+  });
+
+  test('create saves the project for an existing customer', async () => {
+    Customer.getById.mockResolvedValue({ id: 1 });
+    Project.create.mockResolvedValue({ id: 3 });
+    const res = await call(projects.create, { body: { customerId: 1, name: 'Web' } });
+    expect(Project.create).toHaveBeenCalledWith(1, 'Web', 0);
+    expect(res.status).toHaveBeenCalledWith(201);
+  });
+
   test('update passes a missing rate on, so the stored one is kept', async () => {
     Project.update.mockResolvedValue({ id: 3 });
     await call(projects.update, { params: { id: '3' }, body: { name: 'Web' } });
