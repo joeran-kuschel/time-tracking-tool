@@ -182,7 +182,7 @@ cd frontend && npm install && npm test
 4. Persistent data storage
 5. Kubernetes with a remote database option
 
-More on how to contribute: [CONTRIBUTING.md](CONTRIBUTING.md).
+More on how to contribute: [CONTRIBUTING.md](CONTRIBUTING.md). This project follows a [Code of Conduct](CODE_OF_CONDUCT.md).
 
 ## License
 
