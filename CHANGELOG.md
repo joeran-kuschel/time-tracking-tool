@@ -13,6 +13,7 @@ How to write an entry and cut a release: [documentation/backend/changelog.md](do
 
 ### Changed
 
+- Tooling: fixed a test of `k8s/setup-tls.sh` that failed at random; its fake `openssl` now reads its input like the real one.
 - The API answers `401` without a login for everything except `/health`. Anything else that calls it, such as scripts, has to log in first (`POST /api/auth/login`) and send the cookie.
 - Tooling: Dependabot no longer proposes major updates of the Babel plugin that Jest needs in version 7.
 - Tooling: test and config packages updated (Jest 30, jest-dom 7, js-yaml 5, dotenv 18).
@@ -24,7 +25,3 @@ How to write an entry and cut a release: [documentation/backend/changelog.md](do
 - Tooling: the `test-engineer` agent reports test timings: the time of the test files it adds, their slowest tests and, for a full run, the entire-run time.
 - Tooling: the frontend tests moved from next to the code into `frontend/tests/`, mirroring `src/`.
 - Tooling: the project rules now ask for a changelog entry per change, a test run before every push, cleaning up test data in the real database, a marker for tests that document known bugs, and closing implemented GitHub issues.
-
-### Fixed
-
-- Tooling: a flaky test of `k8s/setup-tls.sh` failed at random; its fake `openssl` now reads its input like the real one.
