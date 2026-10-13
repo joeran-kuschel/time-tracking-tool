@@ -1,8 +1,12 @@
+const Customer = require('../models/Customer');
 const Project = require('../models/Project');
 const TimeEntry = require('../models/TimeEntry');
 
 // A missing rate is allowed (0 on create, unchanged on update); otherwise a number >= 0
 const isValidRate = (rate) => rate === undefined || rate === null || (rate !== '' && Number.isFinite(Number(rate)) && Number(rate) >= 0);
+
+// A positive whole number that fits Postgres' INTEGER; anything else would only fail in the database with a 500
+const isValidId = (id) => ['number', 'string'].includes(typeof id) && /^\d+$/.test(String(id)) && Number(id) <= 2147483647;
 
 exports.getByCustomerId = async (req, res) => {
   try {
@@ -36,6 +40,10 @@ exports.create = async (req, res) => {
     }
     if (!isValidRate(hourlyRate)) {
       return res.status(400).json({ error: 'hourlyRate must be a number of at least 0' });
+    }
+
+    if (!isValidId(customerId) || !(await Customer.getById(customerId))) {
+      return res.status(400).json({ error: 'Customer not found' });
     }
 
     const project = await Project.create(customerId, name, hourlyRate || 0);

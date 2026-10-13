@@ -26,7 +26,7 @@ All paths are under `/api/projects`.
 
 ## Behavior
 
-- Creating a project for a customer that doesn't exist fails with `500` (foreign key violation), not `400`.
+- Creating a project for a customer that doesn't exist answers `400` (`Customer not found`); the controller looks the customer up before inserting. A `customerId` that is not a whole number answers `400` the same way.
 - `PUT` without `hourlyRate` keeps the stored rate.
 - `DELETE` also deletes the project's time entries (`ON DELETE CASCADE`). It answers `409` while the running timer
   belongs to the project.
