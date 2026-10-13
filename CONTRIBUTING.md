@@ -36,6 +36,10 @@ While working, run only the tests affected by your change, for example
 The [pull request template](.github/pull_request_template.md) lists what a reviewer checks. The `Tests` workflow runs
 the backend and frontend suites on every pull request.
 
+## Code of conduct
+
+Be respectful. This project follows the [Code of Conduct](CODE_OF_CONDUCT.md).
+
 ## Security
 
 Report vulnerabilities privately, see [SECURITY.md](SECURITY.md).

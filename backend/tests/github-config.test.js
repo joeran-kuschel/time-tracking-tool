@@ -86,8 +86,16 @@ describe('issue templates', () => {
 });
 
 describe('community files', () => {
-  test.each(['CONTRIBUTING.md', 'SECURITY.md', 'LICENSE', '.github/pull_request_template.md'])('%s exists', (file) => {
+  test.each(['CONTRIBUTING.md', 'CODE_OF_CONDUCT.md', 'SECURITY.md', 'LICENSE', '.github/pull_request_template.md'])('%s exists', (file) => {
     expect(read(file).trim().length).toBeGreaterThan(0);
+  });
+
+  test('CODE_OF_CONDUCT.md names an email address for reports', () => {
+    expect(read('CODE_OF_CONDUCT.md')).toMatch(/responsible for enforcement at\s+[\w.+-]+@[\w.-]+\.\w+/);
+  });
+
+  test.each(['CONTRIBUTING.md', 'README.md'])('%s links to the Code of Conduct', (file) => {
+    expect(read(file)).toContain('(CODE_OF_CONDUCT.md)');
   });
 
   test('SECURITY.md says what the login protects and what it does not', () => {
@@ -95,7 +103,7 @@ describe('community files', () => {
     expect(read('SECURITY.md')).toMatch(/no second factor/);
   });
 
-  test.each(['README.md', 'CONTRIBUTING.md', 'SECURITY.md', '.github/pull_request_template.md'])(
+  test.each(['README.md', 'CONTRIBUTING.md', 'CODE_OF_CONDUCT.md', 'SECURITY.md', '.github/pull_request_template.md'])(
     'every relative link in %s points to an existing file',
     (file) => {
       const links = [...read(file).matchAll(/\]\(((?!https?:|#)[^)#]+)\)/g)].map((m) => m[1]);

@@ -31,6 +31,7 @@ settings; the file does not enable them.
 ## Community files
 
 - `CONTRIBUTING.md`: setup and the rules for changes.
+- `CODE_OF_CONDUCT.md`: the Contributor Covenant 2.1; reports go to the maintainer's email address in the file.
 - `SECURITY.md`: how to report a vulnerability, and what the login does and does not protect. Private vulnerability
   reporting has to be switched on in the repository's security settings, or the report link shows a 404.
 - `LICENSE`: MIT.
@@ -38,7 +39,7 @@ settings; the file does not enable them.
 ## Test
 
 `backend/tests/github-config.test.js` checks that the workflow is valid YAML, runs both test suites with `npm ci`, has
-read-only permissions and uses Node 22 or newer; that the issue templates have a name and a label; that
-Dependabot covers both packages and the workflow; that the files
-named above exist; and that relative links in `README.md`, `CONTRIBUTING.md`, `SECURITY.md` and the pull request
-template point to existing files.
+read-only permissions and uses Node 22 or newer; that the issue templates have a name and a label; that Dependabot
+covers both packages and the workflow; that the files named above exist; that the Code of Conduct names a contact and is
+linked from `README.md` and `CONTRIBUTING.md`; and that relative links in `README.md`, `CONTRIBUTING.md`,
+`CODE_OF_CONDUCT.md`, `SECURITY.md` and the pull request template point to existing files.

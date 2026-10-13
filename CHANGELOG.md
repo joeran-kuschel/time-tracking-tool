@@ -13,6 +13,7 @@ How to write an entry and cut a release: [documentation/backend/changelog.md](do
 
 ### Changed
 
+- Tooling: the repository has a Code of Conduct (Contributor Covenant 2.1).
 - Tooling: fixed a test of `k8s/setup-tls.sh` that failed at random; its fake `openssl` now reads its input like the real one.
 - The API answers `401` without a login for everything except `/health`. Anything else that calls it, such as scripts, has to log in first (`POST /api/auth/login`) and send the cookie.
 - Tooling: Dependabot no longer proposes major updates of the Babel plugin that Jest needs in version 7.
