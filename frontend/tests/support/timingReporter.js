@@ -13,26 +13,18 @@ export function formatTimings(files, totalMs, listAll = false) {
   return lines.join('\n')
 }
 
-function testsOf(task, prefix = '') {
-  const name = prefix ? `${prefix} > ${task.name}` : task.name
-  if (task.type === 'test') return [{ name, ms: Math.round(task.result?.duration || 0) }]
-  return (task.tasks || []).flatMap((child) => testsOf(child, task.type === 'suite' ? name : prefix))
-}
+const ms = (diagnostic) => Math.round(diagnostic?.duration || 0)
 
 export default class TimingReporter {
-  onInit() {
+  onTestRunStart() {
     this.start = Date.now()
   }
 
-  onWatcherRerun() {
-    this.start = Date.now()
-  }
-
-  onFinished(files = []) {
-    const timed = files.map((file) => ({
-      name: file.name,
-      ms: Math.round(file.result?.duration || 0),
-      tests: (file.tasks || []).flatMap((task) => testsOf(task)),
+  onTestRunEnd(testModules = []) {
+    const timed = testModules.map((module) => ({
+      name: module.relativeModuleId,
+      ms: ms(module.diagnostic()),
+      tests: Array.from(module.children.allTests(), (test) => ({ name: test.fullName, ms: ms(test.diagnostic()) })),
     }))
     process.stderr.write(formatTimings(timed, Date.now() - this.start, process.env.TEST_TIMINGS === 'all'))
   }

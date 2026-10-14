@@ -13,6 +13,7 @@ How to write an entry and cut a release: [documentation/backend/changelog.md](do
 
 ### Changed
 
+- Tooling: the frontend test run prints its timing report again after the Vitest 5 update.
 - Tooling: changes reach `main` through pull requests; `main` is protected and needs the passing checks `backend tests` and `frontend tests`.
 - Tooling: `CLAUDE.md` is reordered into Things worth knowing, Commands, Layout, Styling, Kubernetes, Testing and Rules, and the rules are merged into groups with the pull request process as a numbered list.
 - Tooling: new documentation chapter "Browser review": how to review a change in the browser with a throwaway database and sample data, also for branches in a git worktree. A test checks that every documentation chapter is linked from the index.
