@@ -87,7 +87,7 @@ function Reports({ customers, initialCustomerId = null, initialMonth, initialYea
             id={customerFieldId}
             value={customerId ?? ''}
             onChange={(e) => setCustomerId(e.target.value ? Number(e.target.value) : null)}
-            className={`${ui.input} w-72 max-w-full`}
+            className={`${ui.select} w-72 max-w-full`}
           >
             <option value="">{t`Select a customer`}</option>
             {customers.map((c) => (
@@ -116,7 +116,7 @@ function Reports({ customers, initialCustomerId = null, initialMonth, initialYea
               id={statusFieldId}
               value={report.status ?? 'draft'}
               onChange={(e) => changeStatus(e.target.value)}
-              className={`${ui.input} w-48`}
+              className={`${ui.select} w-48`}
             >
               {statuses.map((s) => <option key={s.value} value={s.value}>{i18n._(s.label)}</option>)}
             </select>

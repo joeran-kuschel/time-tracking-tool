@@ -39,6 +39,13 @@ they get lighter too. The dialog backdrop is plain black at 50 %, independent of
 - `theme.js` resolves the choice and sets `data-theme="light"` or `"dark"` on `<html>`; `main.jsx` does this before the
   first render, so the page doesn't flash in the wrong theme. The dark theme also sets `color-scheme: dark`, so native
   controls (selects, date and time pickers, scrollbars) are dark as well.
+- Selects (`ui.select`) hide the native arrow (`appearance-none`) and draw their own chevron as a background image, 1rem
+  from the right border, in the ink color of the active theme (`--select-chevron` in `index.css`). The text has
+  padding on the right so it never runs under the chevron. They stay native `<select>` elements, so keyboard, labels and
+  the option list work as before.
+  The chevron's color is copied from the ink color into the image by hand (a data URI can't read CSS variables), and a
+  test fails when the two differ. In forced-colors mode (Windows High Contrast) the image is dropped and the native arrow
+  returns. The chevron sits on the right in both languages; a right-to-left language would need it on the left.
 - Code: `frontend/src/theme.js`, `components/ThemeSwitcher.jsx`. Tests (in `frontend/tests/`): `theme.test.js`, `ThemeSwitcher.test.jsx`.
 Contrast values are listed in [Accessibility](accessibility.md).
 
