@@ -77,6 +77,8 @@ describe('Reports', () => {
     render(<Reports customers={customers} initialCustomerId={1} />)
     const status = await screen.findByLabelText('Status')
     expect(status).toHaveValue('ready')
+    expect(status).toHaveClass('appearance-none', 'pr-11')
+    expect(screen.getByLabelText(/Kunde|Customer/)).toHaveClass('appearance-none', 'pr-11')
     expect([...status.options].map((o) => o.textContent)).toEqual(['Entwurf', 'Bereit zum Versand', 'Verschickt'])
 
     await userEvent.selectOptions(status, 'Verschickt')

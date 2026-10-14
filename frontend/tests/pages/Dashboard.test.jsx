@@ -183,6 +183,7 @@ describe('Dashboard', () => {
     await loaded()
     const select = screen.getByLabelText('Kunde und Projekt')
     expect(select).toHaveValue('9')
+    expect(select).toHaveClass('appearance-none', 'pr-11')
     expect(within(select).getAllByRole('option').map((o) => o.textContent)).toEqual([
       'Berger · Pflege', 'Muster GmbH · Shop', 'Muster GmbH · Website',
     ])

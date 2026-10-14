@@ -44,6 +44,9 @@ The UI has to meet WCAG 2.2 level AA (see `CLAUDE.md`). This chapter lists what 
 - **Bars with a share of the total:** the project bars in the month summary and the customer bars on the Dashboard
   are decorative (`aria-hidden`). Next to the hours a visually hidden text gives the share of the total, e.g. *3.50 h,
   70 % of total* (`ShareOfTotal`, `formatShare` in `format.js`; 0 % when the total is 0).
+- **Select chevron:** the chevron of a select (`ui.select`) is the ink color on the field background (about 15:1, well
+  above the 3:1 of WCAG 1.4.11). In forced-colors mode (Windows High Contrast) the native arrow returns instead of the
+  background image. The focus ring is the global one.
 - **Theme switch:** a group named *Theme* with three icon buttons named by their `title` (*Light*, *Dark*, *Like the
   system*); the active one is marked with `aria-pressed`. The dark theme sets `color-scheme: dark`, so native controls
   stay readable.

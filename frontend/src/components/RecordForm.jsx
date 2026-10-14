@@ -49,7 +49,7 @@ function RecordForm({ legend, fields, initialValues, submitLabel, onSubmit, onCa
     if (field.type === 'textarea') return <textarea {...props} className={`${ui.input} resize-none h-20 py-2`} />
     if (field.type === 'select') {
       return (
-        <select {...props}>
+        <select {...props} className={ui.select}>
           {field.options.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
         </select>
       )

@@ -71,6 +71,20 @@ describe('RecordForm', () => {
     expect(screen.getByRole('alert')).toHaveTextContent('Kunde konnte nicht gespeichert werden.')
   })
 
+  test('renders a select field as a native select with the shared select style', async () => {
+    const options = [{ value: 'a', label: 'Option A' }, { value: 'b', label: 'Option B' }]
+    const { container } = renderForm({
+      fields: [{ name: 'kind', label: 'Art', type: 'select', options }],
+      initialValues: { kind: 'a' },
+    })
+
+    const select = screen.getByLabelText('Art')
+    expect(select.tagName).toBe('SELECT')
+    expect(select).toHaveClass('appearance-none', 'pr-11')
+    expect(select).not.toHaveClass('px-3')
+    expect(await axe(container)).toHaveNoViolations()
+  })
+
   test('has no detectable accessibility violations', async () => {
     const { container } = renderForm({ onCancel: vi.fn(), error: 'Fehler.' })
     expect(await axe(container)).toHaveNoViolations()

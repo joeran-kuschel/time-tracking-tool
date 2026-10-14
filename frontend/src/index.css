@@ -19,6 +19,8 @@
   --color-danger-soft: 253 236 234; /* #FDECEA */
   --color-danger-line: 243 196 191; /* #F3C4BF */
   --color-on-fill: 255 255 255;     /* #FFFFFF */
+  /* Chevron of the selects (ui.select), drawn in the ink color; a data URI can't read the variables above */
+  --select-chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='none' stroke='%231D1C1A' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m5 7.5 5 5 5-5'/%3E%3C/svg%3E");
   color-scheme: light;
 }
 
@@ -39,6 +41,7 @@
   --color-danger-soft: 58 26 33;    /* #3A1A21 */
   --color-danger-line: 110 50 64;   /* #6E3240 */
   --color-on-fill: 14 13 12;        /* #0E0D0C */
+  --select-chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='none' stroke='%23EDEAE3' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m5 7.5 5 5 5-5'/%3E%3C/svg%3E");
   color-scheme: dark;
 }
 

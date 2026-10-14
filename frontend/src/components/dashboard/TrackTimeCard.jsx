@@ -60,7 +60,7 @@ function TrackTimeCard({ projects, defaultProjectId, timer, onSaved }) {
             id={selectId}
             value={projectId ?? ''}
             onChange={(e) => setProjectId(Number(e.target.value))}
-            className={ui.input}
+            className={ui.select}
           >
             {projects.map((p) => <option key={p.id} value={p.id}>{label(p)}</option>)}
           </select>
