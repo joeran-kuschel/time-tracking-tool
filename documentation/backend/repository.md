@@ -8,6 +8,14 @@ What the repository contains for contributors and for the public GitHub page.
 matrix runs for each package (`backend`, `frontend`) in parallel: `npm ci`, then `npm test` on Node 22. The workflow only has read
 access to the repository (`permissions: contents: read`). A failing job fails the check.
 
+## Code scanning
+
+CodeQL scans the code with GitHub's default setup (Settings, Advanced Security, Code scanning), so there is no workflow
+file for it in the repository. It analyzes JavaScript and TypeScript and the workflow files (`actions`) on every push to
+`main`, on every pull request to `main` and once a week, and shows the results under Security, Code scanning. It is not one of
+the checks the ruleset requires, so an alert does not block a pull request. Read an alert before acting on it: one in
+a test file, such as a string search in documentation, is dismissed as "used in tests" or the code is reworded.
+
 ## Branch protection
 
 The ruleset "Protect main" on GitHub protects `main`: changes arrive only through a pull request, the checks

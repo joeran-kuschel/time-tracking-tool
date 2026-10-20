@@ -193,7 +193,7 @@ describe('TLS files and docs', () => {
   test('no document still names the tool at its plain http address, except the redirect note', () => {
     const files = ['README.md', 'k8s/README.md', 'documentation/README.md', 'documentation/backend/deployment.md', 'k8s/ingress.yaml', 'k8s/configmap.yaml'];
     files.forEach((file) => {
-      const stale = read(file).split('\n').filter((line) => line.includes('http://time-tracking.local') && !/redirect/i.test(line));
+      const stale = read(file).split('\n').filter((line) => /http:\/\/time-tracking\.local/.test(line) && !/redirect/i.test(line));
       expect(stale).toEqual([]);
     });
   });
