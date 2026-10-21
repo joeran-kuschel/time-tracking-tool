@@ -1,7 +1,7 @@
 # Translation (backend)
 
-The backend translates the PDF report. It uses LinguiJS 5 with gettext `.po` catalogs, like the frontend
-([Languages](../ui/languages.md)).
+The backend translates the PDF report and the column titles of the CSV export. It uses LinguiJS 6 with gettext `.po`
+catalogs, like the frontend ([Languages](../ui/languages.md)).
 
 ## How it works
 

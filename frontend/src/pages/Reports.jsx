@@ -1,4 +1,4 @@
-import { useEffect, useId, useState } from 'react'
+import { useEffect, useId, useRef, useState } from 'react'
 import { ArrowDownTrayIcon, ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline'
 import { msg } from '@lingui/core/macro'
 import { Trans, useLingui } from '@lingui/react/macro'
@@ -34,6 +34,8 @@ function Reports({ customers, initialCustomerId = null, initialMonth, initialYea
   const [run, error] = useAction()
   const [runStatus, statusError] = useAction()
   const [runDownload, downloadError] = useAction()
+  const [downloading, setDownloading] = useState(false)
+  const downloadRunning = useRef(false)
   const { t, i18n } = useLingui()
   const customerFieldId = useId()
   const statusFieldId = useId()
@@ -59,8 +61,20 @@ function Reports({ customers, initialCustomerId = null, initialMonth, initialYea
     setPeriod({ year: date.getFullYear(), month: date.getMonth() + 1 })
   }
 
+  // One download at a time: while one runs, both buttons are marked disabled and ignore clicks.
+  // The ref also stops a second click that comes before the next render.
+  const download = async (call, failureMessage) => {
+    if (downloadRunning.current) return
+    downloadRunning.current = true
+    setDownloading(true)
+    await runDownload(call, failureMessage)
+    downloadRunning.current = false
+    setDownloading(false)
+  }
   const handleDownloadPDF = () =>
-    runDownload(() => api.downloadPDF(customerId, period.month, period.year, i18n.locale), msg`PDF could not be downloaded.`)
+    download(() => api.downloadPDF(customerId, period.month, period.year, i18n.locale), msg`PDF could not be downloaded.`)
+  const handleDownloadCSV = () =>
+    download(() => api.downloadCSV(customerId, period.month, period.year, i18n.locale), msg`CSV could not be downloaded.`)
 
   const changeStatus = async (status) => {
     const saved = await runStatus(
@@ -124,10 +138,16 @@ function Reports({ customers, initialCustomerId = null, initialMonth, initialYea
         )}
 
         {hasEntries && (
-          <button onClick={handleDownloadPDF} className={`${ui.buttonPrimary} ml-auto min-h-[2.75rem]`}>
-            <ArrowDownTrayIcon aria-hidden="true" className="h-5 w-5" />
-            <Trans>Download PDF</Trans>
-          </button>
+          <div className="ml-auto flex flex-wrap gap-3">
+            <button type="button" onClick={handleDownloadCSV} aria-disabled={downloading} className={`${ui.buttonSecondary} min-h-[2.75rem] aria-disabled:opacity-70`}>
+              <ArrowDownTrayIcon aria-hidden="true" className="h-5 w-5" />
+              <Trans>Download CSV</Trans>
+            </button>
+            <button type="button" onClick={handleDownloadPDF} aria-disabled={downloading} className={`${ui.buttonPrimary} min-h-[2.75rem] aria-disabled:opacity-70`}>
+              <ArrowDownTrayIcon aria-hidden="true" className="h-5 w-5" />
+              <Trans>Download PDF</Trans>
+            </button>
+          </div>
         )}
       </div>
 

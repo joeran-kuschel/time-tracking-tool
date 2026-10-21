@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
-import { render, screen, within } from '../support/render'
+import { render, screen, waitFor, within } from '../support/render'
 import userEvent from '@testing-library/user-event'
 import { axe } from '../support/axe'
 import Reports from '@/pages/Reports'
@@ -8,7 +8,7 @@ import { switchLocale } from '@/i18n'
 
 vi.mock('@/api', async (importOriginal) => ({
   ...(await importOriginal()),
-  api: { getMonthlyReport: vi.fn(), downloadPDF: vi.fn(), setReportStatus: vi.fn() },
+  api: { getMonthlyReport: vi.fn(), downloadPDF: vi.fn(), downloadCSV: vi.fn(), setReportStatus: vi.fn() },
 }))
 
 const customers = [{ id: 1, name: 'Muster GmbH' }, { id: 2, name: 'Neu AG' }]
@@ -187,6 +187,141 @@ describe('Reports', () => {
     await userEvent.click(await screen.findByRole('button', { name: 'PDF herunterladen' }))
 
     expect(await screen.findByRole('alert')).toHaveTextContent('PDF konnte nicht heruntergeladen werden. Bitte versuche es erneut.')
+  })
+
+  test('downloads the CSV in the current language, only when there are entries', async () => {
+    switchLocale('en')
+    api.getMonthlyReport.mockResolvedValueOnce({ entries: [], totalHours: '0.00' }).mockResolvedValueOnce(report)
+    render(<Reports customers={customers} initialCustomerId={1} />)
+    await screen.findByText('No entries for this period')
+    expect(screen.queryByRole('button', { name: 'Download CSV' })).not.toBeInTheDocument()
+
+    await userEvent.click(screen.getByRole('button', { name: 'Next month' }))
+    await userEvent.click(await screen.findByRole('button', { name: 'Download CSV' }))
+
+    expect(api.downloadCSV).toHaveBeenCalledWith(1, 10, 2026, 'en')
+    expect(api.downloadPDF).not.toHaveBeenCalled()
+  })
+
+  test('names the CSV button in German', async () => {
+    api.getMonthlyReport.mockResolvedValue(report)
+    render(<Reports customers={customers} initialCustomerId={1} />)
+
+    expect(await screen.findByRole('button', { name: 'CSV herunterladen' })).toBeInTheDocument()
+  })
+
+  test('shows an error on the page when the CSV download fails', async () => {
+    api.getMonthlyReport.mockResolvedValue(report)
+    api.downloadCSV.mockRejectedValue(new ApiError(500, 'Failed to export CSV report'))
+    render(<Reports customers={customers} initialCustomerId={1} />)
+
+    await userEvent.click(await screen.findByRole('button', { name: 'CSV herunterladen' }))
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('CSV konnte nicht heruntergeladen werden. Bitte versuche es erneut.')
+  })
+
+  test('marks both download buttons disabled and ignores clicks while a download runs', async () => {
+    api.getMonthlyReport.mockResolvedValue(report)
+    let finish
+    api.downloadCSV.mockReturnValue(new Promise((resolve) => { finish = resolve }))
+    render(<Reports customers={customers} initialCustomerId={1} />)
+    const csv = await screen.findByRole('button', { name: 'CSV herunterladen' })
+    const pdf = screen.getByRole('button', { name: 'PDF herunterladen' })
+    expect(csv).toHaveAttribute('aria-disabled', 'false')
+
+    await userEvent.click(csv)
+    expect(csv).toHaveAttribute('aria-disabled', 'true')
+    expect(pdf).toHaveAttribute('aria-disabled', 'true')
+    await userEvent.click(pdf)
+    await userEvent.click(csv)
+    expect(api.downloadPDF).not.toHaveBeenCalled()
+    expect(api.downloadCSV).toHaveBeenCalledTimes(1)
+
+    finish()
+    await waitFor(() => expect(csv).toHaveAttribute('aria-disabled', 'false'))
+    expect(pdf).toHaveAttribute('aria-disabled', 'false')
+  })
+
+  test('enables the buttons again after a failed download', async () => {
+    api.getMonthlyReport.mockResolvedValue(report)
+    api.downloadPDF.mockRejectedValue(new ApiError(500, 'Failed to generate PDF report'))
+    render(<Reports customers={customers} initialCustomerId={1} />)
+
+    await userEvent.click(await screen.findByRole('button', { name: 'PDF herunterladen' }))
+    await screen.findByRole('alert')
+
+    expect(screen.getByRole('button', { name: 'CSV herunterladen' })).toHaveAttribute('aria-disabled', 'false')
+  })
+
+  test('ignores a click on CSV while the PDF downloads', async () => {
+    api.getMonthlyReport.mockResolvedValue(report)
+    let finish
+    api.downloadPDF.mockReturnValue(new Promise((resolve) => { finish = resolve }))
+    render(<Reports customers={customers} initialCustomerId={1} />)
+    const pdf = await screen.findByRole('button', { name: 'PDF herunterladen' })
+
+    await userEvent.click(pdf)
+    await userEvent.click(screen.getByRole('button', { name: 'CSV herunterladen' }))
+    await userEvent.click(pdf)
+
+    expect(api.downloadCSV).not.toHaveBeenCalled()
+    expect(api.downloadPDF).toHaveBeenCalledTimes(1)
+    finish()
+    await waitFor(() => expect(pdf).toHaveAttribute('aria-disabled', 'false'))
+  })
+
+  test('ignores the keyboard on a busy download button and keeps focus on it', async () => {
+    api.getMonthlyReport.mockResolvedValue(report)
+    let finish
+    api.downloadCSV.mockReturnValue(new Promise((resolve) => { finish = resolve }))
+    render(<Reports customers={customers} initialCustomerId={1} />)
+    const csv = await screen.findByRole('button', { name: 'CSV herunterladen' })
+    csv.focus()
+
+    await userEvent.keyboard('{Enter}')
+    await userEvent.keyboard('{Enter}')
+    await userEvent.keyboard(' ')
+
+    expect(api.downloadCSV).toHaveBeenCalledTimes(1)
+    expect(csv).toHaveFocus()
+    finish()
+    await waitFor(() => expect(csv).toHaveAttribute('aria-disabled', 'false'))
+  })
+
+  test('allows a second CSV download after the first one finished', async () => {
+    api.getMonthlyReport.mockResolvedValue(report)
+    api.downloadCSV.mockResolvedValue(undefined)
+    render(<Reports customers={customers} initialCustomerId={1} />)
+    const csv = await screen.findByRole('button', { name: 'CSV herunterladen' })
+
+    await userEvent.click(csv)
+    await waitFor(() => expect(csv).toHaveAttribute('aria-disabled', 'false'))
+    await userEvent.click(csv)
+
+    expect(api.downloadCSV).toHaveBeenCalledTimes(2)
+  })
+
+  test('tells that the server is not reachable when the CSV download cannot connect', async () => {
+    api.getMonthlyReport.mockResolvedValue(report)
+    api.downloadCSV.mockRejectedValue(new ApiError(0, 'Network error'))
+    render(<Reports customers={customers} initialCustomerId={1} />)
+
+    await userEvent.click(await screen.findByRole('button', { name: 'CSV herunterladen' }))
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('CSV konnte nicht heruntergeladen werden. Der Server ist nicht erreichbar.')
+  })
+
+  test('removes the CSV error when the next download succeeds', async () => {
+    api.getMonthlyReport.mockResolvedValue(report)
+    api.downloadCSV.mockRejectedValueOnce(new ApiError(500, 'x')).mockResolvedValueOnce(undefined)
+    render(<Reports customers={customers} initialCustomerId={1} />)
+    const csv = await screen.findByRole('button', { name: 'CSV herunterladen' })
+
+    await userEvent.click(csv)
+    await screen.findByRole('alert')
+    await userEvent.click(csv)
+
+    await waitFor(() => expect(screen.queryByRole('alert')).not.toBeInTheDocument())
   })
 
   test('has no detectable accessibility violations', async () => {
