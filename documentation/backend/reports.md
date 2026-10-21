@@ -1,6 +1,6 @@
 # Reports API
 
-Monthly reports list a customer's time entries of one month, as JSON or as a PDF.
+Monthly reports list a customer's time entries of one month, as JSON, as a PDF or as a CSV file.
 
 ## Endpoints
 
@@ -10,6 +10,7 @@ All paths are under `/api/reports`.
 |---|---|---|
 | `GET` | `/customer/:customerId?month=M&year=YYYY&tz=Europe/Berlin` | The report as JSON |
 | `GET` | `/customer/:customerId/pdf?month=M&year=YYYY&lang=de\|en&tz=Europe/Berlin` | The report as a PDF download; with `&inline=1` the browser shows it instead (the Dashboard's **Preview PDF**) |
+| `GET` | `/customer/:customerId/csv?month=M&year=YYYY&lang=de\|en&tz=Europe/Berlin` | The same entries as a CSV download, see below |
 | `PUT` | `/customer/:customerId/status` | Sets the report status, see below |
 
 `month` (1–12) and `year` are required; a missing or invalid value answers `400` (`month=abc`, `month=13`).
@@ -62,6 +63,33 @@ October. Without `tz`, or with an unknown one, the month is taken in UTC.
   outside Latin-1 (`Łódź`, `€`) get an additional UTF-8 file name (`filename*=UTF-8''…`).
 - `404` if the customer doesn't exist or has no entries in the month.
 
+## CSV export
+
+The CSV has exactly the entries of the PDF (the customer's entries of one month, newest first, running ones included),
+for spreadsheets. `loadReport` in `reportController.js` is shared with the PDF, so the checks and the wording of the
+errors are the same: `400` for an invalid `month` or `year`, `404` for an unknown customer or a month without entries.
+
+- **Columns** (`utils/reportRows.js`, the one place that defines them): Date, Start, End, Customer, Project,
+  Description, Hours. Dates are `YYYY-MM-DD`, times `HH:mm`, both in the `tz` time zone, so an entry at 00:30 on the 1st
+  shows the date of that month. A running entry has an empty End and 0 hours. Hours are a plain number with two decimals
+  and no unit (`1,50` in German, `1.50` in English). Amounts are not included yet.
+- **Cells are typed**: `reportRows` returns `{ headers, rows }` where a cell is `{ text }` or `{ number }`, so a format
+  can treat numbers and texts differently (the CSV protects texts only; a later Excel export could write real numbers).
+- **Language** (`lang`, `de` by default): the column titles and the format follow it. German files use `;` as delimiter
+  and a decimal comma, English files use `,` and a decimal point, so the file opens correctly in a spreadsheet set to
+  the same language. The column titles are translated with the ids `report.date`, `export.start`, `export.end`,
+  `export.customer`, `report.project`, `report.description`, `report.hours` (see [Translation](translation.md)).
+- **Format** (`utils/csv.js`, written by hand, no dependency): UTF-8 with a byte order mark (so Excel reads umlauts and
+  `Ł` correctly), `\r\n` line endings, also after the last line. A field with the delimiter, a quote, a CR or an LF is
+  put in quotes with inner quotes doubled.
+- **Formula injection**: a text cell (descriptions, project and customer names, headers) that starts with `=`, `+`, `-`,
+  `@`, a tab or a carriage return gets a `'` in front, so a spreadsheet shows it as text instead of running it as a
+  formula. Number cells are never changed.
+- **File name**: `time-report-<customer>-<year>-<month>.csv` or `abrechnung-<customer>-<year>-<month>.csv`
+  (`reportFileName` with the extension `csv`), sent like the PDF's with the `content-disposition` package
+  (`attachment`, non-ASCII names get `filename*=UTF-8''…`). `Content-Type` is `text/csv; charset=utf-8`.
+- `500` answers `Failed to export CSV report`.
+
 ## Report status
 
 Each customer's monthly report has a status: `draft`, `ready` or `sent`. It is set by hand on the Reports page and
@@ -76,11 +104,13 @@ row is a `draft`. The status is deleted with its customer.
 
 ## Limits
 
-- Amounts (hours × hourly rate) are not shown yet.
+- Amounts (hours × hourly rate) are not in the PDF or the CSV yet.
+- The CSV covers one customer and one month; no free date range, project filter or Excel file yet.
 
 ## Code
 
-`backend/src/routes/reports.js`, `controllers/reportController.js`, `utils/pdfGenerator.js`,
+`backend/src/routes/reports.js`, `controllers/reportController.js`, `utils/pdfGenerator.js`, `utils/reportRows.js`, `utils/csv.js`,
 `models/TimeEntry.js` (`getByCustomerIdInRange`), `models/ReportStatus.js`, `utils/period.js`. Tests:
 `tests/reportStatus.model.test.js`, `tests/pdfGenerator.test.js`, `tests/period.test.js`, `tests/timeEntry.model.test.js`,
-`tests/pdfGenerator.real.test.js`, `tests/reportController.test.js`.
+`tests/pdfGenerator.real.test.js`, `tests/reportController.test.js`, `tests/csv.test.js`, `tests/reportRows.test.js`,
+`tests/report.export.routes.test.js`.

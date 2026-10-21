@@ -4,6 +4,9 @@ const Customer = require('../models/Customer');
 const ReportStatus = require('../models/ReportStatus');
 const { parseMonth, parseTimeZone, monthRange } = require('../utils/period');
 const { generateReportPDF, reportFileName } = require('../utils/pdfGenerator');
+const { reportRows } = require('../utils/reportRows');
+const { toCsv } = require('../utils/csv');
+const { activateLocale } = require('../i18n');
 
 const INVALID_PERIOD = { error: 'month (1-12) and year are required' };
 
@@ -16,37 +19,70 @@ function reportPeriod(query) {
   return { ...period, timeZone, range: monthRange(period, timeZone) };
 }
 
+// The customer and the entries of a report's month, shared by the PDF and the CSV. Answers 400 or 404 itself and
+// returns null then (the same wording for both formats).
+async function loadReport(req, res) {
+  const period = reportPeriod(req.query);
+  if (!period) {
+    res.status(400).json(INVALID_PERIOD);
+    return null;
+  }
+
+  const { customerId } = req.params;
+  const customer = await Customer.getById(customerId);
+  if (!customer) {
+    res.status(404).json({ error: 'Customer not found' });
+    return null;
+  }
+
+  const entries = await TimeEntry.getByCustomerIdInRange(customerId, period.range);
+  if (entries.length === 0) {
+    res.status(404).json({ error: 'No time entries found for the specified month' });
+    return null;
+  }
+  return { customer, entries, period };
+}
+
+// Sends a report file. contentDisposition escapes quotes and adds a UTF-8 file name for names like "Łódź".
+function sendFile(res, { body, contentType, customer, period, lang, extension, type = 'attachment' }) {
+  res.contentType(contentType);
+  const fileName = reportFileName(customer.name, period.month, period.year, lang, extension);
+  res.setHeader('Content-Disposition', contentDisposition(fileName, { type }));
+  res.send(body);
+}
+
 exports.generatePDF = async (req, res) => {
   try {
-    const { customerId } = req.params;
     const { lang, inline } = req.query;
-    const period = reportPeriod(req.query);
-    if (!period) {
-      return res.status(400).json(INVALID_PERIOD);
-    }
+    const report = await loadReport(req, res);
+    if (!report) return;
 
-    const customer = await Customer.getById(customerId);
-    if (!customer) {
-      return res.status(404).json({ error: 'Customer not found' });
-    }
-
-    const entries = await TimeEntry.getByCustomerIdInRange(customerId, period.range);
-    if (entries.length === 0) {
-      return res.status(404).json({ error: 'No time entries found for the specified month' });
-    }
-
+    const { customer, entries, period } = report;
     const { month, year, timeZone } = period;
     const pdfBuffer = await generateReportPDF(entries, { customerName: customer.name, month, year, locale: lang, timeZone });
 
-    // Send PDF: as a download, or with inline=1 to open in the browser (preview).
-    // contentDisposition escapes quotes and adds a UTF-8 file name for names like "Łódź".
-    res.contentType('application/pdf');
-    const fileName = reportFileName(customer.name, month, year, lang);
-    res.setHeader('Content-Disposition', contentDisposition(fileName, { type: inline === '1' ? 'inline' : 'attachment' }));
-    res.send(pdfBuffer);
+    // As a download, or with inline=1 to open in the browser (preview)
+    sendFile(res, { body: pdfBuffer, contentType: 'application/pdf', customer, period, lang, extension: 'pdf', type: inline === '1' ? 'inline' : 'attachment' });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Failed to generate PDF report' });
+  }
+};
+
+// The same entries as the PDF, as a CSV file for spreadsheets
+exports.exportCsv = async (req, res) => {
+  try {
+    const { lang } = req.query;
+    const report = await loadReport(req, res);
+    if (!report) return;
+
+    const { customer, entries, period } = report;
+    const table = reportRows(entries, { customerName: customer.name, locale: lang, timeZone: period.timeZone });
+
+    sendFile(res, { body: toCsv(table, activateLocale(lang)), contentType: 'text/csv; charset=utf-8', customer, period, lang, extension: 'csv' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Failed to export CSV report' });
   }
 };
 

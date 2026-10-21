@@ -3,19 +3,13 @@ const PDFDocument = require('pdfkit');
 const { i18n } = require('@lingui/core');
 const { activateLocale } = require('../i18n');
 
-function calculateHours(startTime, endTime) {
-  if (!endTime) return 0;
-  const diff = new Date(endTime) - new Date(startTime);
-  return (diff / (1000 * 60 * 60)).toFixed(2);
-}
+const { calculateHours, formatHoursNumber } = require('./reportRows');
 
-function formatHours(hours) {
-  return `${i18n.number(Number(hours), { minimumFractionDigits: 2, maximumFractionDigits: 2 })} h`;
-}
+const formatHours = (hours) => `${formatHoursNumber(hours)} h`;
 
-function reportFileName(customerName, month, year, locale) {
+function reportFileName(customerName, month, year, locale, extension = 'pdf') {
   activateLocale(locale);
-  return `${i18n._({ id: 'report.filename', message: 'time-report' })}-${customerName}-${year}-${month}.pdf`;
+  return `${i18n._({ id: 'report.filename', message: 'time-report' })}-${customerName}-${year}-${month}.${extension}`;
 }
 
 // IBM Plex Sans, the app's font (assets/fonts, from @ibm/plex-sans 1.1.0, SIL Open Font License). Unlike pdfkit's
@@ -150,7 +144,6 @@ function generateReportPDF(entries, { customerName, month, year, locale, timeZon
 }
 
 module.exports = {
-  calculateHours,
   generateReportPDF,
   reportFileName
 };

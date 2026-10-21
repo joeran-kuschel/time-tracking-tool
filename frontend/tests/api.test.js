@@ -110,7 +110,56 @@ describe('api', () => {
     ['attachment; filename="Caf\u00e9 \\"Post\\".pdf"', 'Caf\u00e9 "Post".pdf'],
     [null, 'report.pdf'],
   ])('reads the file name from %p', (header, name) => {
-    expect(fileNameFrom(header)).toBe(name)
+    expect(fileNameFrom(header, 'report.pdf')).toBe(name)
+  })
+
+  test('uses the given fallback when the header has no file name', () => {
+    expect(fileNameFrom('attachment', 'report.csv')).toBe('report.csv')
+  })
+
+  test('loads the CSV in the given language and the browser\'s time zone and saves it under the backend\'s file name', async () => {
+    const blob = new Blob(['﻿Date,Start'])
+    const fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      headers: new Headers({ 'Content-Disposition': `attachment; filename="time-report-?ód?-2026-9.csv"; filename*=UTF-8''time-report-%C5%81%C3%B3d%C5%BA-2026-9.csv` }),
+      blob: () => Promise.resolve(blob),
+    })
+    vi.stubGlobal('fetch', fetch)
+    URL.createObjectURL = vi.fn(() => 'blob:csv')
+    URL.revokeObjectURL = vi.fn()
+    const click = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {})
+    const append = vi.spyOn(document.body, 'appendChild')
+
+    await api.downloadCSV(1, 9, 2026, 'en')
+
+    expect(fetch.mock.calls[0][0]).toMatch(/\/reports\/customer\/1\/csv\?month=9&year=2026&lang=en&tz=Europe%2FBerlin$/)
+    expect(URL.createObjectURL).toHaveBeenCalledWith(blob)
+    expect(append.mock.calls[0][0].download).toBe('time-report-Łódź-2026-9.csv')
+    expect(click).toHaveBeenCalled()
+  })
+
+  test('saves the CSV as report.csv when the backend sends no file name', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, status: 200, headers: new Headers(), blob: async () => new Blob() }))
+    URL.createObjectURL = vi.fn(() => 'blob:csv')
+    URL.revokeObjectURL = vi.fn()
+    vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {})
+    const append = vi.spyOn(document.body, 'appendChild')
+
+    await api.downloadCSV(1, 9, 2026, 'de')
+
+    expect(append.mock.calls[0][0].download).toBe('report.csv')
+  })
+
+  test('throws an ApiError instead of downloading when the CSV fails', async () => {
+    mockFetch(404, { error: 'No time entries found for the specified month' })
+    const click = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {})
+
+    const error = await api.downloadCSV(1, 9, 2026, 'en').catch((err) => err)
+
+    expect(error).toBeInstanceOf(ApiError)
+    expect(error.status).toBe(404)
+    expect(click).not.toHaveBeenCalled()
   })
 
   test('builds the URL of the PDF preview', () => {
@@ -166,9 +215,10 @@ describe('login', () => {
     ['deleteProject', [3]],
     ['getDashboard', ['f', 't', 9, 2026]],
     ['downloadPDF', [1, 9, 2026, 'de']],
+    ['downloadCSV', [1, 9, 2026, 'de']],
   ])('%s sends the login cookie', async (name, args) => {
     const fetch = mockFetch(200, {})
-    if (name === 'downloadPDF') {
+    if (name.startsWith('download')) {
       fetch.mockResolvedValue({ ok: true, status: 200, blob: async () => new Blob(), headers: { get: () => null } })
       vi.stubGlobal('URL', { createObjectURL: () => 'blob:x', revokeObjectURL: () => {} })
     }
@@ -264,6 +314,7 @@ describe('login', () => {
     ['createCustomer', ['Kunde']],
     ['getDashboard', ['f', 't', 9, 2026]],
     ['downloadPDF', [1, 9, 2026, 'de']],
+    ['downloadCSV', [1, 9, 2026, 'de']],
   ])('a 401 from %s says the session has ended and still throws', async (name, args) => {
     mockFetch(401, { error: 'Not logged in' })
     const ended = vi.fn()

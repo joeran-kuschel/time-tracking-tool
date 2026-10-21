@@ -39,12 +39,13 @@ async function request(path, { method = 'GET', body, endsSession } = {}) {
   return response.json().catch(() => null);
 }
 
-// The file name from a Content-Disposition header, preferring the UTF-8 form (filename*=UTF-8''…)
-export function fileNameFrom(header) {
+// The file name from a Content-Disposition header, preferring the UTF-8 form (filename*=UTF-8''…);
+// fallback when the header has none
+export function fileNameFrom(header, fallback) {
   const utf8 = header?.match(/filename\*=UTF-8''([^;]+)/i);
   if (utf8) return decodeURIComponent(utf8[1]);
   const quoted = header?.match(/filename="((?:[^"\\]|\\.)*)"/);
-  return quoted ? quoted[1].replace(/\\(.)/g, '$1') : 'report.pdf';
+  return quoted ? quoted[1].replace(/\\(.)/g, '$1') : fallback;
 }
 
 // Saves a blob as a file through a temporary link
@@ -62,8 +63,15 @@ function saveFile(blob, fileName) {
 // The browser's time zone (e.g. "Europe/Berlin"): the backend limits months by it, like the dashboard does
 const timeZone = () => encodeURIComponent(Intl.DateTimeFormat().resolvedOptions().timeZone);
 
-const pdfUrl = (customerId, month, year, locale) =>
-  `${API_URL}/reports/customer/${customerId}/pdf?month=${month}&year=${year}&lang=${locale}&tz=${timeZone()}`;
+// format: the report's file type in the backend's path, 'pdf' or 'csv'
+const reportUrl = (format, customerId, month, year, locale) =>
+  `${API_URL}/reports/customer/${customerId}/${format}?month=${month}&year=${year}&lang=${locale}&tz=${timeZone()}`;
+
+// Loads the file first, so a failed download throws ApiError instead of leaving the page
+async function download(url, fallbackName) {
+  const response = await send(url, { method: 'GET' });
+  saveFile(await response.blob(), fileNameFrom(response.headers.get('Content-Disposition'), fallbackName));
+}
 
 export const api = {
   // Login. 401 means the credentials are wrong (or, for getSession, that nobody is logged in)
@@ -133,15 +141,16 @@ export const api = {
     request(`/reports/customer/${customerId}/status`, { method: 'PUT', body: { month, year, status } }),
 
   // The PDF shown in the browser instead of downloaded
-  pdfPreviewUrl: (customerId, month, year, locale) => `${pdfUrl(customerId, month, year, locale)}&inline=1`,
+  pdfPreviewUrl: (customerId, month, year, locale) => `${reportUrl('pdf', customerId, month, year, locale)}&inline=1`,
 
   // Dashboard: entries starting in [from, to), recent entries, all projects and last month's report statuses
   getDashboard: (from, to, month, year) =>
     request(`/dashboard?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}&month=${month}&year=${year}&tz=${timeZone()}`),
 
-  // Loads the PDF first, so a failed download throws ApiError instead of leaving the page
-  downloadPDF: async (customerId, month, year, locale) => {
-    const response = await send(pdfUrl(customerId, month, year, locale), { method: 'GET' });
-    saveFile(await response.blob(), fileNameFrom(response.headers.get('Content-Disposition')));
-  }
+  downloadPDF: (customerId, month, year, locale) =>
+    download(reportUrl('pdf', customerId, month, year, locale), 'report.pdf'),
+
+  // The same entries as a CSV file; its separators follow the language
+  downloadCSV: (customerId, month, year, locale) =>
+    download(reportUrl('csv', customerId, month, year, locale), 'report.csv')
 };

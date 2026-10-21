@@ -1,6 +1,6 @@
 # Reports
 
-The **Reports** page (German: **Berichte**) shows a customer's time entries of one month and downloads them as a PDF.
+The **Reports** page (German: **Berichte**) shows a customer's time entries of one month and downloads them as a PDF or a CSV file.
 
 ## Using it
 
@@ -12,6 +12,13 @@ The **Reports** page (German: **Berichte**) shows a customer's time entries of o
    not be downloaded.* (`role="alert"`) instead of replacing the app with the server's error. The file keeps the name
    the backend gives it (`Content-Disposition`), e.g. `abrechnung-Muster GmbH-2026-9.pdf`. See
    [Reports API](../backend/reports.md).
+
+   **Download CSV** (German: **CSV herunterladen**), next to it, downloads the same entries as a CSV file for spreadsheets:
+   date, start, end, customer, project, description and hours per entry, without amounts. The file follows the
+   language: German uses `;` between the columns and a decimal comma (`1,50`), English uses `,` and a decimal point
+   (`1.50`), so it opens correctly in Excel set to that language. If the download fails, the page shows *CSV could not
+   be downloaded.* (`role="alert"`). While a download runs, both buttons are marked disabled (`aria-disabled`) and
+   ignore clicks, so only one download runs at a time. Details: [Reports API](../backend/reports.md#csv-export).
 
 4. **Status** (*Draft*, *Ready to send*, *Sent*; German: *Entwurf*, *Bereit zum Versand*, *Verschickt*) records where
    the report of this customer and month stands. Changing it saves right away; if saving fails, the select keeps the
@@ -37,7 +44,7 @@ new customer or month.
 - *No entries for this period* when the month is empty.
 
 Amounts are calculated in the browser from the entries the backend returns (each has its project's `hourly_rate`), with
-`summary.js`. The PDF doesn't contain amounts yet; it still lists hours only.
+`summary.js`. Neither the PDF nor the CSV contain amounts yet; they list hours only.
 
 ## Formats
 
@@ -46,4 +53,4 @@ and `€142.50` in English.
 
 ## Code
 
-`frontend/src/pages/Reports.jsx`, `summary.js`, `format.js`. Tests (in `frontend/tests/`): `pages/Reports.test.jsx`, `summary.test.js`.
+`frontend/src/pages/Reports.jsx`, `api.js` (`downloadPDF`, `downloadCSV`), `summary.js`, `format.js`. Tests (in `frontend/tests/`): `pages/Reports.test.jsx`, `api.test.js`, `summary.test.js`.

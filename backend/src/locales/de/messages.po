@@ -14,41 +14,60 @@ msgstr ""
 "Plural-Forms: \n"
 
 #. js-lingui-explicit-id
-#: src/utils/pdfGenerator.js:71
+#: src/utils/reportRows.js:35
+msgid "export.customer"
+msgstr "Kunde"
+
+#. js-lingui-explicit-id
+#: src/utils/pdfGenerator.js:65
 msgid "report.customer"
 msgstr "Kunde: {customerName}"
 
 #. js-lingui-explicit-id
-#: src/utils/pdfGenerator.js:78
+#: src/utils/pdfGenerator.js:72
+#: src/utils/reportRows.js:32
 msgid "report.date"
 msgstr "Datum"
 
 #. js-lingui-explicit-id
-#: src/utils/pdfGenerator.js:81
+#: src/utils/pdfGenerator.js:75
+#: src/utils/reportRows.js:37
 msgid "report.description"
 msgstr "Beschreibung"
 
 #. js-lingui-explicit-id
-#: src/utils/pdfGenerator.js:80
+#: src/utils/reportRows.js:34
+msgid "export.end"
+msgstr "Ende"
+
+#. js-lingui-explicit-id
+#: src/utils/pdfGenerator.js:74
+#: src/utils/reportRows.js:38
 msgid "report.hours"
 msgstr "Stunden"
 
 #. js-lingui-explicit-id
-#: src/utils/pdfGenerator.js:79
+#: src/utils/pdfGenerator.js:73
+#: src/utils/reportRows.js:36
 msgid "report.project"
 msgstr "Projekt"
 
 #. js-lingui-explicit-id
-#: src/utils/pdfGenerator.js:66
+#: src/utils/reportRows.js:33
+msgid "export.start"
+msgstr "Beginn"
+
+#. js-lingui-explicit-id
+#: src/utils/pdfGenerator.js:60
 msgid "report.title"
 msgstr "ZEITABRECHNUNG"
 
 #. js-lingui-explicit-id
-#: src/utils/pdfGenerator.js:18
+#: src/utils/pdfGenerator.js:12
 msgid "report.filename"
 msgstr "abrechnung"
 
 #. js-lingui-explicit-id
-#: src/utils/pdfGenerator.js:112
+#: src/utils/pdfGenerator.js:106
 msgid "report.total"
 msgstr "GESAMTSTUNDEN:"
