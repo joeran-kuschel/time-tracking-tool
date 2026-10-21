@@ -132,6 +132,15 @@ export const api = {
   // All entries of the customer's projects, with project_name
   getCustomerTimeEntries: (customerId) => request(`/time-entries/customer/${customerId}`),
 
+  // Entries of all customers, one page: filters { q, customerId, projectId, from, to, sort } (YYYY-MM-DD in the
+  // browser's time zone; empty ones are left out) -> { entries, total, hours, limit, offset }
+  searchTimeEntries: (filters, { limit, offset }) => {
+    const params = Object.entries({ ...filters, limit, offset })
+      .filter(([, value]) => value !== undefined && value !== null && value !== '')
+      .map(([name, value]) => `${name}=${encodeURIComponent(value)}`)
+    return request(`/time-entries/search?${[...params, `tz=${timeZone()}`].join('&')}`)
+  },
+
   // Reports
   getMonthlyReport: (customerId, month, year) =>
     request(`/reports/customer/${customerId}?month=${month}&year=${year}&tz=${timeZone()}`),

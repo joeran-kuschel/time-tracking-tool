@@ -21,6 +21,7 @@ vi.mock('@/api', async (importOriginal) => ({
     updateCustomer: vi.fn(),
     deleteCustomer: vi.fn(),
     getDashboard: vi.fn(),
+    searchTimeEntries: vi.fn(),
   },
 }))
 
@@ -277,7 +278,7 @@ describe('App', () => {
 
     expect(await screen.findByRole('heading', { level: 1, name: 'Dashboard' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Dashboard' })).toHaveAttribute('aria-current', 'page')
-    expect(screen.getByRole('navigation').textContent).toBe('DashboardZeiterfassungBerichte')
+    expect(screen.getByRole('navigation').textContent).toBe('DashboardZeiterfassungEinträgeBerichte')
     expect(api.getDashboard).toHaveBeenCalledTimes(1)
 
     await userEvent.click(screen.getByRole('button', { name: 'Zeiterfassung' }))
@@ -285,7 +286,27 @@ describe('App', () => {
 
     await userEvent.click(screen.getByRole('button', { name: 'English' }))
     expect(screen.getByRole('heading', { level: 1, name: 'Time tracking' })).toBeInTheDocument()
-    expect(screen.getByRole('navigation').textContent).toBe('DashboardTime trackingReports')
+    expect(screen.getByRole('navigation').textContent).toBe('DashboardTime trackingEntriesReports')
+  })
+
+  test('the Entries page searches all customers and opens a result on the Time tracking page', async () => {
+    api.getCustomers.mockResolvedValue([{ id: 1, name: 'Muster GmbH' }])
+    api.getProjects.mockResolvedValue([{ id: 7, name: 'Website', hourly_rate: '80.00' }])
+    api.searchTimeEntries.mockResolvedValue({
+      entries: [{ id: 5, customer_id: 1, customer_name: 'Muster GmbH', project_id: 7, project_name: 'Website', description: 'Konzept',
+        start_time: '2026-09-21T08:00:00Z', end_time: '2026-09-21T09:00:00Z' }],
+      total: 1, hours: 1, limit: 50, offset: 0,
+    })
+    render(<App />)
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Einträge' }))
+    expect(screen.getByRole('button', { name: 'Einträge' })).toHaveAttribute('aria-current', 'page')
+    expect(screen.getByRole('heading', { level: 1, name: 'Einträge' })).toBeInTheDocument()
+
+    await userEvent.click(await screen.findByRole('button', { name: /^Öffnen\s+in Zeiterfassung/ }))
+
+    expect(screen.getByRole('button', { name: 'Zeiterfassung' })).toHaveAttribute('aria-current', 'page')
+    expect(await screen.findByRole('heading', { name: 'Einträge für Website' })).toBeInTheDocument()
   })
 
   test('selecting a recent entry on the Dashboard opens its customer and project on the Time tracking page', async () => {

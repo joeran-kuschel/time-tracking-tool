@@ -1,10 +1,34 @@
 const pool = require('../config/database');
 
 // Entries with their project, hourly rate and customer, for reports and the dashboard
-const WITH_PROJECT_AND_CUSTOMER = `SELECT te.*, p.name as project_name, p.hourly_rate, c.name as customer_name, c.id as customer_id
-       FROM time_entries te
+const PROJECT_AND_CUSTOMER_JOINS = `FROM time_entries te
        JOIN projects p ON te.project_id = p.id
        JOIN customers c ON p.customer_id = c.id`;
+const WITH_PROJECT_AND_CUSTOMER = `SELECT te.*, p.name as project_name, p.hourly_rate, c.name as customer_name, c.id as customer_id
+       ${PROJECT_AND_CUSTOMER_JOINS}`;
+
+// Whitelist of the sort orders of the search; the id breaks ties so that pages never overlap
+const SEARCH_ORDER = {
+  newest: 'te.start_time DESC, te.id DESC',
+  oldest: 'te.start_time ASC, te.id ASC',
+};
+
+// The WHERE clause and its parameters for a search filter. User input only ever goes into the parameters.
+function searchWhere({ q, customerId, projectId, from, to }) {
+  const params = [];
+  const conditions = [];
+  const add = (condition, value) => {
+    params.push(value);
+    conditions.push(condition.replace('?', `$${params.length}`));
+  };
+  // strpos matches the text literally, so %, _ and \ in it need no escaping (unlike LIKE)
+  if (q) add('strpos(lower(te.description), lower(?)) > 0', q);
+  if (customerId) add('c.id = ?', customerId);
+  if (projectId) add('p.id = ?', projectId);
+  if (from) add('te.start_time >= ?', from);
+  if (to) add('te.start_time < ?', to);
+  return { where: conditions.length ? `WHERE ${conditions.join(' AND ')}` : '', params };
+}
 
 class TimeEntry {
   static async create(projectId, startTime, endTime, description) {
@@ -102,6 +126,32 @@ class TimeEntry {
       [limit]
     );
     return result.rows;
+  }
+
+  // Entries of all customers matching the filter (see parseEntryFilter in utils/entryFilter.js: q, customerId,
+  // projectId, from/to as ISO instants with from <= start_time < to, sort), running ones included.
+  // limit null returns all rows. total counts all matches, hours sums the finished ones.
+  static async search(filter, { limit = null, offset = 0 } = {}) {
+    const { where, params } = searchWhere(filter);
+    const order = SEARCH_ORDER[filter.sort] || SEARCH_ORDER.newest;
+    const [entries, totals] = await Promise.all([
+      pool.query(
+        `${WITH_PROJECT_AND_CUSTOMER}
+         ${where}
+         ORDER BY ${order}
+         LIMIT $${params.length + 1} OFFSET $${params.length + 2}`,
+        [...params, limit, offset]
+      ),
+      pool.query(
+        `SELECT COUNT(*)::int AS total,
+                COALESCE(SUM(CASE WHEN te.end_time IS NOT NULL
+                  THEN EXTRACT(EPOCH FROM te.end_time) - EXTRACT(EPOCH FROM te.start_time) ELSE 0 END), 0) / 3600 AS hours
+         ${PROJECT_AND_CUSTOMER_JOINS}
+         ${where}`,
+        params
+      ),
+    ]);
+    return { entries: entries.rows, total: totals.rows[0].total, hours: Number(totals.rows[0].hours) };
   }
 
   static async delete(id) {

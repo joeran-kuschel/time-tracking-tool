@@ -173,6 +173,25 @@ describe('api', () => {
     expect(fetch.mock.calls[0][0]).toMatch(/\/reports\/customer\/1\?month=9&year=2026&tz=Europe%2FBerlin$/)
   })
 
+  test('searches the entries with the filters, the page and the browser\'s time zone', async () => {
+    const fetch = mockFetch(200, { entries: [], total: 0, hours: 0 })
+    await api.searchTimeEntries(
+      { q: 'a&b 100%', customerId: '2', projectId: '5', from: '2026-09-01', to: '2026-09-30', sort: 'oldest' },
+      { limit: 50, offset: 100 }
+    )
+
+    expect(fetch.mock.calls[0][0]).toMatch(
+      /\/time-entries\/search\?q=a%26b%20100%25&customerId=2&projectId=5&from=2026-09-01&to=2026-09-30&sort=oldest&limit=50&offset=100&tz=Europe%2FBerlin$/
+    )
+  })
+
+  test('leaves empty filters out of the search, but keeps an offset of 0', async () => {
+    const fetch = mockFetch(200, {})
+    await api.searchTimeEntries({ q: '', customerId: undefined, projectId: null, sort: 'newest' }, { limit: 50, offset: 0 })
+
+    expect(fetch.mock.calls[0][0]).toMatch(/\/time-entries\/search\?sort=newest&limit=50&offset=0&tz=Europe%2FBerlin$/)
+  })
+
   test('asks for the dashboard of a range and month', async () => {
     const fetch = mockFetch(200, {})
     await api.getDashboard('2026-08-31T22:00:00.000Z', '2026-09-30T22:00:00.000Z', 9, 2026)
