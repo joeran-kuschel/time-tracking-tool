@@ -1,5 +1,6 @@
 # Serves the tool at https://time-tracking.local, so other apps in the cluster can have
-# their own host instead of a port. Needs an ingress controller with the class "nginx"
+# their own host instead of a port. Everything goes to the frontend; its nginx proxies /api and
+# /health to the backend (frontend/nginx.conf), so the backend has no route here. Needs an ingress controller with the class "nginx"
 # (see k8s/README.md), time-tracking.local pointing to 127.0.0.1 and ::1 in /etc/hosts and
 # the Secret time-tracking-tls from k8s/setup-tls.sh. Plain http is redirected to https.
 apiVersion: networking.k8s.io/v1
@@ -19,20 +20,6 @@ spec:
   - host: time-tracking.local
     http:
       paths:
-      - path: /api
-        pathType: Prefix
-        backend:
-          service:
-            name: backend
-            port:
-              number: 3000
-      - path: /health
-        pathType: Exact
-        backend:
-          service:
-            name: backend
-            port:
-              number: 3000
       - path: /
         pathType: Prefix
         backend:

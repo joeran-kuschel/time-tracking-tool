@@ -36,6 +36,8 @@ back correctly.
 - `003_one_running_timer.sql` fails on a database that already has more than one running entry. Check first, and stop
   or delete the extra entries before applying it:
   `kubectl -n time-tracking exec deploy/postgres -- sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "SELECT id, project_id, start_time FROM time_entries WHERE end_time IS NULL"'`
+- The network policy (`k8s/network-policy-postgres.yaml`) doesn't affect `kubectl exec`, so the commands above work; a
+  pod started with `kubectl run` can't reach the database ([Deployment](deployment.md#network-policy)).
 - Docker Compose mounts `backend/migrations/` directly as init scripts.
 
 ## Connection

@@ -65,7 +65,7 @@ or invalid email. Emails are stored in lower case.
   `CORS_ORIGIN` answers `403` (`middleware/allowedOrigin.js`). Besides that, bodies are JSON only, so a cross-site
   form can't send one, and the cookie is `SameSite=Lax`.
 - **CORS:** `credentials: true`, so the frontend may send the cookie from another origin on `localhost` (Vite dev
-  server on `:5173`, Docker Compose on `:80` calling `:3000`). The frontend sends `credentials: 'include'`.
+  server on `:5173` calling the backend on `:3000`, published by `docker-compose.dev.yml`). The frontend sends `credentials: 'include'`.
 
 ## Database
 

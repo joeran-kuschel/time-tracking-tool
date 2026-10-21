@@ -117,8 +117,12 @@ describe('ingress', () => {
   const rule = ingress.spec.rules[0];
   const route = (p) => rule.http.paths.find((entry) => entry.path === p);
 
-  test('has exactly the routes of the frontend and the backend', () => {
-    expect(rule.http.paths.map((entry) => entry.path).sort()).toEqual(['/', '/api', '/health']);
+  test('has exactly one route, to the frontend (its nginx proxies /api and /health)', () => {
+    expect(rule.http.paths.map((entry) => entry.path)).toEqual(['/']);
+  });
+
+  test('routes nothing to the backend service (the frontend\'s nginx proxies it)', () => {
+    expect(rule.http.paths.filter((entry) => entry.backend.service.name === 'backend')).toEqual([]);
   });
 
   test('serves the tool on its own host in the app namespace', () => {
@@ -141,15 +145,10 @@ describe('ingress', () => {
     expect(ingress.metadata.annotations['nginx.ingress.kubernetes.io/ssl-redirect']).toBe('true');
   });
 
-  test.each([
-    ['/api', 'backend', 'Prefix', 'backend.yaml'],
-    ['/health', 'backend', 'Exact', 'backend.yaml'],
-    ['/', 'frontend', 'Prefix', 'frontend.yaml'],
-  ])('routes %s to the port of the %s service', (p, name, pathType, file) => {
-    const service = find(loadManifests(file), 'Service', name);
-    expect(route(p)).toBeDefined();
-    expect(route(p).pathType).toBe(pathType);
-    expect(route(p).backend.service).toEqual({ name, port: { number: service.spec.ports[0].port } });
+  test('routes / to the port of the frontend service', () => {
+    const service = find(loadManifests('frontend.yaml'), 'Service', 'frontend');
+    expect(route('/').pathType).toBe('Prefix');
+    expect(route('/').backend.service).toEqual({ name: 'frontend', port: { number: service.spec.ports[0].port } });
   });
 
   test.each([['backend.yaml', 'backend'], ['frontend.yaml', 'frontend']])(

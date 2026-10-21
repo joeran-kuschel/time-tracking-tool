@@ -11,7 +11,7 @@ database of the cluster, so it runs against a throwaway Postgres with sample dat
 | Backend | the same checkout, started with the environment below | 3000 |
 | Throwaway Postgres | a Docker container, deleted when stopped | 55432 |
 
-The dev frontend calls `http://localhost:3000/api` (leave `VITE_API_URL` unset, or set it to that
+The review runs on its own, independent of Docker Compose and the cluster. The dev frontend calls `http://localhost:3000/api` (leave `VITE_API_URL` unset, or set it to that
 address). The cluster's backend can't be used for this: it only allows requests from `https://time-tracking.local`
 (`CORS_ORIGIN`).
 

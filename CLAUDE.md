@@ -86,7 +86,7 @@ helm --kube-context docker-desktop upgrade --install ingress-nginx ingress-nginx
 kubectl config use-context docker-desktop
 # setup-tls.sh (needs mkcert) creates the certificate Secret the ingress uses; it must run after the namespace and before the ingress
 kubectl apply -f k8s/namespace.yaml && ./k8s/setup-tls.sh
-for f in configmap postgres-init-scripts postgres backend frontend ingress; do kubectl apply -f k8s/$f.yaml; done
+for f in configmap postgres-init-scripts postgres backend frontend ingress network-policy-postgres network-policy-backend; do kubectl apply -f k8s/$f.yaml; done
 
 # Pick up new images
 kubectl -n time-tracking rollout restart deployment/backend deployment/frontend
@@ -94,7 +94,7 @@ kubectl -n time-tracking rollout restart deployment/backend deployment/frontend
 
 The database volume lives inside the kind node: a Docker Desktop update or cluster reset deletes it, and so does `kubectl delete namespace time-tracking`. Back up first with `k8s/backup-db.sh`; an hourly launchd job does this automatically (details, restore: `documentation/backend/database-backups.md`).
 
-The tool is served at https://time-tracking.local through the Ingress (`k8s/ingress.yaml`; plain http redirects to https, the certificate comes from mkcert via `k8s/setup-tls.sh`): `/api/...` and `/health` go to the backend, everything else to the frontend. Frontend and backend are ClusterIP services without a host port, so other apps in the cluster can have their own host. Docker Desktop publishes the ingress controller's LoadBalancer on ports 80 and 443 of all network interfaces, not only localhost: the API needs a login (see Authentication under Things worth knowing), but other devices on the network can reach the login page. The macOS firewall is off by default; turned on with "Block all incoming connections", it should keep them out, but that is untested.
+The tool is served at https://time-tracking.local through the Ingress (`k8s/ingress.yaml`; plain http redirects to https, the certificate comes from mkcert via `k8s/setup-tls.sh`): everything goes to the frontend, whose nginx proxies `/api/` and `/health` to the backend (`frontend/nginx.conf`). Frontend and backend are ClusterIP services without a host port, so other apps in the cluster can have their own host. Two NetworkPolicies (`k8s/network-policy-*.yaml`) let only the frontend pods reach the backend and only the backend pods reach Postgres; `kubectl exec` is not affected. This is not access control: anyone who can open the app can call `/api` through it (details: `documentation/backend/deployment.md`). Docker Desktop publishes the ingress controller's LoadBalancer on ports 80 and 443 of all network interfaces, not only localhost: the API needs a login (see Authentication under Things worth knowing), but other devices on the network can reach the login page. The macOS firewall is off by default; turned on with "Block all incoming connections", it should keep them out, but that is untested.
 
 ### Configuration
 
@@ -104,7 +104,7 @@ The tool is served at https://time-tracking.local through the Ingress (`k8s/ingr
   - the Secret `postgres-secret` (Postgres credentials)
 - `DB_SSL` (`"true"`/`"false"`) turns SSL on for the database connection, independent of `NODE_ENV`. Keep it `"false"` for the in-cluster Postgres, which has no SSL. Logic: `backend/src/config/ssl.js`.
 - `CORS_ORIGIN` depends on the install: the comma-separated addresses the frontend is opened at. Only these may call the API from a browser; without it, none can. Set it together with the host in `k8s/ingress.yaml`.
-- `VITE_API_URL` is a build argument of the frontend image, not a ConfigMap value. The Dockerfile default `/api` is the frontend's own host, so it needs no change when the host changes. Docker Compose passes `http://localhost:3000/api`. The API setup is in `backend/src/app.js`; `server.js` only starts it.
+- `VITE_API_URL` is a build argument of the frontend image, not a ConfigMap value. The Dockerfile default `/api` is the frontend's own host, so it needs no change when the host changes. Docker Compose uses the default too (nginx proxies it); it publishes only the frontend on `127.0.0.1:80`, and `docker-compose.dev.yml` adds the database and backend ports for development. The API setup is in `backend/src/app.js`; `server.js` only starts it.
 
 ### Migrations
 

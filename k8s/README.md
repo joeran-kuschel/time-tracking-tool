@@ -68,6 +68,8 @@ kubectl apply -f k8s/postgres.yaml
 kubectl apply -f k8s/backend.yaml
 kubectl apply -f k8s/frontend.yaml
 kubectl apply -f k8s/ingress.yaml
+kubectl apply -f k8s/network-policy-postgres.yaml
+kubectl apply -f k8s/network-policy-backend.yaml
 ```
 
 ### Migrations
@@ -102,7 +104,7 @@ Run the same command again to change the password; it ends all sessions. More: `
 
 Frontend: https://time-tracking.local (http://time-tracking.local redirects to it); log in with the user from step 7
 
-The API is at the same address: https://time-tracking.local/api, health check at https://time-tracking.local/health. Frontend and backend have no port of their own on the Mac; `ingress.yaml` forwards `/api` and `/health` to the backend and everything else to the frontend.
+The API is at the same address: https://time-tracking.local/api, health check at https://time-tracking.local/health. Frontend and backend have no port of their own on the Mac; `ingress.yaml` forwards everything to the frontend, whose nginx proxies `/api/` and `/health` to the backend (`frontend/nginx.conf`).
 
 **Other devices:** a phone or another computer trusts the certificate only after mkcert's root CA is installed there. Find the file with `mkcert -CAROOT` (`rootCA.pem`), copy it to the device and install it as a trusted certificate. Never share `rootCA-key.pem`.
 
@@ -113,6 +115,74 @@ After building new images:
 ```bash
 kubectl -n time-tracking rollout restart deployment/backend deployment/frontend
 ```
+
+## Network Policy
+
+Two NetworkPolicies limit which pods can open a connection to the backend and to the database. Both are ingress only (no egress rules), select pods by label in the same namespace and are applied last in step 5.
+
+| File | Policy | Allows |
+|---|---|---|
+| `network-policy-backend.yaml` | `backend-from-frontend` | pods `app: frontend` to the backend, TCP 3000 |
+| `network-policy-postgres.yaml` | `postgres-allow-backend` | pods `app: backend` to Postgres, TCP 5432 (the `wait-for-db` init container is part of the backend pod) |
+
+- Everything else is refused (the connection times out): a pod with another label in this namespace and every pod in another namespace. The ingress controller reaches only the frontend, never the backend or the database.
+- Docker Desktop's network plugin (kindnet) enforces policies. A cluster without such a plugin ignores them silently.
+- **What this does not do:** it does not make `/api` private. Anyone who can open the app can call `/api` through the frontend's nginx, also other devices on the network (see the warning in step 8). The login is what protects the data. The policies do not help if the frontend pod or the node itself is compromised.
+- Not affected, because they are no connections between pods: the probes (the kubelet's `httpGet` and `exec` probes) and `kubectl exec`. `backup-db.sh`, `restore-db.sh` and `psql` in this documentation use `kubectl exec` and keep working. A pod started by hand is refused: `kubectl run ... psql -h postgres` times out; use `kubectl exec deploy/postgres -- psql ...` instead.
+- A policy applies to new connections only. Restart the backend after applying one.
+
+### Upgrading an Existing Install
+
+The order matters. If the ingress is applied before the new frontend image runs, `/api` hits the old nginx, which answers `index.html` with status 200.
+
+```bash
+# 1. Build and load the new frontend image (step 2), then roll it out first
+kubectl -n time-tracking rollout restart deployment/frontend
+kubectl -n time-tracking rollout status deployment/frontend
+# 2. Route everything to the frontend, then add the policies
+kubectl apply -f k8s/ingress.yaml
+kubectl apply -f k8s/network-policy-postgres.yaml
+kubectl apply -f k8s/network-policy-backend.yaml
+# 3. Existing connections are not cut off: restart the backend
+kubectl -n time-tracking rollout restart deployment/backend
+```
+
+Rollback: delete the policies (access is back at once) and/or apply the previous ingress, which routes `/api` and `/health` to the backend again (use it only together with the old frontend image):
+
+```bash
+kubectl delete -f k8s/network-policy-backend.yaml -f k8s/network-policy-postgres.yaml
+git show <old commit>:k8s/ingress.yaml | kubectl apply -f -
+```
+
+### Checking the Policies
+
+Throwaway pods, removed afterwards (`--rm`). The image `postgres:15-alpine` is already in the cluster (the database uses it), hence `IfNotPresent`; its busybox `wget` stands in for curl. `-n` is the namespace, `--restart=Never` makes a plain pod.
+
+```bash
+# Wrong label, same namespace: both time out
+kubectl -n time-tracking run np-wrong --rm -it --restart=Never --image=postgres:15-alpine --image-pull-policy=IfNotPresent -- pg_isready -h postgres -p 5432 -t 5
+kubectl -n time-tracking run np-wrong --rm -it --restart=Never --image=postgres:15-alpine --image-pull-policy=IfNotPresent -- wget -T 5 -qO- http://backend:3000/health
+
+# Another namespace: both time out
+kubectl create namespace np-test
+kubectl -n np-test run np-other --rm -it --restart=Never --image=postgres:15-alpine --image-pull-policy=IfNotPresent -- pg_isready -h postgres.time-tracking -p 5432 -t 5
+kubectl -n np-test run np-other --rm -it --restart=Never --image=postgres:15-alpine --image-pull-policy=IfNotPresent -- wget -T 5 -qO- http://backend.time-tracking:3000/health
+kubectl delete namespace np-test
+
+# Positive controls: the allowed labels get through. These pods match the Service selectors
+# and may briefly receive real traffic, so run them once and let --rm delete them at once
+kubectl -n time-tracking run np-backend --labels=app=backend --rm -it --restart=Never --image=postgres:15-alpine --image-pull-policy=IfNotPresent -- pg_isready -h postgres -p 5432 -t 5
+kubectl -n time-tracking run np-frontend --labels=app=frontend --rm -it --restart=Never --image=postgres:15-alpine --image-pull-policy=IfNotPresent -- wget -T 5 -qO- http://backend:3000/health
+
+# From outside: 401 without a login, 200 for the health check
+curl -k -s -o /dev/null -w '%{http_code}\n' https://time-tracking.local/api/customers
+curl -k -s -o /dev/null -w '%{http_code}\n' https://time-tracking.local/health
+
+# Backups use kubectl exec and still work
+./k8s/backup-db.sh
+```
+
+Afterwards `kubectl -n time-tracking get pods` lists no `np-*` pod and `kubectl get ns` no `np-test`.
 
 ## Allowed Origins (CORS_ORIGIN)
 

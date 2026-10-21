@@ -1,0 +1,27 @@
+# Only the frontend pods may connect to the backend pod: the frontend's nginx proxies /api and
+# /health to it (frontend/nginx.conf). The ingress controller no longer needs to reach the backend.
+# Ingress only. The kubelet's probes (httpGet on /health) come from the node, which the
+# plugin does not filter. A pod started by hand, in this or another namespace, is refused.
+# This is no access control for the API: anyone who can open the app can still call /api
+# through the frontend; the login protects the data. Needs a network plugin that enforces
+# policies (kindnet on Docker Desktop does). The policy applies to new connections only;
+# restart the backend after applying it.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: backend-from-frontend
+  namespace: time-tracking
+spec:
+  podSelector:
+    matchLabels:
+      app: backend
+  policyTypes:
+  - Ingress
+  ingress:
+  - from:
+    - podSelector:
+        matchLabels:
+          app: frontend
+    ports:
+    - protocol: TCP
+      port: 3000
