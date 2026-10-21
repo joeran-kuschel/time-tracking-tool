@@ -156,23 +156,23 @@ git show <old commit>:k8s/ingress.yaml | kubectl apply -f -
 
 ### Checking the Policies
 
-Throwaway pods, removed afterwards (`--rm`). The image `postgres:15-alpine` is already in the cluster (the database uses it), hence `IfNotPresent`; its busybox `wget` stands in for curl. `-n` is the namespace, `--restart=Never` makes a plain pod.
+Throwaway pods, removed afterwards (`--rm`). The image `postgres:15-alpine` is already in the cluster (the database uses it), hence `IfNotPresent`; its busybox `wget` stands in for curl. `-n` is the namespace, `--restart=Never` makes a plain pod. `-i` instead of `-it`, so the commands also work without a terminal (in scripts).
 
 ```bash
 # Wrong label, same namespace: both time out
-kubectl -n time-tracking run np-wrong --rm -it --restart=Never --image=postgres:15-alpine --image-pull-policy=IfNotPresent -- pg_isready -h postgres -p 5432 -t 5
-kubectl -n time-tracking run np-wrong --rm -it --restart=Never --image=postgres:15-alpine --image-pull-policy=IfNotPresent -- wget -T 5 -qO- http://backend:3000/health
+kubectl -n time-tracking run np-wrong --rm -i --restart=Never --image=postgres:15-alpine --image-pull-policy=IfNotPresent -- pg_isready -h postgres -p 5432 -t 5
+kubectl -n time-tracking run np-wrong --rm -i --restart=Never --image=postgres:15-alpine --image-pull-policy=IfNotPresent -- wget -T 5 -qO- http://backend:3000/health
 
 # Another namespace: both time out
 kubectl create namespace np-test
-kubectl -n np-test run np-other --rm -it --restart=Never --image=postgres:15-alpine --image-pull-policy=IfNotPresent -- pg_isready -h postgres.time-tracking -p 5432 -t 5
-kubectl -n np-test run np-other --rm -it --restart=Never --image=postgres:15-alpine --image-pull-policy=IfNotPresent -- wget -T 5 -qO- http://backend.time-tracking:3000/health
+kubectl -n np-test run np-other --rm -i --restart=Never --image=postgres:15-alpine --image-pull-policy=IfNotPresent -- pg_isready -h postgres.time-tracking -p 5432 -t 5
+kubectl -n np-test run np-other --rm -i --restart=Never --image=postgres:15-alpine --image-pull-policy=IfNotPresent -- wget -T 5 -qO- http://backend.time-tracking:3000/health
 kubectl delete namespace np-test
 
 # Positive controls: the allowed labels get through. These pods match the Service selectors
 # and may briefly receive real traffic, so run them once and let --rm delete them at once
-kubectl -n time-tracking run np-backend --labels=app=backend --rm -it --restart=Never --image=postgres:15-alpine --image-pull-policy=IfNotPresent -- pg_isready -h postgres -p 5432 -t 5
-kubectl -n time-tracking run np-frontend --labels=app=frontend --rm -it --restart=Never --image=postgres:15-alpine --image-pull-policy=IfNotPresent -- wget -T 5 -qO- http://backend:3000/health
+kubectl -n time-tracking run np-backend --labels=app=backend --rm -i --restart=Never --image=postgres:15-alpine --image-pull-policy=IfNotPresent -- pg_isready -h postgres -p 5432 -t 5
+kubectl -n time-tracking run np-frontend --labels=app=frontend --rm -i --restart=Never --image=postgres:15-alpine --image-pull-policy=IfNotPresent -- wget -T 5 -qO- http://backend:3000/health
 
 # From outside: 401 without a login, 200 for the health check
 curl -k -s -o /dev/null -w '%{http_code}\n' https://time-tracking.local/api/customers
