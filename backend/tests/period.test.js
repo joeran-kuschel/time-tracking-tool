@@ -1,4 +1,4 @@
-const { parseMonth, previousMonth, nextMonth, parseTimeZone, monthRange } = require('../src/utils/period');
+const { parseMonth, previousMonth, nextMonth, parseTimeZone, monthRange, dayRange } = require('../src/utils/period');
 
 describe('parseMonth', () => {
   test('parses month and year from query strings', () => {
@@ -55,5 +55,40 @@ describe('monthRange', () => {
 
   test('works with time zones that are not whole hours', () => {
     expect(monthRange({ month: 9, year: 2026 }, 'Asia/Kolkata')).toEqual({ from: '2026-08-31T18:30:00.000Z', to: '2026-09-30T18:30:00.000Z' });
+  });
+});
+
+describe('dayRange', () => {
+  test('covers a single day from midnight to the next midnight', () => {
+    expect(dayRange('2026-09-21', '2026-09-21', 'UTC')).toEqual({ from: '2026-09-21T00:00:00.000Z', to: '2026-09-22T00:00:00.000Z' });
+  });
+
+  test('includes the whole last day', () => {
+    expect(dayRange('2026-09-21', '2026-09-23', 'UTC')).toEqual({ from: '2026-09-21T00:00:00.000Z', to: '2026-09-24T00:00:00.000Z' });
+  });
+
+  test('uses local midnight in the time zone', () => {
+    expect(dayRange('2026-09-21', '2026-09-21', 'Europe/Berlin')).toEqual({ from: '2026-09-20T22:00:00.000Z', to: '2026-09-21T22:00:00.000Z' });
+  });
+
+  test('has a 23 hour day when daylight saving time starts (Berlin, 29 March 2026)', () => {
+    expect(dayRange('2026-03-29', '2026-03-29', 'Europe/Berlin')).toEqual({ from: '2026-03-28T23:00:00.000Z', to: '2026-03-29T22:00:00.000Z' });
+  });
+
+  test('has a 25 hour day when daylight saving time ends (Berlin, 25 October 2026)', () => {
+    expect(dayRange('2026-10-25', '2026-10-25', 'Europe/Berlin')).toEqual({ from: '2026-10-24T22:00:00.000Z', to: '2026-10-25T23:00:00.000Z' });
+  });
+
+  test('rolls over month, year and leap day ends', () => {
+    expect(dayRange('2026-01-31', '2026-01-31', 'UTC').to).toBe('2026-02-01T00:00:00.000Z');
+    expect(dayRange('2026-12-31', '2026-12-31', 'UTC').to).toBe('2027-01-01T00:00:00.000Z');
+    expect(dayRange('2028-02-28', '2028-02-28', 'UTC').to).toBe('2028-02-29T00:00:00.000Z');
+    expect(dayRange('2026-12-31', '2026-12-31', 'America/New_York')).toEqual({ from: '2026-12-31T05:00:00.000Z', to: '2027-01-01T05:00:00.000Z' });
+  });
+
+  test('leaves a side open when its day is missing', () => {
+    expect(dayRange('2026-09-21', undefined, 'UTC')).toEqual({ from: '2026-09-21T00:00:00.000Z', to: null });
+    expect(dayRange(null, '2026-09-21', 'UTC')).toEqual({ from: null, to: '2026-09-22T00:00:00.000Z' });
+    expect(dayRange(undefined, undefined, 'UTC')).toEqual({ from: null, to: null });
   });
 });

@@ -11,6 +11,7 @@ import RunningTimer from './components/RunningTimer'
 import ThemeSwitcher from './components/ThemeSwitcher'
 import Dashboard from './pages/Dashboard'
 import TimeTracking from './pages/TimeTracking'
+import Entries from './pages/Entries'
 import Reports from './pages/Reports'
 import { ui } from './ui'
 import './App.css'
@@ -18,6 +19,7 @@ import './App.css'
 const pages = [
   { id: 'dashboard', label: msg`Dashboard` },
   { id: 'time-tracking', label: msg`Time tracking` },
+  { id: 'entries', label: msg`Entries` },
   { id: 'reports', label: msg`Reports` },
 ]
 
@@ -115,7 +117,7 @@ function App({ onLogout, logoutError, focusOnStart }) {
           </div>
         )}
         {/* On the Dashboard and the Time tracking page, the timer panel shows the timer's errors */}
-        {currentPage === 'reports' && timer.error && (
+        {(currentPage === 'reports' || currentPage === 'entries') && timer.error && (
           <div className="mx-4 mt-4 sm:mx-8"><ErrorMessage message={timer.error} /></div>
         )}
         {currentPage === 'dashboard' && (
@@ -131,6 +133,7 @@ function App({ onLogout, logoutError, focusOnStart }) {
             initialProjectId={trackingSelection.projectId}
           />
         )}
+        {currentPage === 'entries' && <Entries customers={customers} onOpenTimeTracking={openTimeTracking} />}
         {currentPage === 'reports' && (
           <Reports
             customers={customers}

@@ -6,7 +6,7 @@ import { inMonth, projectsOf, summarize } from './summary'
 
 const DAY = 24 * 60 * 60 * 1000
 
-const addDays = (date, days) => new Date(date.getFullYear(), date.getMonth(), date.getDate() + days)
+export const addDays = (date, days) => new Date(date.getFullYear(), date.getMonth(), date.getDate() + days)
 const firstOfMonth = (date) => new Date(date.getFullYear(), date.getMonth(), 1)
 const daysInMonth = (date) => new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate()
 const isWeekday = (date) => date.getDay() !== 0 && date.getDay() !== 6

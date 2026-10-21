@@ -36,12 +36,16 @@ function zoneOffset(instant, timeZone) {
   return wallClock - Math.floor(instant.getTime() / 1000) * 1000;
 }
 
-// Midnight on the first of the month in the time zone, as a UTC instant.
+// Midnight at the start of the day in the time zone, as a UTC instant (a day past the end of the month rolls over).
 // The second step corrects the offset when it differs between the guess and the result (daylight saving time).
-function startOfMonth({ month, year }, timeZone) {
-  const wallClock = Date.UTC(year, month - 1, 1);
+function startOfDay({ year, month, day }, timeZone) {
+  const wallClock = Date.UTC(year, month - 1, day);
   const guess = wallClock - zoneOffset(new Date(wallClock), timeZone);
   return new Date(wallClock - zoneOffset(new Date(guess), timeZone));
+}
+
+function startOfMonth({ month, year }, timeZone) {
+  return startOfDay({ year, month, day: 1 }, timeZone);
 }
 
 // The month in the time zone as ISO strings: entries belong to it when from <= start_time < to
@@ -52,4 +56,15 @@ function monthRange(period, timeZone) {
   };
 }
 
-module.exports = { parseMonth, previousMonth, nextMonth, parseTimeZone, monthRange };
+// The days from..to (YYYY-MM-DD, to included) in the time zone as ISO strings: entries belong to them when
+// from <= start_time < to. A day that is left out (null) leaves its side open (null).
+function dayRange(from, to, timeZone) {
+  const bound = (date, extraDays) => {
+    if (!date) return null;
+    const [year, month, day] = date.split('-').map(Number);
+    return startOfDay({ year, month, day: day + extraDays }, timeZone).toISOString();
+  };
+  return { from: bound(from, 0), to: bound(to, 1) };
+}
+
+module.exports = { parseMonth, previousMonth, nextMonth, parseTimeZone, monthRange, dayRange };

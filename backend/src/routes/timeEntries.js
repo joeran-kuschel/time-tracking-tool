@@ -3,6 +3,7 @@ const router = express.Router();
 const timeEntryController = require('../controllers/timeEntryController');
 
 router.get('/active', timeEntryController.getActive);
+router.get('/search', timeEntryController.search);
 router.get('/project/:projectId', timeEntryController.getByProjectId);
 router.get('/customer/:customerId', timeEntryController.getByCustomerId);
 router.get('/:id', timeEntryController.getById);

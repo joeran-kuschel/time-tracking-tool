@@ -1,5 +1,6 @@
 const TimeEntry = require('../models/TimeEntry');
 const Project = require('../models/Project');
+const { parseEntryFilter } = require('../utils/entryFilter');
 
 const isValidTime = (value) => typeof value === 'string' && !Number.isNaN(Date.parse(value));
 
@@ -108,6 +109,37 @@ exports.getByCustomerId = async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Failed to fetch time entries' });
+  }
+};
+
+const DEFAULT_LIMIT = 50;
+const MAX_LIMIT = 200;
+
+// A whole number in [min, max] from a query value, the fallback when it is missing, or null when it is invalid
+function parseInteger(value, { min, max = Number.MAX_SAFE_INTEGER, fallback }) {
+  if (value === undefined || value === '') return fallback;
+  if (typeof value !== 'string' || !/^\d+$/.test(value)) return null;
+  const number = Number(value);
+  return number >= min && number <= max ? number : null;
+}
+
+// Searches the entries of all customers (filter: see parseEntryFilter), one page at a time
+exports.search = async (req, res) => {
+  const { filter, error } = parseEntryFilter(req.query);
+  const limit = parseInteger(req.query.limit, { min: 1, max: MAX_LIMIT, fallback: DEFAULT_LIMIT });
+  const offset = parseInteger(req.query.offset, { min: 0, fallback: 0 });
+  if (error || limit === null || offset === null) {
+    return res.status(400).json({
+      error: error || `limit (1-${MAX_LIMIT}) and offset (0 or more) must be whole numbers`,
+    });
+  }
+
+  try {
+    const result = await TimeEntry.search(filter, { limit, offset });
+    res.json({ ...result, limit, offset });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Failed to search time entries' });
   }
 };
 
