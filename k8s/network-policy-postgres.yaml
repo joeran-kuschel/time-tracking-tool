@@ -1,0 +1,27 @@
+# Only the backend pods may connect to the database pod, on the PostgreSQL port.
+# Ingress only: the pods may still connect anywhere (remote database, DNS).
+# Not affected, because they are no connections between pods: the exec probes of
+# postgres.yaml and `kubectl exec` into the pod (backup-db.sh, restore-db.sh, psql in the docs).
+# A pod started by hand (`kubectl run ... psql -h postgres`) is refused, also in this namespace.
+# The backend's wait-for-db init container runs in a pod labelled app: backend and is allowed.
+# Needs a network plugin that enforces policies (kindnet on Docker Desktop does). The policy
+# applies to new connections only; restart the backend after applying it.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: postgres-allow-backend
+  namespace: time-tracking
+spec:
+  podSelector:
+    matchLabels:
+      app: postgres
+  policyTypes:
+  - Ingress
+  ingress:
+  - from:
+    - podSelector:
+        matchLabels:
+          app: backend
+    ports:
+    - protocol: TCP
+      port: 5432

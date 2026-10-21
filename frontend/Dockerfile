@@ -8,7 +8,7 @@ RUN npm ci
 
 COPY . .
 
-# Relative: in the cluster the Ingress serves the API on the frontend's host
+# Relative: the frontend's nginx proxies /api to the backend (nginx.conf)
 ARG VITE_API_URL=/api
 ENV VITE_API_URL=$VITE_API_URL
 

@@ -6,6 +6,7 @@ protect against that.
 
 ## How it works
 
+- The network policy that lets only the backend reach the database doesn't affect backups: the scripts use `kubectl exec`.
 - `k8s/backup-db.sh` runs `pg_dump` inside the postgres pod and writes a gzip-compressed dump to the backup folder.
 - The dump is only kept if it is complete. pg_dump ends every full dump with `PostgreSQL database dump complete`; a dump
   without that line is discarded and the previous backups stay untouched.

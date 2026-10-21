@@ -70,7 +70,8 @@ metadata:
   name: backend
   namespace: time-tracking
 spec:
-  # Reached through the Ingress (ingress.yaml), not published on the host
+  # Reached by the frontend's nginx (/api and /health, frontend/nginx.conf), only from the
+  # frontend pods (network-policy-backend.yaml); not published on the host
   type: ClusterIP
   ports:
   - port: 3000

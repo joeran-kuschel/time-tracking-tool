@@ -1,0 +1,13 @@
+# Developer ports on top of docker-compose.yml, on this machine only:
+#   docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d
+# The Vite dev server (port 5173) calls the backend at http://localhost:3000/api.
+services:
+  postgres:
+    ports:
+      - "127.0.0.1:5432:5432"
+
+  backend:
+    environment:
+      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost,http://localhost:5173}
+    ports:
+      - "127.0.0.1:3000:3000"

@@ -39,10 +39,19 @@ cp .env.example .env
 docker-compose up -d
 ```
 
-This starts:
-- PostgreSQL (port 5432)
-- Backend (port 3000)
-- Frontend (port 5173, or port 80 through nginx)
+This starts PostgreSQL, the backend and the frontend. Only the frontend is published, on `127.0.0.1:80`
+(this machine only); its nginx forwards `/api` to the backend. The database and the backend have no port on the host.
+
+For development, add the override that also publishes the database (`127.0.0.1:5432`) and the backend
+(`127.0.0.1:3000`), for example for the Vite dev server on port 5173:
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d
+```
+
+Open the app as `http://localhost`, not `http://127.0.0.1`: `CORS_ORIGIN` defaults to `http://localhost`, and other origins get `403` on writes.
+
+After the backend container is recreated, run `docker compose restart frontend`: nginx looks up `backend` once at start.
 
 ### 3. Open the browser
 
@@ -84,6 +93,8 @@ kubectl apply -f k8s/postgres.yaml
 kubectl apply -f k8s/backend.yaml
 kubectl apply -f k8s/frontend.yaml
 kubectl apply -f k8s/ingress.yaml
+kubectl apply -f k8s/network-policy-postgres.yaml
+kubectl apply -f k8s/network-policy-backend.yaml
 ```
 
 Once per cluster, install the ingress controller first and add `time-tracking.local` to `/etc/hosts`, see `k8s/README.md`. `setup-tls.sh` needs `mkcert` (`brew install mkcert`) and creates the certificate for HTTPS.

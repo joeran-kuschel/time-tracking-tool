@@ -13,6 +13,8 @@ How to write an entry and cut a release: [documentation/backend/changelog.md](do
 
 ### Changed
 
+- The backend and the database can no longer be reached directly from other devices or other pods; Docker Compose publishes only the web page, and only on this machine (development ports: see the README). Anyone who can open the tool can still use it, and the login protects the data. Existing installs: see "Network Policy" in `k8s/README.md`.
+- Only the tool's own backend can connect to the database in the cluster; backups are not affected. Existing installs: see "Network Policy" in `k8s/README.md`.
 - Tooling: the frontend test run prints its timing report again after the Vitest 5 update.
 - Tooling: changes reach `main` through pull requests; `main` is protected and needs the passing checks `backend tests` and `frontend tests`.
 - Tooling: CodeQL code scanning is on for the repository.
