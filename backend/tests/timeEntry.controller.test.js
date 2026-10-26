@@ -35,13 +35,81 @@ describe('timeEntryController.update', () => {
   test('stops a running entry without touching the description', async () => {
     const res = await call({ endTime: '2026-09-21T09:00:00Z' }, running);
 
-    expect(TimeEntry.update).toHaveBeenCalledWith('1', { endTime: '2026-09-21T09:00:00Z', startTime: undefined, projectId: undefined, description: undefined });
+    expect(TimeEntry.update).toHaveBeenCalledWith('1', { endTime: '2026-09-21T09:00:00.000Z', startTime: undefined, projectId: undefined, description: undefined });
     expect(res.json).toHaveBeenCalledWith({ id: 1 });
   });
 
-  test('does not check the end time when stopping, because the clocks may differ', async () => {
-    const res = await call({ endTime: '2026-09-21T07:59:58Z' }, running);
-    expect(res.status).not.toHaveBeenCalled();
+  describe('stopping with an end that is not after the start', () => {
+    const NOW = new Date('2026-09-21T10:00:00Z');
+    const storedEnd = () => TimeEntry.update.mock.calls[0][1].endTime;
+
+    beforeEach(() => {
+      jest.useFakeTimers().setSystemTime(NOW);
+    });
+
+    afterEach(() => {
+      jest.useRealTimers();
+    });
+
+    test('stores exactly the sent end when it is after the start', async () => {
+      await call({ endTime: '2026-09-21T09:00:00Z' }, running);
+      expect(storedEnd()).toBe('2026-09-21T09:00:00.000Z');
+    });
+
+    test('stores the server time when the sent end is before the start', async () => {
+      const res = await call({ endTime: '2026-09-21T07:59:58Z' }, running);
+
+      expect(storedEnd()).toBe(NOW.toISOString());
+      expect(res.status).not.toHaveBeenCalled();
+      expect(res.json).toHaveBeenCalledWith({ id: 1 });
+    });
+
+    test('stores the server time when the sent end equals the start', async () => {
+      await call({ endTime: '2026-09-21T08:00:00Z' }, running);
+      expect(storedEnd()).toBe(NOW.toISOString());
+    });
+
+    test('stores end = start when even the server time is not after the start', async () => {
+      const future = { ...running, start_time: new Date('2026-09-21T12:00:00Z') };
+      const res = await call({ endTime: '2026-09-21T09:00:00Z' }, future);
+
+      expect(storedEnd()).toBe(future.start_time.toISOString());
+      expect(res.status).not.toHaveBeenCalled();
+    });
+
+    test('compares by the millisecond: 1 ms after the start is kept, 1 ms before is replaced', async () => {
+      await call({ endTime: '2026-09-21T08:00:00.001Z' }, running);
+      expect(storedEnd()).toBe('2026-09-21T08:00:00.001Z');
+
+      TimeEntry.update.mockClear();
+      await call({ endTime: '2026-09-21T07:59:59.999Z' }, running);
+      expect(storedEnd()).toBe(NOW.toISOString());
+    });
+
+    test('reads a start that is an ISO string like a Date', async () => {
+      await call({ endTime: '2026-09-21T07:00:00Z' }, { ...running, start_time: '2026-09-21T08:00:00.000Z' });
+      expect(storedEnd()).toBe(NOW.toISOString());
+    });
+
+    test('compares end times with an offset by the instant they mean', async () => {
+      await call({ endTime: '2026-09-21T09:30:00+02:00' }, running);
+      expect(storedEnd()).toBe(NOW.toISOString());
+    });
+
+    test('stores a sent end with an offset as the UTC instant it means', async () => {
+      await call({ endTime: '2026-09-21T07:30:00-02:00' }, running);
+      expect(storedEnd()).toBe('2026-09-21T09:30:00.000Z');
+    });
+
+    test('still refuses an invalid date', async () => {
+      expect((await call({ endTime: 'tomorrow' }, running)).status).toHaveBeenCalledWith(400);
+      expect(TimeEntry.update).not.toHaveBeenCalled();
+    });
+
+    test('does not change the end of a finished entry', async () => {
+      await call({ endTime: '2026-09-21T09:30:00Z' });
+      expect(storedEnd()).toBe('2026-09-21T09:30:00.000Z');
+    });
   });
 
   test('refuses to edit the times or project of a running entry', async () => {
@@ -54,7 +122,7 @@ describe('timeEntryController.update', () => {
     const body = { startTime: '2026-09-21T07:30:00Z', endTime: '2026-09-21T10:00:00Z', description: 'Neu' };
     const res = await call(body);
 
-    expect(TimeEntry.update).toHaveBeenCalledWith('1', { ...body, projectId: undefined });
+    expect(TimeEntry.update).toHaveBeenCalledWith('1', { startTime: '2026-09-21T07:30:00.000Z', endTime: '2026-09-21T10:00:00.000Z', description: 'Neu', projectId: undefined });
     expect(res.status).not.toHaveBeenCalled();
   });
 
@@ -123,7 +191,7 @@ describe('timeEntryController.create', () => {
 
     await controller.create({ body }, res);
 
-    expect(TimeEntry.create).toHaveBeenCalledWith(3, '2026-09-21T08:00:00Z', null, 'Konzept');
+    expect(TimeEntry.create).toHaveBeenCalledWith(3, '2026-09-21T08:00:00.000Z', null, 'Konzept');
     expect(res.status).toHaveBeenCalledWith(201);
   });
 
