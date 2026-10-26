@@ -201,7 +201,7 @@ describe('App', () => {
 
     expect(screen.getByRole('link', { name: 'Berichte' })).toHaveAttribute('aria-current', 'page')
     expect(screen.getByLabelText('Kunde')).toHaveValue('1')
-    expect(api.getMonthlyReport).toHaveBeenCalledWith(1, new Date().getMonth() + 1, new Date().getFullYear())
+    expect(api.getMonthlyReport).toHaveBeenCalledWith(1, new Date().getMonth() + 1, new Date().getFullYear(), false)
   })
 
   test('keeps the running timer when switching pages', async () => {
@@ -340,7 +340,7 @@ describe('App', () => {
 
     expect(screen.getByRole('link', { name: 'Berichte' })).toHaveAttribute('aria-current', 'page')
     expect(screen.getByLabelText('Kunde')).toHaveValue('1')
-    expect(api.getMonthlyReport).toHaveBeenCalledWith(1, 8, 2026)
+    expect(api.getMonthlyReport).toHaveBeenCalledWith(1, 8, 2026, false)
   })
 
   test('an error that is already shown follows the language switch', async () => {

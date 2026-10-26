@@ -5,8 +5,8 @@ import { Trans, useLingui } from '@lingui/react/macro'
 import { api } from '../api'
 import { useAction } from '../hooks/useAction'
 import ErrorMessage from '../components/ErrorMessage'
-import { formatAmount, formatHours, hoursBetween } from '../format'
-import { projectsOf, summarize } from '../summary'
+import { formatAmount, formatHours, formatRate, hoursBetween } from '../format'
+import { saveShowAmounts, storedShowAmounts } from '../reportOptions'
 import { ui } from '../ui'
 
 const cell = 'px-3 py-3 border-b border-line-soft'
@@ -19,6 +19,22 @@ const statuses = [
   { value: 'sent', label: msg`Sent` },
 ]
 
+// Hours of an entry in hundredths, rounded like the backend does (toFixed(2) in utils/hours.js, which also gives the
+// PDF and CSV rows); a running entry has none yet. Whole hundredths add up without float errors.
+const hundredthsOf = (entry) => Math.round(Number(hoursBetween(entry.start_time, entry.end_time).toFixed(2)) * 100)
+
+// Hours per project in hundredths, in the order the projects first appear: [{ id, name, hundredths }]
+function projectHours(entries) {
+  const byId = new Map()
+  for (const entry of entries) {
+    const project = byId.get(entry.project_id) ?? { id: entry.project_id, name: entry.project_name, hundredths: 0 }
+    // like the server's project lines (utils/amounts.js), an entry that ends before it starts counts as 0 here
+    project.hundredths += Math.max(0, hundredthsOf(entry))
+    byId.set(entry.project_id, project)
+  }
+  return [...byId.values()]
+}
+
 // A customer's month: the report loads as soon as customer or month change.
 // initialCustomerId, initialMonth and initialYear preselect them, e.g. from "Open report" on another page;
 // without a month, the current one opens.
@@ -30,6 +46,7 @@ function Reports({ customers, initialCustomerId = null, initialMonth, initialYea
     return { year: today.getFullYear(), month: today.getMonth() + 1 }
   })
   const [report, setReport] = useState(null)
+  const [showAmounts, setShowAmounts] = useState(storedShowAmounts)
   const [loading, setLoading] = useState(false)
   const [run, error] = useAction()
   const [runStatus, statusError] = useAction()
@@ -39,6 +56,7 @@ function Reports({ customers, initialCustomerId = null, initialMonth, initialYea
   const { t, i18n } = useLingui()
   const customerFieldId = useId()
   const statusFieldId = useId()
+  const amountsFieldId = useId()
   const monthLabelId = useId()
   const reportHeadingId = useId()
 
@@ -48,13 +66,13 @@ function Reports({ customers, initialCustomerId = null, initialMonth, initialYea
     // Only the answer for the current choice is shown
     let current = true
     setLoading(true)
-    run(() => api.getMonthlyReport(customerId, period.month, period.year), msg`Report could not be loaded.`).then((data) => {
+    run(() => api.getMonthlyReport(customerId, period.month, period.year, showAmounts), msg`Report could not be loaded.`).then((data) => {
       if (!current) return
       if (data) setReport(data)
       setLoading(false)
     })
     return () => { current = false }
-  }, [customerId, period])
+  }, [customerId, period, showAmounts])
 
   const shiftMonth = (delta) => {
     const date = new Date(period.year, period.month - 1 + delta, 1)
@@ -72,9 +90,9 @@ function Reports({ customers, initialCustomerId = null, initialMonth, initialYea
     setDownloading(false)
   }
   const handleDownloadPDF = () =>
-    download(() => api.downloadPDF(customerId, period.month, period.year, i18n.locale), msg`PDF could not be downloaded.`)
+    download(() => api.downloadPDF(customerId, period.month, period.year, i18n.locale, showAmounts), msg`PDF could not be downloaded.`)
   const handleDownloadCSV = () =>
-    download(() => api.downloadCSV(customerId, period.month, period.year, i18n.locale), msg`CSV could not be downloaded.`)
+    download(() => api.downloadCSV(customerId, period.month, period.year, i18n.locale, showAmounts), msg`CSV could not be downloaded.`)
 
   const changeStatus = async (status) => {
     const saved = await runStatus(
@@ -88,7 +106,13 @@ function Reports({ customers, initialCustomerId = null, initialMonth, initialYea
   const reportCustomer = customer?.name
   const reportPeriod = i18n.date(new Date(period.year, period.month - 1, 1), { month: 'long', year: 'numeric' })
   const hasEntries = report?.entries.length > 0
-  const summary = report && summarize(report.entries, projectsOf(report.entries))
+  const changeShowAmounts = (show) => {
+    setShowAmounts(show)
+    saveShowAmounts(show)
+  }
+  // The report on screen follows what it was loaded with, so a toggle never meets a report without amounts
+  const withAmounts = report?.totalAmount !== undefined
+  const totalHundredths = report ? report.entries.reduce((sum, entry) => sum + hundredthsOf(entry), 0) : 0
 
   return (
     <div className="mx-auto flex w-full max-w-5xl flex-col gap-6 p-4 sm:px-8 sm:py-9">
@@ -137,6 +161,18 @@ function Reports({ customers, initialCustomerId = null, initialMonth, initialYea
           </div>
         )}
 
+        {customerId && (
+          <label className="flex min-h-[2.75rem] items-center gap-2 text-sm font-medium">
+            <input
+              type="checkbox"
+              checked={showAmounts}
+              onChange={(e) => changeShowAmounts(e.target.checked)}
+              className="h-5 w-5 accent-accent"
+            />
+            <Trans>Show hourly rate and amounts</Trans>
+          </label>
+        )}
+
         {hasEntries && (
           <div className="ml-auto flex flex-wrap gap-3">
             <button type="button" onClick={handleDownloadCSV} aria-disabled={downloading} className={`${ui.buttonSecondary} min-h-[2.75rem] aria-disabled:opacity-70`}>
@@ -168,22 +204,30 @@ function Reports({ customers, initialCustomerId = null, initialMonth, initialYea
 
           {hasEntries ? (
             <>
-              <dl className="grid gap-4 sm:grid-cols-3">
+              <dl className={`grid gap-4 ${withAmounts ? 'sm:grid-cols-3' : 'sm:grid-cols-2'}`}>
                 <div className="flex flex-col gap-1.5 rounded-xl bg-paper/70 px-5 py-4">
                   <dt className="text-sm text-muted"><Trans>Total hours</Trans></dt>
-                  <dd className={ui.figure}>{formatHours(i18n, summary.hours)}</dd>
+                  <dd className={ui.figure}>{formatHours(i18n, totalHundredths / 100)}</dd>
                 </div>
-                <div className="flex flex-col gap-1.5 rounded-xl bg-paper/70 px-5 py-4">
-                  <dt className="text-sm text-muted"><Trans>Amount (net)</Trans></dt>
-                  <dd className={ui.figure}>{formatAmount(i18n, summary.amount)}</dd>
-                </div>
+                {withAmounts && (
+                  <div className="flex flex-col gap-1.5 rounded-xl bg-paper/70 px-5 py-4">
+                    <dt className="text-sm text-muted"><Trans>Amount (net)</Trans></dt>
+                    <dd className={ui.figure}>{formatAmount(i18n, report.totalAmount)}</dd>
+                  </div>
+                )}
                 <div className="flex flex-col gap-1.5 rounded-xl bg-paper/70 px-5 py-4">
                   <dt className="text-sm text-muted"><Trans>Projects</Trans></dt>
                   <dd>
                     <ul className="text-[0.9375rem] leading-relaxed">
-                      {summary.projects.map(({ project, hours }) => (
-                        <li key={project.id}>{project.name} · {formatHours(i18n, hours)}</li>
-                      ))}
+                      {withAmounts
+                        ? report.projects.map((p) => (
+                          <li key={p.projectId}>
+                            {p.name} · {formatHours(i18n, p.hours)} · {formatRate(i18n, p.hourlyRate)} · {formatAmount(i18n, p.amount)}
+                          </li>
+                        ))
+                        : projectHours(report.entries).map((p) => (
+                          <li key={p.id}>{p.name} · {formatHours(i18n, p.hundredths / 100)}</li>
+                        ))}
                     </ul>
                   </dd>
                 </div>
@@ -197,32 +241,31 @@ function Reports({ customers, initialCustomerId = null, initialMonth, initialYea
                       <th scope="col" className={headCell}><Trans>Project</Trans></th>
                       <th scope="col" className={headCell}><Trans>Description</Trans></th>
                       <th scope="col" className={`${headCell} text-right`}><Trans>Hours</Trans></th>
-                      <th scope="col" className={`${headCell} text-right`}><Trans>Amount</Trans></th>
+                      {withAmounts && <th scope="col" className={`${headCell} text-right`}><Trans>Amount</Trans></th>}
                     </tr>
                   </thead>
                   <tbody>
-                    {report.entries.map((entry) => {
-                      const hours = hoursBetween(entry.start_time, entry.end_time)
-                      return (
-                        <tr key={entry.id}>
-                          <td className={`${cell} whitespace-nowrap`}>
-                            {i18n.date(entry.start_time, { year: 'numeric', month: 'numeric', day: 'numeric' })}
-                          </td>
-                          <td className={cell}>{entry.project_name}</td>
-                          <td className={cell}>{entry.description || <span className="text-muted">—</span>}</td>
-                          <td className={`${cell} whitespace-nowrap text-right font-mono text-sm`}>{formatHours(i18n, hours)}</td>
-                          <td className={`${cell} whitespace-nowrap text-right font-mono text-sm`}>
-                            {formatAmount(i18n, hours * Number(entry.hourly_rate ?? 0))}
-                          </td>
-                        </tr>
-                      )
-                    })}
+                    {report.entries.map((entry) => (
+                      <tr key={entry.id}>
+                        <td className={`${cell} whitespace-nowrap`}>
+                          {i18n.date(entry.start_time, { year: 'numeric', month: 'numeric', day: 'numeric' })}
+                        </td>
+                        <td className={cell}>{entry.project_name}</td>
+                        <td className={cell}>{entry.description || <span className="text-muted">—</span>}</td>
+                        <td className={`${cell} whitespace-nowrap text-right font-mono text-sm`}>{formatHours(i18n, hundredthsOf(entry) / 100)}</td>
+                        {withAmounts && (
+                          <td className={`${cell} whitespace-nowrap text-right font-mono text-sm`}>{formatAmount(i18n, entry.amount)}</td>
+                        )}
+                      </tr>
+                    ))}
                   </tbody>
                   <tfoot>
                     <tr>
                       <th scope="row" colSpan={3} className={`${footCell} text-left`}><Trans>Total</Trans></th>
-                      <td className={`${footCell} whitespace-nowrap text-right font-mono text-sm`}>{formatHours(i18n, summary.hours)}</td>
-                      <td className={`${footCell} whitespace-nowrap text-right font-mono text-sm`}>{formatAmount(i18n, summary.amount)}</td>
+                      <td className={`${footCell} whitespace-nowrap text-right font-mono text-sm`}>{formatHours(i18n, totalHundredths / 100)}</td>
+                      {withAmounts && (
+                        <td className={`${footCell} whitespace-nowrap text-right font-mono text-sm`}>{formatAmount(i18n, report.totalAmount)}</td>
+                      )}
                     </tr>
                   </tfoot>
                 </table>

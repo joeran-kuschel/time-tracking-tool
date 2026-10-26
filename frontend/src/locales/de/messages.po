@@ -95,11 +95,11 @@ msgid "All projects"
 msgstr "Alle Projekte"
 
 #: src/components/dashboard/BillingTable.jsx:46
-#: src/pages/Reports.jsx:200
+#: src/pages/Reports.jsx:244
 msgid "Amount"
 msgstr "Betrag"
 
-#: src/pages/Reports.jsx:177
+#: src/pages/Reports.jsx:214
 msgid "Amount (net)"
 msgstr "Betrag (netto)"
 
@@ -140,7 +140,7 @@ msgstr "Ansicht des Diagramms"
 msgid "Check email and password."
 msgstr "Prüfe E-Mail und Passwort."
 
-#: src/pages/Reports.jsx:77
+#: src/pages/Reports.jsx:95
 msgid "CSV could not be downloaded."
 msgstr "CSV konnte nicht heruntergeladen werden."
 
@@ -151,7 +151,7 @@ msgstr "Benutzerdefiniert"
 #: src/components/dashboard/BillingTable.jsx:42
 #: src/components/EntryFilters.jsx:137
 #: src/components/EntryResults.jsx:38
-#: src/pages/Reports.jsx:99
+#: src/pages/Reports.jsx:123
 msgid "Customer"
 msgstr "Kunde"
 
@@ -200,7 +200,7 @@ msgstr "Dashboard konnte nicht geladen werden."
 #: src/components/EntriesList.jsx:86
 #: src/components/EntryForm.jsx:36
 #: src/components/EntryResults.jsx:38
-#: src/pages/Reports.jsx:196
+#: src/pages/Reports.jsx:240
 msgid "Date"
 msgstr "Datum"
 
@@ -238,7 +238,7 @@ msgstr "Eintrag vom {start} löschen?"
 
 #: src/components/EntriesList.jsx:89
 #: src/components/EntryResults.jsx:38
-#: src/pages/Reports.jsx:198
+#: src/pages/Reports.jsx:242
 msgid "Description"
 msgstr "Beschreibung"
 
@@ -247,11 +247,11 @@ msgstr "Beschreibung"
 msgid "Description (optional)"
 msgstr "Beschreibung (optional)"
 
-#: src/pages/Reports.jsx:144
+#: src/pages/Reports.jsx:180
 msgid "Download CSV"
 msgstr "CSV herunterladen"
 
-#: src/pages/Reports.jsx:148
+#: src/pages/Reports.jsx:184
 msgid "Download PDF"
 msgstr "PDF herunterladen"
 
@@ -338,7 +338,7 @@ msgstr "Stundensatz (€)"
 #: src/components/dashboard/HoursChart.jsx:151
 #: src/components/EntriesList.jsx:88
 #: src/components/EntryResults.jsx:38
-#: src/pages/Reports.jsx:199
+#: src/pages/Reports.jsx:243
 msgid "Hours"
 msgstr "Stunden"
 
@@ -397,7 +397,7 @@ msgstr "Wie das System"
 #: src/App.jsx:101
 #: src/components/AuthGate.jsx:70
 #: src/pages/Dashboard.jsx:70
-#: src/pages/Reports.jsx:158
+#: src/pages/Reports.jsx:194
 msgid "Loading..."
 msgstr "Laden..."
 
@@ -427,11 +427,11 @@ msgstr "Hauptnavigation"
 msgid "Manual entry"
 msgstr "Nachtragen"
 
-#: src/pages/Reports.jsx:114
+#: src/pages/Reports.jsx:138
 msgid "Month"
 msgstr "Monat"
 
-#: src/pages/Reports.jsx:163
+#: src/pages/Reports.jsx:199
 msgid "Monthly report"
 msgstr "Monatsabrechnung"
 
@@ -458,7 +458,7 @@ msgstr "Neues Projekt"
 msgid "Newest first"
 msgstr "Neueste zuerst"
 
-#: src/pages/Reports.jsx:120
+#: src/pages/Reports.jsx:144
 msgid "Next month"
 msgstr "Nächster Monat"
 
@@ -467,7 +467,7 @@ msgstr "Nächster Monat"
 msgid "No description"
 msgstr "Ohne Beschreibung"
 
-#: src/pages/Reports.jsx:232
+#: src/pages/Reports.jsx:275
 msgid "No entries for this period"
 msgstr "Keine Einträge für diesen Zeitraum"
 
@@ -523,7 +523,7 @@ msgstr "Seite nicht gefunden"
 msgid "Password"
 msgstr "Passwort"
 
-#: src/pages/Reports.jsx:75
+#: src/pages/Reports.jsx:93
 msgid "PDF could not be downloaded."
 msgstr "PDF konnte nicht heruntergeladen werden."
 
@@ -547,14 +547,14 @@ msgstr "PDF ansehen"
 msgid "Preview PDF for {customerName} (opens in a new tab)"
 msgstr "PDF ansehen für {customerName} (öffnet in einem neuen Tab)"
 
-#: src/pages/Reports.jsx:116
+#: src/pages/Reports.jsx:140
 msgid "Previous month"
 msgstr "Vorheriger Monat"
 
 #: src/components/EntryFilters.jsx:150
 #: src/components/EntryForm.jsx:35
 #: src/components/EntryResults.jsx:38
-#: src/pages/Reports.jsx:197
+#: src/pages/Reports.jsx:241
 msgid "Project"
 msgstr "Projekt"
 
@@ -575,7 +575,7 @@ msgid "Project: {projectName}"
 msgstr "Projekt: {projectName}"
 
 #: src/components/dashboard/BillingTable.jsx:43
-#: src/pages/Reports.jsx:181
+#: src/pages/Reports.jsx:219
 #: src/pages/TimeTracking.jsx:204
 msgid "Projects"
 msgstr "Projekte"
@@ -609,19 +609,19 @@ msgstr "Filter entfernen: {label}"
 msgid "Report"
 msgstr "Abrechnung"
 
-#: src/pages/Reports.jsx:165
+#: src/pages/Reports.jsx:201
 msgid "Report {reportCustomer} – {reportPeriod}"
 msgstr "Abrechnung {reportCustomer} – {reportPeriod}"
 
-#: src/pages/Reports.jsx:51
+#: src/pages/Reports.jsx:69
 msgid "Report could not be loaded."
 msgstr "Bericht konnte nicht geladen werden."
 
-#: src/pages/Reports.jsx:82
+#: src/pages/Reports.jsx:100
 msgid "Report status could not be saved."
 msgstr "Status der Abrechnung konnte nicht gespeichert werden."
 
-#: src/pages/Reports.jsx:95
+#: src/pages/Reports.jsx:119
 #: src/routes.js:11
 msgid "Reports"
 msgstr "Berichte"
@@ -675,12 +675,12 @@ msgstr "In Beschreibungen suchen"
 msgid "Search: {query}"
 msgstr "Suche: {query}"
 
-#: src/pages/Reports.jsx:106
+#: src/pages/Reports.jsx:130
 #: src/pages/TimeTracking.jsx:320
 msgid "Select a customer"
 msgstr "Wähle einen Kunden"
 
-#: src/pages/Reports.jsx:157
+#: src/pages/Reports.jsx:193
 msgid "Select a customer to see the report."
 msgstr "Wähle einen Kunden, um den Bericht zu sehen."
 
@@ -691,6 +691,10 @@ msgstr "Wähle ein Projekt, um den Timer zu starten."
 #: src/pages/Reports.jsx:19
 msgid "Sent"
 msgstr "Verschickt"
+
+#: src/pages/Reports.jsx:172
+msgid "Show hourly rate and amounts"
+msgstr "Stundensatz und Beträge anzeigen"
 
 #: src/components/EntryResults.jsx:106
 msgid "Show more"
@@ -713,7 +717,7 @@ msgstr "Sortierung: {sortName}"
 msgid "Start"
 msgstr "Start"
 
-#: src/pages/Reports.jsx:128
+#: src/pages/Reports.jsx:152
 msgid "Status"
 msgstr "Status"
 
@@ -824,11 +828,11 @@ msgid "Too many failed attempts. Try again in a few minutes."
 msgstr "Zu viele fehlgeschlagene Versuche. Versuche es in ein paar Minuten erneut."
 
 #: src/components/dashboard/BillingTable.jsx:83
-#: src/pages/Reports.jsx:223
+#: src/pages/Reports.jsx:264
 msgid "Total"
 msgstr "Gesamt"
 
-#: src/pages/Reports.jsx:173
+#: src/pages/Reports.jsx:209
 msgid "Total hours"
 msgstr "Gesamtstunden"
 

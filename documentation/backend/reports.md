@@ -142,8 +142,8 @@ row is a `draft`. The status is deleted with its customer.
 
 ## Limits
 
-- Amounts are EUR only and have to be asked for with `amounts=1`; the Reports page checkbox for it follows in the next
-  change. The CSV has no total row.
+- Amounts are EUR only and have to be asked for with `amounts=1`; the Reports page has a checkbox for it,
+  stored in the browser. The CSV has no total row.
 - The CSV covers one customer and one month; no free date range, project filter or Excel file yet.
 
 ## Code

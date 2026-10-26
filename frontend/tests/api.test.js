@@ -173,6 +173,32 @@ describe('api', () => {
     expect(fetch.mock.calls[0][0]).toMatch(/\/reports\/customer\/1\?month=9&year=2026&tz=Europe%2FBerlin$/)
   })
 
+  test('asks for the amounts of a monthly report only when told to', async () => {
+    const fetch = mockFetch(200, {})
+    await api.getMonthlyReport(1, 9, 2026, true)
+    await api.getMonthlyReport(1, 9, 2026, false)
+
+    expect(fetch.mock.calls[0][0]).toMatch(/\/reports\/customer\/1\?month=9&year=2026&tz=Europe%2FBerlin&amounts=1$/)
+    expect(fetch.mock.calls[1][0]).toMatch(/\/reports\/customer\/1\?month=9&year=2026&tz=Europe%2FBerlin$/)
+  })
+
+  test.each(['PDF', 'CSV'])('asks for the amounts of the %s download only when told to', async (format) => {
+    const fetch = vi.fn().mockResolvedValue({ ok: true, status: 200, headers: new Headers(), blob: () => Promise.resolve(new Blob(['x'])) })
+    vi.stubGlobal('fetch', fetch)
+    URL.createObjectURL = vi.fn(() => 'blob:x')
+    URL.revokeObjectURL = vi.fn()
+    vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {})
+
+    await api[`download${format}`](1, 9, 2026, 'en', true)
+    await api[`download${format}`](1, 9, 2026, 'en', false)
+    await api[`download${format}`](1, 9, 2026, 'en')
+
+    const path = `/reports/customer/1/${format.toLowerCase()}?month=9&year=2026&lang=en&tz=Europe%2FBerlin`
+    expect(fetch.mock.calls[0][0].endsWith(`${path}&amounts=1`)).toBe(true)
+    expect(fetch.mock.calls[1][0].endsWith(path)).toBe(true)
+    expect(fetch.mock.calls[2][0].endsWith(path)).toBe(true)
+  })
+
   test('searches the entries with the filters, the page and the browser\'s time zone', async () => {
     const fetch = mockFetch(200, { entries: [], total: 0, hours: 0 })
     await api.searchTimeEntries(

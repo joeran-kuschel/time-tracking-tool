@@ -64,8 +64,11 @@ function saveFile(blob, fileName) {
 const timeZone = () => encodeURIComponent(Intl.DateTimeFormat().resolvedOptions().timeZone);
 
 // format: the report's file type in the backend's path, 'pdf' or 'csv'
-const reportUrl = (format, customerId, month, year, locale) =>
-  `${API_URL}/reports/customer/${customerId}/${format}?month=${month}&year=${year}&lang=${locale}&tz=${timeZone()}`;
+// amounts: also ask for hourly rates and amounts; the parameter is only sent when true
+const amountsParam = (amounts) => (amounts ? '&amounts=1' : '');
+
+const reportUrl = (format, customerId, month, year, locale, amounts) =>
+  `${API_URL}/reports/customer/${customerId}/${format}?month=${month}&year=${year}&lang=${locale}&tz=${timeZone()}${amountsParam(amounts)}`;
 
 // Loads the file first, so a failed download throws ApiError instead of leaving the page
 async function download(url, fallbackName) {
@@ -142,8 +145,8 @@ export const api = {
   },
 
   // Reports
-  getMonthlyReport: (customerId, month, year) =>
-    request(`/reports/customer/${customerId}?month=${month}&year=${year}&tz=${timeZone()}`),
+  getMonthlyReport: (customerId, month, year, amounts) =>
+    request(`/reports/customer/${customerId}?month=${month}&year=${year}&tz=${timeZone()}${amountsParam(amounts)}`),
 
   // status: 'draft', 'ready' or 'sent'
   setReportStatus: (customerId, month, year, status) =>
@@ -156,10 +159,10 @@ export const api = {
   getDashboard: (from, to, month, year) =>
     request(`/dashboard?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}&month=${month}&year=${year}&tz=${timeZone()}`),
 
-  downloadPDF: (customerId, month, year, locale) =>
-    download(reportUrl('pdf', customerId, month, year, locale), 'report.pdf'),
+  downloadPDF: (customerId, month, year, locale, amounts) =>
+    download(reportUrl('pdf', customerId, month, year, locale, amounts), 'report.pdf'),
 
   // The same entries as a CSV file; its separators follow the language
-  downloadCSV: (customerId, month, year, locale) =>
-    download(reportUrl('csv', customerId, month, year, locale), 'report.csv')
+  downloadCSV: (customerId, month, year, locale, amounts) =>
+    download(reportUrl('csv', customerId, month, year, locale, amounts), 'report.csv')
 };

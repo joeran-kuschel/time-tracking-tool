@@ -66,7 +66,8 @@ hours of the month after the hours (*70 % of total*).
 
 A table for the current month: customer, number of projects, hours, hourly rate(s), amount and **Preview PDF**, plus a
 total row. The customer name opens the customer on the Time tracking page. **Preview PDF** opens the month's report as
-a PDF in a new tab (its accessible name says so).
+a PDF in a new tab (its accessible name says so). The preview is always hours only: the Reports page's choice to show
+hourly rates and amounts does not apply to it, and the amounts in the Dashboard are separate from that choice.
 
 Below the table, a notice lists last month's reports that are not sent yet (*August: 1 of 2 reports sent.*), each with
 its status (*draft*, *ready to send*) and **Open report**, which opens the Reports page with that customer and month.
