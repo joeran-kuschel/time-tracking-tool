@@ -1,15 +1,10 @@
 const { i18n } = require('@lingui/core');
 const { activateLocale } = require('../i18n');
+const { calculateHours } = require('./hours');
+const { reportAmounts, rateCentsOf } = require('./amounts');
 
-// Hours of an entry as a string with two decimals; a running entry has no end yet and counts as 0
-function calculateHours(startTime, endTime) {
-  if (!endTime) return 0;
-  const diff = new Date(endTime) - new Date(startTime);
-  return (diff / (1000 * 60 * 60)).toFixed(2);
-}
-
-// Hours in the active language without the unit, e.g. "1,50" / "1.50"
-function formatHoursNumber(hours) {
+// Hours, rates and amounts in the active language: the shared two-decimal number format without a unit, e.g. "1,50" / "1.50"
+function formatDecimal(hours) {
   return i18n.number(Number(hours), { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
@@ -26,7 +21,8 @@ const number = (value) => ({ number: value });
 // Returns { headers: string[], rows: Cell[][] } where a cell is { text } or { number } (a number already formatted
 // for the language), so a format can treat them differently. Dates and times are in the browser's time zone.
 // Translates synchronously right after activateLocale, see src/i18n.js.
-function reportRows(entries, { customerName, locale, timeZone = 'UTC' }) {
+// With amounts, the columns Rate (EUR/h) and Amount (EUR) follow the hours; the money rules are in utils/amounts.js.
+function reportRows(entries, { customerName, locale, timeZone = 'UTC', amounts = false }) {
   activateLocale(locale);
   const headers = [
     i18n._({ id: 'report.date', message: 'Date' }),
@@ -36,17 +32,23 @@ function reportRows(entries, { customerName, locale, timeZone = 'UTC' }) {
     i18n._({ id: 'report.project', message: 'Project' }),
     i18n._({ id: 'report.description', message: 'Description' }),
     i18n._({ id: 'report.hours', message: 'Hours' }),
+    ...(amounts ? [
+      i18n._({ id: 'export.rate', message: 'Rate (EUR/h)' }),
+      i18n._({ id: 'export.amount', message: 'Amount (EUR)' }),
+    ] : []),
   ];
-  const rows = entries.map((entry) => [
+  const amountCents = amounts ? reportAmounts(entries).entryCents : [];
+  const rows = entries.map((entry, index) => [
     text(dateInZone(entry.start_time, timeZone)),
     text(timeInZone(entry.start_time, timeZone)),
     text(entry.end_time ? timeInZone(entry.end_time, timeZone) : ''),
     text(customerName),
     text(entry.project_name),
     text(entry.description),
-    number(formatHoursNumber(calculateHours(entry.start_time, entry.end_time))),
+    number(formatDecimal(calculateHours(entry.start_time, entry.end_time))),
+    ...(amounts ? [number(formatDecimal(rateCentsOf(entry) / 100)), number(formatDecimal(amountCents[index] / 100))] : []),
   ]);
   return { headers, rows };
 }
 
-module.exports = { calculateHours, formatHoursNumber, reportRows };
+module.exports = { formatDecimal, reportRows };

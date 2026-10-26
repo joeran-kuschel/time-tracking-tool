@@ -1,4 +1,5 @@
-const { reportRows, calculateHours, formatHoursNumber } = require('../src/utils/reportRows');
+const { reportRows, formatDecimal } = require('../src/utils/reportRows');
+const { calculateHours } = require('../src/utils/hours');
 const { activateLocale } = require('../src/i18n');
 
 const entry = (overrides) => ({
@@ -86,16 +87,55 @@ describe('reportRows', () => {
   });
 });
 
-describe('calculateHours and formatHoursNumber', () => {
+describe('calculateHours and formatDecimal', () => {
   test('calculateHours gives two decimals, or 0 for a running entry', () => {
     expect(calculateHours('2026-09-21T08:00:00Z', '2026-09-21T09:30:00Z')).toBe('1.50');
     expect(calculateHours('2026-09-21T08:00:00Z', null)).toBe(0);
   });
 
-  test('formatHoursNumber follows the active language', () => {
+  test('formatDecimal follows the active language', () => {
     activateLocale('de');
-    expect(formatHoursNumber('1234.5')).toBe('1.234,50');
+    expect(formatDecimal('1234.5')).toBe('1.234,50');
     activateLocale('en');
-    expect(formatHoursNumber('1234.5')).toBe('1,234.50');
+    expect(formatDecimal('1234.5')).toBe('1,234.50');
+  });
+});
+
+describe('reportRows with amounts', () => {
+  const priced = (overrides) => entry({ hourly_rate: '33.33', project_id: 1, ...overrides });
+
+  test('adds the columns Rate (EUR/h) and Amount (EUR) after the hours', () => {
+    expect(reportRows([], { ...options, amounts: true }).headers).toEqual(
+      ['Date', 'Start', 'End', 'Customer', 'Project', 'Description', 'Hours', 'Rate (EUR/h)', 'Amount (EUR)']
+    );
+    expect(reportRows([], { ...options, locale: 'de', amounts: true }).headers.slice(-3)).toEqual(['Stunden', 'Stundensatz (EUR/h)', 'Betrag (EUR)']);
+  });
+
+  test('writes the rate and the amount of printed hours x printed rate as number cells', () => {
+    // 20 minutes are printed as 0.33 h: 0.33 x 33.33 = 11.00
+    const { rows } = reportRows([priced({ end_time: '2026-09-21T08:20:00Z' })], { ...options, amounts: true });
+
+    expect(rows[0].slice(6)).toEqual([{ number: '0.33' }, { number: '33.33' }, { number: '11.00' }]);
+  });
+
+  test('uses the decimal comma in German', () => {
+    const { rows } = reportRows([priced({ hourly_rate: '80.00' })], { ...options, locale: 'de', amounts: true });
+
+    expect(rows[0].slice(6)).toEqual([{ number: '1,50' }, { number: '80,00' }, { number: '120,00' }]);
+  });
+
+  test('shows a running entry and a rate of 0 with 0,00 amounts', () => {
+    const { rows } = reportRows([priced({ end_time: null }), priced({ hourly_rate: '0.00' })], { ...options, amounts: true });
+
+    expect(rows[0].slice(6)).toEqual([{ number: '0.00' }, { number: '33.33' }, { number: '0.00' }]);
+    expect(rows[1].slice(6)).toEqual([{ number: '1.50' }, { number: '0.00' }, { number: '0.00' }]);
+  });
+
+  test('has no extra columns without the flag, or with it off', () => {
+    const plain = reportRows([priced()], options);
+
+    expect(reportRows([priced()], { ...options, amounts: false })).toEqual(plain);
+    expect(plain.headers).toHaveLength(7);
+    expect(plain.rows[0]).toHaveLength(7);
   });
 });

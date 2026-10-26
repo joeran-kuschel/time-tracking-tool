@@ -14,60 +14,90 @@ msgstr ""
 "Plural-Forms: \n"
 
 #. js-lingui-explicit-id
-#: src/utils/reportRows.js:35
+#: src/utils/pdfGenerator.js:96
+msgid "report.amount"
+msgstr "Amount"
+
+#. js-lingui-explicit-id
+#: src/utils/reportRows.js:37
+msgid "export.amount"
+msgstr "Amount (EUR)"
+
+#. js-lingui-explicit-id
+#: src/utils/reportRows.js:31
 msgid "export.customer"
 msgstr "Customer"
 
 #. js-lingui-explicit-id
-#: src/utils/pdfGenerator.js:65
+#: src/utils/pdfGenerator.js:85
 msgid "report.customer"
 msgstr "Customer: {customerName}"
 
 #. js-lingui-explicit-id
-#: src/utils/pdfGenerator.js:72
-#: src/utils/reportRows.js:32
+#: src/utils/pdfGenerator.js:92
+#: src/utils/reportRows.js:28
 msgid "report.date"
 msgstr "Date"
 
 #. js-lingui-explicit-id
-#: src/utils/pdfGenerator.js:75
-#: src/utils/reportRows.js:37
+#: src/utils/pdfGenerator.js:95
+#: src/utils/reportRows.js:33
 msgid "report.description"
 msgstr "Description"
 
 #. js-lingui-explicit-id
-#: src/utils/reportRows.js:34
+#: src/utils/reportRows.js:30
 msgid "export.end"
 msgstr "End"
 
 #. js-lingui-explicit-id
-#: src/utils/pdfGenerator.js:74
-#: src/utils/reportRows.js:38
+#: src/utils/pdfGenerator.js:94
+#: src/utils/reportRows.js:34
 msgid "report.hours"
 msgstr "Hours"
 
 #. js-lingui-explicit-id
-#: src/utils/pdfGenerator.js:73
-#: src/utils/reportRows.js:36
+#: src/utils/pdfGenerator.js:149
+msgid "report.projects"
+msgstr "Per project"
+
+#. js-lingui-explicit-id
+#: src/utils/pdfGenerator.js:93
+#: src/utils/reportRows.js:32
 msgid "report.project"
 msgstr "Project"
 
 #. js-lingui-explicit-id
-#: src/utils/reportRows.js:33
+#: src/utils/pdfGenerator.js:97
+msgid "report.rate"
+msgstr "Rate"
+
+#. js-lingui-explicit-id
+#: src/utils/reportRows.js:36
+msgid "export.rate"
+msgstr "Rate (EUR/h)"
+
+#. js-lingui-explicit-id
+#: src/utils/reportRows.js:29
 msgid "export.start"
 msgstr "Start"
 
 #. js-lingui-explicit-id
-#: src/utils/pdfGenerator.js:60
+#: src/utils/pdfGenerator.js:80
 msgid "report.title"
 msgstr "TIME REPORT"
 
 #. js-lingui-explicit-id
-#: src/utils/pdfGenerator.js:12
+#: src/utils/pdfGenerator.js:14
 msgid "report.filename"
 msgstr "time-report"
 
 #. js-lingui-explicit-id
-#: src/utils/pdfGenerator.js:106
+#: src/utils/pdfGenerator.js:136
+msgid "report.totalAmount"
+msgstr "TOTAL AMOUNT:"
+
+#. js-lingui-explicit-id
+#: src/utils/pdfGenerator.js:133
 msgid "report.total"
 msgstr "TOTAL HOURS:"

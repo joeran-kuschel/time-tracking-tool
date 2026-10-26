@@ -7,8 +7,16 @@ const { generateReportPDF, reportFileName } = require('../utils/pdfGenerator');
 const { reportRows } = require('../utils/reportRows');
 const { toCsv } = require('../utils/csv');
 const { activateLocale } = require('../i18n');
+const { reportAmounts, decimal, CURRENCY } = require('../utils/amounts');
 
 const INVALID_PERIOD = { error: 'month (1-12) and year are required' };
+const INVALID_AMOUNTS = { error: 'amounts must be 0 or 1' };
+
+// A 0/1 flag from the query: false when absent or "0", true for "1", null for anything else (also a repeated parameter)
+function parseFlag(value) {
+  if (value === undefined || value === '0') return false;
+  return value === '1' ? true : null;
+}
 
 // The report's month from the query: { month, year, timeZone, range }, or null when month or year is invalid.
 // tz is the browser's time zone, so the month has the same limits as on the dashboard.
@@ -22,6 +30,11 @@ function reportPeriod(query) {
 // The customer and the entries of a report's month, shared by the PDF and the CSV. Answers 400 or 404 itself and
 // returns null then (the same wording for both formats).
 async function loadReport(req, res) {
+  const amounts = parseFlag(req.query.amounts);
+  if (amounts === null) {
+    res.status(400).json(INVALID_AMOUNTS);
+    return null;
+  }
   const period = reportPeriod(req.query);
   if (!period) {
     res.status(400).json(INVALID_PERIOD);
@@ -40,7 +53,7 @@ async function loadReport(req, res) {
     res.status(404).json({ error: 'No time entries found for the specified month' });
     return null;
   }
-  return { customer, entries, period };
+  return { customer, entries, period, amounts };
 }
 
 // Sends a report file. contentDisposition escapes quotes and adds a UTF-8 file name for names like "Łódź".
@@ -57,9 +70,9 @@ exports.generatePDF = async (req, res) => {
     const report = await loadReport(req, res);
     if (!report) return;
 
-    const { customer, entries, period } = report;
+    const { customer, entries, period, amounts } = report;
     const { month, year, timeZone } = period;
-    const pdfBuffer = await generateReportPDF(entries, { customerName: customer.name, month, year, locale: lang, timeZone });
+    const pdfBuffer = await generateReportPDF(entries, { customerName: customer.name, month, year, locale: lang, timeZone, ...(amounts && { amounts }) });
 
     // As a download, or with inline=1 to open in the browser (preview)
     sendFile(res, { body: pdfBuffer, contentType: 'application/pdf', customer, period, lang, extension: 'pdf', type: inline === '1' ? 'inline' : 'attachment' });
@@ -76,8 +89,8 @@ exports.exportCsv = async (req, res) => {
     const report = await loadReport(req, res);
     if (!report) return;
 
-    const { customer, entries, period } = report;
-    const table = reportRows(entries, { customerName: customer.name, locale: lang, timeZone: period.timeZone });
+    const { customer, entries, period, amounts } = report;
+    const table = reportRows(entries, { customerName: customer.name, locale: lang, timeZone: period.timeZone, ...(amounts && { amounts }) });
 
     sendFile(res, { body: toCsv(table, activateLocale(lang)), contentType: 'text/csv; charset=utf-8', customer, period, lang, extension: 'csv' });
   } catch (err) {
@@ -86,9 +99,31 @@ exports.exportCsv = async (req, res) => {
   }
 };
 
+// What the JSON report adds with amounts: an amount per entry, the currency, the total and one line per project
+// (strings with two decimals, rules in utils/amounts.js)
+function amountFields(entries) {
+  const { entryCents, projects, totalCents } = reportAmounts(entries);
+  return {
+    entries: entries.map((entry, index) => ({ ...entry, amount: decimal(entryCents[index]) })),
+    currency: CURRENCY,
+    totalAmount: decimal(totalCents),
+    projects: projects.map((project) => ({
+      projectId: project.projectId,
+      name: project.name,
+      hours: decimal(project.hundredths),
+      hourlyRate: decimal(project.rateCents),
+      amount: decimal(project.cents),
+    })),
+  };
+}
+
 exports.getMonthlyReport = async (req, res) => {
   try {
     const { customerId } = req.params;
+    const amounts = parseFlag(req.query.amounts);
+    if (amounts === null) {
+      return res.status(400).json(INVALID_AMOUNTS);
+    }
     const period = reportPeriod(req.query);
     if (!period) {
       return res.status(400).json(INVALID_PERIOD);
@@ -106,6 +141,7 @@ exports.getMonthlyReport = async (req, res) => {
       year,
       status,
       entries,
+      ...(amounts && amountFields(entries)),
       totalHours: entries.reduce((sum, entry) => {
         if (entry.end_time) {
           const diff = new Date(entry.end_time) - new Date(entry.start_time);
