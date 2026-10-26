@@ -28,7 +28,9 @@ The UI has to meet WCAG 2.2 level AA (see `CLAUDE.md`). This chapter lists what 
   active filters stay visible as removable chips. The status line (*12 entries, 31.50 h*) is a local polite live
   region that changes once per answer, not per keystroke. See [Entries](entries.md).
 - **Labels:** all fields have visible labels (`RecordForm`, the timer, the Reports page); edit forms are grouped with a
-  legend such as *Edit customer*. The month buttons on the Reports page are a group named *Month*.
+  legend such as *Edit customer*. The month buttons on the Reports page are a group named *Month*; its option *Show
+  hourly rate and amounts* is a native checkbox with a visible label and a 2.75 rem touch target, and toggling it keeps
+  focus on it (the report below just changes).
   Validation errors mark their field with `aria-invalid` and are linked with `aria-describedby`.
 - **Selection:** the selected customer and project are marked with `aria-pressed`, not only by color. The customer of
   the running timer has a red dot and *, timer running* in its button name.
