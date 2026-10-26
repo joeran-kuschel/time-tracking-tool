@@ -1,11 +1,13 @@
 import { useId } from 'react'
+import { Link } from 'react-router'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { formatDay, formatHours, hoursBetween } from '../../format'
+import { trackingPath } from '../../routes'
 import { ui } from '../../ui'
 
 // The latest finished entries of all customers. Selecting one opens its customer and project on the
 // Time tracking page; View all opens the customer of the newest entry.
-function RecentEntries({ entries, onSelect }) {
+function RecentEntries({ entries }) {
   const { i18n } = useLingui()
   const headingId = useId()
   const newest = entries[0]
@@ -15,13 +17,12 @@ function RecentEntries({ entries, onSelect }) {
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h2 id={headingId} className="text-lg font-semibold"><Trans>Recent entries</Trans></h2>
         {newest && (
-          <button
-            type="button"
-            onClick={() => onSelect(newest.customer_id)}
+          <Link
+            to={trackingPath(newest.customer_id)}
             className="inline-flex min-h-[2.75rem] items-center text-sm font-medium text-accent underline underline-offset-2 hover:text-accent-dark"
           >
             <Trans>View all</Trans>
-          </button>
+          </Link>
         )}
       </div>
       {entries.length === 0 ? (
@@ -30,9 +31,8 @@ function RecentEntries({ entries, onSelect }) {
         <ul className="flex flex-col">
           {entries.map((entry) => (
             <li key={entry.id} className="border-b border-line-soft last:border-b-0">
-              <button
-                type="button"
-                onClick={() => onSelect(entry.customer_id, entry.project_id)}
+              <Link
+                to={trackingPath(entry.customer_id, entry.project_id)}
                 className="flex min-h-[2.75rem] w-full items-start gap-3 rounded-lg px-2 py-2.5 text-left hover:bg-paper"
               >
                 <span className="w-24 shrink-0 text-sm text-muted">{formatDay(i18n, entry.start_time)}</span>
@@ -41,7 +41,7 @@ function RecentEntries({ entries, onSelect }) {
                   <span className="truncate text-sm text-muted">{entry.customer_name} · {entry.project_name}</span>
                 </span>
                 <span className="shrink-0 font-mono text-sm">{formatHours(i18n, hoursBetween(entry.start_time, entry.end_time))}</span>
-              </button>
+              </Link>
             </li>
           ))}
         </ul>

@@ -34,9 +34,15 @@ The **Reports** page (German: **Berichte**) shows a customer's time entries of o
    old status and an error shows. Only shown when the month has entries. The Dashboard counts the sent reports of the
    previous month and lists the others. See [Reports API](../backend/reports.md#report-status).
 
-**Open report** in the month summary on the Time tracking page opens this page with that customer already selected.
-On the Dashboard, **Monthly reports** opens it without a customer, and **Open report** in the billing notice opens it
-with the customer and last month selected.
+The customer and the month are in the address (`/reports/3/2026-09`, see [Navigation and addresses](navigation.md)):
+choosing a customer adds a history entry, the month arrows replace it, and a reload or a bookmark opens the same report.
+Without a month in the address, the current one opens. An address with a customer that does not exist shows *This
+customer does not exist (any more).* with a link back, and a month that is none (`/reports/3/foo`) is *Page not found*.
+The month arrows are marked disabled (`aria-disabled`) until a customer is chosen.
+
+**Open report** (a link) in the month summary on the Time tracking page opens this page with that customer. On the
+Dashboard, **Monthly reports** opens it without a customer, and **Open report** in the billing notice opens it with the
+customer and last month.
 
 Months follow the browser's time zone: the page sends it with the request, so an entry started at 00:30 on the 1st
 belongs to that month, as on the Dashboard and the Time tracking page. See [Reports API](../backend/reports.md#time-zone).

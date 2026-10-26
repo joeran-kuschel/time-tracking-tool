@@ -46,8 +46,8 @@ month again. There is no URL state.
 - The entries are a table: *Date*, *Customer*, *Project*, *Time*, *Hours*, *Description*, *Actions*. Below the `sm`
   breakpoint every row becomes a card whose cells show their column name, so the page reflows at 320 px without
   horizontal scrolling.
-- **Open** (*Öffnen*) opens the entry's customer and project on the Time tracking
-  page. Entries cannot be edited or deleted here. The button shows only *Open* so rows stay low, but its accessible name continues *Open in Time tracking: customer, day* (German *Öffnen in Zeiterfassung: …*), which contains the visible label (WCAG 2.5.3).
+- **Open** (*Öffnen*) is a link to the entry's customer and project on the Time tracking
+  page (`/time-tracking/3/7`). Entries cannot be edited or deleted here. The link shows only *Open* so rows stay low, but its accessible name continues *Open in Time tracking: customer, day* (German *Öffnen in Zeiterfassung: …*), which contains the visible label (WCAG 2.5.3).
 - 50 entries load at first. **Show more** (*Mehr anzeigen*) appends the next 50; *Showing 50 of 120* tells how many
   are shown. When everything is loaded, the button goes away and focus moves to the list.
 - While a search runs, the old results stay (marked `aria-busy`), so the list does not jump. If a search fails, an error

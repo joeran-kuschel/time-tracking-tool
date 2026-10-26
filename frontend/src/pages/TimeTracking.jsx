@@ -1,10 +1,12 @@
 import { useState, useEffect, useId, useRef } from 'react'
+import { useLocation, useNavigate, useParams } from 'react-router'
 import { PlusIcon } from '@heroicons/react/24/outline'
 import { msg } from '@lingui/core/macro'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { api } from '../api'
 import { useAction } from '../hooks/useAction'
 import ErrorMessage from '../components/ErrorMessage'
+import MissingRecord from '../components/MissingRecord'
 import Timer from '../components/Timer'
 import MonthSummary from '../components/MonthSummary'
 import EntriesList from '../components/EntriesList'
@@ -13,6 +15,7 @@ import RecordForm from '../components/RecordForm'
 import EntryForm from '../components/EntryForm'
 import Modal from '../components/Modal'
 import { formatRate } from '../format'
+import { idFromParam, trackingPath } from '../routes'
 import { ui } from '../ui'
 
 const stopTimerFirst = msg`Stop the running timer first.`
@@ -23,12 +26,17 @@ const chipClass = (selected) => `inline-flex min-h-[2.5rem] items-center gap-2 r
   selected ? 'border-accent bg-accent font-semibold text-on-fill' : 'border-line-strong bg-surface text-ink hover:bg-paper'
 }`
 
-// initialCustomerId and initialProjectId preselect a customer and project, e.g. from the dashboard.
-function TimeTracking({ customers, onCustomersChange, timer, onOpenReport, initialCustomerId = null, initialProjectId = null }) {
-  // Only ids are kept, so a renamed customer or project shows its new name right away
-  const [selectedCustomerId, setSelectedCustomerId] = useState(initialCustomerId)
-  const [selectedProjectId, setSelectedProjectId] = useState(initialProjectId)
+// The selected customer and project are in the address (/time-tracking/:customerId/:projectId), so a reload, a
+// bookmark or a link from another page opens them. Only ids are kept, so a renamed record shows its new name right away.
+function TimeTracking({ customers, onCustomersChange, timer }) {
+  const params = useParams()
+  const navigate = useNavigate()
+  const { pathname } = useLocation()
+  const requestedCustomerId = idFromParam(params.customerId)
+  const requestedProjectId = idFromParam(params.projectId)
   const [projects, setProjects] = useState([])
+  // The customer whose projects are in `projects`, so a project that is not among them is only reported after the load
+  const [projectsOf, setProjectsOf] = useState(null)
   const [entries, setEntries] = useState([])
   // The open add dialog: 'customer', 'project', 'entry' or null
   const [dialog, setDialog] = useState(null)
@@ -48,8 +56,14 @@ function TimeTracking({ customers, onCustomersChange, timer, onOpenReport, initi
     if (projectFocusRequest) projectGroup.current?.focus()
   }, [projectFocusRequest])
 
-  const selectedCustomer = customers.find((c) => c.id === selectedCustomerId) ?? null
-  const selectedProject = projects.find((p) => p.id === selectedProjectId) ?? null
+  const selectedCustomer = customers.find((c) => c.id === requestedCustomerId) ?? null
+  const selectedCustomerId = selectedCustomer?.id ?? null
+  const selectedProject = projects.find((p) => p.id === requestedProjectId) ?? null
+  const selectedProjectId = selectedProject?.id ?? null
+  // An address for a record that does not exist (any more)
+  const customerMissing = Boolean(params.customerId) && !selectedCustomer
+  const projectMissing = Boolean(params.projectId) && Boolean(selectedCustomer) && !selectedProject
+    && (requestedProjectId === null || projectsOf === selectedCustomerId)
 
   // The customer shown now; answers that arrive for a customer selected before are dropped
   const shownCustomerId = useRef(selectedCustomerId)
@@ -59,21 +73,24 @@ function TimeTracking({ customers, onCustomersChange, timer, onOpenReport, initi
     // Nothing of the previous customer stays, so Start waits for this customer's projects
     setEntries([])
     setProjects([])
+    setProjectsOf(null)
     if (selectedCustomerId) {
       loadProjects(selectedCustomerId)
       loadEntries(selectedCustomerId)
-    } else {
-      setSelectedProjectId(null)
     }
   }, [selectedCustomerId])
 
-  // After a reload, open the customer of the running timer
+  // On the page without a customer (after a reload, say), open the customer and project of the running timer, once
+  const timerOpened = useRef(false)
   useEffect(() => {
-    if (!selectedCustomerId && timer.activeEntry) {
-      const customer = customers.find((c) => c.id === timer.activeEntry.customer_id)
-      if (customer) setSelectedCustomerId(customer.id)
+    if (params.customerId) timerOpened.current = true
+    if (timerOpened.current || !timer.activeEntry) return
+    const { customer_id: customerId, project_id: projectId } = timer.activeEntry
+    if (customers.some((c) => c.id === customerId)) {
+      timerOpened.current = true
+      navigate(trackingPath(customerId, projectId), { replace: true })
     }
-  }, [customers, timer.activeEntry])
+  }, [customers, timer.activeEntry, params.customerId])
 
   // Reload the entries when a timer starts or stops, also from the header, so the running entry shows up right away
   const activeId = timer.activeEntry?.id
@@ -84,16 +101,23 @@ function TimeTracking({ customers, onCustomersChange, timer, onOpenReport, initi
     refreshEntries()
   }, [activeId])
 
-  // Keeps the selected project if it still exists, else selects the running timer's project, else none
   const loadProjects = async (customerId) => {
     const data = await runProjectAction(() => api.getProjects(customerId), msg`Projects could not be loaded.`)
     if (!data || customerId !== shownCustomerId.current) return
     setProjects(data)
-    setSelectedProjectId((current) => {
-      const keep = (id) => data.some((p) => p.id === id) && id
-      return keep(current) || keep(timer.activeEntry?.project_id) || null
-    })
+    setProjectsOf(customerId)
   }
+
+  // Choosing a customer or a project adds a history entry, so Back undoes it. With a timer running for the customer,
+  // its project is selected right away.
+  // Choosing what is already open adds nothing, so Back doesn't seem to do nothing once
+  const choose = (to) => { if (to !== pathname) navigate(to) }
+  const openCustomer = (customerId) => {
+    const running = timer.activeEntry?.customer_id === customerId
+    choose(trackingPath(customerId, running ? timer.activeEntry.project_id : null))
+  }
+  const toggleProject = (projectId) =>
+    choose(trackingPath(selectedCustomerId, projectId === selectedProjectId ? null : projectId))
 
   // All entries of the customer; a selected project only narrows what is shown
   const loadEntries = async (customerId) => {
@@ -133,7 +157,7 @@ function TimeTracking({ customers, onCustomersChange, timer, onOpenReport, initi
 
   const deleteCustomer = async (customer) => {
     const deleted = await api.deleteCustomer(customer.id)
-    if (customer.id === selectedCustomerId) setSelectedCustomerId(null)
+    if (customer.id === selectedCustomerId) navigate(trackingPath(), { replace: true })
     await onCustomersChange()
     return deleted
   }
@@ -166,6 +190,7 @@ function TimeTracking({ customers, onCustomersChange, timer, onOpenReport, initi
 
   const deleteProject = async (project) => {
     const deleted = await api.deleteProject(project.id)
+    if (project.id === selectedProjectId) navigate(trackingPath(selectedCustomerId), { replace: true })
     await Promise.all([loadProjects(selectedCustomerId), refreshEntries()])
     return deleted
   }
@@ -203,7 +228,7 @@ function TimeTracking({ customers, onCustomersChange, timer, onOpenReport, initi
     <div className="flex flex-wrap items-center gap-2">
       <div ref={projectGroup} tabIndex={-1} role="group" aria-label={t`Projects`} className="flex flex-wrap items-center gap-2">
         {projects.length > 0 && (
-          <button onClick={() => setSelectedProjectId(null)} aria-pressed={!selectedProject} className={chipClass(!selectedProject)}>
+          <button onClick={() => toggleProject(null)} aria-pressed={!selectedProject} className={chipClass(!selectedProject)}>
             <Trans>All projects</Trans>
           </button>
         )}
@@ -212,7 +237,7 @@ function TimeTracking({ customers, onCustomersChange, timer, onOpenReport, initi
           return (
             <button
               key={project.id}
-              onClick={() => setSelectedProjectId((current) => (current === project.id ? null : project.id))}
+              onClick={() => toggleProject(project.id)}
               aria-pressed={selected}
               className={chipClass(selected)}
             >
@@ -252,7 +277,7 @@ function TimeTracking({ customers, onCustomersChange, timer, onOpenReport, initi
             return (
               <li key={customer.id} className="lg:w-full">
                 <button
-                  onClick={() => setSelectedCustomerId(customer.id)}
+                  onClick={() => openCustomer(customer.id)}
                   aria-pressed={selected}
                   className={`flex min-h-[2.75rem] w-full items-center gap-2.5 rounded-lg px-3 text-left text-[0.9375rem] ${
                     selected ? 'bg-accent-soft font-semibold text-accent-dark' : 'text-ink hover:bg-paper'
@@ -312,11 +337,25 @@ function TimeTracking({ customers, onCustomersChange, timer, onOpenReport, initi
             ) : (
               projectFilter(null)
             )}
+            {projectMissing && (
+              <MissingRecord
+                message={t`This project does not exist (any more).`}
+                to={trackingPath(selectedCustomerId)}
+                linkText={t`Show all projects`}
+              />
+            )}
             <ErrorMessage message={projectError} />
           </>
         ) : (
           <>
             <h1 className="sr-only"><Trans>Time tracking</Trans></h1>
+            {customerMissing && (
+              <MissingRecord
+                message={t`This customer does not exist (any more).`}
+                to={trackingPath()}
+                linkText={t`Back to Time tracking`}
+              />
+            )}
             <p className="text-muted"><Trans>Select a customer</Trans></p>
           </>
         )}
@@ -331,7 +370,7 @@ function TimeTracking({ customers, onCustomersChange, timer, onOpenReport, initi
             busy={timer.busy}
           />
           {selectedCustomer && (
-            <MonthSummary entries={entries} projects={projects} onOpenReport={() => onOpenReport(selectedCustomer.id)} />
+            <MonthSummary entries={entries} projects={projects} customerId={selectedCustomer.id} />
           )}
         </div>
 

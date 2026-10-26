@@ -1,5 +1,5 @@
 import { describe, expect, test, vi } from 'vitest'
-import { render, screen, within } from '../support/render'
+import { renderWithRouter as render, screen, within } from '../support/render'
 import userEvent from '@testing-library/user-event'
 import { axe } from '../support/axe'
 import { i18n } from '@/i18n'
@@ -20,7 +20,7 @@ function figure(label) {
 
 describe('MonthSummary', () => {
   test('sums up the finished entries of the current month', () => {
-    render(<MonthSummary entries={entries} projects={projects} onOpenReport={vi.fn()} now={now} />)
+    render(<MonthSummary entries={entries} projects={projects} customerId={3} now={now} />)
 
     expect(screen.getByRole('heading', { name: 'September 2026' })).toBeInTheDocument()
     expect(figure('Stunden diesen Monat')).toHaveTextContent('5,00 h')
@@ -33,7 +33,7 @@ describe('MonthSummary', () => {
   })
 
   test("gives screen readers each project's share of the total", () => {
-    render(<MonthSummary entries={entries} projects={projects} onOpenReport={vi.fn()} now={now} />)
+    render(<MonthSummary entries={entries} projects={projects} customerId={3} now={now} />)
     const perProject = screen.getAllByRole('listitem')
     expect(perProject[0]).toHaveTextContent('3,50 h, 70 % vom Gesamtwert')
     expect(perProject[1]).toHaveTextContent('1,50 h, 30 % vom Gesamtwert')
@@ -41,25 +41,23 @@ describe('MonthSummary', () => {
 
   test('words the share in the active language', () => {
     i18n.activate('en')
-    render(<MonthSummary entries={entries} projects={projects} onOpenReport={vi.fn()} now={now} />)
+    render(<MonthSummary entries={entries} projects={projects} customerId={3} now={now} />)
     expect(screen.getAllByRole('listitem')[0]).toHaveTextContent('3.50 h, 70% of total')
   })
 
   test('says so when nothing is recorded this month', () => {
-    render(<MonthSummary entries={[]} projects={projects} onOpenReport={vi.fn()} now={now} />)
+    render(<MonthSummary entries={[]} projects={projects} customerId={3} now={now} />)
     expect(screen.getByText('In diesem Monat ist noch keine Zeit erfasst.')).toBeInTheDocument()
   })
 
   test('opens the report', async () => {
-    const onOpenReport = vi.fn()
-    render(<MonthSummary entries={entries} projects={projects} onOpenReport={onOpenReport} now={now} />)
+    render(<MonthSummary entries={entries} projects={projects} customerId={3} now={now} />)
 
-    await userEvent.click(screen.getByRole('button', { name: 'Bericht öffnen' }))
-    expect(onOpenReport).toHaveBeenCalled()
+    expect(screen.getByRole('link', { name: 'Bericht öffnen' })).toHaveAttribute('href', '/reports/3')
   })
 
   test('has no detectable accessibility violations', async () => {
-    const { container } = render(<MonthSummary entries={entries} projects={projects} onOpenReport={vi.fn()} now={now} />)
+    const { container } = render(<MonthSummary entries={entries} projects={projects} customerId={3} now={now} />)
     expect(await axe(container)).toHaveNoViolations()
   })
 })

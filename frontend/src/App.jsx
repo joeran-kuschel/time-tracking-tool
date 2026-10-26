@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { Link, Route, Routes, useLocation, useNavigate } from 'react-router'
+import { Link, Route, Routes, useLocation } from 'react-router'
 import { ClockIcon } from '@heroicons/react/24/outline'
 import { msg } from '@lingui/core/macro'
 import { Trans, useLingui } from '@lingui/react/macro'
@@ -22,18 +22,13 @@ import { ui } from './ui'
 import './App.css'
 
 function App({ onLogout, logoutError, focusOnStart }) {
-  // What the Reports page opens with: { customerId, month, year }, set by "Open report" on another page
-  const [reportSelection, setReportSelection] = useState({})
-  // What the Time tracking page opens with: { customerId, projectId }, set from the dashboard
-  const [trackingSelection, setTrackingSelection] = useState({})
   const [customers, setCustomers] = useState([])
   const [loading, setLoading] = useState(true)
   const [run, error] = useAction()
   const timer = useActiveEntry()
   const main = useRef(null)
   const { t, i18n } = useLingui()
-  const navigate = useNavigate()
-  // The current page: an exact match of the address (a trailing slash counts), also for the navigation below
+  // The current page: a match of the address (a trailing slash counts, so do the selections after the page), also for the navigation below
   const page = pageFor(useLocation().pathname)
 
   usePageTitle(page ? i18n._(page.label) : t`Page not found`)
@@ -60,41 +55,15 @@ function App({ onLogout, logoutError, focusOnStart }) {
     if (await timer.stop()) main.current?.focus()
   }
 
-  const openReport = (customerId = null, month, year) => {
-    setReportSelection({ customerId, month, year })
-    navigate('/reports')
-  }
-
-  const openTimeTracking = (customerId, projectId = null) => {
-    setTrackingSelection({ customerId, projectId })
-    navigate('/time-tracking')
-  }
-
   const announcedProject = timer.announcement?.projectName
   const announcementText = !timer.announcement ? ''
     : timer.announcement.kind === 'started' ? t`Timer started for ${announcedProject}` : t`Timer stopped`
 
   const elements = {
-    dashboard: <Dashboard timer={timer} onOpenTimeTracking={openTimeTracking} onOpenReports={openReport} />,
-    'time-tracking': (
-      <TimeTracking
-        customers={customers}
-        onCustomersChange={loadCustomers}
-        timer={timer}
-        onOpenReport={openReport}
-        initialCustomerId={trackingSelection.customerId}
-        initialProjectId={trackingSelection.projectId}
-      />
-    ),
-    entries: <Entries customers={customers} onOpenTimeTracking={openTimeTracking} />,
-    reports: (
-      <Reports
-        customers={customers}
-        initialCustomerId={reportSelection.customerId}
-        initialMonth={reportSelection.month}
-        initialYear={reportSelection.year}
-      />
-    ),
+    dashboard: <Dashboard timer={timer} />,
+    'time-tracking': <TimeTracking customers={customers} onCustomersChange={loadCustomers} timer={timer} />,
+    entries: <Entries customers={customers} />,
+    reports: <Reports customers={customers} />,
   }
 
   if (loading) {
@@ -147,7 +116,7 @@ function App({ onLogout, logoutError, focusOnStart }) {
           <div className="mx-4 mt-4 sm:mx-8"><ErrorMessage message={timer.error} /></div>
         )}
         <Routes>
-          {pages.map(({ id, path }) => <Route key={id} path={path} element={elements[id]} />)}
+          {pages.map(({ id, pattern }) => <Route key={id} path={pattern} element={elements[id]} />)}
           <Route path="*" element={<NotFound />} />
         </Routes>
       </main>

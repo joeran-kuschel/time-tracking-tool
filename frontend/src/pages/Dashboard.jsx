@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { Link } from 'react-router'
 import { DocumentTextIcon } from '@heroicons/react/24/outline'
 import { msg } from '@lingui/core/macro'
 import { Trans, useLingui } from '@lingui/react/macro'
@@ -12,12 +13,13 @@ import HoursChart from '../components/dashboard/HoursChart'
 import ByCustomer from '../components/dashboard/ByCustomer'
 import BillingTable from '../components/dashboard/BillingTable'
 import RecentEntries from '../components/dashboard/RecentEntries'
+import { reportPath } from '../routes'
 import { ui } from '../ui'
 
 // The start page: track time, the month's figures, chart and billing, and the latest entries.
 // Everything comes from one request (GET /api/dashboard); the sums are calculated here (dashboard.js).
-// onOpenTimeTracking(customerId, projectId) and onOpenReports(customerId, month, year) switch pages.
-function Dashboard({ timer, onOpenTimeTracking, onOpenReports }) {
+// Its links open the Time tracking page for a customer and project and the Reports page.
+function Dashboard({ timer }) {
   const [data, setData] = useState(null)
   const [run, error] = useAction()
   const { i18n } = useLingui()
@@ -55,10 +57,10 @@ function Dashboard({ timer, onOpenTimeTracking, onOpenReports }) {
           <p className="text-sm text-muted">{today}</p>
           <h1 className="font-serif text-4xl font-semibold leading-tight"><Trans>Dashboard</Trans></h1>
         </div>
-        <button type="button" onClick={() => onOpenReports()} className={`${ui.buttonSecondary} min-h-[2.75rem]`}>
+        <Link to={reportPath()} className={`${ui.buttonSecondary} min-h-[2.75rem]`}>
           <DocumentTextIcon aria-hidden="true" className="h-5 w-5" />
           <Trans>Monthly reports</Trans>
-        </button>
+        </Link>
       </div>
 
       {error && (
@@ -82,17 +84,15 @@ function Dashboard({ timer, onOpenTimeTracking, onOpenReports }) {
           </div>
           <div className="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,24rem)]">
             <HoursChart entries={data.entries} now={now} />
-            <ByCustomer rows={customers} now={now} onSelect={onOpenTimeTracking} />
+            <ByCustomer rows={customers} now={now} />
           </div>
           <div className="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,24rem)]">
             <BillingTable
               rows={customers}
               now={now}
               lastMonthReports={data.lastMonthReports}
-              onSelectCustomer={onOpenTimeTracking}
-              onOpenReport={onOpenReports}
             />
-            <RecentEntries entries={data.recent} onSelect={onOpenTimeTracking} />
+            <RecentEntries entries={data.recent} />
           </div>
         </>
       )}

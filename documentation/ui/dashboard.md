@@ -92,8 +92,8 @@ and whenever the timer starts or stops (also from the header). The date is taken
   `RecentEntries`
 - `frontend/src/components/Tabs.jsx`: accessible tabs
 - `frontend/src/dashboard.js`: weeks, days, working days, per-customer sums
-- `App.jsx`: `openTimeTracking(customerId, projectId)` and `openReport(customerId, month, year)`; the Time tracking and
-  Reports pages take them as `initial…` props
+- `routes.js`: `trackingPath(customerId, projectId)` and `reportPath(customerId, year, month)` build the addresses the
+  Dashboard's links go to (see [Navigation and addresses](navigation.md))
 
 Tests (in `frontend/tests/`): `dashboard.test.js`, `pages/Dashboard.test.jsx`, `components/Tabs.test.jsx`, and the page flows in
 `App.test.jsx`.
