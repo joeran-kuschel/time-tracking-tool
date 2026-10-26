@@ -36,7 +36,7 @@ The money rules are in one place, `utils/amounts.js`, and are the same for all t
 - A running entry (no end time) has 0 hours and 0 amount; its row is still shown. A project with a rate of 0 is shown
   with `0,00 €`, not hidden.
 - An entry that ends before it starts counts as 0 hours and 0,00 € in the amounts (so no amount is ever negative), and
-  the project hours add up the same 0. Fix the entry's times; saving such entries is not prevented yet. The hours
+  the project hours add up the same 0. Stopping the timer no longer saves such entries; old ones are found and fixed as described in [Time entries](time-entries.md#entries-that-end-before-they-start). The hours
   printed in the entry rows and `totalHours` are not changed and still show the negative value.
 - The currency is always EUR; there is no currency setting. Projects keep the order of their first entry.
 

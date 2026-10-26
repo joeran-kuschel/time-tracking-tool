@@ -14,7 +14,8 @@ function daysBetween(start, end) {
 // onSubmit receives { projectId, startTime, endTime, description } as ISO times.
 function EntryForm({ entry, projects, projectId, legend, submitLabel, onSubmit, onCancel, error, autoFocus }) {
   const { t } = useLingui()
-  const endDayOffset = entry ? daysBetween(entry.start_time, entry.end_time) : 0
+  // Never negative: an old entry that ends on the day before its start opens as ending on the start's day
+  const endDayOffset = entry ? Math.max(0, daysBetween(entry.start_time, entry.end_time)) : 0
 
   const initialValues = entry
     ? {

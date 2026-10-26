@@ -77,6 +77,58 @@ describe('EntryForm', () => {
     }))
   })
 
+  describe('correcting an entry that ends before it starts', () => {
+    const broken = (startDate, start, endDate, end) => ({
+      id: 1, project_id: 7, start_time: fromInputs(startDate, start), end_time: fromInputs(endDate, end), description: null,
+    })
+
+    async function correct(entry, newEnd) {
+      const onSubmit = vi.fn().mockResolvedValue({ id: 1 })
+      renderForm({ entry, onSubmit })
+
+      await userEvent.click(screen.getByRole('button', { name: 'Speichern' }))
+      expect(onSubmit).not.toHaveBeenCalled()
+      expect(screen.getByLabelText('Ende')).toHaveAccessibleDescription('Das Ende muss nach dem Start liegen.')
+
+      await userEvent.clear(screen.getByLabelText('Ende'))
+      await userEvent.type(screen.getByLabelText('Ende'), newEnd)
+      await userEvent.click(screen.getByRole('button', { name: 'Speichern' }))
+      return onSubmit
+    }
+
+    test('on the same day', async () => {
+      const onSubmit = await correct(broken('2026-10-09', '10:00', '2026-10-09', '09:30'), '11:00')
+      const { startTime, endTime } = onSubmit.mock.calls[0][0]
+
+      expect(startTime).toBe(fromInputs('2026-10-09', '10:00'))
+      expect(endTime).toBe(fromInputs('2026-10-09', '11:00'))
+      expect(new Date(endTime) > new Date(startTime)).toBe(true)
+    })
+
+    test('when the stored end is on the day before the start', async () => {
+      const onSubmit = await correct(broken('2026-10-09', '10:00', '2026-10-08', '09:30'), '11:30')
+      const { startTime, endTime } = onSubmit.mock.calls[0][0]
+
+      expect(endTime).toBe(fromInputs('2026-10-09', '11:30'))
+      expect(new Date(endTime) > new Date(startTime)).toBe(true)
+    })
+  })
+
+  test('keeps the +1 offset of an overnight entry when only the description changes', async () => {
+    const onSubmit = vi.fn().mockResolvedValue({ id: 1 })
+    const entry = { id: 1, project_id: 7, start_time: fromInputs('2026-10-09', '22:00'), end_time: fromInputs('2026-10-10', '01:00'), description: null }
+    renderForm({ entry, onSubmit })
+
+    await userEvent.type(screen.getByLabelText('Beschreibung (optional)'), 'Nachtarbeit')
+    await userEvent.click(screen.getByRole('button', { name: 'Speichern' }))
+
+    expect(onSubmit).toHaveBeenCalledWith(expect.objectContaining({
+      startTime: fromInputs('2026-10-09', '22:00'),
+      endTime: fromInputs('2026-10-10', '01:00'),
+      description: 'Nachtarbeit',
+    }))
+  })
+
   test('has no detectable accessibility violations', async () => {
     const { container } = renderForm()
     expect(await axe(container)).toHaveNoViolations()

@@ -67,7 +67,7 @@ the PDF and the CSV show the same numbers. Amounts are in euros. `summary.js` (h
 by the Dashboard but no longer by this page.
 
 Project lines count an entry that ends before it starts as 0 hours, like the server does for amounts, so they can add up
-to more than the total, which keeps such an entry's negative hours (issue #60 tracks the cause). The Dashboard's **Preview PDF** stays hours only.
+to more than the total, which keeps such an old entry's negative hours (how to find and fix them: [Time entries](../backend/time-entries.md#entries-that-end-before-they-start)). The Dashboard's **Preview PDF** stays hours only.
 
 ## Formats
 

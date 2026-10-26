@@ -198,7 +198,7 @@ msgid "Dashboard could not be loaded."
 msgstr "Dashboard konnte nicht geladen werden."
 
 #: src/components/EntriesList.jsx:86
-#: src/components/EntryForm.jsx:36
+#: src/components/EntryForm.jsx:37
 #: src/components/EntryResults.jsx:38
 #: src/pages/Reports.jsx:240
 msgid "Date"
@@ -242,7 +242,7 @@ msgstr "Eintrag vom {start} löschen?"
 msgid "Description"
 msgstr "Beschreibung"
 
-#: src/components/EntryForm.jsx:39
+#: src/components/EntryForm.jsx:40
 #: src/components/Timer.jsx:60
 msgid "Description (optional)"
 msgstr "Beschreibung (optional)"
@@ -287,15 +287,15 @@ msgstr "E-Mail"
 msgid "Email (optional)"
 msgstr "E-Mail (optional)"
 
-#: src/components/EntryForm.jsx:38
+#: src/components/EntryForm.jsx:39
 msgid "End"
 msgstr "Ende"
 
-#: src/components/EntryForm.jsx:38
+#: src/components/EntryForm.jsx:39
 msgid "End (next day)"
 msgstr "Ende (nächster Tag)"
 
-#: src/components/EntryForm.jsx:44
+#: src/components/EntryForm.jsx:45
 msgid "End must be after start."
 msgstr "Das Ende muss nach dem Start liegen."
 
@@ -552,7 +552,7 @@ msgid "Previous month"
 msgstr "Vorheriger Monat"
 
 #: src/components/EntryFilters.jsx:150
-#: src/components/EntryForm.jsx:35
+#: src/components/EntryForm.jsx:36
 #: src/components/EntryResults.jsx:38
 #: src/pages/Reports.jsx:241
 msgid "Project"
@@ -712,7 +712,7 @@ msgstr "Sortierung"
 msgid "Sort: {sortName}"
 msgstr "Sortierung: {sortName}"
 
-#: src/components/EntryForm.jsx:37
+#: src/components/EntryForm.jsx:38
 #: src/components/Timer.jsx:91
 msgid "Start"
 msgstr "Start"

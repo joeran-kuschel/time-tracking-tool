@@ -38,9 +38,15 @@ time, see [Timer](../ui/timer.md).
 
 Body: `{ endTime, startTime?, projectId?, description? }`. `endTime` is required (`400` otherwise).
 
-- **Stopping** a running entry: send `endTime` (and optionally `description`). The end is not compared with the start,
-  because the browser's clock stops an entry that the server's clock started. Sending `startTime` or `projectId` for a
-  running entry answers `409`.
+- **Stopping** a running entry: send `endTime` (and optionally `description`). Stopping never fails because of its end
+  time: a running timer can't be deleted (`409`), so a refused stop would trap the user. The sent end is stored when
+  it is after the start. Otherwise (the browser's clock is behind, was set back between start and stop, or the timer
+  was started on another device) the server's clock is the end; if even that is not after the start (a start in the
+  future), the end equals the start, a 0-hour entry. An end before the start is never stored. The comparison and the storage rely on the backend running in UTC
+  (`process.env.TZ = 'UTC'` in `server.js`), and every time is stored normalised as UTC (`toISOString()`): the columns
+  are `TIMESTAMP WITHOUT TIME ZONE`, and Postgres would drop a UTC offset such as `-02:00` from the text it is sent.
+  This holds for stopping, editing and adding entries. Sending `startTime` or
+  `projectId` for a running entry answers `409`.
 - **Editing** a finished entry: every field can change. The end must be after the start (`400` otherwise).
   `projectId` can only move the entry to another project of the same customer (`400` otherwise).
 - Fields left out keep their stored value. For `description`, an empty string or `null` clears it; stopping the timer
@@ -48,6 +54,15 @@ Body: `{ endTime, startTime?, projectId?, description? }`. `endTime` is required
 - `404` for an unknown entry.
 
 This is a single `UPDATE` (`backend/src/models/TimeEntry.js`, `update(id, { startTime, endTime, projectId, description })`).
+
+## Entries that end before they start
+
+Before this check, stopping the timer could save an entry that ends before it starts. Such old entries count as 0 hours
+in the report amounts and show negative hours (see [Reports](reports.md)). To find them, run
+`kubectl -n time-tracking exec deploy/postgres -- sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "SELECT te.id, te.start_time, te.end_time, p.name FROM time_entries te JOIN projects p ON p.id = te.project_id WHERE te.end_time < te.start_time"'`.
+Fix each one by editing it on the Time tracking page; the edit form requires an end after the start. Entries whose end equals
+their start are not found by the query: they show 0 h and are harmless. There is no database constraint, because
+existing rows would break it.
 
 ## Deleting entries
 

@@ -99,7 +99,7 @@ otherwise the form says *End must be after start.* next to the end field. Overla
 
 - **Edit** turns a finished entry's row into the same form, filled with its values. The project dropdown offers the
   projects of the same customer, so an entry booked on the wrong project can be moved.
-- An entry the timer recorded past midnight keeps its day offset; its end field then reads *End (next day)*.
+- An entry the timer recorded past midnight keeps its day offset; its end field then reads *End (next day)*. An old entry that ends before it starts (see [Time entries](../backend/time-entries.md#entries-that-end-before-they-start)) opens as ending on the day of its start, so changing the end time is enough to correct it.
 - **Delete** asks *Delete the entry from 21.09.2026, 10:00?* first. After deleting, focus moves to the entries.
 
 ## Errors

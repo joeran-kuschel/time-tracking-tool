@@ -8,6 +8,20 @@ const isValidTime = (value) => typeof value === 'string' && !Number.isNaN(Date.p
 const UNIQUE_VIOLATION = '23505';
 const TIMER_RUNNING = { error: 'A timer is already running' };
 
+// The columns are TIMESTAMP WITHOUT TIME ZONE and Postgres drops a UTC offset when it casts text, so times are stored
+// as the UTC instant that was validated ("07:30-02:00" would otherwise be stored as 07:30).
+const toUtc = (value) => new Date(value).toISOString();
+
+// The end a stopped timer is saved with. Stopping never fails (a running timer can't be deleted, so a refused stop
+// would trap the user), but an end before the start is never stored: the sent end counts when it is after the start,
+// else the server's clock, else (start in the future) the start itself.
+function stopTime(sentEnd, start, now = new Date()) {
+  // Compares instants and relies on the backend running in UTC (process.env.TZ in server.js), like the stored times
+  const startMs = new Date(start).getTime();
+  const end = new Date(sentEnd).getTime() > startMs ? new Date(sentEnd) : now.getTime() > startMs ? now : new Date(startMs);
+  return end.toISOString();
+}
+
 exports.create = async (req, res) => {
   try {
     const { projectId, startTime, endTime, description } = req.body;
@@ -29,7 +43,7 @@ exports.create = async (req, res) => {
       return res.status(409).json(TIMER_RUNNING);
     }
 
-    const entry = await TimeEntry.create(projectId, startTime, endTime || null, description);
+    const entry = await TimeEntry.create(projectId, toUtc(startTime), endTime ? toUtc(endTime) : null, description);
     res.status(201).json(entry);
   } catch (err) {
     if (err.code === UNIQUE_VIOLATION) {
@@ -62,7 +76,6 @@ exports.update = async (req, res) => {
     if (isStop && (startTime !== undefined || projectId !== undefined)) {
       return res.status(409).json({ error: 'Stop the timer before editing it' });
     }
-    // Stopping uses the browser's clock against the server's start time, so it isn't checked
     if (!isStop && new Date(endTime) <= new Date(startTime ?? entry.start_time)) {
       return res.status(400).json({ error: 'endTime must be after startTime' });
     }
@@ -74,7 +87,12 @@ exports.update = async (req, res) => {
       }
     }
 
-    const updated = await TimeEntry.update(req.params.id, { startTime, endTime, projectId, description });
+    const updated = await TimeEntry.update(req.params.id, {
+      startTime: startTime === undefined ? undefined : toUtc(startTime),
+      endTime: isStop ? stopTime(endTime, entry.start_time) : toUtc(endTime),
+      projectId,
+      description,
+    });
     res.json(updated);
   } catch (err) {
     console.error(err);

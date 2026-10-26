@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, test, vi } from 'vitest'
-import { act, renderWithRouter as render, screen } from '../support/render'
+import { act, renderWithRouter as render, screen, waitFor } from '../support/render'
 import userEvent from '@testing-library/user-event'
 import { useLocation } from 'react-router'
 import AuthGate from '@/components/AuthGate'
@@ -55,12 +55,13 @@ describe('AuthGate addresses', () => {
 
     expect(await screen.findByRole('heading', { level: 1, name: 'Anmelden' })).toBeInTheDocument()
     expect(screen.getByTestId('path')).toHaveTextContent('/reports')
-    expect(document.title).toBe('Anmelden · Time Tracking')
+    // The title is set in an effect and the router's location in a lower-priority update: wait for both
+    await waitFor(() => expect(document.title).toBe('Anmelden · Time Tracking'))
 
     await loginAs()
 
     expect(await screen.findByText('App is shown')).toBeInTheDocument()
-    expect(screen.getByTestId('path')).toHaveTextContent('/reports')
+    await waitFor(() => expect(screen.getByTestId('path')).toHaveTextContent('/reports'))
   })
 
   test('a deliberate logout resets the address to the Dashboard', async () => {
@@ -71,7 +72,7 @@ describe('AuthGate addresses', () => {
     await userEvent.click(await screen.findByRole('button', { name: 'App logout' }))
 
     expect(await screen.findByRole('heading', { level: 1, name: 'Anmelden' })).toBeInTheDocument()
-    expect(screen.getByTestId('path')).toHaveTextContent(/^\/$/)
+    await waitFor(() => expect(screen.getByTestId('path')).toHaveTextContent(/^\/$/))
   })
 
   test('a failed logout keeps the address', async () => {
