@@ -1,13 +1,15 @@
 import { useId } from 'react'
+import { Link } from 'react-router'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { formatAmount, formatHours } from '../format'
 import { inMonth, summarize } from '../summary'
+import { reportPath } from '../routes'
 import ShareOfTotal from './ShareOfTotal'
 import { ui } from '../ui'
 
 // The current month of a customer: hours, billable amount (hours × hourly rate), entries and hours per project.
-// Running entries don't count yet. onOpenReport opens the monthly report.
-function MonthSummary({ entries, projects, onOpenReport, now = new Date() }) {
+// Running entries don't count yet. The link opens the customer's report.
+function MonthSummary({ customerId, entries, projects, now = new Date() }) {
   const { i18n } = useLingui()
   const headingId = useId()
   const summary = summarize(entries.filter((e) => inMonth(e, now)), projects)
@@ -23,9 +25,9 @@ function MonthSummary({ entries, projects, onOpenReport, now = new Date() }) {
     <section aria-labelledby={headingId} className={`${ui.card} flex flex-col gap-5`}>
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h2 id={headingId} className={ui.eyebrow}>{month}</h2>
-        <button type="button" onClick={onOpenReport} className="text-sm font-medium text-accent underline underline-offset-2 hover:text-accent-dark">
+        <Link to={reportPath(customerId)} className="text-sm font-medium text-accent underline underline-offset-2 hover:text-accent-dark">
           <Trans>Open report</Trans>
-        </button>
+        </Link>
       </div>
 
       <dl className="grid grid-cols-1 gap-4 sm:grid-cols-3">

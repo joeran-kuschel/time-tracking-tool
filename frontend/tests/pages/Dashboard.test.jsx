@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
-import { render, screen, within } from '../support/render'
+import { renderWithRouter as render, screen, within } from '../support/render'
 import userEvent from '@testing-library/user-event'
 import { axe } from '../support/axe'
 import Dashboard from '@/pages/Dashboard'
@@ -43,10 +43,9 @@ const data = {
 
 const stoppedTimer = () => ({ activeEntry: null, start: vi.fn(), stop: vi.fn(), error: null })
 
-function renderDashboard(timer = stoppedTimer(), props = {}) {
-  const handlers = { onOpenTimeTracking: vi.fn(), onOpenReports: vi.fn(), ...props }
-  const result = render(<Dashboard timer={timer} {...handlers} />)
-  return { ...result, ...handlers, timer }
+function renderDashboard(timer = stoppedTimer()) {
+  const result = render(<Dashboard timer={timer} />)
+  return { ...result, timer }
 }
 
 const loaded = () => screen.findByRole('heading', { name: 'Zeit erfassen' })
@@ -127,19 +126,18 @@ describe('Dashboard', () => {
   })
 
   test('shows hours per customer and opens a customer on the Time tracking page', async () => {
-    const { onOpenTimeTracking } = renderDashboard()
+    renderDashboard()
     const section = within(await screen.findByRole('region', { name: 'Nach Kunde · September' }))
 
-    const buttons = section.getAllByRole('button')
-    expect(buttons[0]).toHaveTextContent(/Muster GmbH5,00 h, 56 % vom GesamtwertWebsite, Shop · 452,50\s€/)
-    expect(buttons[1]).toHaveTextContent(/Berger4,00 h, 44 % vom GesamtwertPflege · 340,00\s€/)
-
-    await userEvent.click(buttons[1])
-    expect(onOpenTimeTracking).toHaveBeenCalledWith(2)
+    const links = section.getAllByRole('link')
+    expect(links[0]).toHaveTextContent(/Muster GmbH5,00 h, 56 % vom GesamtwertWebsite, Shop · 452,50\s€/)
+    expect(links[1]).toHaveTextContent(/Berger4,00 h, 44 % vom GesamtwertPflege · 340,00\s€/)
+    expect(links[0]).toHaveAttribute('href', '/time-tracking/1')
+    expect(links[1]).toHaveAttribute('href', '/time-tracking/2')
   })
 
   test('shows the billing table with PDF previews and the reports of last month that are not sent', async () => {
-    const { onOpenReports } = renderDashboard()
+    renderDashboard()
     const table = await screen.findByRole('table', { name: 'Abrechnung · September 2026' })
 
     const [, first, , total] = within(table).getAllByRole('row')
@@ -151,29 +149,24 @@ describe('Dashboard', () => {
 
     expect(screen.getByText('August: 1 von 2 Abrechnungen verschickt.')).toBeInTheDocument()
     expect(screen.getByText('Muster GmbH: bereit zum Versand')).toBeInTheDocument()
-    await userEvent.click(screen.getByRole('button', { name: 'Abrechnung für Muster GmbH öffnen' }))
-    expect(onOpenReports).toHaveBeenCalledWith(1, 8, 2026)
+    expect(screen.getByRole('link', { name: 'Abrechnung für Muster GmbH öffnen' })).toHaveAttribute('href', '/reports/1/2026-08')
+    expect(within(first).getByRole('link', { name: 'Muster GmbH' })).toHaveAttribute('href', '/time-tracking/1')
   })
 
   test('lists recent entries; selecting one opens its customer and project, View all the newest customer', async () => {
-    const { onOpenTimeTracking } = renderDashboard()
+    renderDashboard()
     const section = within(await screen.findByRole('region', { name: 'Letzte Einträge' }))
 
-    expect(section.getByRole('button', { name: /Updates.*Berger · Pflege.*4,00 h/ })).toBeInTheDocument()
-    expect(section.getByRole('button', { name: /Ohne Beschreibung.*Muster GmbH · Shop/ })).toBeInTheDocument()
-
-    await userEvent.click(section.getByRole('button', { name: /Ohne Beschreibung/ }))
-    expect(onOpenTimeTracking).toHaveBeenCalledWith(1, 8)
-    await userEvent.click(section.getByRole('button', { name: 'Alle ansehen' }))
-    expect(onOpenTimeTracking).toHaveBeenLastCalledWith(2)
+    expect(section.getByRole('link', { name: /Updates.*Berger · Pflege.*4,00 h/ })).toBeInTheDocument()
+    expect(section.getByRole('link', { name: /Ohne Beschreibung.*Muster GmbH · Shop/ })).toHaveAttribute('href', '/time-tracking/1/8')
+    expect(section.getByRole('link', { name: 'Alle ansehen' })).toHaveAttribute('href', '/time-tracking/2')
   })
 
   test('Monthly reports opens the Reports page', async () => {
-    const { onOpenReports } = renderDashboard()
+    renderDashboard()
     await loaded()
 
-    await userEvent.click(screen.getByRole('button', { name: 'Monatsabrechnungen' }))
-    expect(onOpenReports).toHaveBeenCalledWith()
+    expect(screen.getByRole('link', { name: 'Monatsabrechnungen' })).toHaveAttribute('href', '/reports')
   })
 
   test('starts the timer for the chosen project, preselecting the project of the newest entry', async () => {
@@ -201,13 +194,13 @@ describe('Dashboard', () => {
     const running = { id: 50, ...muster, project_id: 7, project_name: 'Website', start_time: new Date(2026, 8, 24, 13, 30).toISOString(), description: null }
     const timer = { ...stoppedTimer(), activeEntry: running }
     timer.stop.mockResolvedValue({ ...running, end_time: new Date(2026, 8, 24, 15, 0).toISOString() })
-    const { rerender, onOpenTimeTracking, onOpenReports } = renderDashboard(timer)
+    const { rerender } = renderDashboard(timer)
     await loaded()
     expect(screen.queryByLabelText('Kunde und Projekt')).not.toBeInTheDocument()
     expect(screen.getByText('Läuft seit 13:30')).toBeInTheDocument()
 
     await userEvent.click(screen.getByRole('button', { name: 'Stop' }))
-    rerender(<Dashboard timer={{ ...timer, activeEntry: null }} onOpenTimeTracking={onOpenTimeTracking} onOpenReports={onOpenReports} />)
+    rerender(<Dashboard timer={{ ...timer, activeEntry: null }} />)
 
     expect(await screen.findByText('1,50 h für Website gespeichert.')).toBeInTheDocument()
     expect(api.getDashboard).toHaveBeenCalledTimes(2)

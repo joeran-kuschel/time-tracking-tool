@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
-import { act, fireEvent, render, screen, waitFor, within } from '../support/render'
+import { act, fireEvent, renderWithRouter as render, screen, waitFor, within } from '../support/render'
 import userEvent from '@testing-library/user-event'
 import { axe } from '../support/axe'
 import Entries from '@/pages/Entries'
@@ -30,7 +30,7 @@ function deferred() {
   return { promise, resolve, reject }
 }
 
-const renderPage = (props = {}) => render(<Entries customers={customers} onOpenTimeTracking={vi.fn()} {...props} />)
+const renderPage = (props = {}) => render(<Entries customers={customers} {...props} />)
 
 beforeEach(() => {
   vi.resetAllMocks()
@@ -401,20 +401,17 @@ describe('Entries', () => {
   })
 
   describe('Open in Time tracking', () => {
-    test('opens the customer and project of the entry', async () => {
+    test('links to the customer and project of the entry', async () => {
       api.searchTimeEntries.mockResolvedValue(answer([entry(1, { customer_id: 2, customer_name: 'Neu AG', project_id: 8 })]))
-      const onOpenTimeTracking = vi.fn()
-      renderPage({ onOpenTimeTracking })
+      renderPage()
 
-      await userEvent.click(await screen.findByRole('button', { name: /^Öffnen\s+in Zeiterfassung\s*: Neu AG/ }))
-
-      expect(onOpenTimeTracking).toHaveBeenCalledWith(2, 8)
+      expect(await screen.findByRole('link', { name: /^Öffnen\s+in Zeiterfassung\s*: Neu AG/ })).toHaveAttribute('href', '/time-tracking/2/8')
     })
 
     test('shows only Open as the visible label, while the name says where it opens', async () => {
     renderPage()
 
-    const button = (await screen.findAllByRole('button', { name: /^Öffnen\s+in Zeiterfassung\s*: Muster GmbH, / }))[0]
+    const button = (await screen.findAllByRole('link', { name: /^Öffnen\s+in Zeiterfassung\s*: Muster GmbH, / }))[0]
     expect(button.firstChild.textContent).toBe('Öffnen')
   })
 

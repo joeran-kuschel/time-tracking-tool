@@ -1,12 +1,14 @@
 import { useId } from 'react'
+import { Link } from 'react-router'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { formatAmount, formatHours } from '../../format'
 import ShareOfTotal from '../ShareOfTotal'
+import { trackingPath } from '../../routes'
 import { ui } from '../../ui'
 
 // Hours of the month per customer as horizontal bars, with projects and amount.
-// rows: from byCustomer(); onSelect(customerId) opens the customer on the Time tracking page.
-function ByCustomer({ rows, now, onSelect }) {
+// rows: from byCustomer(); each links to the customer on the Time tracking page.
+function ByCustomer({ rows, now }) {
   const { i18n } = useLingui()
   const headingId = useId()
   const monthName = i18n.date(now, { month: 'long' })
@@ -22,9 +24,8 @@ function ByCustomer({ rows, now, onSelect }) {
         <ul className="flex flex-col gap-1">
           {rows.map((row) => (
             <li key={row.customerId}>
-              <button
-                type="button"
-                onClick={() => onSelect(row.customerId)}
+              <Link
+                to={trackingPath(row.customerId)}
                 className="flex min-h-[2.75rem] w-full flex-col gap-1.5 rounded-lg px-2 py-2 text-left hover:bg-paper"
               >
                 <span className="flex w-full items-baseline justify-between gap-3">
@@ -37,7 +38,7 @@ function ByCustomer({ rows, now, onSelect }) {
                 <span className="text-sm text-muted">
                   {row.projects.map((p) => p.project.name).join(', ')} · {formatAmount(i18n, row.amount)}
                 </span>
-              </button>
+              </Link>
             </li>
           ))}
         </ul>

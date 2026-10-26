@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
-import { render, screen, waitFor, within } from '../support/render'
+import { renderWithRouter, screen, waitFor, within } from '../support/render'
+import { Route, Routes, useLocation } from 'react-router'
 import userEvent from '@testing-library/user-event'
 import { axe } from '../support/axe'
 import Reports from '@/pages/Reports'
@@ -33,6 +34,19 @@ const reportWithAmounts = {
 // Answers like the backend: with amounts only when asked for
 const answer = (customerId, month, year, amounts) => Promise.resolve(amounts ? reportWithAmounts : report)
 
+// The page at an address like the app's, with the address shown so the tests can read it
+function LocationDisplay() {
+  return <p data-testid="path">{useLocation().pathname}</p>
+}
+const renderReports = (route = '/reports') => renderWithRouter(
+  <>
+    <Routes><Route path="/reports/:customerId?/:yearMonth?" element={<Reports customers={customers} />} /></Routes>
+    <LocationDisplay />
+  </>,
+  { route }
+)
+const path = () => screen.getByTestId('path').textContent
+
 async function selectCustomer(name) {
   await userEvent.selectOptions(screen.getByLabelText(/Kunde|Customer/), name)
 }
@@ -52,7 +66,7 @@ afterEach(() => {
 
 describe('Reports', () => {
   test('asks for a customer first', () => {
-    render(<Reports customers={customers} />)
+    renderReports()
 
     expect(screen.getByText('Wähle einen Kunden, um den Bericht zu sehen.')).toBeInTheDocument()
     expect(api.getMonthlyReport).not.toHaveBeenCalled()
@@ -60,7 +74,7 @@ describe('Reports', () => {
 
   test('loads the report of the current month as soon as a customer is selected', async () => {
     api.getMonthlyReport.mockResolvedValue(report)
-    render(<Reports customers={customers} />)
+    renderReports()
 
     await selectCustomer('Muster GmbH')
 
@@ -70,7 +84,7 @@ describe('Reports', () => {
 
   test('opens with the customer it is given', async () => {
     api.getMonthlyReport.mockResolvedValue(report)
-    render(<Reports customers={customers} initialCustomerId={2} />)
+    renderReports('/reports/2')
 
     expect(screen.getByLabelText('Kunde')).toHaveValue('2')
     expect(await screen.findByRole('heading', { name: 'Abrechnung Neu AG – September 2026' })).toBeInTheDocument()
@@ -79,16 +93,161 @@ describe('Reports', () => {
 
   test('opens with the month it is given', async () => {
     api.getMonthlyReport.mockResolvedValue(report)
-    render(<Reports customers={customers} initialCustomerId={1} initialMonth={8} initialYear={2026} />)
+    renderReports('/reports/1/2026-08')
 
     expect(screen.getByRole('group', { name: 'Monat' })).toHaveTextContent('August 2026')
     expect(api.getMonthlyReport).toHaveBeenCalledWith(1, 8, 2026, false)
   })
 
+  describe('address', () => {
+    test('puts the chosen customer into the address and keeps the month', async () => {
+      api.getMonthlyReport.mockResolvedValue(report)
+      renderReports()
+
+      await selectCustomer('Neu AG')
+
+      expect(path()).toBe('/reports/2')
+    })
+
+    test('keeps the month of the address when another customer is chosen', async () => {
+      api.getMonthlyReport.mockResolvedValue(report)
+      renderReports('/reports/1/2026-08')
+
+      await selectCustomer('Neu AG')
+
+      expect(path()).toBe('/reports/2/2026-08')
+      expect(api.getMonthlyReport).toHaveBeenLastCalledWith(2, 8, 2026, false)
+    })
+
+    test('writes the month into the address when stepping, across the turn of the year', async () => {
+      api.getMonthlyReport.mockResolvedValue(report)
+      renderReports('/reports/1/2026-01')
+
+      await userEvent.click(screen.getByRole('button', { name: 'Vorheriger Monat' }))
+      expect(path()).toBe('/reports/1/2025-12')
+      await userEvent.click(screen.getByRole('button', { name: 'Nächster Monat' }))
+      expect(path()).toBe('/reports/1/2026-01')
+    })
+
+    test('has no month to step through before a customer is chosen', () => {
+      renderReports()
+
+      expect(screen.getByRole('button', { name: 'Vorheriger Monat' })).toHaveAttribute('aria-disabled', 'true')
+      expect(screen.getByRole('button', { name: 'Nächster Monat' })).toHaveAttribute('aria-disabled', 'true')
+    })
+
+    test('the month arrows do nothing before a customer is chosen', async () => {
+      renderReports()
+
+      await userEvent.click(screen.getByRole('button', { name: 'Nächster Monat' }))
+
+      expect(path()).toBe('/reports')
+    })
+
+    test('the month arrows stop at the years an address can name', async () => {
+      api.getMonthlyReport.mockResolvedValue(report)
+      renderReports('/reports/1/9999-12')
+
+      await userEvent.click(screen.getByRole('button', { name: 'Nächster Monat' }))
+      expect(path()).toBe('/reports/1/9999-12')
+    })
+
+    test('shows no hint to select a customer next to the message about a missing one', () => {
+      renderReports('/reports/99')
+
+      expect(screen.queryByText('Wähle einen Kunden, um den Bericht zu sehen.')).not.toBeInTheDocument()
+    })
+
+    test('opens the current month for an address with only a customer', async () => {
+      api.getMonthlyReport.mockResolvedValue(report)
+      renderReports('/reports/1')
+
+      expect(screen.getByRole('group', { name: 'Monat' })).toHaveTextContent('September 2026')
+      await waitFor(() => expect(api.getMonthlyReport).toHaveBeenCalledWith(1, 9, 2026, false))
+    })
+
+    test('says so for a customer that does not exist, without asking the server', () => {
+      renderReports('/reports/99/2026-08')
+
+      expect(screen.getByRole('alert')).toHaveTextContent('Dieser Kunde existiert nicht (mehr).')
+      expect(screen.getByRole('link', { name: 'Zurück zu Berichte' })).toHaveAttribute('href', '/reports')
+      expect(screen.getByLabelText('Kunde')).toHaveValue('')
+      expect(api.getMonthlyReport).not.toHaveBeenCalled()
+    })
+
+    test.each(['/reports/abc', '/reports/0'])('treats %s as a customer that does not exist', (route) => {
+      renderReports(route)
+
+      expect(screen.getByRole('alert')).toHaveTextContent('Dieser Kunde existiert nicht (mehr).')
+    })
+
+    test.each(['1e3', '99999999999999999999', '-1'])('treats the customer %s as one that does not exist', (id) => {
+      renderReports(`/reports/${id}/2026-08`)
+
+      expect(screen.getByRole('alert')).toHaveTextContent('Dieser Kunde existiert nicht (mehr).')
+      expect(api.getMonthlyReport).not.toHaveBeenCalled()
+    })
+
+    test('loads the report once the customer shows up in the list, without a message before that matters', async () => {
+      api.getMonthlyReport.mockResolvedValue(report)
+      const ui = (list) => (
+        <Routes><Route path="/reports/:customerId?/:yearMonth?" element={<Reports customers={list} />} /></Routes>
+      )
+      const { rerender } = renderWithRouter(ui([]), { route: '/reports/1/2026-08' })
+      expect(api.getMonthlyReport).not.toHaveBeenCalled()
+
+      rerender(ui(customers))
+
+      await waitFor(() => expect(api.getMonthlyReport).toHaveBeenCalledWith(1, 8, 2026, false))
+      expect(screen.queryByText('Dieser Kunde existiert nicht (mehr).')).not.toBeInTheDocument()
+      expect(screen.getByLabelText('Kunde')).toHaveValue('1')
+    })
+
+    test('does not load the report again when the list of customers is reloaded', async () => {
+      api.getMonthlyReport.mockResolvedValue(report)
+      const ui = (list) => (
+        <Routes><Route path="/reports/:customerId?/:yearMonth?" element={<Reports customers={list} />} /></Routes>
+      )
+      const { rerender } = renderWithRouter(ui(customers), { route: '/reports/1/2026-08' })
+      await screen.findByText('Konzept')
+
+      rerender(ui(customers.map((c) => ({ ...c }))))
+      await waitFor(() => expect(screen.getByText('Konzept')).toBeInTheDocument())
+
+      expect(api.getMonthlyReport).toHaveBeenCalledTimes(1)
+    })
+
+    test('says so when the customer of the address is deleted while the report is open', async () => {
+      api.getMonthlyReport.mockResolvedValue(report)
+      const ui = (list) => (
+        <Routes><Route path="/reports/:customerId?/:yearMonth?" element={<Reports customers={list} />} /></Routes>
+      )
+      const { rerender } = renderWithRouter(ui(customers), { route: '/reports/1/2026-08' })
+      await screen.findByText('Konzept')
+
+      rerender(ui([customers[1]]))
+
+      expect(await screen.findByRole('alert')).toHaveTextContent('Dieser Kunde existiert nicht (mehr).')
+      expect(screen.queryByText('Konzept')).not.toBeInTheDocument()
+    })
+
+    test('has no accessibility violations for a customer that does not exist', async () => {
+      const { container } = renderReports('/reports/99')
+      expect(await axe(container)).toHaveNoViolations()
+    })
+
+    test.each(['foo', '2026-13', '2026-00', '2026-9', '26-09'])('shows the not-found page for the month %s', (month) => {
+      renderReports(`/reports/1/${month}`)
+
+      expect(screen.getByRole('heading', { level: 1, name: 'Seite nicht gefunden' })).toBeInTheDocument()
+      expect(api.getMonthlyReport).not.toHaveBeenCalled()
+    })
+  })
+
   test('shows the status of the report and saves a new one', async () => {
     api.getMonthlyReport.mockResolvedValue({ ...report, status: 'ready' })
     api.setReportStatus.mockResolvedValue({ customer_id: 1, month: 9, year: 2026, status: 'sent' })
-    render(<Reports customers={customers} initialCustomerId={1} />)
+    renderReports('/reports/1')
     const status = await screen.findByLabelText('Status')
     expect(status).toHaveValue('ready')
     expect(status).toHaveClass('appearance-none', 'pr-11')
@@ -104,7 +263,7 @@ describe('Reports', () => {
   test('keeps the status and shows an error when saving it fails', async () => {
     api.getMonthlyReport.mockResolvedValue({ ...report, status: 'draft' })
     api.setReportStatus.mockRejectedValue(new ApiError(500, 'boom'))
-    render(<Reports customers={customers} initialCustomerId={1} />)
+    renderReports('/reports/1')
     const status = await screen.findByLabelText('Status')
 
     await userEvent.selectOptions(status, 'Verschickt')
@@ -115,7 +274,7 @@ describe('Reports', () => {
 
   test('shows no status for a month without entries', async () => {
     api.getMonthlyReport.mockResolvedValue({ entries: [], totalHours: '0.00', status: 'draft' })
-    render(<Reports customers={customers} initialCustomerId={1} />)
+    renderReports('/reports/1')
 
     expect(await screen.findByText('Keine Einträge für diesen Zeitraum')).toBeInTheDocument()
     expect(screen.queryByLabelText('Status')).not.toBeInTheDocument()
@@ -123,7 +282,7 @@ describe('Reports', () => {
 
   test('steps through the months, across the turn of the year', async () => {
     api.getMonthlyReport.mockResolvedValue({ entries: [], totalHours: '0.00' })
-    render(<Reports customers={customers} initialCustomerId={1} />)
+    renderReports('/reports/1')
     const month = screen.getByRole('group', { name: 'Monat' })
 
     await userEvent.click(within(month).getByRole('button', { name: 'Nächster Monat' }))
@@ -138,7 +297,7 @@ describe('Reports', () => {
 
   test('hides the old report while the next one loads', async () => {
     api.getMonthlyReport.mockResolvedValueOnce(report).mockReturnValueOnce(new Promise(() => {}))
-    render(<Reports customers={customers} initialCustomerId={1} />)
+    renderReports('/reports/1')
     await screen.findByText('Konzept')
 
     await selectCustomer('Neu AG')
@@ -149,7 +308,7 @@ describe('Reports', () => {
 
   test('shows an error when the report fails to load', async () => {
     api.getMonthlyReport.mockRejectedValue(new ApiError(500, 'boom'))
-    render(<Reports customers={customers} />)
+    renderReports()
 
     await selectCustomer('Muster GmbH')
 
@@ -158,7 +317,7 @@ describe('Reports', () => {
 
   test('shows hours per entry, per project and in total without amounts by default, in German', async () => {
     api.getMonthlyReport.mockImplementation(answer)
-    render(<Reports customers={customers} initialCustomerId={1} />)
+    renderReports('/reports/1')
 
     const table = await screen.findByRole('table', { name: 'Abrechnung Muster GmbH – September 2026' })
     const rows = within(table).getAllByRole('row')
@@ -176,7 +335,7 @@ describe('Reports', () => {
 
   test('shows hourly rates and amounts per entry, per project and in total after ticking the box, in German', async () => {
     api.getMonthlyReport.mockImplementation(answer)
-    render(<Reports customers={customers} initialCustomerId={1} />)
+    renderReports('/reports/1')
     await screen.findByText('Konzept')
 
     await userEvent.click(screen.getByLabelText('Stundensatz und Beträge anzeigen'))
@@ -197,7 +356,7 @@ describe('Reports', () => {
     switchLocale('en')
     window.localStorage.setItem('reportAmounts', 'true')
     api.getMonthlyReport.mockImplementation(answer)
-    render(<Reports customers={customers} initialCustomerId={1} />)
+    renderReports('/reports/1')
 
     expect(await screen.findByRole('heading', { name: 'Report Muster GmbH – September 2026' })).toBeInTheDocument()
     expect(screen.getByText('9/21/2026')).toBeInTheDocument()
@@ -220,7 +379,7 @@ describe('Reports', () => {
     }
     api.getMonthlyReport.mockResolvedValue(rounded)
     window.localStorage.setItem('reportAmounts', 'true')
-    render(<Reports customers={customers} initialCustomerId={1} />)
+    renderReports('/reports/1')
 
     expect(await screen.findByText('Support · 0,34 h · 99,99 €/h · 34,00 €')).toBeInTheDocument()
     expect(screen.getByRole('row', { name: /Gesamt/ })).toHaveTextContent('Gesamt0,34 h34,00 €')
@@ -245,7 +404,7 @@ describe('Reports', () => {
     }
     api.getMonthlyReport.mockResolvedValue(data)
     window.localStorage.setItem('reportAmounts', String(on))
-    render(<Reports customers={customers} initialCustomerId={1} />)
+    renderReports('/reports/1')
 
     expect((await screen.findByText('E1')).closest('tr')).toHaveTextContent('0,01 h')
     expect(screen.getByText('E2').closest('tr')).toHaveTextContent('-0,01 h')
@@ -268,7 +427,7 @@ describe('Reports', () => {
     }
     api.getMonthlyReport.mockResolvedValue(data)
     window.localStorage.setItem('reportAmounts', String(on))
-    render(<Reports customers={customers} initialCustomerId={1} />)
+    renderReports('/reports/1')
 
     expect(await screen.findByText(/^Mix · 1,00 h/)).toBeInTheDocument()
     expect(screen.getByText('E2').closest('tr')).toHaveTextContent('-1,50 h')
@@ -279,7 +438,7 @@ describe('Reports', () => {
   test('counts a running entry as 0 hours', async () => {
     const running = { id: 3, project_id: 7, project_name: 'Website', hourly_rate: '80.00', start_time: '2026-09-22T08:00:00Z', end_time: null, description: 'läuft', amount: '0.00' }
     api.getMonthlyReport.mockResolvedValue({ entries: [running], totalHours: '0.00' })
-    render(<Reports customers={customers} initialCustomerId={1} />)
+    renderReports('/reports/1')
 
     expect(await screen.findByText('Website · 0,00 h')).toBeInTheDocument()
     expect(screen.getByText('Gesamtstunden').nextElementSibling).toHaveTextContent('0,00 h')
@@ -287,7 +446,7 @@ describe('Reports', () => {
 
   test('has the same total hours with and without amounts', async () => {
     api.getMonthlyReport.mockImplementation(answer)
-    render(<Reports customers={customers} initialCustomerId={1} />)
+    renderReports('/reports/1')
     await screen.findByText('Konzept')
     const total = () => screen.getByText('Gesamtstunden').nextElementSibling.textContent
     const without = total()
@@ -303,7 +462,7 @@ describe('Reports', () => {
 
     test('is a native checkbox that is off by default and only shown once a customer is chosen', async () => {
       api.getMonthlyReport.mockImplementation(answer)
-      render(<Reports customers={customers} />)
+      renderReports()
       expect(screen.queryByLabelText(optionLabel)).not.toBeInTheDocument()
 
       await selectCustomer('Muster GmbH')
@@ -316,7 +475,7 @@ describe('Reports', () => {
 
     test('is also shown for a month without entries', async () => {
       api.getMonthlyReport.mockResolvedValue({ entries: [], totalHours: '0.00' })
-      render(<Reports customers={customers} initialCustomerId={1} />)
+      renderReports('/reports/1')
 
       expect(await screen.findByText('Keine Einträge für diesen Zeitraum')).toBeInTheDocument()
       expect(screen.getByLabelText(optionLabel)).toBeInTheDocument()
@@ -324,7 +483,7 @@ describe('Reports', () => {
 
     test('asks for amounts when ticked and for none when unticked again', async () => {
       api.getMonthlyReport.mockImplementation(answer)
-      render(<Reports customers={customers} initialCustomerId={1} />)
+      renderReports('/reports/1')
       const box = await screen.findByLabelText(optionLabel)
       expect(api.getMonthlyReport).toHaveBeenLastCalledWith(1, 9, 2026, false)
 
@@ -339,7 +498,7 @@ describe('Reports', () => {
 
     test('keeps the focus on the checkbox after toggling', async () => {
       api.getMonthlyReport.mockImplementation(answer)
-      render(<Reports customers={customers} initialCustomerId={1} />)
+      renderReports('/reports/1')
       const box = await screen.findByLabelText(optionLabel)
       box.focus()
 
@@ -353,12 +512,12 @@ describe('Reports', () => {
 
     test('is saved in the browser and restored', async () => {
       api.getMonthlyReport.mockImplementation(answer)
-      const { unmount } = render(<Reports customers={customers} initialCustomerId={1} />)
+      const { unmount } = renderReports('/reports/1')
       await userEvent.click(await screen.findByLabelText(optionLabel))
       expect(window.localStorage.getItem('reportAmounts')).toBe('true')
       unmount()
 
-      render(<Reports customers={customers} initialCustomerId={1} />)
+      renderReports('/reports/1')
 
       expect(await screen.findByLabelText(optionLabel)).toBeChecked()
       expect(api.getMonthlyReport).toHaveBeenLastCalledWith(1, 9, 2026, true)
@@ -369,7 +528,7 @@ describe('Reports', () => {
       vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => { throw new Error('blocked') })
       vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => { throw new Error('blocked') })
       api.getMonthlyReport.mockImplementation(answer)
-      render(<Reports customers={customers} initialCustomerId={1} />)
+      renderReports('/reports/1')
       const box = await screen.findByLabelText(optionLabel)
       expect(box).not.toBeChecked()
 
@@ -381,7 +540,7 @@ describe('Reports', () => {
 
     test('leaves the report status as it is', async () => {
       api.getMonthlyReport.mockImplementation((...args) => answer(...args).then((data) => ({ ...data, status: 'ready' })))
-      render(<Reports customers={customers} initialCustomerId={1} />)
+      renderReports('/reports/1')
       await screen.findByLabelText('Status')
 
       await userEvent.click(screen.getByLabelText(optionLabel))
@@ -393,7 +552,7 @@ describe('Reports', () => {
 
     test('passes the choice to the PDF and the CSV download', async () => {
       api.getMonthlyReport.mockImplementation(answer)
-      render(<Reports customers={customers} initialCustomerId={1} />)
+      renderReports('/reports/1')
       await userEvent.click(await screen.findByRole('button', { name: 'PDF herunterladen' }))
       await waitFor(() => expect(screen.getByRole('button', { name: 'PDF herunterladen' })).toHaveAttribute('aria-disabled', 'false'))
       await userEvent.click(screen.getByRole('button', { name: 'CSV herunterladen' }))
@@ -412,7 +571,7 @@ describe('Reports', () => {
 
     test('still shows the option after a failed load', async () => {
       api.getMonthlyReport.mockRejectedValueOnce(new ApiError(500, 'boom')).mockImplementation(answer)
-      render(<Reports customers={customers} initialCustomerId={1} />)
+      renderReports('/reports/1')
       expect(await screen.findByRole('alert')).toHaveTextContent('Bericht konnte nicht geladen werden.')
 
       await userEvent.click(screen.getByLabelText(optionLabel))
@@ -424,7 +583,7 @@ describe('Reports', () => {
     test('has no detectable accessibility violations with the option on', async () => {
       window.localStorage.setItem('reportAmounts', 'true')
       api.getMonthlyReport.mockImplementation(answer)
-      const { container } = render(<Reports customers={customers} initialCustomerId={1} />)
+      const { container } = renderReports('/reports/1')
       await screen.findByText('Betrag (netto)')
 
       expect(await axe(container)).toHaveNoViolations()
@@ -434,7 +593,7 @@ describe('Reports', () => {
   test('downloads the PDF in the current language, only when there are entries', async () => {
     switchLocale('en')
     api.getMonthlyReport.mockResolvedValueOnce({ entries: [], totalHours: '0.00' }).mockResolvedValueOnce(report)
-    render(<Reports customers={customers} initialCustomerId={1} />)
+    renderReports('/reports/1')
     await screen.findByText('No entries for this period')
     expect(screen.queryByRole('button', { name: 'Download PDF' })).not.toBeInTheDocument()
 
@@ -447,7 +606,7 @@ describe('Reports', () => {
   test('shows an error on the page when the download fails', async () => {
     api.getMonthlyReport.mockResolvedValue(report)
     api.downloadPDF.mockRejectedValue(new ApiError(500, 'Failed to generate PDF report'))
-    render(<Reports customers={customers} initialCustomerId={1} />)
+    renderReports('/reports/1')
 
     await userEvent.click(await screen.findByRole('button', { name: 'PDF herunterladen' }))
 
@@ -457,7 +616,7 @@ describe('Reports', () => {
   test('downloads the CSV in the current language, only when there are entries', async () => {
     switchLocale('en')
     api.getMonthlyReport.mockResolvedValueOnce({ entries: [], totalHours: '0.00' }).mockResolvedValueOnce(report)
-    render(<Reports customers={customers} initialCustomerId={1} />)
+    renderReports('/reports/1')
     await screen.findByText('No entries for this period')
     expect(screen.queryByRole('button', { name: 'Download CSV' })).not.toBeInTheDocument()
 
@@ -470,7 +629,7 @@ describe('Reports', () => {
 
   test('names the CSV button in German', async () => {
     api.getMonthlyReport.mockResolvedValue(report)
-    render(<Reports customers={customers} initialCustomerId={1} />)
+    renderReports('/reports/1')
 
     expect(await screen.findByRole('button', { name: 'CSV herunterladen' })).toBeInTheDocument()
   })
@@ -478,7 +637,7 @@ describe('Reports', () => {
   test('shows an error on the page when the CSV download fails', async () => {
     api.getMonthlyReport.mockResolvedValue(report)
     api.downloadCSV.mockRejectedValue(new ApiError(500, 'Failed to export CSV report'))
-    render(<Reports customers={customers} initialCustomerId={1} />)
+    renderReports('/reports/1')
 
     await userEvent.click(await screen.findByRole('button', { name: 'CSV herunterladen' }))
 
@@ -489,7 +648,7 @@ describe('Reports', () => {
     api.getMonthlyReport.mockResolvedValue(report)
     let finish
     api.downloadCSV.mockReturnValue(new Promise((resolve) => { finish = resolve }))
-    render(<Reports customers={customers} initialCustomerId={1} />)
+    renderReports('/reports/1')
     const csv = await screen.findByRole('button', { name: 'CSV herunterladen' })
     const pdf = screen.getByRole('button', { name: 'PDF herunterladen' })
     expect(csv).toHaveAttribute('aria-disabled', 'false')
@@ -510,7 +669,7 @@ describe('Reports', () => {
   test('enables the buttons again after a failed download', async () => {
     api.getMonthlyReport.mockResolvedValue(report)
     api.downloadPDF.mockRejectedValue(new ApiError(500, 'Failed to generate PDF report'))
-    render(<Reports customers={customers} initialCustomerId={1} />)
+    renderReports('/reports/1')
 
     await userEvent.click(await screen.findByRole('button', { name: 'PDF herunterladen' }))
     await screen.findByRole('alert')
@@ -522,7 +681,7 @@ describe('Reports', () => {
     api.getMonthlyReport.mockResolvedValue(report)
     let finish
     api.downloadPDF.mockReturnValue(new Promise((resolve) => { finish = resolve }))
-    render(<Reports customers={customers} initialCustomerId={1} />)
+    renderReports('/reports/1')
     const pdf = await screen.findByRole('button', { name: 'PDF herunterladen' })
 
     await userEvent.click(pdf)
@@ -539,7 +698,7 @@ describe('Reports', () => {
     api.getMonthlyReport.mockResolvedValue(report)
     let finish
     api.downloadCSV.mockReturnValue(new Promise((resolve) => { finish = resolve }))
-    render(<Reports customers={customers} initialCustomerId={1} />)
+    renderReports('/reports/1')
     const csv = await screen.findByRole('button', { name: 'CSV herunterladen' })
     csv.focus()
 
@@ -556,7 +715,7 @@ describe('Reports', () => {
   test('allows a second CSV download after the first one finished', async () => {
     api.getMonthlyReport.mockResolvedValue(report)
     api.downloadCSV.mockResolvedValue(undefined)
-    render(<Reports customers={customers} initialCustomerId={1} />)
+    renderReports('/reports/1')
     const csv = await screen.findByRole('button', { name: 'CSV herunterladen' })
 
     await userEvent.click(csv)
@@ -569,7 +728,7 @@ describe('Reports', () => {
   test('tells that the server is not reachable when the CSV download cannot connect', async () => {
     api.getMonthlyReport.mockResolvedValue(report)
     api.downloadCSV.mockRejectedValue(new ApiError(0, 'Network error'))
-    render(<Reports customers={customers} initialCustomerId={1} />)
+    renderReports('/reports/1')
 
     await userEvent.click(await screen.findByRole('button', { name: 'CSV herunterladen' }))
 
@@ -579,7 +738,7 @@ describe('Reports', () => {
   test('removes the CSV error when the next download succeeds', async () => {
     api.getMonthlyReport.mockResolvedValue(report)
     api.downloadCSV.mockRejectedValueOnce(new ApiError(500, 'x')).mockResolvedValueOnce(undefined)
-    render(<Reports customers={customers} initialCustomerId={1} />)
+    renderReports('/reports/1')
     const csv = await screen.findByRole('button', { name: 'CSV herunterladen' })
 
     await userEvent.click(csv)
@@ -591,7 +750,7 @@ describe('Reports', () => {
 
   test('has no detectable accessibility violations with the option off', async () => {
     api.getMonthlyReport.mockResolvedValue(report)
-    const { container } = render(<Reports customers={customers} initialCustomerId={1} />)
+    const { container } = renderReports('/reports/1')
     await screen.findByText('Konzept')
 
     expect(await axe(container)).toHaveNoViolations()
@@ -614,7 +773,7 @@ describe('Reports, the amounts option in edge cases', () => {
   test('toggles when the label text is clicked and names the box in English', async () => {
     switchLocale('en')
     api.getMonthlyReport.mockImplementation(answer)
-    render(<Reports customers={customers} initialCustomerId={1} />)
+    renderReports('/reports/1')
     await screen.findByText('Konzept')
 
     await userEvent.click(screen.getByText('Show hourly rate and amounts'))
@@ -626,7 +785,7 @@ describe('Reports, the amounts option in edge cases', () => {
   test.each([['de', 'Betrag (netto)'], ['en', 'Amount (net)']])('has no accessibility violations with the option on and off in %s', async (locale, amountCard) => {
     switchLocale(locale)
     api.getMonthlyReport.mockImplementation(answer)
-    const { container } = render(<Reports customers={customers} initialCustomerId={1} />)
+    const { container } = renderReports('/reports/1')
     await userEvent.click(await screen.findByRole('checkbox'))
     await screen.findByText(amountCard)
     expect(await axe(container)).toHaveNoViolations()
@@ -639,7 +798,7 @@ describe('Reports, the amounts option in edge cases', () => {
   test.each(['yes', 'false', '', '1', 'TRUE'])('starts unticked for the stored value %j', async (stored) => {
     window.localStorage.setItem('reportAmounts', stored)
     api.getMonthlyReport.mockImplementation(answer)
-    render(<Reports customers={customers} initialCustomerId={1} />)
+    renderReports('/reports/1')
 
     expect(await screen.findByLabelText(optionLabel)).not.toBeChecked()
     expect(api.getMonthlyReport).toHaveBeenLastCalledWith(1, 9, 2026, false)
@@ -649,7 +808,7 @@ describe('Reports, the amounts option in edge cases', () => {
     const off = deferred()
     const on = deferred()
     api.getMonthlyReport.mockImplementation((c, m, y, amounts) => (amounts ? on.promise : off.promise))
-    render(<Reports customers={customers} initialCustomerId={1} />)
+    renderReports('/reports/1')
     await userEvent.click(await screen.findByLabelText(optionLabel))
     expect(api.getMonthlyReport).toHaveBeenCalledTimes(2)
 
@@ -665,7 +824,7 @@ describe('Reports, the amounts option in edge cases', () => {
   test('ignores a late answer for a toggle that was undone', async () => {
     const first = deferred()
     api.getMonthlyReport.mockImplementation((c, m, y, amounts) => (amounts ? first.promise : Promise.resolve(report)))
-    render(<Reports customers={customers} initialCustomerId={1} />)
+    renderReports('/reports/1')
     await screen.findByText('Konzept')
     await userEvent.click(screen.getByLabelText(optionLabel))
     await userEvent.click(screen.getByLabelText(optionLabel))
@@ -684,7 +843,7 @@ describe('Reports, the amounts option in edge cases', () => {
       if (month === 9 && amounts) return old.promise
       return Promise.resolve({ entries: [entryOf(5, { description: 'Oktober' })], totalHours: '1.00' })
     })
-    render(<Reports customers={customers} initialCustomerId={1} />)
+    renderReports('/reports/1')
     await userEvent.click(await screen.findByLabelText(optionLabel))
     await userEvent.click(screen.getByRole('button', { name: 'Nächster Monat' }))
     await screen.findByText('Oktober')
@@ -699,7 +858,7 @@ describe('Reports, the amounts option in edge cases', () => {
   test('shows the error and no stale report when the reload after ticking fails, and the box stays ticked', async () => {
     api.getMonthlyReport.mockImplementation((c, m, y, amounts) =>
       amounts ? Promise.reject(new ApiError(500, 'boom')) : Promise.resolve(report))
-    render(<Reports customers={customers} initialCustomerId={1} />)
+    renderReports('/reports/1')
     await screen.findByText('Konzept')
 
     await userEvent.click(screen.getByLabelText(optionLabel))
@@ -713,7 +872,7 @@ describe('Reports, the amounts option in edge cases', () => {
   test('shows no amounts for a stale report when the server leaves them out although they were asked for', async () => {
     window.localStorage.setItem('reportAmounts', 'true')
     api.getMonthlyReport.mockResolvedValue(report)
-    render(<Reports customers={customers} initialCustomerId={1} />)
+    renderReports('/reports/1')
 
     expect(await screen.findByText('Website · 1,50 h')).toBeInTheDocument()
     expect(screen.queryByText('Betrag (netto)')).not.toBeInTheDocument()
@@ -727,7 +886,7 @@ describe('Reports, the amounts option in edge cases', () => {
     )
     window.localStorage.setItem('reportAmounts', 'true')
     api.getMonthlyReport.mockResolvedValue(big)
-    render(<Reports customers={customers} initialCustomerId={1} />)
+    renderReports('/reports/1')
 
     expect(await screen.findByText('Website · 1,00 h · 1.403,10 €/h · 1.403,10 €')).toBeInTheDocument()
     expect(screen.getByRole('row', { name: /Gesamt/ })).toHaveTextContent('Gesamt1,00 h1.403,10 €')
@@ -747,7 +906,7 @@ describe('Reports, the amounts option in edge cases', () => {
     )
     window.localStorage.setItem('reportAmounts', 'true')
     api.getMonthlyReport.mockResolvedValue(odd)
-    render(<Reports customers={customers} initialCustomerId={1} />)
+    renderReports('/reports/1')
 
     expect(await screen.findByText('Website · 1,00 h · 0,00 €/h · 0,00 €')).toBeInTheDocument()
     expect(screen.getByText('Groß · 1,00 h · 99.999.999,99 €/h · 99.999.999,99 €')).toBeInTheDocument()
@@ -759,7 +918,7 @@ describe('Reports, the amounts option in edge cases', () => {
     const long = money([entryOf(1, { project_name: name })], [{ projectId: 7, name, hours: '1.00', hourlyRate: '95.00', amount: '95.00' }], '95.00')
     window.localStorage.setItem('reportAmounts', 'true')
     api.getMonthlyReport.mockResolvedValue(long)
-    render(<Reports customers={customers} initialCustomerId={1} />)
+    renderReports('/reports/1')
 
     expect(await screen.findByText(`${name} · 1,00 h · 95,00 €/h · 95,00 €`)).toBeInTheDocument()
   })
@@ -779,7 +938,7 @@ describe('Reports, the amounts option in edge cases', () => {
       ], '106.00'),
     }
     api.getMonthlyReport.mockImplementation((c, m, y, amounts) => Promise.resolve(amounts ? bothWays.on : bothWays.off))
-    render(<Reports customers={customers} initialCustomerId={1} />)
+    renderReports('/reports/1')
     const total = () => screen.getByText('Gesamtstunden').nextElementSibling.textContent
     await screen.findByText('Website · 1,00 h')
     expect(screen.getByText('E2').closest('tr')).toHaveTextContent('-1,00 h')
@@ -797,7 +956,7 @@ describe('Reports, the amounts option in edge cases', () => {
   test('does not reset the choice when the page is opened for another customer', async () => {
     window.localStorage.setItem('reportAmounts', 'true')
     api.getMonthlyReport.mockImplementation(answer)
-    render(<Reports customers={customers} initialCustomerId={1} />)
+    renderReports('/reports/1')
     await screen.findByText('Betrag (netto)')
 
     await selectCustomer('Neu AG')
@@ -810,7 +969,7 @@ describe('Reports, the amounts option in edge cases', () => {
     const running = deferred()
     api.getMonthlyReport.mockImplementation(answer)
     api.downloadPDF.mockReturnValue(running.promise)
-    render(<Reports customers={customers} initialCustomerId={1} />)
+    renderReports('/reports/1')
     await userEvent.click(await screen.findByRole('button', { name: 'PDF herunterladen' }))
 
     await userEvent.click(screen.getByLabelText(optionLabel))
@@ -827,7 +986,7 @@ describe('Reports, the amounts option in edge cases', () => {
     window.localStorage.setItem('reportAmounts', 'true')
     api.getMonthlyReport.mockImplementation(answer)
     api.setReportStatus.mockResolvedValue({ status: 'sent' })
-    render(<Reports customers={customers} initialCustomerId={1} />)
+    renderReports('/reports/1')
     await screen.findByText('Betrag (netto)')
 
     await userEvent.selectOptions(screen.getByLabelText('Status'), 'sent')

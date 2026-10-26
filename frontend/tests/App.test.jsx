@@ -197,7 +197,7 @@ describe('App', () => {
     await renderTimeTracking()
     await userEvent.click(await screen.findByRole('button', { name: 'Muster GmbH' }))
 
-    await userEvent.click(await screen.findByRole('button', { name: 'Bericht öffnen' }))
+    await userEvent.click(await screen.findByRole('link', { name: 'Bericht öffnen' }))
 
     expect(screen.getByRole('link', { name: 'Berichte' })).toHaveAttribute('aria-current', 'page')
     expect(screen.getByLabelText('Kunde')).toHaveValue('1')
@@ -304,7 +304,7 @@ describe('App', () => {
     expect(screen.getByRole('link', { name: 'Einträge' })).toHaveAttribute('aria-current', 'page')
     expect(screen.getByRole('heading', { level: 1, name: 'Einträge' })).toBeInTheDocument()
 
-    await userEvent.click(await screen.findByRole('button', { name: /^Öffnen\s+in Zeiterfassung/ }))
+    await userEvent.click(await screen.findByRole('link', { name: /^Öffnen\s+in Zeiterfassung/ }))
 
     expect(screen.getByRole('link', { name: 'Zeiterfassung' })).toHaveAttribute('aria-current', 'page')
     expect(await screen.findByRole('heading', { name: 'Einträge für Website' })).toBeInTheDocument()
@@ -320,7 +320,7 @@ describe('App', () => {
     })
     render(<App />)
 
-    await userEvent.click(await screen.findByRole('button', { name: /Konzept/ }))
+    await userEvent.click(await screen.findByRole('link', { name: /Konzept/ }))
 
     expect(screen.getByRole('link', { name: 'Zeiterfassung' })).toHaveAttribute('aria-current', 'page')
     expect(await screen.findByRole('heading', { name: 'Einträge für Website' })).toBeInTheDocument()
@@ -336,7 +336,7 @@ describe('App', () => {
     })
     render(<App />)
 
-    await userEvent.click(await screen.findByRole('button', { name: 'Abrechnung für Muster GmbH öffnen' }))
+    await userEvent.click(await screen.findByRole('link', { name: 'Abrechnung für Muster GmbH öffnen' }))
 
     expect(screen.getByRole('link', { name: 'Berichte' })).toHaveAttribute('aria-current', 'page')
     expect(screen.getByLabelText('Kunde')).toHaveValue('1')
@@ -682,9 +682,9 @@ describe('App addresses', () => {
       lastMonthReports: { month: 8, year: 2026, reports: [{ customer_id: 1, customer_name: 'Muster GmbH', status: 'ready' }] },
     })
     renderAt('/')
-    await userEvent.click(await screen.findByRole('button', { name: 'Abrechnung für Muster GmbH öffnen' }))
+    await userEvent.click(await screen.findByRole('link', { name: 'Abrechnung für Muster GmbH öffnen' }))
 
-    await waitFor(() => expect(path()).toBe('/reports'))
+    await waitFor(() => expect(path()).toBe('/reports/1/2026-08'))
     await waitFor(() => expect(screen.getByRole('heading', { level: 1, name: 'Berichte' })).toHaveFocus())
   })
 
@@ -721,25 +721,34 @@ describe('App addresses', () => {
   test('opening the report from the Time tracking page changes the address', async () => {
     renderAt('/time-tracking')
     await userEvent.click(await screen.findByRole('button', { name: 'Muster GmbH' }))
-    await userEvent.click(await screen.findByRole('button', { name: 'Bericht öffnen' }))
+    await userEvent.click(await screen.findByRole('link', { name: 'Bericht öffnen' }))
 
-    await waitFor(() => expect(path()).toBe('/reports'))
+    await waitFor(() => expect(path()).toBe('/reports/1'))
     expect(screen.getByLabelText('Kunde')).toHaveValue('1')
   })
 
-  test.each(['/reports/1/2026-09', '/time-tracking/1', '/api/customers'])('%s shows the not-found page for now', async (route) => {
-    renderAt(route)
+  test.each(['/reports/1/foo', '/reports/1/2026-13', '/time-tracking/1/2/3', '/entries/1', '/api/customers'])(
+    '%s shows the not-found page', async (route) => {
+      renderAt(route)
 
-    expect(await screen.findByRole('heading', { level: 1, name: 'Seite nicht gefunden' })).toBeInTheDocument()
-  })
+      expect(await screen.findByRole('heading', { level: 1, name: 'Seite nicht gefunden' })).toBeInTheDocument()
+    })
 
-  // A NavLink matches the start of the address, so a nested not-found address marks its parent page as current
-  test.each(['/reports/1/2026-09', '/time-tracking/1'])('%s marks no page as current while the not-found page is shown', async (route) => {
+  test.each(['/reports/1/foo', '/time-tracking/1/2/3'])('%s marks no page as current while the not-found page is shown', async (route) => {
     renderAt(route)
     await screen.findByRole('heading', { level: 1, name: 'Seite nicht gefunden' })
 
     expect(within(screen.getByRole('navigation')).queryByRole('link', { current: 'page' })).not.toBeInTheDocument()
   })
+
+  test.each([['/time-tracking/1', 'Zeiterfassung'], ['/time-tracking/1/7', 'Zeiterfassung'], ['/reports/1', 'Berichte'], ['/reports/1/2026-09', 'Berichte']])(
+    'the link of the page stays current on %s', async (route, name) => {
+      api.getCustomers.mockResolvedValue([{ id: 1, name: 'Muster GmbH' }])
+      api.getProjects.mockResolvedValue([{ id: 7, name: 'Website', hourly_rate: '80.00' }])
+      renderAt(route)
+
+      expect(await screen.findByRole('link', { name })).toHaveAttribute('aria-current', 'page')
+    })
 
   test('a trailing slash keeps the page and its link current', async () => {
     renderAt('/time-tracking/')
@@ -765,5 +774,297 @@ describe('App addresses', () => {
 
     expect(api.getCustomers).toHaveBeenCalledTimes(1)
     expect(api.getActiveEntry).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe('App selections in the address', () => {
+  // A project chip (the edit and delete buttons of the selected project are outside of the group)
+  const chip = (name) => within(screen.getByRole('group', { name: 'Projekte' })).getByRole('button', { name })
+
+  beforeEach(() => {
+    api.getCustomers.mockResolvedValue([{ id: 1, name: 'Muster GmbH' }, { id: 2, name: 'Neu AG' }])
+    api.getProjects.mockResolvedValue([{ id: 7, name: 'Website', hourly_rate: '80.00' }, { id: 8, name: 'Wartung', hourly_rate: '60.00' }])
+  })
+
+  test('choosing a customer and a project puts them into the address, and choosing the project again removes it', async () => {
+    renderAt('/time-tracking')
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Muster GmbH' }))
+    expect(path()).toBe('/time-tracking/1')
+    await waitFor(() => expect(chip(/Website/)).toBeInTheDocument())
+    await userEvent.click(chip(/Website/))
+    expect(path()).toBe('/time-tracking/1/7')
+    expect(chip(/Website/)).toHaveAttribute('aria-pressed', 'true')
+    await userEvent.click(chip(/Website/))
+    expect(path()).toBe('/time-tracking/1')
+    await userEvent.click(chip(/Website/))
+    await userEvent.click(chip('Alle Projekte'))
+    expect(path()).toBe('/time-tracking/1')
+    expect(chip('Alle Projekte')).toHaveAttribute('aria-pressed', 'true')
+  })
+
+  test('an address with a customer and a project opens them, also after a reload', async () => {
+    renderAt('/time-tracking/1/8')
+
+    expect(await screen.findByRole('heading', { level: 1, name: 'Muster GmbH' })).toBeInTheDocument()
+    await screen.findByRole('group', { name: 'Projekte' })
+    await waitFor(() => expect(chip(/Wartung/)).toHaveAttribute('aria-pressed', 'true'))
+    expect(screen.getByRole('heading', { name: 'Einträge für Wartung' })).toBeInTheDocument()
+    expect(api.getProjects).toHaveBeenCalledWith(1)
+    expect(screen.getByRole('link', { name: 'Zeiterfassung' })).toHaveAttribute('aria-current', 'page')
+  })
+
+  test('Back returns to the customer that was open before', async () => {
+    renderAt('/time-tracking/1')
+    await screen.findByRole('heading', { level: 1, name: 'Muster GmbH' })
+
+    await userEvent.click(screen.getByRole('button', { name: 'Neu AG' }))
+    expect(await screen.findByRole('heading', { level: 1, name: 'Neu AG' })).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: 'history back' }))
+
+    expect(await screen.findByRole('heading', { level: 1, name: 'Muster GmbH' })).toBeInTheDocument()
+    expect(path()).toBe('/time-tracking/1')
+  })
+
+  test('does not move the focus when only the selection changes', async () => {
+    renderAt('/time-tracking/1')
+    await screen.findByRole('heading', { level: 1, name: 'Muster GmbH' })
+    const button = screen.getByRole('button', { name: 'Neu AG' })
+
+    await userEvent.click(button)
+    await screen.findByRole('heading', { level: 1, name: 'Neu AG' })
+    await act(async () => {})
+
+    expect(button).toHaveFocus()
+  })
+
+  test('opens the project of the running timer with a customer that has one', async () => {
+    api.getActiveEntry.mockResolvedValue(running)
+    renderAt('/time-tracking')
+    await runningTimer()
+
+    await waitFor(() => expect(path()).toBe('/time-tracking/1/7'))
+    expect(await screen.findByRole('heading', { level: 1, name: 'Muster GmbH' })).toBeInTheDocument()
+  })
+
+  test('replaces the address of the running timer, so Back leaves the page', async () => {
+    api.getActiveEntry.mockResolvedValue(running)
+    renderAt('/')
+    await userEvent.click(await screen.findByRole('link', { name: 'Zeiterfassung' }))
+    await waitFor(() => expect(path()).toBe('/time-tracking/1/7'))
+
+    await userEvent.click(screen.getByRole('button', { name: 'history back' }))
+
+    expect(path()).toBe('/')
+  })
+
+  test('selects the running timer\'s project when its customer is chosen', async () => {
+    api.getActiveEntry.mockResolvedValue({ ...running, customer_id: 2, customer_name: 'Neu AG' })
+    renderAt('/time-tracking/1')
+    await screen.findByRole('heading', { level: 1, name: 'Muster GmbH' })
+
+    await userEvent.click(screen.getByRole('button', { name: /^Neu AG\s*, Timer läuft$/ }))
+
+    expect(path()).toBe('/time-tracking/2/7')
+  })
+
+  test('clicking the open customer or the selected "All projects" adds no history entry', async () => {
+    renderAt(['/', '/time-tracking/1'])
+    await screen.findByRole('heading', { level: 1, name: 'Muster GmbH' })
+
+    await userEvent.click(screen.getByRole('button', { name: 'Muster GmbH' }))
+    await userEvent.click(chip('Alle Projekte'))
+    await userEvent.click(screen.getByRole('button', { name: 'history back' }))
+
+    expect(path()).toBe('/')
+  })
+
+  test('following the link of a message moves focus to the heading', async () => {
+    renderAt('/time-tracking/1/99')
+    await userEvent.click(await screen.findByRole('link', { name: 'Alle Projekte anzeigen' }))
+
+    expect(screen.getByRole('heading', { level: 1, name: 'Muster GmbH' })).toHaveFocus()
+  })
+
+  test('says so for a customer that does not exist, and links back', async () => {
+    renderAt('/time-tracking/99')
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('Dieser Kunde existiert nicht (mehr).')
+    expect(screen.getByText('Wähle einen Kunden')).toBeInTheDocument()
+    expect(api.getProjects).not.toHaveBeenCalled()
+    expect(api.getCustomerTimeEntries).not.toHaveBeenCalled()
+
+    await userEvent.click(screen.getByRole('link', { name: 'Zurück zu Zeiterfassung' }))
+    expect(path()).toBe('/time-tracking')
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+  })
+
+  test.each(['abc', '0', '1x'])('treats the customer %s in the address as one that does not exist', async (id) => {
+    renderAt(`/time-tracking/${id}`)
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('Dieser Kunde existiert nicht (mehr).')
+  })
+
+  test('says so for a project that does not exist, only after the projects are loaded, and keeps the customer', async () => {
+    let resolveProjects
+    api.getProjects.mockReturnValue(new Promise((resolve) => { resolveProjects = resolve }))
+    renderAt('/time-tracking/1/99')
+    await screen.findByRole('heading', { level: 1, name: 'Muster GmbH' })
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+
+    await act(async () => resolveProjects([{ id: 7, name: 'Website', hourly_rate: '80.00' }]))
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('Dieses Projekt existiert nicht (mehr).')
+    expect(screen.getByRole('heading', { name: 'Einträge für Muster GmbH' })).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('link', { name: 'Alle Projekte anzeigen' }))
+    expect(path()).toBe('/time-tracking/1')
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+  })
+
+  test('a project of another customer does not exist for this one', async () => {
+    api.getProjects.mockImplementation(async (customerId) => (customerId === 1 ? [{ id: 7, name: 'Website', hourly_rate: '80.00' }] : []))
+    renderAt('/time-tracking/2/7')
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('Dieses Projekt existiert nicht (mehr).')
+  })
+
+  test('deleting the selected customer replaces the address with the page without one', async () => {
+    api.getCustomers.mockResolvedValueOnce([{ id: 1, name: 'Muster GmbH' }]).mockResolvedValueOnce([])
+    api.deleteCustomer.mockResolvedValue({ id: 1 })
+    renderAt('/time-tracking/1')
+    await userEvent.click(await screen.findByRole('button', { name: 'Muster GmbH löschen' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Löschen' }))
+
+    await waitFor(() => expect(path()).toBe('/time-tracking'))
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: 'history back' }))
+    expect(path()).not.toBe('/time-tracking/1')
+  })
+
+  test('deleting the selected project goes back to its customer without a message', async () => {
+    api.getProjects
+      .mockResolvedValueOnce([{ id: 7, name: 'Website', hourly_rate: '80.00' }])
+      .mockResolvedValueOnce([])
+    api.deleteProject.mockResolvedValue({ id: 7 })
+    renderAt('/time-tracking/1/7')
+    await userEvent.click(await screen.findByRole('button', { name: 'Website löschen' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Löschen' }))
+
+    await waitFor(() => expect(path()).toBe('/time-tracking/1'))
+    await screen.findByText('Noch keine Einträge')
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+  })
+
+  test('the month summary links to the report of the customer', async () => {
+    renderAt('/time-tracking/2/8')
+
+    expect(await screen.findByRole('link', { name: 'Bericht öffnen' })).toHaveAttribute('href', '/reports/2')
+  })
+
+  test('opens the selection for an address in capital letters and with a trailing slash', async () => {
+    renderAt('/Time-Tracking/1/7/')
+
+    expect(await screen.findByRole('heading', { level: 1, name: 'Muster GmbH' })).toBeInTheDocument()
+    await waitFor(() => expect(chip(/Website/)).toHaveAttribute('aria-pressed', 'true'))
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+  })
+
+  test.each(['1e3', '99999999999999999999', '-1', '01'])('treats the customer %s in the address as one that does not exist', async (id) => {
+    renderAt(`/time-tracking/${id}`)
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('Dieser Kunde existiert nicht (mehr).')
+    expect(api.getProjects).not.toHaveBeenCalled()
+  })
+
+  test.each(['abc', '1e3', '0'])('says so at once for the project %s, which cannot be an id, and keeps the customer', async (id) => {
+    renderAt(`/time-tracking/1/${id}`)
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('Dieses Projekt existiert nicht (mehr).')
+    expect(screen.getByRole('heading', { level: 1, name: 'Muster GmbH' })).toBeInTheDocument()
+  })
+
+  test('shows no message for a project while the projects load, and none once it is among them', async () => {
+    let resolveProjects
+    api.getProjects.mockReturnValue(new Promise((resolve) => { resolveProjects = resolve }))
+    renderAt('/time-tracking/1/8')
+    await screen.findByRole('heading', { level: 1, name: 'Muster GmbH' })
+
+    await act(async () => resolveProjects([{ id: 8, name: 'Wartung', hourly_rate: '60.00' }]))
+
+    await waitFor(() => expect(chip(/Wartung/)).toHaveAttribute('aria-pressed', 'true'))
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+  })
+
+  test('drops the projects and entries that arrive late for the customer chosen before', async () => {
+    let resolveFirst
+    api.getProjects.mockImplementation((customerId) => (
+      customerId === 1
+        ? new Promise((resolve) => { resolveFirst = resolve })
+        : Promise.resolve([{ id: 9, name: 'Pflege', hourly_rate: '50.00' }])
+    ))
+    renderAt('/time-tracking/1')
+    await screen.findByRole('heading', { level: 1, name: 'Muster GmbH' })
+
+    await userEvent.click(screen.getByRole('button', { name: 'Neu AG' }))
+    await waitFor(() => expect(chip(/Pflege/)).toBeInTheDocument())
+    await act(async () => resolveFirst([{ id: 7, name: 'Website', hourly_rate: '80.00' }]))
+
+    expect(screen.queryByRole('button', { name: /Website/ })).not.toBeInTheDocument()
+    expect(screen.getByRole('heading', { level: 1, name: 'Neu AG' })).toBeInTheDocument()
+  })
+
+  test('opens the running timer only once: choosing no project afterwards stays on the customer', async () => {
+    api.getActiveEntry.mockResolvedValue(running)
+    renderAt('/time-tracking')
+    await waitFor(() => expect(path()).toBe('/time-tracking/1/7'))
+    await waitFor(() => expect(chip(/Website/)).toBeInTheDocument())
+
+    await userEvent.click(chip('Alle Projekte'))
+    await act(async () => {})
+
+    expect(path()).toBe('/time-tracking/1')
+  })
+
+  test('leaves an address with a customer alone while a timer runs for another one', async () => {
+    api.getActiveEntry.mockResolvedValue({ ...running, customer_id: 2, customer_name: 'Neu AG' })
+    renderAt('/time-tracking/1')
+    await runningTimer()
+    await screen.findByRole('heading', { level: 1, name: 'Muster GmbH' })
+    await act(async () => {})
+
+    expect(path()).toBe('/time-tracking/1')
+  })
+
+  test('does not open the customer of a running timer that is not in the list', async () => {
+    api.getActiveEntry.mockResolvedValue({ ...running, customer_id: 99 })
+    renderAt('/time-tracking')
+    await runningTimer()
+    await act(async () => {})
+
+    expect(path()).toBe('/time-tracking')
+    expect(screen.getByText('Wähle einen Kunden')).toBeInTheDocument()
+  })
+
+  test('the link back from a missing customer stays on the page, even with a timer running', async () => {
+    api.getActiveEntry.mockResolvedValue(running)
+    renderAt('/time-tracking/99')
+    await runningTimer()
+
+    await userEvent.click(await screen.findByRole('link', { name: 'Zurück zu Zeiterfassung' }))
+    await act(async () => {})
+
+    expect(path()).toBe('/time-tracking')
+    expect(screen.getByText('Wähle einen Kunden')).toBeInTheDocument()
+  })
+
+  test('has no accessibility violations for a missing customer and a missing project', async () => {
+    const first = renderAt('/time-tracking/99')
+    await screen.findByRole('alert')
+    expect(await axe(first.container)).toHaveNoViolations()
+    first.unmount()
+
+    const second = renderAt('/time-tracking/1/99')
+    await screen.findByRole('alert')
+    expect(await axe(second.container)).toHaveNoViolations()
   })
 })

@@ -1,7 +1,9 @@
 import { useId } from 'react'
+import { Link } from 'react-router'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { api } from '../../api'
 import { formatAmount, formatHours, formatRate } from '../../format'
+import { reportPath, trackingPath } from '../../routes'
 import { ui } from '../../ui'
 
 const cell = 'px-3 py-2.5 border-b border-line-soft'
@@ -11,7 +13,7 @@ const link = 'inline-flex min-h-[2.75rem] items-center text-sm font-medium text-
 
 // The month's billing per customer, with a PDF preview of each report, and a notice about last month's
 // reports that are not sent yet. rows: from byCustomer(); lastMonthReports: from GET /api/dashboard.
-function BillingTable({ rows, now, lastMonthReports, onSelectCustomer, onOpenReport }) {
+function BillingTable({ rows, now, lastMonthReports }) {
   const { t, i18n } = useLingui()
   const headingId = useId()
   const monthName = i18n.date(now, { month: 'long', year: 'numeric' })
@@ -53,9 +55,9 @@ function BillingTable({ rows, now, lastMonthReports, onSelectCustomer, onOpenRep
                 return (
                   <tr key={row.customerId}>
                     <th scope="row" className={`${cell} text-left font-normal`}>
-                      <button type="button" onClick={() => onSelectCustomer(row.customerId)} className={`${link} text-left text-[0.9375rem] text-ink`}>
+                      <Link to={trackingPath(row.customerId)} className={`${link} text-left text-[0.9375rem] text-ink`}>
                         {row.name}
-                      </button>
+                      </Link>
                     </th>
                     <td className={`${cell} text-right font-mono text-sm`}>{i18n.number(row.projects.length)}</td>
                     <td className={`${cell} whitespace-nowrap text-right font-mono text-sm`}>{formatHours(i18n, row.hours)}</td>
@@ -101,14 +103,13 @@ function BillingTable({ rows, now, lastMonthReports, onSelectCustomer, onOpenRep
               return (
                 <li key={report.customer_id} className="flex flex-wrap items-center gap-x-3">
                   <span><Trans>{customerName}: {status}</Trans></span>
-                  <button
-                    type="button"
-                    onClick={() => onOpenReport(report.customer_id, lastMonthReports.month, lastMonthReports.year)}
+                  <Link
+                    to={reportPath(report.customer_id, lastMonthReports.year, lastMonthReports.month)}
                     aria-label={t`Open report for ${customerName}`}
                     className={link}
                   >
                     <Trans>Open report</Trans>
-                  </button>
+                  </Link>
                 </li>
               )
             })}

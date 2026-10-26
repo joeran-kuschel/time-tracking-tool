@@ -1,5 +1,8 @@
 # Time tracking
 
+The selected customer and project are in the address (`/time-tracking/3/7`), so a reload or a bookmark keeps them; see
+[Navigation and addresses](navigation.md#selections-in-the-address) for history, unknown records and the running timer.
+
 The Time tracking page manages customers, projects and entries; the app opens on the [Dashboard](dashboard.md), which
 can open this page with a customer (and project) selected. Customers are listed in a sidebar. The main area shows the selected customer, its
 project filter, the timer, a summary of the current month and the customer's entries, grouped by project. On narrow
@@ -46,7 +49,7 @@ Next to the timer, a card sums up the selected customer's current month (e.g. *S
 - One bar per project with its hours, in the order of the projects. Projects without hours this month are left out.
   The bar is decorative; screen readers read each project's share of the month's hours after the hours (*70 % of total*).
 - *No time recorded this month yet.* when there is nothing to sum up.
-- **Open report** opens the Reports page for this customer and the current month.
+- **Open report** (a link) opens the Reports page for this customer and the current month.
 
 The summary is calculated in the browser from the entries the Time tracking page already loaded (`summary.js`), so it needs no
 extra request. It always covers all projects, also while one project is selected.

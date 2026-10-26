@@ -1,12 +1,16 @@
 import { useEffect, useId, useRef, useState } from 'react'
+import { useNavigate, useParams } from 'react-router'
 import { ArrowDownTrayIcon, ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline'
 import { msg } from '@lingui/core/macro'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { api } from '../api'
 import { useAction } from '../hooks/useAction'
 import ErrorMessage from '../components/ErrorMessage'
+import MissingRecord from '../components/MissingRecord'
 import { formatAmount, formatHours, formatRate, hoursBetween } from '../format'
 import { saveShowAmounts, storedShowAmounts } from '../reportOptions'
+import { idFromParam, periodFromParam, reportPath } from '../routes'
+import NotFound from './NotFound'
 import { ui } from '../ui'
 
 const cell = 'px-3 py-3 border-b border-line-soft'
@@ -35,16 +39,21 @@ function projectHours(entries) {
   return [...byId.values()]
 }
 
-// A customer's month: the report loads as soon as customer or month change.
-// initialCustomerId, initialMonth and initialYear preselect them, e.g. from "Open report" on another page;
-// without a month, the current one opens.
-function Reports({ customers, initialCustomerId = null, initialMonth, initialYear }) {
-  const [customerId, setCustomerId] = useState(initialCustomerId)
-  const [period, setPeriod] = useState(() => {
-    if (initialMonth && initialYear) return { year: initialYear, month: initialMonth }
-    const today = new Date()
-    return { year: today.getFullYear(), month: today.getMonth() + 1 }
-  })
+const currentPeriod = () => {
+  const today = new Date()
+  return { year: today.getFullYear(), month: today.getMonth() + 1 }
+}
+
+// A customer's month: the report loads as soon as customer or month change. Both are in the address
+// (/reports/:customerId/:yearMonth, e.g. /reports/3/2026-09); without a month, the current one opens.
+function Reports({ customers }) {
+  const params = useParams()
+  const navigate = useNavigate()
+  const requestedCustomerId = idFromParam(params.customerId)
+  const period = params.yearMonth ? periodFromParam(params.yearMonth) : currentPeriod()
+  // Only a customer that exists is reported; the address of one that doesn't gets a message below
+  const customerId = customers.some((c) => c.id === requestedCustomerId) ? requestedCustomerId : null
+  const customerMissing = Boolean(params.customerId) && !customerId
   const [report, setReport] = useState(null)
   const [showAmounts, setShowAmounts] = useState(storedShowAmounts)
   const [loading, setLoading] = useState(false)
@@ -60,23 +69,29 @@ function Reports({ customers, initialCustomerId = null, initialMonth, initialYea
   const monthLabelId = useId()
   const reportHeadingId = useId()
 
+  const { month, year } = period ?? {}
   useEffect(() => {
     setReport(null)
-    if (!customerId) return
+    if (!customerId || !period) return
     // Only the answer for the current choice is shown
     let current = true
     setLoading(true)
-    run(() => api.getMonthlyReport(customerId, period.month, period.year, showAmounts), msg`Report could not be loaded.`).then((data) => {
+    run(() => api.getMonthlyReport(customerId, month, year, showAmounts), msg`Report could not be loaded.`).then((data) => {
       if (!current) return
       if (data) setReport(data)
       setLoading(false)
     })
     return () => { current = false }
-  }, [customerId, period, showAmounts])
+  }, [customerId, month, year, showAmounts])
 
+  // Choosing a customer adds a history entry, stepping through the months replaces the current one
+  const openCustomer = (id) => navigate(reportPath(id, period.year, params.yearMonth && period.month))
   const shiftMonth = (delta) => {
+    if (!customerId) return
     const date = new Date(period.year, period.month - 1 + delta, 1)
-    setPeriod({ year: date.getFullYear(), month: date.getMonth() + 1 })
+    // Only years with four digits are addresses (periodFromParam)
+    if (date.getFullYear() < 1000 || date.getFullYear() > 9999) return
+    navigate(reportPath(customerId, date.getFullYear(), date.getMonth() + 1), { replace: true })
   }
 
   // One download at a time: while one runs, both buttons are marked disabled and ignore clicks.
@@ -102,6 +117,9 @@ function Reports({ customers, initialCustomerId = null, initialMonth, initialYea
     if (saved) setReport((current) => ({ ...current, status: saved.status }))
   }
 
+  // An address like /reports/3/foo
+  if (!period) return <NotFound />
+
   const customer = customers.find((c) => c.id === customerId)
   const reportCustomer = customer?.name
   const reportPeriod = i18n.date(new Date(period.year, period.month - 1, 1), { month: 'long', year: 'numeric' })
@@ -124,7 +142,7 @@ function Reports({ customers, initialCustomerId = null, initialMonth, initialYea
           <select
             id={customerFieldId}
             value={customerId ?? ''}
-            onChange={(e) => setCustomerId(e.target.value ? Number(e.target.value) : null)}
+            onChange={(e) => openCustomer(e.target.value ? Number(e.target.value) : null)}
             className={`${ui.select} w-72 max-w-full`}
           >
             <option value="">{t`Select a customer`}</option>
@@ -137,11 +155,11 @@ function Reports({ customers, initialCustomerId = null, initialMonth, initialYea
         <div role="group" aria-labelledby={monthLabelId}>
           <span id={monthLabelId} className={ui.label}><Trans>Month</Trans></span>
           <div className="flex min-h-[2.75rem] items-stretch rounded-lg border border-line-strong bg-surface">
-            <button type="button" onClick={() => shiftMonth(-1)} title={t`Previous month`} className="flex w-11 items-center justify-center rounded-l-lg border-r border-line hover:bg-paper">
+            <button type="button" onClick={() => shiftMonth(-1)} aria-disabled={!customerId} title={t`Previous month`} className="flex w-11 items-center justify-center rounded-l-lg border-r border-line hover:bg-paper aria-disabled:opacity-50">
               <ChevronLeftIcon aria-hidden="true" className="h-4 w-4" />
             </button>
             <span aria-live="polite" className="flex w-44 items-center justify-center font-medium">{reportPeriod}</span>
-            <button type="button" onClick={() => shiftMonth(1)} title={t`Next month`} className="flex w-11 items-center justify-center rounded-r-lg border-l border-line hover:bg-paper">
+            <button type="button" onClick={() => shiftMonth(1)} aria-disabled={!customerId} title={t`Next month`} className="flex w-11 items-center justify-center rounded-r-lg border-l border-line hover:bg-paper aria-disabled:opacity-50">
               <ChevronRightIcon aria-hidden="true" className="h-4 w-4" />
             </button>
           </div>
@@ -190,7 +208,14 @@ function Reports({ customers, initialCustomerId = null, initialMonth, initialYea
       <ErrorMessage message={error} />
       <ErrorMessage message={statusError} />
       <ErrorMessage message={downloadError} />
-      {!customerId && <p className="text-muted"><Trans>Select a customer to see the report.</Trans></p>}
+      {customerMissing && (
+        <MissingRecord
+          message={t`This customer does not exist (any more).`}
+          to={reportPath(null)}
+          linkText={t`Back to Reports`}
+        />
+      )}
+      {!customerId && !customerMissing && <p className="text-muted"><Trans>Select a customer to see the report.</Trans></p>}
       {loading && <p className="text-muted"><Trans>Loading...</Trans></p>}
 
       {report && (
