@@ -1,5 +1,6 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
+import { BrowserRouter } from 'react-router'
 import { I18nProvider } from '@lingui/react'
 import AuthGate from './components/AuthGate.jsx'
 import { activateLocale, detectLocale, i18n } from './i18n'
@@ -20,7 +21,9 @@ applyTheme(storedTheme())
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <I18nProvider i18n={i18n}>
-      <AuthGate />
+      <BrowserRouter>
+        <AuthGate />
+      </BrowserRouter>
     </I18nProvider>
   </React.StrictMode>,
 )

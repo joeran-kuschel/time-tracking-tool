@@ -3,6 +3,7 @@ import { msg } from '@lingui/core/macro'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { api } from '../api'
 import { useAction } from '../hooks/useAction'
+import { usePageTitle } from '../hooks/usePageTitle'
 import LanguageSwitcher from '../components/LanguageSwitcher'
 import RecordForm from '../components/RecordForm'
 import ThemeSwitcher from '../components/ThemeSwitcher'
@@ -16,6 +17,7 @@ const tooManyAttempts = msg`Too many failed attempts. Try again in a few minutes
 function Login({ onLogin, ended }) {
   const { t } = useLingui()
   const [run, error] = useAction()
+  usePageTitle(t`Log in`)
 
   const fields = [
     { name: 'email', label: t`Email`, type: 'email', required: true, autoComplete: 'username' },

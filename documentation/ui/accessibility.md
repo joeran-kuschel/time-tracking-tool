@@ -7,7 +7,11 @@ The UI has to meet WCAG 2.2 level AA (see `CLAUDE.md`). This chapter lists what 
 - **Landmarks:** header, navigation (`<nav>`, *Main*), main content (`<main>`), the customer sidebar (`<aside>`) and
   the running timer (a region named *Running timer*). Each page has one `<h1>`: *Dashboard* on the Dashboard, the customer's name on the Time tracking page
   (visually hidden *Time tracking* without a customer), a visually hidden *Reports* on the Reports page.
-- **Navigation:** the current page is marked with `aria-current="page"` and an underline, not only by color.
+- **Navigation:** the items are links (`<a href>`); the current page is marked with `aria-current="page"` and an
+  underline, not only by color.
+- **Page change:** every page has its own address and a title (*\<Page\> · Time Tracking*, in the current language).
+  When the page changes, focus moves to the new page's `<h1>` (or `<main>` without one), but not on the first load or
+  when the same page stays open. There is no skip link yet. See [Navigation and addresses](navigation.md).
 - **Language:** `<html lang>` follows the current language; the language buttons carry their own `lang`. See
   [Languages](languages.md).
 - **Keyboard:** all controls are buttons, inputs or selects in a logical tab order, with one visible focus ring

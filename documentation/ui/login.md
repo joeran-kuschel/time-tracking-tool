@@ -13,6 +13,10 @@ Without a login session, the app shows only the login page. The backend side is 
   reachable.*
 - **Logged in:** the app as before, with a *Log out* button in the header next to the switchers. Logging out removes
   the app, so none of its data stays in memory, and shows the login page.
+- **Deep links:** a page opened while logged out (for example `/reports`) shows the login page at that address, and
+  after the login the same page opens. Logging out on purpose resets the address to `/` (the Dashboard); a session
+  that ends on its own keeps the address, so the next login returns to the page. The login page's title is *Log in ·
+  Time Tracking*. See [Navigation and addresses](navigation.md).
 - **Session ended while working** (for example after 14 idle days, or after the password was changed): the next request
   is answered with `401`, the app is replaced by the login page, and a status line says *Your session has ended.
   Please log in again.* The data on the page is gone; unsaved form input is lost.

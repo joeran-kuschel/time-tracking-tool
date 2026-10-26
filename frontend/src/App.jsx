@@ -1,10 +1,13 @@
 import { useState, useEffect, useRef } from 'react'
+import { Link, Route, Routes, useLocation, useNavigate } from 'react-router'
 import { ClockIcon } from '@heroicons/react/24/outline'
 import { msg } from '@lingui/core/macro'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { api } from './api'
 import { useAction } from './hooks/useAction'
 import { useActiveEntry } from './hooks/useActiveEntry'
+import { useFocusOnPageChange } from './hooks/useFocusOnPageChange'
+import { usePageTitle } from './hooks/usePageTitle'
 import ErrorMessage from './components/ErrorMessage'
 import LanguageSwitcher from './components/LanguageSwitcher'
 import RunningTimer from './components/RunningTimer'
@@ -13,18 +16,12 @@ import Dashboard from './pages/Dashboard'
 import TimeTracking from './pages/TimeTracking'
 import Entries from './pages/Entries'
 import Reports from './pages/Reports'
+import NotFound from './pages/NotFound'
+import { pageFor, pages } from './routes'
 import { ui } from './ui'
 import './App.css'
 
-const pages = [
-  { id: 'dashboard', label: msg`Dashboard` },
-  { id: 'time-tracking', label: msg`Time tracking` },
-  { id: 'entries', label: msg`Entries` },
-  { id: 'reports', label: msg`Reports` },
-]
-
 function App({ onLogout, logoutError, focusOnStart }) {
-  const [currentPage, setCurrentPage] = useState('dashboard')
   // What the Reports page opens with: { customerId, month, year }, set by "Open report" on another page
   const [reportSelection, setReportSelection] = useState({})
   // What the Time tracking page opens with: { customerId, projectId }, set from the dashboard
@@ -35,6 +32,12 @@ function App({ onLogout, logoutError, focusOnStart }) {
   const timer = useActiveEntry()
   const main = useRef(null)
   const { t, i18n } = useLingui()
+  const navigate = useNavigate()
+  // The current page: an exact match of the address (a trailing slash counts), also for the navigation below
+  const page = pageFor(useLocation().pathname)
+
+  usePageTitle(page ? i18n._(page.label) : t`Page not found`)
+  useFocusOnPageChange(main)
 
   useEffect(() => {
     loadCustomers()
@@ -59,17 +62,40 @@ function App({ onLogout, logoutError, focusOnStart }) {
 
   const openReport = (customerId = null, month, year) => {
     setReportSelection({ customerId, month, year })
-    setCurrentPage('reports')
+    navigate('/reports')
   }
 
   const openTimeTracking = (customerId, projectId = null) => {
     setTrackingSelection({ customerId, projectId })
-    setCurrentPage('time-tracking')
+    navigate('/time-tracking')
   }
 
   const announcedProject = timer.announcement?.projectName
   const announcementText = !timer.announcement ? ''
     : timer.announcement.kind === 'started' ? t`Timer started for ${announcedProject}` : t`Timer stopped`
+
+  const elements = {
+    dashboard: <Dashboard timer={timer} onOpenTimeTracking={openTimeTracking} onOpenReports={openReport} />,
+    'time-tracking': (
+      <TimeTracking
+        customers={customers}
+        onCustomersChange={loadCustomers}
+        timer={timer}
+        onOpenReport={openReport}
+        initialCustomerId={trackingSelection.customerId}
+        initialProjectId={trackingSelection.projectId}
+      />
+    ),
+    entries: <Entries customers={customers} onOpenTimeTracking={openTimeTracking} />,
+    reports: (
+      <Reports
+        customers={customers}
+        initialCustomerId={reportSelection.customerId}
+        initialMonth={reportSelection.month}
+        initialYear={reportSelection.year}
+      />
+    ),
+  }
 
   if (loading) {
     return <div className="flex items-center justify-center h-screen"><Trans>Loading...</Trans></div>
@@ -84,17 +110,17 @@ function App({ onLogout, logoutError, focusOnStart }) {
             Time Tracking
           </p>
           <nav aria-label={t`Main`} className="flex gap-1 self-stretch">
-            {pages.map((page) => (
-              <button
-                key={page.id}
-                onClick={() => setCurrentPage(page.id)}
-                aria-current={currentPage === page.id ? 'page' : undefined}
-                className={`border-b-[3px] px-3.5 pt-[3px] text-[0.9375rem] ${
-                  currentPage === page.id ? 'border-accent font-semibold text-ink' : 'border-transparent text-muted hover:text-ink'
+            {pages.map(({ id, path, label }) => (
+              <Link
+                key={id}
+                to={path}
+                aria-current={page?.id === id ? 'page' : undefined}
+                className={`inline-flex items-center border-b-[3px] px-3.5 pt-[3px] text-[0.9375rem] ${
+                  page?.id === id ? 'border-accent font-semibold text-ink' : 'border-transparent text-muted hover:text-ink'
                 }`}
               >
-                {i18n._(page.label)}
-              </button>
+                {i18n._(label)}
+              </Link>
             ))}
           </nav>
           <div className="ml-auto flex min-w-0 flex-wrap items-center gap-3">
@@ -117,31 +143,13 @@ function App({ onLogout, logoutError, focusOnStart }) {
           </div>
         )}
         {/* On the Dashboard and the Time tracking page, the timer panel shows the timer's errors */}
-        {(currentPage === 'reports' || currentPage === 'entries') && timer.error && (
+        {(page?.id === 'reports' || page?.id === 'entries') && timer.error && (
           <div className="mx-4 mt-4 sm:mx-8"><ErrorMessage message={timer.error} /></div>
         )}
-        {currentPage === 'dashboard' && (
-          <Dashboard timer={timer} onOpenTimeTracking={openTimeTracking} onOpenReports={openReport} />
-        )}
-        {currentPage === 'time-tracking' && (
-          <TimeTracking
-            customers={customers}
-            onCustomersChange={loadCustomers}
-            timer={timer}
-            onOpenReport={openReport}
-            initialCustomerId={trackingSelection.customerId}
-            initialProjectId={trackingSelection.projectId}
-          />
-        )}
-        {currentPage === 'entries' && <Entries customers={customers} onOpenTimeTracking={openTimeTracking} />}
-        {currentPage === 'reports' && (
-          <Reports
-            customers={customers}
-            initialCustomerId={reportSelection.customerId}
-            initialMonth={reportSelection.month}
-            initialYear={reportSelection.year}
-          />
-        )}
+        <Routes>
+          {pages.map(({ id, path }) => <Route key={id} path={path} element={elements[id]} />)}
+          <Route path="*" element={<NotFound />} />
+        </Routes>
       </main>
 
       <p role="status" className="sr-only">{announcementText}</p>
