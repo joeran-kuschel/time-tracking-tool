@@ -17,6 +17,7 @@ How to write an entry and cut a release: [documentation/backend/changelog.md](do
 
 ### Changed
 
+- Tooling: the router tests wait for the address, the page title and the focus instead of checking them at once, so they no longer fail at random.
 - The Reports page no longer shows hourly rates and amounts by default; tick *Show hourly rate and amounts* to see them again, also in the PDF and CSV downloads. The choice is remembered in the browser.
 - The backend and the database can no longer be reached directly from other devices or other pods; Docker Compose publishes only the web page, and only on this machine (development ports: see the README). Anyone who can open the tool can still use it, and the login protects the data. Existing installs: see "Network Policy" in `k8s/README.md`.
 - Only the tool's own backend can connect to the database in the cluster; backups are not affected. Existing installs: see "Network Policy" in `k8s/README.md`.
