@@ -81,6 +81,19 @@ describe('frontend/nginx.conf', () => {
     expect(conf).toContain('try_files $uri $uri/ /index.html;');
     expect(conf).toContain('location ~* \\.(js|css');
   });
+
+  // The fallback, the index of "/" and error_page 404 all end up in this exact location
+  test('index.html is never cached long-term, so a reload after a deploy gets the new build', () => {
+    expect(block('location = /index.html {')).toContain('add_header Cache-Control "no-cache" always;');
+    expect(block('location = /index.html {')).not.toMatch(/expires|immutable/);
+    expect(conf).toContain('error_page 404 /index.html;');
+  });
+
+  test('hashed assets keep their long cache', () => {
+    const assets = block('location ~* \\.(js|css');
+    expect(assets).toContain('expires 30d;');
+    expect(assets).toContain('"public, immutable"');
+  });
 });
 
 describe('Docker Compose', () => {

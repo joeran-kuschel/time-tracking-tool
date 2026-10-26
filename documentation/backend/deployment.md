@@ -29,7 +29,10 @@ The tool runs on the local Kubernetes cluster of Docker Desktop, in the namespac
 The tool has its own hostname instead of ports on `localhost`, so other apps can run in the same cluster without a
 port clash. `k8s/ingress.yaml` serves `time-tracking.local` and routes every path (`/`) to `frontend`, port 80. It has
 no route to the backend: the frontend's nginx (`frontend/nginx.conf`) proxies `/api/` and `/health` to `backend:3000`
-(`^~` so the static-file rule can't catch them; the name is resolved once, when nginx starts). See
+(`^~` so the static-file rule can't catch them; the name is resolved once, when nginx starts). Every other unknown
+path falls back to `index.html`, so a reload on a page address works; `index.html` is sent with `Cache-Control:
+no-cache`, the hashed files under `/assets/` are cached for 30 days (see [Navigation and
+addresses](../ui/navigation.md)). See
 [Network exposure](#network-exposure).
 
 - It needs an ingress controller with the class `nginx`, installed once per cluster (ingress-nginx via Helm, command in

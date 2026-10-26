@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, test, vi } from 'vitest'
-import { act, render, screen } from '../support/render'
+import { act, renderWithRouter as render, screen } from '../support/render'
 import userEvent from '@testing-library/user-event'
+import { useLocation } from 'react-router'
 import AuthGate from '@/components/AuthGate'
 import { api, ApiError } from '@/api'
 
@@ -42,6 +43,62 @@ async function endSession() {
     vi.unstubAllGlobals()
   })
 }
+
+function Path() {
+  return <p data-testid="path">{useLocation().pathname}</p>
+}
+
+describe('AuthGate addresses', () => {
+  test('a deep link opened while logged out leads to the login and then to the same address', async () => {
+    api.getSession.mockResolvedValue(null)
+    render(<><AuthGate /><Path /></>, { route: '/reports' })
+
+    expect(await screen.findByRole('heading', { level: 1, name: 'Anmelden' })).toBeInTheDocument()
+    expect(screen.getByTestId('path')).toHaveTextContent('/reports')
+    expect(document.title).toBe('Anmelden · Time Tracking')
+
+    await loginAs()
+
+    expect(await screen.findByText('App is shown')).toBeInTheDocument()
+    expect(screen.getByTestId('path')).toHaveTextContent('/reports')
+  })
+
+  test('a deliberate logout resets the address to the Dashboard', async () => {
+    api.getSession.mockResolvedValue({ email: 'me@example.com' })
+    api.logout.mockResolvedValue(null)
+    render(<><AuthGate /><Path /></>, { route: '/reports' })
+
+    await userEvent.click(await screen.findByRole('button', { name: 'App logout' }))
+
+    expect(await screen.findByRole('heading', { level: 1, name: 'Anmelden' })).toBeInTheDocument()
+    expect(screen.getByTestId('path')).toHaveTextContent(/^\/$/)
+  })
+
+  test('a failed logout keeps the address', async () => {
+    api.getSession.mockResolvedValue({ email: 'me@example.com' })
+    api.logout.mockRejectedValue(new ApiError(0, 'Server not reachable'))
+    render(<><AuthGate /><Path /></>, { route: '/entries' })
+
+    await userEvent.click(await screen.findByRole('button', { name: 'App logout' }))
+    await screen.findByRole('alert')
+
+    expect(screen.getByTestId('path')).toHaveTextContent('/entries')
+  })
+
+  test('a session that ends keeps the address, so the next login returns to the page', async () => {
+    api.getSession.mockResolvedValue({ email: 'me@example.com' })
+    render(<><AuthGate /><Path /></>, { route: '/entries' })
+    await screen.findByText('App is shown')
+
+    await endSession()
+    await screen.findByRole('heading', { level: 1, name: 'Anmelden' })
+    expect(screen.getByTestId('path')).toHaveTextContent('/entries')
+
+    await loginAs()
+    await screen.findByText('App is shown')
+    expect(screen.getByTestId('path')).toHaveTextContent('/entries')
+  })
+})
 
 describe('AuthGate', () => {
   test('shows a loading text while the session is checked, and no app', () => {

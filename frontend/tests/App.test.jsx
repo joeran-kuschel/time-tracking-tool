@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest'
-import { act, render, screen, waitFor, within } from './support/render'
+import { act, renderWithRouter as render, screen, waitFor, within } from './support/render'
 import userEvent from '@testing-library/user-event'
+import { useLocation, useNavigate } from 'react-router'
 import { axe } from './support/axe'
 import App from '@/App'
 import { api, ApiError } from '@/api'
@@ -44,7 +45,7 @@ const emptyDashboard = { entries: [], recent: [], projects: [], lastMonthReports
 // The app starts on the Dashboard; most tests are about the Time tracking page
 async function renderTimeTracking() {
   const result = render(<App />)
-  await userEvent.click(await screen.findByRole('button', { name: /^(Zeiterfassung|Time tracking)$/ }))
+  await userEvent.click(await screen.findByRole('link', { name: /^(Zeiterfassung|Time tracking)$/ }))
   return result
 }
 
@@ -104,7 +105,7 @@ describe('App', () => {
     render(<App />)
 
     await userEvent.click(await screen.findByRole('button', { name: 'Erneut versuchen' }))
-    await userEvent.click(screen.getByRole('button', { name: 'Zeiterfassung' }))
+    await userEvent.click(screen.getByRole('link', { name: 'Zeiterfassung' }))
 
     expect(await screen.findByRole('button', { name: 'Muster GmbH' })).toBeInTheDocument()
     expect(screen.queryByRole('alert')).not.toBeInTheDocument()
@@ -165,7 +166,7 @@ describe('App', () => {
     api.stopTimeEntry.mockResolvedValue({ ...running, end_time: new Date().toISOString() })
     render(<App />)
     await runningTimer()
-    await userEvent.click(screen.getByRole('button', { name: 'Berichte' }))
+    await userEvent.click(screen.getByRole('link', { name: 'Berichte' }))
 
     await userEvent.click(screen.getByRole('button', { name: 'Stop Timer' }))
 
@@ -198,7 +199,7 @@ describe('App', () => {
 
     await userEvent.click(await screen.findByRole('button', { name: 'Bericht öffnen' }))
 
-    expect(screen.getByRole('button', { name: 'Berichte' })).toHaveAttribute('aria-current', 'page')
+    expect(screen.getByRole('link', { name: 'Berichte' })).toHaveAttribute('aria-current', 'page')
     expect(screen.getByLabelText('Kunde')).toHaveValue('1')
     expect(api.getMonthlyReport).toHaveBeenCalledWith(1, new Date().getMonth() + 1, new Date().getFullYear())
   })
@@ -209,10 +210,10 @@ describe('App', () => {
     render(<App />)
     await runningTimer()
 
-    await userEvent.click(screen.getByRole('button', { name: 'Berichte' }))
+    await userEvent.click(screen.getByRole('link', { name: 'Berichte' }))
     expect(await runningTimer()).toHaveTextContent('Website')
 
-    await userEvent.click(screen.getByRole('button', { name: 'Zeiterfassung' }))
+    await userEvent.click(screen.getByRole('link', { name: 'Zeiterfassung' }))
     expect(screen.getByRole('button', { name: 'Stop' })).toBeInTheDocument()
     expect(api.getActiveEntry).toHaveBeenCalledTimes(1)
   })
@@ -266,7 +267,7 @@ describe('App', () => {
     expect(screen.getByRole('button', { name: 'Stop' })).toBeInTheDocument()
     expect(screen.getByRole('group', { name: 'Edit customer' })).toBeInTheDocument()
     expect(screen.getByLabelText('Name')).toHaveValue('Muster GmbH AG')
-    expect(screen.getByRole('button', { name: 'Reports' })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Reports' })).toBeInTheDocument()
     expect(document.documentElement.lang).toBe('en')
     expect(api.getActiveEntry).toHaveBeenCalledTimes(1)
     expect(api.getCustomers).toHaveBeenCalledTimes(1)
@@ -277,11 +278,11 @@ describe('App', () => {
     render(<App />)
 
     expect(await screen.findByRole('heading', { level: 1, name: 'Dashboard' })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Dashboard' })).toHaveAttribute('aria-current', 'page')
+    expect(screen.getByRole('link', { name: 'Dashboard' })).toHaveAttribute('aria-current', 'page')
     expect(screen.getByRole('navigation').textContent).toBe('DashboardZeiterfassungEinträgeBerichte')
     expect(api.getDashboard).toHaveBeenCalledTimes(1)
 
-    await userEvent.click(screen.getByRole('button', { name: 'Zeiterfassung' }))
+    await userEvent.click(screen.getByRole('link', { name: 'Zeiterfassung' }))
     expect(screen.getByRole('heading', { level: 1, name: 'Zeiterfassung' })).toBeInTheDocument()
 
     await userEvent.click(screen.getByRole('button', { name: 'English' }))
@@ -299,13 +300,13 @@ describe('App', () => {
     })
     render(<App />)
 
-    await userEvent.click(await screen.findByRole('button', { name: 'Einträge' }))
-    expect(screen.getByRole('button', { name: 'Einträge' })).toHaveAttribute('aria-current', 'page')
+    await userEvent.click(await screen.findByRole('link', { name: 'Einträge' }))
+    expect(screen.getByRole('link', { name: 'Einträge' })).toHaveAttribute('aria-current', 'page')
     expect(screen.getByRole('heading', { level: 1, name: 'Einträge' })).toBeInTheDocument()
 
     await userEvent.click(await screen.findByRole('button', { name: /^Öffnen\s+in Zeiterfassung/ }))
 
-    expect(screen.getByRole('button', { name: 'Zeiterfassung' })).toHaveAttribute('aria-current', 'page')
+    expect(screen.getByRole('link', { name: 'Zeiterfassung' })).toHaveAttribute('aria-current', 'page')
     expect(await screen.findByRole('heading', { name: 'Einträge für Website' })).toBeInTheDocument()
   })
 
@@ -321,7 +322,7 @@ describe('App', () => {
 
     await userEvent.click(await screen.findByRole('button', { name: /Konzept/ }))
 
-    expect(screen.getByRole('button', { name: 'Zeiterfassung' })).toHaveAttribute('aria-current', 'page')
+    expect(screen.getByRole('link', { name: 'Zeiterfassung' })).toHaveAttribute('aria-current', 'page')
     expect(await screen.findByRole('heading', { name: 'Einträge für Website' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Muster GmbH', pressed: true })).toBeInTheDocument()
   })
@@ -337,7 +338,7 @@ describe('App', () => {
 
     await userEvent.click(await screen.findByRole('button', { name: 'Abrechnung für Muster GmbH öffnen' }))
 
-    expect(screen.getByRole('button', { name: 'Berichte' })).toHaveAttribute('aria-current', 'page')
+    expect(screen.getByRole('link', { name: 'Berichte' })).toHaveAttribute('aria-current', 'page')
     expect(screen.getByLabelText('Kunde')).toHaveValue('1')
     expect(api.getMonthlyReport).toHaveBeenCalledWith(1, 8, 2026)
   })
@@ -549,5 +550,218 @@ describe('App', () => {
     await openNewCustomer()
 
     expect(await axe(container)).toHaveNoViolations()
+  })
+})
+
+// Shows where the router is and moves it like the browser's back and forward buttons
+function Location() {
+  const location = useLocation()
+  const navigate = useNavigate()
+  return (
+    <div>
+      <p data-testid="path">{location.pathname}</p>
+      <button onClick={() => navigate(-1)}>history back</button>
+      <button onClick={() => navigate(1)}>history forward</button>
+    </div>
+  )
+}
+
+const renderAt = (route) => render(<><App /><Location /></>, { route })
+const path = () => screen.getByTestId('path').textContent
+
+describe('App addresses', () => {
+  beforeEach(() => {
+    api.getCustomers.mockResolvedValue([{ id: 1, name: 'Muster GmbH' }])
+    api.getMonthlyReport.mockResolvedValue({ entries: [], totalHours: '0.00', status: 'draft' })
+  })
+
+  test('the navigation items are links to the pages, and the current one is marked', async () => {
+    renderAt('/')
+
+    const nav = within(await screen.findByRole('navigation', { name: 'Hauptnavigation' }))
+    expect(nav.getAllByRole('link').map((link) => link.getAttribute('href'))).toEqual(
+      ['/', '/time-tracking', '/entries', '/reports']
+    )
+    expect(nav.getByRole('link', { name: 'Dashboard' })).toHaveAttribute('aria-current', 'page')
+    expect(nav.getByRole('link', { name: 'Berichte' })).not.toHaveAttribute('aria-current')
+  })
+
+  test('a deep link opens that page, with or without a trailing slash', async () => {
+    const first = renderAt('/reports')
+    expect(await screen.findByRole('heading', { level: 1, name: 'Berichte' })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Berichte' })).toHaveAttribute('aria-current', 'page')
+    first.unmount()
+
+    renderAt('/entries/')
+    expect(await screen.findByRole('heading', { level: 1, name: 'Einträge' })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Einträge' })).toHaveAttribute('aria-current', 'page')
+  })
+
+  test('back and forward move between the visited pages', async () => {
+    renderAt('/')
+    await userEvent.click(await screen.findByRole('link', { name: 'Berichte' }))
+    expect(path()).toBe('/reports')
+    await userEvent.click(screen.getByRole('link', { name: 'Zeiterfassung' }))
+    expect(path()).toBe('/time-tracking')
+
+    await userEvent.click(screen.getByRole('button', { name: 'history back' }))
+    expect(path()).toBe('/reports')
+    expect(await screen.findByRole('heading', { level: 1, name: 'Berichte' })).toBeInTheDocument()
+
+    await userEvent.click(screen.getByRole('button', { name: 'history forward' }))
+    expect(screen.getByRole('link', { name: 'Zeiterfassung' })).toHaveAttribute('aria-current', 'page')
+  })
+
+  test('an unknown address shows the not-found page with a link home, and marks no page as current', async () => {
+    renderAt('/gibt-es-nicht')
+
+    expect(await screen.findByRole('heading', { level: 1, name: 'Seite nicht gefunden' })).toBeInTheDocument()
+    expect(within(screen.getByRole('navigation')).queryByRole('link', { current: 'page' })).not.toBeInTheDocument()
+
+    await userEvent.click(screen.getByRole('link', { name: 'Zum Dashboard' }))
+
+    expect(path()).toBe('/')
+    expect(await screen.findByRole('heading', { level: 1, name: 'Dashboard' })).toBeInTheDocument()
+  })
+
+  test('has no detectable accessibility violations on the not-found page', async () => {
+    const { container } = renderAt('/nope')
+    await screen.findByRole('heading', { level: 1, name: 'Seite nicht gefunden' })
+
+    expect(await axe(container)).toHaveNoViolations()
+  })
+
+  test('the page title names the page in both languages and follows a language switch', async () => {
+    renderAt('/')
+    await screen.findByRole('heading', { level: 1, name: 'Dashboard' })
+    expect(document.title).toBe('Dashboard · Time Tracking')
+
+    await userEvent.click(screen.getByRole('link', { name: 'Berichte' }))
+    expect(document.title).toBe('Berichte · Time Tracking')
+
+    await userEvent.click(screen.getByRole('button', { name: 'English' }))
+    expect(document.title).toBe('Reports · Time Tracking')
+
+    await userEvent.click(screen.getByRole('link', { name: 'Time tracking' }))
+    expect(document.title).toBe('Time tracking · Time Tracking')
+  })
+
+  test('the not-found page has its own title', async () => {
+    renderAt('/nope')
+    await screen.findByRole('heading', { level: 1, name: 'Seite nicht gefunden' })
+    expect(document.title).toBe('Seite nicht gefunden · Time Tracking')
+
+    await userEvent.click(screen.getByRole('button', { name: 'English' }))
+    expect(document.title).toBe('Page not found · Time Tracking')
+  })
+
+  test('moves focus to the new page\'s heading, but not on the first render', async () => {
+    renderAt('/')
+    await screen.findByRole('heading', { level: 1, name: 'Dashboard' })
+    expect(document.body).toHaveFocus()
+
+    await userEvent.click(screen.getByRole('link', { name: 'Einträge' }))
+    expect(screen.getByRole('heading', { level: 1, name: 'Einträge' })).toHaveFocus()
+
+    // Reports has a visually hidden heading
+    await userEvent.click(screen.getByRole('link', { name: 'Berichte' }))
+    expect(screen.getByRole('heading', { level: 1, name: 'Berichte' })).toHaveFocus()
+  })
+
+  test('on the Time tracking page without a customer, the visually hidden heading takes the focus', async () => {
+    renderAt('/')
+    await userEvent.click(await screen.findByRole('link', { name: 'Zeiterfassung' }))
+
+    expect(screen.getByRole('heading', { level: 1, name: 'Zeiterfassung' })).toHaveFocus()
+  })
+
+  test('focus goes to the new page when a page is opened from the Dashboard', async () => {
+    api.getDashboard.mockResolvedValue({
+      ...emptyDashboard,
+      lastMonthReports: { month: 8, year: 2026, reports: [{ customer_id: 1, customer_name: 'Muster GmbH', status: 'ready' }] },
+    })
+    renderAt('/')
+    await userEvent.click(await screen.findByRole('button', { name: 'Abrechnung für Muster GmbH öffnen' }))
+
+    expect(path()).toBe('/reports')
+    expect(screen.getByRole('heading', { level: 1, name: 'Berichte' })).toHaveFocus()
+  })
+
+  test('does not move focus when the same page stays open', async () => {
+    renderAt('/reports')
+    await screen.findByRole('heading', { level: 1, name: 'Berichte' })
+    const link = screen.getByRole('link', { name: 'Berichte' })
+    await userEvent.click(link)
+
+    expect(link).toHaveFocus()
+  })
+
+  test('after a login the focus goes to the page content, not to the heading', async () => {
+    render(<App focusOnStart />, { route: '/reports' })
+    await screen.findByRole('heading', { level: 1, name: 'Berichte' })
+
+    await waitFor(() => expect(screen.getByRole('main')).toHaveFocus())
+  })
+
+  test('the running timer stays when the page changes', async () => {
+    api.getActiveEntry.mockResolvedValue(running)
+    renderAt('/')
+    const region = await runningTimer()
+
+    await userEvent.click(screen.getByRole('link', { name: 'Berichte' }))
+    await userEvent.click(screen.getByRole('link', { name: 'Einträge' }))
+
+    expect(await runningTimer()).toBe(region)
+    expect(api.getActiveEntry).toHaveBeenCalledTimes(1)
+    expect(api.getCustomers).toHaveBeenCalledTimes(1)
+  })
+
+  test('opening the report from the Time tracking page changes the address', async () => {
+    renderAt('/time-tracking')
+    await userEvent.click(await screen.findByRole('button', { name: 'Muster GmbH' }))
+    await userEvent.click(await screen.findByRole('button', { name: 'Bericht öffnen' }))
+
+    expect(path()).toBe('/reports')
+    expect(screen.getByLabelText('Kunde')).toHaveValue('1')
+  })
+
+  test.each(['/reports/1/2026-09', '/time-tracking/1', '/api/customers'])('%s shows the not-found page for now', async (route) => {
+    renderAt(route)
+
+    expect(await screen.findByRole('heading', { level: 1, name: 'Seite nicht gefunden' })).toBeInTheDocument()
+  })
+
+  // A NavLink matches the start of the address, so a nested not-found address marks its parent page as current
+  test.each(['/reports/1/2026-09', '/time-tracking/1'])('%s marks no page as current while the not-found page is shown', async (route) => {
+    renderAt(route)
+    await screen.findByRole('heading', { level: 1, name: 'Seite nicht gefunden' })
+
+    expect(within(screen.getByRole('navigation')).queryByRole('link', { current: 'page' })).not.toBeInTheDocument()
+  })
+
+  test('a trailing slash keeps the page and its link current', async () => {
+    renderAt('/time-tracking/')
+
+    expect(await screen.findByRole('link', { name: 'Zeiterfassung' })).toHaveAttribute('aria-current', 'page')
+  })
+
+  test('moves focus to the heading of the page that back returns to', async () => {
+    renderAt('/')
+    await userEvent.click(await screen.findByRole('link', { name: 'Berichte' }))
+    await userEvent.click(screen.getByRole('link', { name: 'Einträge' }))
+
+    await userEvent.click(screen.getByRole('button', { name: 'history back' }))
+    expect(screen.getByRole('heading', { level: 1, name: 'Berichte' })).toHaveFocus()
+  })
+
+  test('navigating makes no new calls for the customers or the timer', async () => {
+    renderAt('/')
+    await screen.findByRole('heading', { level: 1, name: 'Dashboard' })
+
+    await userEvent.click(screen.getByRole('link', { name: 'Einträge' }))
+    await userEvent.click(screen.getByRole('link', { name: 'Zeiterfassung' }))
+
+    expect(api.getCustomers).toHaveBeenCalledTimes(1)
+    expect(api.getActiveEntry).toHaveBeenCalledTimes(1)
   })
 })

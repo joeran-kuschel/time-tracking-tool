@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { useNavigate } from 'react-router'
 import { msg } from '@lingui/core/macro'
 import { Trans } from '@lingui/react/macro'
 import { api, onSessionEnded } from '../api'
@@ -22,6 +23,7 @@ function AuthGate() {
     loggedIn.current = Boolean(next)
     setUserState(next)
   }
+  const navigate = useNavigate()
   const [run, error] = useAction()
   const [runLogout, logoutError] = useAction()
 
@@ -48,6 +50,8 @@ function AuthGate() {
       setEnded(false)
       setJustLoggedIn(false)
       setUser(null)
+      // A deliberate logout starts over at the Dashboard; a session that ends keeps the address for the next login
+      navigate('/', { replace: true })
     }
   }
 
