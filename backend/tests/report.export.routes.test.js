@@ -189,3 +189,33 @@ describe('GET /api/reports/customer/:id/csv', () => {
     });
   });
 });
+
+describe('GET /api/reports/customer/:id/csv with amounts', () => {
+  const lines = async (response) => Buffer.from(await response.arrayBuffer()).toString('utf8').slice(1).split('\r\n');
+
+  test('adds the rate and amount columns with amounts=1', async () => {
+    const response = await get('month=9&year=2026&lang=de&amounts=1');
+
+    expect(response.status).toBe(200);
+    expect(await lines(response)).toEqual([
+      'Datum;Beginn;Ende;Kunde;Projekt;Beschreibung;Stunden;Stundensatz (EUR/h);Betrag (EUR)',
+      "2026-09-22;08:00;;Muster GmbH;Website;'=SUM(A1);0,00;80,00;0,00",
+      '2026-09-21;08:00;09:30;Muster GmbH;Website;"Konzept; ""Phase 1""";1,50;80,00;120,00',
+      '',
+    ]);
+  });
+
+  test.each(['', '&amounts=0'])('is identical to the file without the flag%s', async (extra) => {
+    const plain = Buffer.from(await (await get('month=9&year=2026&lang=en')).arrayBuffer());
+    const same = Buffer.from(await (await get(`month=9&year=2026&lang=en${extra}`)).arrayBuffer());
+
+    expect(same.equals(plain)).toBe(true);
+  });
+
+  test.each(['amounts=2', 'amounts=', 'amounts=abc', 'amounts=1&amounts=1'])('answers 400 for %s', async (flag) => {
+    const response = await get(`month=9&year=2026&${flag}`);
+
+    expect(response.status).toBe(400);
+    expect(await response.json()).toEqual({ error: 'amounts must be 0 or 1' });
+  });
+});

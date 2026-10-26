@@ -31,7 +31,7 @@ All paths are under `/api/projects`.
 - `DELETE` also deletes the project's time entries (`ON DELETE CASCADE`). It answers `409` while the running timer
   belongs to the project.
 - `PUT` and `DELETE` for an id that doesn't exist answer `404`.
-- The hourly rate is stored but not used in reports yet: reports show hours, not amounts.
+- The hourly rate is used by the monthly reports when they are asked for amounts (`amounts=1`), see [Reports](reports.md#amounts).
 
 ## Code
 
