@@ -22,5 +22,7 @@ const renderWithRouter = (ui, { route = '/', ...options } = {}) => render(ui, {
   ...options,
 })
 
+// The router's location, the page title and the focus move update a tick after the render that shows the new page:
+// assert them with `waitFor` or `findBy*` (and `await act(async () => {})` before asserting that nothing moved).
 export * from '@testing-library/react'
 export { renderWithI18n as render, renderHookWithI18n as renderHook, renderWithRouter }

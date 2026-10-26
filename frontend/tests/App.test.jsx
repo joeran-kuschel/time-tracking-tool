@@ -600,16 +600,16 @@ describe('App addresses', () => {
   test('back and forward move between the visited pages', async () => {
     renderAt('/')
     await userEvent.click(await screen.findByRole('link', { name: 'Berichte' }))
-    expect(path()).toBe('/reports')
+    await waitFor(() => expect(path()).toBe('/reports'))
     await userEvent.click(screen.getByRole('link', { name: 'Zeiterfassung' }))
-    expect(path()).toBe('/time-tracking')
+    await waitFor(() => expect(path()).toBe('/time-tracking'))
 
     await userEvent.click(screen.getByRole('button', { name: 'history back' }))
-    expect(path()).toBe('/reports')
+    await waitFor(() => expect(path()).toBe('/reports'))
     expect(await screen.findByRole('heading', { level: 1, name: 'Berichte' })).toBeInTheDocument()
 
     await userEvent.click(screen.getByRole('button', { name: 'history forward' }))
-    expect(screen.getByRole('link', { name: 'Zeiterfassung' })).toHaveAttribute('aria-current', 'page')
+    await waitFor(() => expect(screen.getByRole('link', { name: 'Zeiterfassung' })).toHaveAttribute('aria-current', 'page'))
   })
 
   test('an unknown address shows the not-found page with a link home, and marks no page as current', async () => {
@@ -620,7 +620,7 @@ describe('App addresses', () => {
 
     await userEvent.click(screen.getByRole('link', { name: 'Zum Dashboard' }))
 
-    expect(path()).toBe('/')
+    await waitFor(() => expect(path()).toBe('/'))
     expect(await screen.findByRole('heading', { level: 1, name: 'Dashboard' })).toBeInTheDocument()
   })
 
@@ -634,45 +634,46 @@ describe('App addresses', () => {
   test('the page title names the page in both languages and follows a language switch', async () => {
     renderAt('/')
     await screen.findByRole('heading', { level: 1, name: 'Dashboard' })
-    expect(document.title).toBe('Dashboard · Time Tracking')
+    await waitFor(() => expect(document.title).toBe('Dashboard · Time Tracking'))
 
     await userEvent.click(screen.getByRole('link', { name: 'Berichte' }))
-    expect(document.title).toBe('Berichte · Time Tracking')
+    await waitFor(() => expect(document.title).toBe('Berichte · Time Tracking'))
 
     await userEvent.click(screen.getByRole('button', { name: 'English' }))
-    expect(document.title).toBe('Reports · Time Tracking')
+    await waitFor(() => expect(document.title).toBe('Reports · Time Tracking'))
 
     await userEvent.click(screen.getByRole('link', { name: 'Time tracking' }))
-    expect(document.title).toBe('Time tracking · Time Tracking')
+    await waitFor(() => expect(document.title).toBe('Time tracking · Time Tracking'))
   })
 
   test('the not-found page has its own title', async () => {
     renderAt('/nope')
     await screen.findByRole('heading', { level: 1, name: 'Seite nicht gefunden' })
-    expect(document.title).toBe('Seite nicht gefunden · Time Tracking')
+    await waitFor(() => expect(document.title).toBe('Seite nicht gefunden · Time Tracking'))
 
     await userEvent.click(screen.getByRole('button', { name: 'English' }))
-    expect(document.title).toBe('Page not found · Time Tracking')
+    await waitFor(() => expect(document.title).toBe('Page not found · Time Tracking'))
   })
 
   test('moves focus to the new page\'s heading, but not on the first render', async () => {
     renderAt('/')
     await screen.findByRole('heading', { level: 1, name: 'Dashboard' })
+    await act(async () => {}) // let the effects of the first render run: nothing may take the focus
     expect(document.body).toHaveFocus()
 
     await userEvent.click(screen.getByRole('link', { name: 'Einträge' }))
-    expect(screen.getByRole('heading', { level: 1, name: 'Einträge' })).toHaveFocus()
+    await waitFor(() => expect(screen.getByRole('heading', { level: 1, name: 'Einträge' })).toHaveFocus())
 
     // Reports has a visually hidden heading
     await userEvent.click(screen.getByRole('link', { name: 'Berichte' }))
-    expect(screen.getByRole('heading', { level: 1, name: 'Berichte' })).toHaveFocus()
+    await waitFor(() => expect(screen.getByRole('heading', { level: 1, name: 'Berichte' })).toHaveFocus())
   })
 
   test('on the Time tracking page without a customer, the visually hidden heading takes the focus', async () => {
     renderAt('/')
     await userEvent.click(await screen.findByRole('link', { name: 'Zeiterfassung' }))
 
-    expect(screen.getByRole('heading', { level: 1, name: 'Zeiterfassung' })).toHaveFocus()
+    await waitFor(() => expect(screen.getByRole('heading', { level: 1, name: 'Zeiterfassung' })).toHaveFocus())
   })
 
   test('focus goes to the new page when a page is opened from the Dashboard', async () => {
@@ -683,8 +684,8 @@ describe('App addresses', () => {
     renderAt('/')
     await userEvent.click(await screen.findByRole('button', { name: 'Abrechnung für Muster GmbH öffnen' }))
 
-    expect(path()).toBe('/reports')
-    expect(screen.getByRole('heading', { level: 1, name: 'Berichte' })).toHaveFocus()
+    await waitFor(() => expect(path()).toBe('/reports'))
+    await waitFor(() => expect(screen.getByRole('heading', { level: 1, name: 'Berichte' })).toHaveFocus())
   })
 
   test('does not move focus when the same page stays open', async () => {
@@ -692,6 +693,7 @@ describe('App addresses', () => {
     await screen.findByRole('heading', { level: 1, name: 'Berichte' })
     const link = screen.getByRole('link', { name: 'Berichte' })
     await userEvent.click(link)
+    await act(async () => {}) // let the effects of the navigation run: the focus must stay on the link
 
     expect(link).toHaveFocus()
   })
@@ -721,7 +723,7 @@ describe('App addresses', () => {
     await userEvent.click(await screen.findByRole('button', { name: 'Muster GmbH' }))
     await userEvent.click(await screen.findByRole('button', { name: 'Bericht öffnen' }))
 
-    expect(path()).toBe('/reports')
+    await waitFor(() => expect(path()).toBe('/reports'))
     expect(screen.getByLabelText('Kunde')).toHaveValue('1')
   })
 
@@ -751,7 +753,7 @@ describe('App addresses', () => {
     await userEvent.click(screen.getByRole('link', { name: 'Einträge' }))
 
     await userEvent.click(screen.getByRole('button', { name: 'history back' }))
-    expect(screen.getByRole('heading', { level: 1, name: 'Berichte' })).toHaveFocus()
+    await waitFor(() => expect(screen.getByRole('heading', { level: 1, name: 'Berichte' })).toHaveFocus())
   })
 
   test('navigating makes no new calls for the customers or the timer', async () => {

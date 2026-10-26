@@ -2,7 +2,7 @@ import { StrictMode, useRef } from 'react'
 import { describe, expect, test } from 'vitest'
 import userEvent from '@testing-library/user-event'
 import { useLocation, useNavigate } from 'react-router'
-import { renderWithRouter, screen } from '../support/render'
+import { act, renderWithRouter, screen, waitFor } from '../support/render'
 import { useFocusOnPageChange } from '@/hooks/useFocusOnPageChange'
 import { usePageTitle } from '@/hooks/usePageTitle'
 
@@ -39,7 +39,7 @@ describe('useFocusOnPageChange', () => {
 
     await go('/a')
 
-    expect(screen.getByRole('heading', { level: 1 })).toHaveFocus()
+    await waitFor(() => expect(screen.getByRole('heading', { level: 1 })).toHaveFocus())
   })
 
   test('focuses the container when the page has no heading', async () => {
@@ -47,13 +47,14 @@ describe('useFocusOnPageChange', () => {
 
     await go('/a')
 
-    expect(screen.getByRole('main')).toHaveFocus()
+    await waitFor(() => expect(screen.getByRole('main')).toHaveFocus())
   })
 
   test.each(['/a/', '/a/1', '/a?x=1', '/a#top'])('keeps focus where it is when only %s differs from the open page', async (to) => {
     renderWithRouter(<Harness />, { route: '/a' })
     const button = screen.getByRole('button', { name: `go ${to}` })
     await userEvent.click(button)
+    await act(async () => {}) // let the effects of the navigation run: the focus must stay on the button
 
     expect(button).toHaveFocus()
   })
@@ -62,6 +63,7 @@ describe('useFocusOnPageChange', () => {
     renderWithRouter(<Harness />, { route: '/b' })
     const button = screen.getByRole('button', { name: 'go /B' })
     await userEvent.click(button)
+    await act(async () => {}) // let the effects of the navigation run: the focus must stay on the button
 
     expect(button).toHaveFocus()
   })
@@ -71,7 +73,7 @@ describe('useFocusOnPageChange', () => {
     await go('/b')
     await go('/a')
 
-    expect(screen.getByRole('heading', { level: 1 })).toHaveFocus()
+    await waitFor(() => expect(screen.getByRole('heading', { level: 1 })).toHaveFocus())
   })
 })
 
