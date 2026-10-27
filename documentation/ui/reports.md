@@ -2,6 +2,8 @@
 
 The **Reports** page (German: **Berichte**) shows a customer's time entries of one month and downloads them as a PDF or a CSV file.
 
+![The Reports page with the customer, month and status filters, the download buttons and the report of one month](images/reports.png)
+
 ## Using it
 
 1. Select a customer. The report of the current month loads right away.

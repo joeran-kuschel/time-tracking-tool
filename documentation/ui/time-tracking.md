@@ -8,6 +8,8 @@ can open this page with a customer (and project) selected. Customers are listed 
 project filter, the timer, a summary of the current month and the customer's entries, grouped by project. On narrow
 screens the sidebar sits above the main area (see [Design](design.md)).
 
+![The Time tracking page with the customer list, the selected customer and project, the timer, the month summary and the entries](images/time-tracking.png)
+
 ## Customers
 
 - The sidebar lists all customers, sorted by name. Selecting one opens it in the main area; the selected one is marked

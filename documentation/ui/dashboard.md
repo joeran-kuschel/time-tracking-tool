@@ -4,6 +4,8 @@ The Dashboard is the start page: the app opens on it, and it is the first item i
 *Time tracking*, *Reports*; the German name is also *Dashboard*). It shows the current month across all customers and
 lets you track time without choosing a customer first.
 
+![The Dashboard with the timer, this week and this month, billable amount, hours per day, hours by customer, billing and recent entries](images/dashboard.png)
+
 The design comes from a mockup (kept locally in `mockups/`, not in git). The app's design system replaces the mockup's
 colors and heading font; see [Design](design.md).
 

@@ -53,6 +53,19 @@ address). The cluster's backend can't be used for this: it only allows requests 
    so a backend entry for step 4 can be added to it locally.
 6. Log in with the test user and check the change, including the keyboard, the language switch and the dark theme.
 
+## Screenshots for the documentation
+
+The pictures in `documentation/ui/images/` (linked from the UI chapters with relative paths) are taken from this
+review setup, so they show sample data only, never real customers:
+
+- Use the sample data from step 2, with entries spread over a few weekdays of different length, so the chart and the
+  tables look like real use. Log in with the test user.
+- Take them in **English**, in the **light** theme, at a viewport of 1280 × 800 and a scale of 1. The Dashboard may be
+  captured in full; the other pages only as far as the first screen, so the images stay small.
+- Save them as PNG named after the page (`dashboard.png`), and give every image a meaningful alt text in the chapter.
+- Re-take an image whenever a change alters how its page looks. A test checks that every image linked from a chapter
+  exists and has an alt text.
+
 ## Afterwards
 
 Stop both servers, run `docker stop ttt-review-db`, delete the file with the test password, and remove any extra
