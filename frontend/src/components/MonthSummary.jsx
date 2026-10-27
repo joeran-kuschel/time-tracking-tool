@@ -30,7 +30,7 @@ function MonthSummary({ customerId, entries, projects, now = new Date() }) {
         </Link>
       </div>
 
-      <dl className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+      <dl className="flex flex-wrap gap-x-8 gap-y-4">
         {figures.map((figure, index) => (
           <div key={index} className="flex flex-col gap-1">
             <dt className="text-sm text-muted">{figure.label}</dt>

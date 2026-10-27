@@ -18,6 +18,7 @@ How to write an entry and cut a release: [documentation/backend/changelog.md](do
 
 ### Changed
 
+- Tooling: the documentation chapters for the Dashboard, Time tracking and Reports now show a screenshot of the page (`documentation/ui/images/`); the browser review chapter explains how to take them, and a test checks that every linked image exists and has an alt text.
 - Tooling: the router tests wait for the address, the page title and the focus instead of checking them at once, so they no longer fail at random.
 - The Reports page no longer shows hourly rates and amounts by default; tick *Show hourly rate and amounts* to see them again, also in the PDF and CSV downloads. The choice is remembered in the browser.
 - The backend and the database can no longer be reached directly from other devices or other pods; Docker Compose publishes only the web page, and only on this machine (development ports: see the README). Anyone who can open the tool can still use it, and the login protects the data. Existing installs: see "Network Policy" in `k8s/README.md`.
@@ -44,6 +45,7 @@ How to write an entry and cut a release: [documentation/backend/changelog.md](do
 
 ### Fixed
 
+- On the Time tracking page, the month summary no longer prints a large billable amount over the number of entries: the three figures take the space they need and wrap onto a new line on narrow screens.
 - Stopping the timer can no longer save an entry that ends before it starts (for example when the browser's clock is behind): the server's time is used instead. Entries that already end before they start can be corrected by editing them (the edit form now opens them with the end on the day of the start).
 - Creating a project for a customer that does not exist now answers `400` ("Customer not found") instead of a server error `500`. The same goes for a customer id that is not a number.
 - With a remote database, the backend now starts: it waits for the database in `DATABASE_URL` instead of always for the in-cluster Postgres.

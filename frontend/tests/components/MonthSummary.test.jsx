@@ -56,6 +56,16 @@ describe('MonthSummary', () => {
     expect(screen.getByRole('link', { name: 'Bericht öffnen' })).toHaveAttribute('href', '/reports/3')
   })
 
+  // jsdom has no layout. Equal-width grid columns (`grid-cols-3`) let a long amount run into the next figure, so the
+  // figures must size to their content; check the real layout in a browser.
+  test('lets each figure size to its content instead of using equal grid columns', () => {
+    render(<MonthSummary entries={entries} projects={projects} customerId={3} now={now} />)
+
+    const list = screen.getByText('Stunden diesen Monat').closest('dl')
+    expect(list).toHaveClass('flex', 'flex-wrap')
+    expect(list.className).not.toMatch(/grid-cols/)
+  })
+
   test('has no detectable accessibility violations', async () => {
     const { container } = render(<MonthSummary entries={entries} projects={projects} customerId={3} now={now} />)
     expect(await axe(container)).toHaveNoViolations()
