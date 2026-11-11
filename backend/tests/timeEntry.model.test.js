@@ -112,6 +112,16 @@ describe('TimeEntry.getByCustomerId', () => {
     expect(entries.map((e) => e.id)).toEqual([appEntry.id, late.id, early.id]);
     expect(entries.map((e) => e.project_name)).toEqual(['App', 'Website', 'Website']);
   });
+
+  test('has the hourly rate of each entry\'s project, for the amounts of the month summary', async () => {
+    const customer = (await mockPool.query("INSERT INTO customers (name) VALUES ('Kunde') RETURNING id")).rows[0].id;
+    const project = (await mockPool.query("INSERT INTO projects (customer_id, name, hourly_rate) VALUES ($1, 'Website', 95.00) RETURNING id", [customer])).rows[0].id;
+    await TimeEntry.create(project, '2026-09-20T08:00:00Z', '2026-09-20T09:00:00Z', null);
+
+    const [entry] = await TimeEntry.getByCustomerId(customer);
+
+    expect(Number(entry.hourly_rate)).toBe(95);
+  });
 });
 
 describe('TimeEntry.getInRange and getRecent', () => {

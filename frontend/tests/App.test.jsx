@@ -194,6 +194,76 @@ describe('App', () => {
     await waitFor(() => expect(api.getCustomerTimeEntries).toHaveBeenCalledTimes(2))
   })
 
+  test('the month summary counts the rounded hours and names the rule, while the entry list stays exact', async () => {
+    const now = new Date()
+    const at = (hour, minute) => new Date(now.getFullYear(), now.getMonth(), 2, hour, minute).toISOString()
+    // The rule comes with the entries, from the server that rounded them
+    const rule = { minutes: 15, direction: 'up' }
+    api.getCustomers.mockResolvedValue([{ id: 1, name: 'Muster GmbH' }])
+    api.getProjects.mockResolvedValue([{ id: 7, name: 'Website', hourly_rate: '95.00' }])
+    // 65 min is 1.25 h = 118.75 and 20 min is 0.50 h = 47.50 (billed_* come from the server); exact: 1.42 h in all
+    api.getCustomerTimeEntries.mockResolvedValue([
+      { id: 1, project_id: 7, project_name: 'Website', description: 'Konzept', start_time: at(9, 0), end_time: at(10, 5), billed_hours: '1.25', billed_amount: '118.75', billed_rule: rule },
+      { id: 2, project_id: 7, project_name: 'Website', description: 'Abstimmung', start_time: at(11, 0), end_time: at(11, 20), billed_hours: '0.50', billed_amount: '47.50', billed_rule: rule },
+    ])
+    await renderTimeTracking()
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Muster GmbH' }))
+
+    const summary = within(await screen.findByRole('region', { name: new RegExp(String(now.getFullYear())) }))
+    expect(summary.getByText('Stunden diesen Monat').nextElementSibling).toHaveTextContent('1,75 h')
+    expect(summary.getByText('Abrechenbarer Betrag').nextElementSibling).toHaveTextContent(/166,25\s€/)
+    expect(summary.getByText('Stunden auf Viertelstunden aufgerundet.')).toBeInTheDocument()
+    // the entries below show the exact times and total
+    expect(screen.getByText('Konzept').closest('tr')).toHaveTextContent('1,08 h')
+    expect(screen.getByText('Abstimmung').closest('tr')).toHaveTextContent('0,33 h')
+    expect(screen.getByText(/1,42 h gesamt/)).toBeInTheDocument()
+  })
+
+  test('the month summary names no rule when there is no rounding', async () => {
+    api.getCustomers.mockResolvedValue([{ id: 1, name: 'Muster GmbH' }])
+    api.getSettings.mockResolvedValue({ showAmounts: false, roundingMinutes: 0, roundingDirection: 'up', showRoundingNote: false })
+    await renderTimeTracking()
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Muster GmbH' }))
+    await screen.findByText('Stunden diesen Monat')
+
+    expect(screen.queryByText(/gerundet/)).not.toBeInTheDocument()
+  })
+
+  test('the month summary names the rule of its figures even when the settings could not be loaded', async () => {
+    const now = new Date()
+    const at = (hour, minute) => new Date(now.getFullYear(), now.getMonth(), 2, hour, minute).toISOString()
+    api.getCustomers.mockResolvedValue([{ id: 1, name: 'Muster GmbH' }])
+    api.getSettings.mockRejectedValue(new ApiError('down', 0))
+    // The figures and the note both come from the entries, so a failed settings request can not separate them
+    api.getCustomerTimeEntries.mockResolvedValue([
+      { id: 1, project_id: 7, project_name: 'Website', start_time: at(9, 0), end_time: at(10, 5), billed_hours: '1.25', billed_amount: '118.75', billed_rule: { minutes: 30, direction: 'nearest' } },
+    ])
+    await renderTimeTracking()
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Muster GmbH' }))
+
+    expect(await screen.findByText('Stunden diesen Monat')).toBeInTheDocument()
+    expect(screen.getByText('Stunden diesen Monat').nextElementSibling).toHaveTextContent('1,25 h')
+    expect(screen.getByText('Stunden auf die nächstgelegene halbe Stunde gerundet.')).toBeInTheDocument()
+  })
+
+  test('the month summary counts the exact hours and names no rule when the entries are not rounded', async () => {
+    const now = new Date()
+    api.getCustomers.mockResolvedValue([{ id: 1, name: 'Muster GmbH' }])
+    api.getCustomerTimeEntries.mockResolvedValue([
+      { id: 1, project_id: 7, project_name: 'Website', start_time: new Date(now.getFullYear(), now.getMonth(), 2, 9, 0).toISOString(), end_time: new Date(now.getFullYear(), now.getMonth(), 2, 10, 0).toISOString() },
+    ])
+    await renderTimeTracking()
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Muster GmbH' }))
+
+    expect(await screen.findByText('Stunden diesen Monat')).toBeInTheDocument()
+    expect(screen.getByText('Stunden diesen Monat').nextElementSibling).toHaveTextContent('1,00 h')
+    expect(screen.queryByText(/gerundet/)).not.toBeInTheDocument()
+  })
+
   test('opens the report of the selected customer from the month summary', async () => {
     api.getCustomers.mockResolvedValue([{ id: 1, name: 'Muster GmbH' }])
     api.getMonthlyReport.mockResolvedValue({ entries: [], totalHours: '0.00' })

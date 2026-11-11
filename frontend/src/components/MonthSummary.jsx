@@ -3,13 +3,15 @@ import { Link } from 'react-router'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { formatAmount, formatHours } from '../format'
 import { inMonth, summarize } from '../summary'
+import RoundingNote from './RoundingNote'
 import { reportPath } from '../routes'
 import ShareOfTotal from './ShareOfTotal'
 import { ui } from '../ui'
 
 // The current month of a customer: hours, billable amount (hours × hourly rate), entries and hours per project.
-// Running entries don't count yet. The link opens the customer's report.
-function MonthSummary({ customerId, entries, projects, now = new Date() }) {
+// Running entries don't count yet. The link opens the customer's report. The hours are the billed ones: rounded when
+// there is a rounding rule (rounding: { minutes, direction }), which a note says; the entry list below stays exact.
+function MonthSummary({ customerId, entries, projects, now = new Date(), rounding }) {
   const { i18n } = useLingui()
   const headingId = useId()
   const summary = summarize(entries.filter((e) => inMonth(e, now)), projects)
@@ -29,6 +31,8 @@ function MonthSummary({ customerId, entries, projects, now = new Date() }) {
           <Trans>Open report</Trans>
         </Link>
       </div>
+
+      <RoundingNote rounding={rounding} className="-mt-2 text-sm text-muted" />
 
       <dl className="flex flex-wrap gap-x-8 gap-y-4">
         {figures.map((figure, index) => (

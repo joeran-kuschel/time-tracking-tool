@@ -9,6 +9,7 @@ import ErrorMessage from '../components/ErrorMessage'
 import MissingRecord from '../components/MissingRecord'
 import Timer from '../components/Timer'
 import MonthSummary from '../components/MonthSummary'
+import { roundingOfEntries } from '../rounding'
 import EntriesList from '../components/EntriesList'
 import EditableRecord from '../components/EditableRecord'
 import RecordForm from '../components/RecordForm'
@@ -370,7 +371,7 @@ function TimeTracking({ customers, onCustomersChange, timer }) {
             busy={timer.busy}
           />
           {selectedCustomer && (
-            <MonthSummary entries={entries} projects={projects} customerId={selectedCustomer.id} />
+            <MonthSummary entries={entries} projects={projects} customerId={selectedCustomer.id} rounding={roundingOfEntries(entries)} />
           )}
         </div>
 

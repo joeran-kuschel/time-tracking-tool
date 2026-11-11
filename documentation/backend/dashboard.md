@@ -29,13 +29,20 @@ hours and amounts (`frontend/src/dashboard.js`).
 ```
 
 - `entries` includes running entries (no `end_time`), oldest first.
+- With a rounding rule (see [Rounding](reports.md#rounding)) each entry of `entries` also has `billed_hours` (a string
+  with two decimals) and `billed_amount` (the amount of the rounded hours, rounded to cents per entry like the report;
+  `utils/rounding.js` `withBilling`), both `null` for a running entry or one that ends before it starts, and
+  `billed_rule`: `{ "minutes": 15, "direction": "up" }`, the rule that produced the values (on every entry, also a
+  running one). The Dashboard adds up the billed values for its billing figures and takes the rule for the notes under
+  them from the entries, so a note always names the rule of the figures next to it. The entries themselves and `recent`
+  stay exact. Without a rule none of this is there.
 - `projects` are all projects, ordered by customer name, then project name.
 - `lastMonthReports.reports` has one row per customer with entries in that month, ordered by name; without a stored
   status it is `draft`. See [Reports API](reports.md#report-status).
 
 ## Code
 
-`backend/src/routes/dashboard.js`, `controllers/dashboardController.js`, `utils/period.js`,
-`models/TimeEntry.js` (`getInRange`, `getRecent`), `models/Project.js` (`getAllWithCustomer`),
+`backend/src/routes/dashboard.js`, `controllers/dashboardController.js`, `utils/period.js`, `utils/rounding.js`,
+`models/Settings.js`, `models/TimeEntry.js` (`getInRange`, `getRecent`), `models/Project.js` (`getAllWithCustomer`),
 `models/ReportStatus.js` (`forMonth`). Tests: `tests/dashboardController.test.js`, `tests/period.test.js`, the model
 tests.

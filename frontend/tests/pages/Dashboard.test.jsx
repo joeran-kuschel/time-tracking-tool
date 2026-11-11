@@ -5,6 +5,7 @@ import { axe } from '../support/axe'
 import Dashboard from '@/pages/Dashboard'
 import { api, ApiError } from '@/api'
 import { fromInputs } from '@/entryTime'
+import { i18n } from '@/i18n'
 
 vi.mock('@/api', async (importOriginal) => {
   const actual = await importOriginal()
@@ -244,6 +245,134 @@ describe('Dashboard', () => {
   })
 
   test('has no detectable accessibility violations', async () => {
+    const { container } = renderDashboard()
+    await loaded()
+
+    expect(await axe(container)).toHaveNoViolations()
+  })
+})
+
+// The answer of the server with a rounding rule: billed_hours and billed_amount per entry (the report's rule),
+// and the rule that produced them (billed_rule). 65 min at 95.00 is 1.25 h = 118.75; 20 min at 80.00 is 0.50 h = 40.00; 7 min at 85.00 is 0.25 h = 21.25.
+const billed = (billedHours, billedAmount, rule = { minutes: 15, direction: 'up' }) =>
+  ({ billed_hours: billedHours, billed_amount: billedAmount, billed_rule: rule })
+const roundedData = {
+  ...data,
+  entries: [
+    { ...entry(1, muster, 7, 'Website', '95.00', '2026-09-01T09:00:00', '2026-09-01T10:05:00'), ...billed('1.25', '118.75') },
+    { ...entry(2, muster, 8, 'Shop', '80.00', '2026-09-21T09:00:00', '2026-09-21T09:20:00'), ...billed('0.50', '40.00') },
+    { ...entry(3, berger, 9, 'Pflege', '85.00', '2026-09-22T13:00:00', '2026-09-22T13:07:00', 'Updates'), ...billed('0.25', '21.25') },
+  ],
+  recent: [
+    entry(3, berger, 9, 'Pflege', '85.00', '2026-09-22T13:00:00', '2026-09-22T13:07:00', 'Updates'),
+    entry(2, muster, 8, 'Shop', '80.00', '2026-09-21T09:00:00', '2026-09-21T09:20:00'),
+  ],
+}
+
+describe('Dashboard with a rounding rule', () => {
+  beforeEach(() => {
+    api.getDashboard.mockResolvedValue(roundedData)
+  })
+
+  test('the billing figures use the rounded hours: the billable amount and the Billing table', async () => {
+    renderDashboard()
+    const figures = within(await screen.findByRole('region', { name: 'Kennzahlen' }))
+
+    expect(figures.getByText('Abrechenbar im September').nextSibling).toHaveTextContent(/180,00\s€/)
+    expect(figures.getByText('Abrechenbar im September').parentElement).toHaveTextContent('Gerundete Stunden × Stundensatz des Projekts')
+    const table = await screen.findByRole('table', { name: 'Abrechnung · September 2026' })
+    const [, first, second, total] = within(table).getAllByRole('row')
+    expect(first).toHaveTextContent(/Muster GmbH21,75 h80,00\s€\/h, 95,00\s€\/h158,75\s€/)
+    expect(second).toHaveTextContent(/Berger10,25 h85,00\s€\/h21,25\s€/)
+    expect(total).toHaveTextContent(/Gesamt2,00 h180,00\s€/)
+  })
+
+  test('the hours by customer are the billed ones', async () => {
+    renderDashboard()
+    const section = within(await screen.findByRole('region', { name: 'Nach Kunde · September' }))
+
+    const links = section.getAllByRole('link')
+    expect(links[0]).toHaveTextContent(/Muster GmbH1,75 h.*158,75\s€/)
+    expect(links[1]).toHaveTextContent(/Berger0,25 h.*21,25\s€/)
+  })
+
+  test('the tracked time stays exact: this week, this month and the recent entries', async () => {
+    renderDashboard()
+    const figures = within(await screen.findByRole('region', { name: 'Kennzahlen' }))
+
+    // 65 + 20 + 7 minutes in the month, 20 + 7 minutes in the week
+    expect(figures.getByText('Diese Woche').nextSibling).toHaveTextContent('0,45 h')
+    expect(figures.getByText('Dieser Monat').nextSibling).toHaveTextContent('1,53 h')
+    const recent = within(screen.getByRole('region', { name: 'Letzte Einträge' }))
+    expect(recent.getByText('0,12 h')).toBeInTheDocument()
+    expect(recent.getByText('0,33 h')).toBeInTheDocument()
+  })
+
+  test('names the rule under By customer and Billing', async () => {
+    renderDashboard()
+    await loaded()
+
+    expect(screen.getAllByText('Stunden auf Viertelstunden aufgerundet.')).toHaveLength(2)
+  })
+
+  test('the figures equal the report: hours and amounts per customer add up to the totals', async () => {
+    renderDashboard()
+    const table = await screen.findByRole('table', { name: 'Abrechnung · September 2026' })
+
+    const rows = within(table).getAllByRole('row')
+    // 1,75 h + 0,25 h = 2,00 h and 158,75 + 21,25 = 180,00, the totals of the two reports of the month
+    expect(rows[1]).toHaveTextContent('1,75 h')
+    expect(rows[2]).toHaveTextContent('0,25 h')
+    expect(rows[3]).toHaveTextContent(/2,00 h180,00\s€/)
+  })
+
+  test('shows no note and no rounding without a rule', async () => {
+    api.getDashboard.mockResolvedValue(data)
+    renderDashboard()
+    await loaded()
+
+    expect(screen.queryByText(/gerundet/)).not.toBeInTheDocument()
+  })
+
+  test('names the rule in English', async () => {
+    i18n.activate('en')
+    const nearest = { minutes: 30, direction: 'nearest' }
+    api.getDashboard.mockResolvedValue({
+      ...roundedData,
+      entries: roundedData.entries.map((e) => ({ ...e, billed_rule: nearest })),
+    })
+    renderDashboard()
+    await screen.findByRole('heading', { name: 'Track time' })
+
+    expect(screen.getAllByText('Hours rounded to the nearest half hour.')).toHaveLength(2)
+    expect(screen.getByText('Rounded hours × hourly rate of each project')).toBeInTheDocument()
+  })
+
+  test('leaves out rounded entries outside the month: the week reaching into the next month', async () => {
+    const outside = { ...roundedData.entries[0], id: 9, start_time: '2026-10-01T09:00:00', end_time: '2026-10-01T10:05:00', billed_hours: '1.25', billed_amount: '118.75' }
+    const before = { ...roundedData.entries[0], id: 8, start_time: '2026-08-31T09:00:00', end_time: '2026-08-31T10:05:00', billed_hours: '1.25', billed_amount: '118.75' }
+    api.getDashboard.mockResolvedValue({ ...roundedData, entries: [before, ...roundedData.entries, outside] })
+    renderDashboard()
+
+    const table = await screen.findByRole('table', { name: 'Abrechnung · September 2026' })
+
+    expect(within(table).getAllByRole('row')[3]).toHaveTextContent(/Gesamt2,00 h180,00\s€/)
+  })
+
+  test('does not break when the entries carry billed values but no billed_rule: the figures show, no note', async () => {
+    api.getDashboard.mockResolvedValue({
+      ...roundedData,
+      entries: roundedData.entries.map(({ billed_rule, ...rest }) => rest),
+    })
+    renderDashboard()
+
+    const table = await screen.findByRole('table', { name: 'Abrechnung · September 2026' })
+
+    expect(within(table).getAllByRole('row')[3]).toHaveTextContent(/Gesamt2,00 h180,00\s€/)
+    expect(screen.queryByText(/gerundet/)).not.toBeInTheDocument()
+  })
+
+  test('has no detectable accessibility violations with the notes', async () => {
     const { container } = renderDashboard()
     await loaded()
 

@@ -38,12 +38,24 @@ Without any project, the card asks to add a customer and a project on the Time t
 
 | Figure | Meaning |
 |---|---|
-| This week | Hours Monday to today, including days of the previous month |
-| This month | Hours this month, with the number of working days (Monday to Friday) so far and the average per working day |
-| Billable in *month* | Hours × the hourly rate of each project |
+| This week | Hours Monday to today, including days of the previous month (tracked time, always exact) |
+| This month | Hours this month, with the number of working days (Monday to Friday) so far and the average per working day (tracked time, always exact) |
+| Billable in *month* | Hours × the hourly rate of each project; with a rounding rule the rounded hours (*Rounded hours × hourly rate of each project*) |
 | Reports sent for *last month* | Reports with status *Sent* out of all customers with entries last month; "–" without any |
 
 Running entries count 0 hours everywhere, as in the rest of the app.
+
+## Rounded hours
+
+With a rounding rule ([Settings](settings.md): *Round time entries*), the **billing figures** use the rounded hours of
+the report, so they equal the report of the same customer and month: the **billable amount**, **By customer** and the
+**Billing** table. Each of those two cards names the rule under its heading (*Hours rounded up to quarter hours.*,
+German: *Stunden auf Viertelstunden aufgerundet.*), whatever the setting *Name the rounding rule in reports* says: that
+setting is about the report a customer receives, these are your own screens. The **tracked time** stays exact: *This
+week*, *This month* (and its average per day), the hours chart and the recent entries. That is why *This month* can show
+less than the hours in *Billing*. Without a rounding rule nothing here changes. (An entry that ends before it starts
+keeps counting with its negative hours here, as before; the report counts it as 0, see [Time
+entries](../backend/time-entries.md#entries-that-end-before-they-start).)
 
 ## Hours chart
 
@@ -84,14 +96,18 @@ customer and project on the Time tracking page; **View all** opens the customer 
 
 One request, `GET /api/dashboard` (see [Dashboard API](../backend/dashboard.md)), loads the entries of the month and
 the current week, the recent entries, all projects and last month's report statuses. `dashboard.js` calculates all
-sums in the browser, reusing `summarize` and `projectsOf` from `summary.js`. The page loads again after a manual entry
+sums in the browser, reusing `summarize` and `projectsOf` from `summary.js`. With a rounding rule the entries carry
+`billed_hours`, `billed_amount` and `billed_rule` from the server, and `summarize` adds the billed values up for the billing
+figures (an entry with only one of the two is counted exactly, so hours and amount never disagree; `trackedHours` in
+`dashboard.js` is the exact sum for the key figures). The notes name the rule from the entries (`roundingOfEntries` in
+`rounding.js`), so they always match the figures; the browser never calculates the rounding. The page loads again after a manual entry
 and whenever the timer starts or stops (also from the header). The date is taken when the page opens.
 
 ## Code
 
 - `frontend/src/pages/Dashboard.jsx`: loading, layout, page switches
 - `frontend/src/components/dashboard/`: `TrackTimeCard`, `KeyFigures`, `HoursChart`, `ByCustomer`, `BillingTable`,
-  `RecentEntries`
+  `RecentEntries`; `components/RoundingNote.jsx` names the rounding rule under a card
 - `frontend/src/components/Tabs.jsx`: accessible tabs
 - `frontend/src/dashboard.js`: weeks, days, working days, per-customer sums
 - `routes.js`: `trackingPath(customerId, projectId)` and `reportPath(customerId, year, month)` build the addresses the

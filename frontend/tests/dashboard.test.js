@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest'
 import {
-  byCustomer, dailyHours, dashboardRange, isoWeek, startOfWeek, weekHours, weeklyHours, workingDaysSoFar,
+  byCustomer, dailyHours, dashboardRange, isoWeek, startOfWeek, trackedHours, weekHours, weeklyHours, workingDaysSoFar,
 } from '@/dashboard'
 
 // Thursday, 24 September 2026
@@ -106,5 +106,39 @@ describe('byCustomer', () => {
 
   test('leaves out customers with only a running entry', () => {
     expect(byCustomer([entries[4]])).toEqual([])
+  })
+})
+
+describe('billing figures with rounded hours', () => {
+  const at = (id, customer, projectId, rate, start, end, billed) => ({
+    id, customer_id: customer, customer_name: `K${customer}`, project_id: projectId, project_name: `P${projectId}`, hourly_rate: rate,
+    start_time: start, end_time: end, ...(billed ? { billed_hours: billed[0], billed_amount: billed[1] } : {}),
+  })
+  const rounded = [
+    at(1, 1, 7, '95.00', '2026-09-01T09:00:00', '2026-09-01T10:05:00', ['1.25', '118.75']),
+    at(2, 1, 8, '80.00', '2026-09-21T09:00:00', '2026-09-21T09:20:00', ['0.50', '40.00']),
+    at(3, 2, 9, '85.00', '2026-09-22T13:00:00', '2026-09-22T13:07:00', ['0.25', '21.25']),
+  ]
+
+  test('byCustomer adds up the billed hours and amounts per customer', () => {
+    const rows = byCustomer(rounded)
+
+    expect(rows.map((r) => [r.name, r.hours, r.amount])).toEqual([['K1', 1.75, 158.75], ['K2', 0.25, 21.25]])
+  })
+
+  test('the tracked hours stay exact: trackedHours ignores billed_hours', () => {
+    expect(trackedHours(rounded)).toBeCloseTo((65 + 20 + 7) / 60, 10)
+    expect(trackedHours(rounded)).not.toBeCloseTo(2, 3)
+  })
+
+  test('the week hours and the daily hours stay exact', () => {
+    const now = new Date(2026, 8, 24, 15, 0)
+
+    expect(weekHours(rounded, now)).toBeCloseTo((20 + 7) / 60, 10)
+    expect(dailyHours(rounded, now)[0].hours).toBeCloseTo(65 / 60, 10)
+  })
+
+  test('trackedHours counts a running entry as 0', () => {
+    expect(trackedHours([{ start_time: '2026-09-22T10:00:00', end_time: null }])).toBe(0)
   })
 })

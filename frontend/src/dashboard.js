@@ -12,6 +12,9 @@ const daysInMonth = (date) => new Date(date.getFullYear(), date.getMonth() + 1, 
 const isWeekday = (date) => date.getDay() !== 0 && date.getDay() !== 6
 
 const sumHours = (entries) => entries.reduce((sum, e) => sum + hoursBetween(e.start_time, e.end_time), 0)
+
+// The tracked time of the entries, exact: never the rounded billed hours (running entries count 0)
+export const trackedHours = sumHours
 const startsIn = (from, to) => (entry) => {
   const start = new Date(entry.start_time)
   return start >= from && start < to

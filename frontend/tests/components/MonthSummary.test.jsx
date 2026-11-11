@@ -71,3 +71,46 @@ describe('MonthSummary', () => {
     expect(await axe(container)).toHaveNoViolations()
   })
 })
+
+describe('MonthSummary with a rounding rule', () => {
+  // 65 min at 95.00 is 1.25 h = 118.75; 20 min at 80.00 is 0.50 h = 40.00 (billed_* come from the server)
+  const rounded = [
+    { id: 1, project_id: 7, start_time: '2026-09-21T09:00:00', end_time: '2026-09-21T10:05:00', billed_hours: '1.25', billed_amount: '118.75' },
+    { id: 2, project_id: 8, start_time: '2026-09-17T14:00:00', end_time: '2026-09-17T14:20:00', billed_hours: '0.50', billed_amount: '40.00' },
+    { id: 4, project_id: 7, start_time: '2026-09-22T10:00:00', end_time: null, billed_hours: null, billed_amount: null },
+  ]
+  const rule = { minutes: 15, direction: 'up' }
+
+  test('shows the billed hours and amounts, per project too, and names the rule', () => {
+    render(<MonthSummary entries={rounded} projects={projects} customerId={3} now={now} rounding={rule} />)
+
+    expect(figure('Stunden diesen Monat')).toHaveTextContent('1,75 h')
+    expect(figure('Abrechenbarer Betrag')).toHaveTextContent(/158,75\s€/)
+    expect(figure('Einträge')).toHaveTextContent('2')
+    const perProject = screen.getAllByRole('listitem')
+    expect(perProject[0]).toHaveTextContent('Website')
+    expect(perProject[0]).toHaveTextContent('1,25 h')
+    expect(perProject[1]).toHaveTextContent('0,50 h')
+    expect(screen.getByText('Stunden auf Viertelstunden aufgerundet.')).toBeInTheDocument()
+  })
+
+  test('names no rule and counts the exact hours without one', () => {
+    render(<MonthSummary entries={entries} projects={projects} customerId={3} now={now} />)
+
+    expect(screen.queryByText(/gerundet/)).not.toBeInTheDocument()
+    expect(figure('Stunden diesen Monat')).toHaveTextContent('5,00 h')
+  })
+
+  test('names the rule in English', () => {
+    i18n.activate('en')
+    render(<MonthSummary entries={rounded} projects={projects} customerId={3} now={now} rounding={{ minutes: 30, direction: 'nearest' }} />)
+
+    expect(screen.getByText('Hours rounded to the nearest half hour.')).toBeInTheDocument()
+  })
+
+  test('has no detectable accessibility violations with the note', async () => {
+    const { container } = render(<MonthSummary entries={rounded} projects={projects} customerId={3} now={now} rounding={rule} />)
+
+    expect(await axe(container)).toHaveNoViolations()
+  })
+})

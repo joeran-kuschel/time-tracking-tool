@@ -1,10 +1,12 @@
 jest.mock('../src/models/TimeEntry');
 jest.mock('../src/models/Project');
 jest.mock('../src/models/ReportStatus');
+jest.mock('../src/models/Settings');
 
 const TimeEntry = require('../src/models/TimeEntry');
 const Project = require('../src/models/Project');
 const ReportStatus = require('../src/models/ReportStatus');
+const Settings = require('../src/models/Settings');
 const controller = require('../src/controllers/dashboardController');
 const router = require('../src/routes/dashboard');
 
@@ -24,6 +26,7 @@ describe('dashboardController.get', () => {
     TimeEntry.getRecent.mockResolvedValue([{ id: 2 }]);
     Project.getAllWithCustomer.mockResolvedValue([{ id: 3 }]);
     ReportStatus.forMonth.mockResolvedValue([{ customer_id: 4, status: 'sent' }]);
+    Settings.get.mockResolvedValue({ showAmounts: false, roundingMinutes: 0, roundingDirection: 'up', showRoundingNote: false });
   });
 
   test('returns the entries of the range, recent entries, projects and last month\'s reports', async () => {
@@ -79,4 +82,80 @@ describe('dashboardController.get', () => {
 test('serves the dashboard at the router root', () => {
   const route = router.stack.find((layer) => layer.route?.path === '/');
   expect(route.route.methods.get).toBe(true);
+});
+
+describe('dashboardController.get with a rounding rule', () => {
+  const entry = (id, minutes, rate = '80.00') => ({
+    id, project_id: 7, project_name: 'Web', hourly_rate: rate, customer_id: 1, customer_name: 'Muster',
+    start_time: '2026-09-21T08:00:00Z', end_time: new Date(Date.UTC(2026, 8, 21, 8, minutes)).toISOString(),
+  });
+  const rule = (roundingMinutes, roundingDirection) =>
+    Settings.get.mockResolvedValue({ showAmounts: false, roundingMinutes, roundingDirection, showRoundingNote: false });
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    TimeEntry.getInRange.mockResolvedValue([entry(1, 65), entry(2, 20)]);
+    TimeEntry.getRecent.mockResolvedValue([entry(3, 65)]);
+    Project.getAllWithCustomer.mockResolvedValue([{ id: 7 }]);
+    ReportStatus.forMonth.mockResolvedValue([]);
+  });
+
+  test('adds billed_hours, billed_amount and the rule that produced them to the entries of the range', async () => {
+    rule(15, 'up');
+    const res = mockResponse();
+
+    await controller.get({ query }, res);
+
+    const body = res.json.mock.calls[0][0];
+    expect(body).not.toHaveProperty('rounding');
+    expect(body.entries.map((e) => e.billed_rule)).toEqual([{ minutes: 15, direction: 'up' }, { minutes: 15, direction: 'up' }]);
+    expect(body.entries.map((e) => [e.billed_hours, e.billed_amount])).toEqual([['1.25', '100.00'], ['0.50', '40.00']]);
+    // the entries stay exact
+    expect(body.entries[0].end_time).toBe(entry(1, 65).end_time);
+  });
+
+  test('never rounds the recent entries', async () => {
+    rule(30, 'nearest');
+    const res = mockResponse();
+
+    await controller.get({ query }, res);
+
+    const { recent } = res.json.mock.calls[0][0];
+    expect(recent).toEqual([entry(3, 65)]);
+    expect(recent[0]).not.toHaveProperty('billed_hours');
+  });
+
+  test('uses the rule of the settings: to the nearest half hour', async () => {
+    rule(30, 'nearest');
+    const res = mockResponse();
+
+    await controller.get({ query }, res);
+
+    const body = res.json.mock.calls[0][0];
+    expect(body.entries.map((e) => e.billed_rule)).toEqual([{ minutes: 30, direction: 'nearest' }, { minutes: 30, direction: 'nearest' }]);
+    expect(body.entries.map((e) => e.billed_hours)).toEqual(['1.00', '0.50']);
+  });
+
+  test('without a rule the answer is as before: no billed fields and no rounding', async () => {
+    rule(0, 'up');
+    const res = mockResponse();
+
+    await controller.get({ query }, res);
+
+    const body = res.json.mock.calls[0][0];
+    expect(body).not.toHaveProperty('rounding');
+    expect(body.entries).toEqual([entry(1, 65), entry(2, 20)]);
+    expect(Object.keys(body).sort()).toEqual(['entries', 'lastMonthReports', 'projects', 'recent']);
+  });
+
+  test('answers 500 when the settings can not be read', async () => {
+    Settings.get.mockRejectedValue(new Error('down'));
+    jest.spyOn(console, 'error').mockImplementation(() => {});
+    const res = mockResponse();
+
+    await controller.get({ query }, res);
+
+    expect(res.status).toHaveBeenCalledWith(500);
+    console.error.mockRestore();
+  });
 });

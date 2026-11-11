@@ -10,3 +10,8 @@ const NOTES = {
 }
 
 export const roundingNote = (rounding) => NOTES[`${rounding?.direction}-${rounding?.minutes}`] ?? null
+
+// The rule the server applied to a list of entries: { minutes, direction } from the first entry that carries it
+// (billed_rule, see the backend's utils/rounding.js), or null when the hours are not rounded. The notes under the billing
+// figures name this rule, so they always match the figures.
+export const roundingOfEntries = (entries) => entries?.find((entry) => entry.billed_rule)?.billed_rule ?? null

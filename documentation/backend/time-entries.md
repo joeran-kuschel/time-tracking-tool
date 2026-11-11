@@ -10,7 +10,7 @@ All paths are under `/api/time-entries`.
 |---|---|---|
 | `GET` | `/active` | The running entry with `project_name`, `customer_id` and `customer_name`, or `null` |
 | `GET` | `/project/:projectId` | All entries of a project, newest first |
-| `GET` | `/customer/:customerId` | All entries of a customer's projects with `project_name`, ordered by project name, then newest first; `[]` for an unknown customer (used by the Time tracking page) |
+| `GET` | `/customer/:customerId` | All entries of a customer's projects with `project_name` and `hourly_rate`, ordered by project name, then newest first; `[]` for an unknown customer (used by the Time tracking page). With a rounding rule each entry also has `billed_hours`, `billed_amount` and `billed_rule` (the rule that produced them) for the month summary and its note, see [Rounding](reports.md#rounding); the answer stays an array |
 | `GET` | `/search` | Entries of all customers matching a text, customer, project and period, with `total` and `hours` (used by the Entries page, see [Searching entries](#searching-entries)) |
 | `GET` | `/:id` | One entry, or `404` |
 | `POST` | `/` | Create an entry (start a timer, or add a finished entry) |

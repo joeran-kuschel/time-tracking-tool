@@ -10,6 +10,30 @@ const rows = [
   { customerId: 2, name: 'Berger', hours: 1, amount: 85, projects: [{ project: { name: 'Pflege' } }] },
 ]
 
+describe('ByCustomer with a rounding rule', () => {
+  test('names the rule under the heading', () => {
+    render(<ByCustomer rows={rows} now={now} rounding={{ minutes: 15, direction: 'up' }} />)
+
+    expect(screen.getByText('Stunden auf Viertelstunden aufgerundet.')).toBeInTheDocument()
+  })
+
+  test('names no rule without one, and not for an empty month', () => {
+    const { rerender } = render(<ByCustomer rows={rows} now={now} />)
+    expect(screen.queryByText(/gerundet/)).not.toBeInTheDocument()
+
+    rerender(<ByCustomer rows={[]} now={now} rounding={{ minutes: 15, direction: 'up' }} />)
+
+    expect(screen.queryByText(/gerundet/)).not.toBeInTheDocument()
+    expect(screen.getByText('In diesem Monat ist noch keine Zeit erfasst.')).toBeInTheDocument()
+  })
+
+  test('has no detectable accessibility violations with the note', async () => {
+    const { container } = render(<ByCustomer rows={rows} now={now} rounding={{ minutes: 30, direction: 'nearest' }} />)
+
+    expect(await axe(container)).toHaveNoViolations()
+  })
+})
+
 describe('ByCustomer', () => {
   test('links each customer to the customer on the Time tracking page', () => {
     render(<ByCustomer rows={rows} now={now} />)

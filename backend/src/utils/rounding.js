@@ -3,6 +3,8 @@
 // step. The stored entries are never changed; the rounded hours are added as billed_hours where a report needs them.
 // The rule is applied to whole seconds, so there are no float errors (a multiple of 15 minutes is exact in hours).
 
+const { reportAmounts, decimal } = require('./amounts');
+
 // The rule of the settings ({ roundingMinutes, roundingDirection }) as { minutes, direction }, or null for no rounding
 function roundingRuleOf(settings) {
   if (!settings || !(settings.roundingMinutes > 0)) return null;
@@ -33,4 +35,21 @@ function withBilledHours(entries, rule) {
   return entries.map((entry) => ({ ...entry, billed_hours: billedHours(entry, rule) }));
 }
 
-module.exports = { roundingRuleOf, billedHours, withBilledHours };
+// The entries with billed_hours and, for the figures of the Dashboard and the month summary, billed_amount (a string
+// with two decimals, rounded to cents per entry by the rule of the reports, see utils/amounts.js), so those figures add
+// up exactly like the report. Both are null for an entry without billed hours (running, or ending before it starts):
+// the client counts those as before. Every entry also carries billed_rule, the { minutes, direction } that produced
+// the values, so the client names the rule that was really applied (the note under those figures) without asking the
+// settings again. The entries need hourly_rate. Without a rule they are returned as they are.
+function withBilling(entries, rule) {
+  if (!rule) return entries;
+  const rounded = withBilledHours(entries, rule);
+  const { entryCents } = reportAmounts(rounded);
+  return rounded.map((entry, index) => ({
+    ...entry,
+    billed_amount: entry.billed_hours === null ? null : decimal(entryCents[index]),
+    billed_rule: rule,
+  }));
+}
+
+module.exports = { roundingRuleOf, billedHours, withBilledHours, withBilling };
