@@ -11,6 +11,39 @@ const entry = (minutes, rate, overrides = {}) => ({
   ...overrides,
 });
 
+describe('reportAmounts with rounded hours (billed_hours)', () => {
+  test('counts the billed hours, not the exact ones: 65 minutes billed as 1.25 h at 80.00 is 100.00', () => {
+    const { entryCents, projects, totalCents } = reportAmounts([entry(65, '80.00', { billed_hours: '1.25' })]);
+
+    expect(entryCents).toEqual([10000]);
+    expect(projects[0]).toMatchObject({ hundredths: 125, cents: 10000 });
+    expect(totalCents).toBe(10000);
+  });
+
+  test('hours x rate equals the amount on every row and the project and total add up', () => {
+    const entries = [entry(65, '33.33', { billed_hours: '1.25' }), entry(20, '33.33', { billed_hours: '0.50' })];
+
+    const { entryCents, projects, totalCents } = reportAmounts(entries);
+
+    expect(entryCents).toEqual([Math.round(125 * 3333 / 100), Math.round(50 * 3333 / 100)]);
+    expect(projects[0].hundredths).toBe(175);
+    expect(totalCents).toBe(entryCents[0] + entryCents[1]);
+    expect(projects[0].cents).toBe(totalCents);
+  });
+
+  test('an entry without billed_hours is counted exactly as before', () => {
+    expect(reportAmounts([entry(90, '80.00')]).entryCents).toEqual([12000]);
+    expect(reportAmounts([entry(90, '80.00', { billed_hours: null })]).entryCents).toEqual([12000]);
+  });
+
+  test('a running entry and one that ends before it starts have no amount, with or without a rule', () => {
+    const running = entry(0, '80.00', { end_time: null, billed_hours: null });
+    const backwards = entry(0, '80.00', { start_time: '2026-03-02T12:00:00Z', end_time: '2026-03-02T11:00:00Z', billed_hours: null });
+
+    expect(reportAmounts([running, backwards]).entryCents).toEqual([0, 0]);
+  });
+});
+
 describe('reportAmounts', () => {
   test('multiplies the printed hours with the rate', () => {
     const { entryCents, totalCents } = reportAmounts([entry(90, '80.00')]);

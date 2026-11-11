@@ -11,6 +11,7 @@ import MissingRecord from '../components/MissingRecord'
 import { formatAmount, formatHours, formatRate, hoursBetween } from '../format'
 import { forgetStoredShowAmounts } from '../reportOptions'
 import { idFromParam, periodFromParam, reportPath } from '../routes'
+import { roundingNote } from '../rounding'
 import NotFound from './NotFound'
 import { ui } from '../ui'
 
@@ -24,9 +25,10 @@ const statuses = [
   { value: 'sent', label: msg`Sent` },
 ]
 
-// Hours of an entry in hundredths, rounded like the backend does (toFixed(2) in utils/hours.js, which also gives the
-// PDF and CSV rows); a running entry has none yet. Whole hundredths add up without float errors.
-const hundredthsOf = (entry) => Math.round(Number(hoursBetween(entry.start_time, entry.end_time).toFixed(2)) * 100)
+// Hours of an entry in hundredths, as the report counts them: the rounded hours the server sends when a rounding rule
+// is set (billed_hours), otherwise rounded to hundredths like the backend does (toFixed(2) in utils/hours.js, which
+// also gives the PDF and CSV rows); a running entry has none yet. Whole hundredths add up without float errors.
+const hundredthsOf = (entry) => Math.round(Number(entry.billed_hours ?? hoursBetween(entry.start_time, entry.end_time).toFixed(2)) * 100)
 
 // Hours per project in hundredths, in the order the projects first appear: [{ id, name, hundredths }]
 function projectHours(entries) {
@@ -140,6 +142,8 @@ function Reports({ customers, settings }) {
   // The report on screen follows what it was loaded with, so a toggle never meets a report without amounts
   const withAmounts = report?.totalAmount !== undefined
   const totalHundredths = report ? report.entries.reduce((sum, entry) => sum + hundredthsOf(entry), 0) : 0
+  // The sentence that names the rounding rule: only when the hours of this report are rounded and the setting says so
+  const roundingSentence = settings.values?.showRoundingNote ? roundingNote(report?.rounding) : null
 
   return (
     <div className="mx-auto flex w-full max-w-5xl flex-col gap-6 p-4 sm:px-8 sm:py-9">
@@ -247,6 +251,7 @@ function Reports({ customers, settings }) {
             <h2 id={reportHeadingId} className="font-serif text-3xl font-semibold leading-tight sm:text-4xl">
               <Trans>Report {reportCustomer} – {reportPeriod}</Trans>
             </h2>
+            {roundingSentence && <p className="mt-1.5 text-sm text-muted">{i18n._(roundingSentence)}</p>}
           </div>
 
           {hasEntries ? (

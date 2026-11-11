@@ -85,6 +85,16 @@ by the Dashboard but no longer by this page.
 Project lines count an entry that ends before it starts as 0 hours, like the server does for amounts, so they can add up
 to more than the total, which keeps such an old entry's negative hours (how to find and fix them: [Time entries](../backend/time-entries.md#entries-that-end-before-they-start)). The Dashboard's **Preview PDF** stays hours only.
 
+## Rounded hours
+
+When the setting **Round time entries** ([Settings](settings.md)) is on, the report shows the **rounded hours** of each
+entry (*1,25 h* for 65 minutes at a quarter hour, rounded up), in the rows, the project lines and the total. The amounts,
+the PDF and the CSV use the same rounded hours. A sentence under the heading names the rule, e.g. *Hours rounded up to
+quarter hours.* (German: *Stunden auf Viertelstunden aufgerundet.*), **only when the setting _Name the rounding rule in
+reports_ is on** (off by default); the PDF carries the same sentence then. The rule: [Reports
+API](../backend/reports.md#rounding). With **No rounding** (the default) the report and its numbers are as before.
+The Reports page does not calculate the rounding: the server sends `billed_hours` for each entry and the rule.
+
 ## Formats
 
 Dates, hours and amounts follow the language: `2.3.2026`, `1,50 h` and `142,50 €` in German, `3/2/2026`, `1.50 h`
@@ -94,5 +104,5 @@ and `€142.50` in English.
 
 `frontend/src/pages/Reports.jsx` (gets `settings` from `App`; `amountsChoice` is `null` until the checkbox is touched, so
 it follows the setting), `reportOptions.js` (`forgetStoredShowAmounts()` removes the old stored choice), `api.js` (`getMonthlyReport`, `downloadPDF`,
-`downloadCSV`, each with an `amounts` argument that adds `&amounts=1` only when true), `format.js`. Tests (in
-`frontend/tests/`): `pages/Reports.test.jsx`, `api.test.js`, `reportOptions.test.js`.
+`downloadCSV`, each with an `amounts` argument that adds `&amounts=1` only when true), `rounding.js` (the sentence that names the rule), `format.js`. Tests (in
+`frontend/tests/`): `pages/Reports.test.jsx`, `api.test.js`, `reportOptions.test.js`, `rounding.test.js`.

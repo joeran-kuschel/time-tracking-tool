@@ -78,6 +78,193 @@ describe('Settings', () => {
       expect(box).toHaveAccessibleDescription('Die Berichte-Seite startet mit dieser Einstellung. Für einen einzelnen Bericht kannst du sie dort ändern.')
     })
 
+    describe('rounding', () => {
+      const saved = { showAmounts: false, roundingMinutes: 0, roundingDirection: 'up', showRoundingNote: false }
+      const step = () => screen.getByRole('combobox', { name: 'Zeiteinträge runden' })
+      const direction = () => screen.getByRole('combobox', { name: 'Richtung' })
+
+      beforeEach(() => {
+        api.getSettings.mockResolvedValue(saved)
+        api.updateSettings.mockImplementation(async (changes) => ({ ...saved, ...changes }))
+      })
+
+      test('offers no rounding, quarter hour and half hour, and does not round by default', async () => {
+        render(<Harness list={settingsGroups} />)
+
+        await screen.findByRole('group', { name: 'Zeit und Abrechnung' })
+        expect(within(step()).getAllByRole('option').map((option) => option.textContent)).toEqual([
+          'Keine Rundung', 'Viertelstunde (15 Minuten)', 'Halbe Stunde (30 Minuten)',
+        ])
+        expect(step()).toHaveValue('0')
+        expect(within(direction()).getAllByRole('option').map((option) => option.textContent)).toEqual(['Aufrunden', 'Auf- oder abrunden (nächstgelegene Stufe)'])
+        expect(direction()).toHaveValue('up')
+      })
+
+      test('disables the direction while there is no rounding, and says why', async () => {
+        render(<Harness list={settingsGroups} />)
+
+        await screen.findByRole('group', { name: 'Zeit und Abrechnung' })
+
+        expect(direction()).toBeDisabled()
+        expect(direction()).toHaveAccessibleDescription('Wähle bei "Zeiteinträge runden" eine Stufe, um die Richtung festzulegen.')
+      })
+
+      test('enables the direction as soon as a step is chosen, and disables it again for no rounding', async () => {
+        render(<Harness list={settingsGroups} />)
+        await screen.findByRole('group', { name: 'Zeit und Abrechnung' })
+
+        await userEvent.selectOptions(step(), 'Viertelstunde (15 Minuten)')
+        expect(direction()).toBeEnabled()
+        expect(direction()).toHaveAccessibleDescription('')
+
+        await userEvent.selectOptions(direction(), 'Auf- oder abrunden (nächstgelegene Stufe)')
+        await userEvent.selectOptions(step(), 'Keine Rundung')
+        expect(direction()).toBeDisabled()
+        expect(direction()).toHaveValue('nearest')
+      })
+
+      describe('the sentence that names the rule', () => {
+        const noteBox = () => screen.getByRole('checkbox', { name: 'Rundungsregel in Berichten nennen' })
+
+        test('is off by default, disabled while there is no rounding, and says why', async () => {
+          render(<Harness list={settingsGroups} />)
+
+          await screen.findByRole('group', { name: 'Zeit und Abrechnung' })
+
+          expect(noteBox()).not.toBeChecked()
+          expect(noteBox()).toBeDisabled()
+          expect(noteBox()).toHaveAccessibleDescription('Wähle zuerst bei "Zeiteinträge runden" eine Stufe.')
+        })
+
+        test('is enabled with a step, described by what it does, and saved with the step', async () => {
+          render(<Harness list={settingsGroups} />)
+          await screen.findByRole('group', { name: 'Zeit und Abrechnung' })
+
+          await userEvent.selectOptions(step(), 'Viertelstunde (15 Minuten)')
+          expect(noteBox()).toBeEnabled()
+          expect(noteBox()).toHaveAccessibleDescription('Fügt der Berichte-Seite und dem PDF einen Satz hinzu, z. B. "Stunden auf Viertelstunden aufgerundet."')
+
+          await userEvent.click(noteBox())
+          await userEvent.click(screen.getByRole('button', { name: 'Speichern' }))
+
+          expect(api.updateSettings).toHaveBeenCalledWith({ roundingMinutes: 15, showRoundingNote: true })
+          expect(await screen.findByText('Einstellungen gespeichert.')).toBeInTheDocument()
+        })
+
+        test('keeps its choice while the step is switched back to no rounding, and is disabled again', async () => {
+          api.getSettings.mockResolvedValue({ ...saved, roundingMinutes: 15, showRoundingNote: true })
+          render(<Harness list={settingsGroups} />)
+          await screen.findByRole('group', { name: 'Zeit und Abrechnung' })
+          expect(noteBox()).toBeChecked()
+
+          await userEvent.selectOptions(step(), 'Keine Rundung')
+
+          expect(noteBox()).toBeDisabled()
+          expect(noteBox()).toBeChecked()
+        })
+
+        test('is named in English', async () => {
+          activateLocale('en')
+          render(<Harness list={settingsGroups} />)
+
+          await screen.findByRole('group', { name: 'Time and billing' })
+
+          expect(screen.getByRole('checkbox', { name: 'Name the rounding rule in reports' })).toBeDisabled()
+        })
+      })
+
+      test('saves the step as a number and the direction together in one request', async () => {
+        render(<Harness list={settingsGroups} />)
+        await screen.findByRole('group', { name: 'Zeit und Abrechnung' })
+
+        await userEvent.selectOptions(step(), 'Halbe Stunde (30 Minuten)')
+        await userEvent.selectOptions(direction(), 'Auf- oder abrunden (nächstgelegene Stufe)')
+        await userEvent.click(screen.getByRole('button', { name: 'Speichern' }))
+
+        expect(api.updateSettings).toHaveBeenCalledTimes(1)
+        expect(api.updateSettings).toHaveBeenCalledWith({ roundingMinutes: 30, roundingDirection: 'nearest' })
+        expect(await screen.findByText('Einstellungen gespeichert.')).toBeInTheDocument()
+        expect(step()).toHaveValue('30')
+        expect(direction()).toHaveValue('nearest')
+      })
+
+      test('saves only the step when the direction was left alone', async () => {
+        render(<Harness list={settingsGroups} />)
+        await screen.findByRole('group', { name: 'Zeit und Abrechnung' })
+
+        await userEvent.selectOptions(step(), 'Viertelstunde (15 Minuten)')
+        await userEvent.click(screen.getByRole('button', { name: 'Speichern' }))
+
+        expect(api.updateSettings).toHaveBeenCalledWith({ roundingMinutes: 15 })
+      })
+
+      test('shows the saved rounding after loading, with the direction enabled', async () => {
+        api.getSettings.mockResolvedValue({ ...saved, roundingMinutes: 30, roundingDirection: 'nearest' })
+        render(<Harness list={settingsGroups} />)
+
+        await screen.findByRole('group', { name: 'Zeit und Abrechnung' })
+
+        expect(step()).toHaveValue('30')
+        expect(direction()).toBeEnabled()
+        expect(direction()).toHaveValue('nearest')
+      })
+
+      test('skips the disabled direction and sentence when tabbing, and reaches them once a step is chosen', async () => {
+        render(<Harness list={settingsGroups} />)
+        await screen.findByRole('group', { name: 'Zeit und Abrechnung' })
+
+        step().focus()
+        await userEvent.tab()
+        expect(screen.getByRole('button', { name: 'Speichern' })).toHaveFocus()
+
+        await userEvent.selectOptions(step(), 'Halbe Stunde (30 Minuten)')
+        step().focus()
+        await userEvent.tab()
+        expect(direction()).toHaveFocus()
+        await userEvent.tab()
+        expect(screen.getByRole('checkbox', { name: 'Rundungsregel in Berichten nennen' })).toHaveFocus()
+      })
+
+      test('treats a step the backend did not return as no rounding: direction and sentence are disabled', async () => {
+        api.getSettings.mockResolvedValue({ showAmounts: false })
+        render(<Harness list={settingsGroups} />)
+        await screen.findByRole('group', { name: 'Zeit und Abrechnung' })
+
+        expect(direction()).toBeDisabled()
+      })
+
+      test('says below the options that the rounding also applies to past months', async () => {
+        render(<Harness list={settingsGroups} />)
+
+        const group = await screen.findByRole('group', { name: 'Zeit und Abrechnung' })
+
+        expect(within(group).getByText('Die Rundung gilt auch für Berichte vergangener Monate. PDF- und CSV-Dateien, die du schon heruntergeladen hast, ändern sich nicht.')).toBeInTheDocument()
+      })
+
+      test('names the options in English', async () => {
+        activateLocale('en')
+        render(<Harness list={settingsGroups} />)
+
+        await screen.findByRole('group', { name: 'Time and billing' })
+
+        expect(screen.getByRole('combobox', { name: 'Round time entries' })).toBeInTheDocument()
+        expect(screen.getByRole('combobox', { name: 'Direction' })).toBeDisabled()
+        expect(screen.getByRole('option', { name: 'Quarter hour (15 minutes)' })).toBeInTheDocument()
+        expect(screen.getByRole('option', { name: 'To the nearest' })).toBeInTheDocument()
+      })
+
+      test.each(['de', 'en'])('has no detectable accessibility violations in %s, with the direction disabled and enabled', async (locale) => {
+        activateLocale(locale)
+        const { container } = render(<Harness list={settingsGroups} />)
+        await screen.findByRole('combobox', { name: locale === 'de' ? 'Richtung' : 'Direction' })
+        expect(await axe(container)).toHaveNoViolations()
+
+        await userEvent.selectOptions(screen.getByRole('combobox', { name: locale === 'de' ? 'Zeiteinträge runden' : 'Round time entries' }), '15')
+
+        expect(await axe(container)).toHaveNoViolations()
+      })
+    })
+
     test('saves the option and names it in English', async () => {
       activateLocale('en')
       api.getSettings.mockResolvedValue({ showAmounts: false })
@@ -96,7 +283,7 @@ describe('Settings', () => {
       activateLocale(locale)
       api.getSettings.mockResolvedValue({ showAmounts: true })
       const { container } = render(<Harness list={settingsGroups} />)
-      await screen.findByRole('checkbox')
+      await screen.findByRole('group', { name: locale === 'de' ? 'Zeit und Abrechnung' : 'Time and billing' })
 
       expect(await axe(container)).toHaveNoViolations()
     })

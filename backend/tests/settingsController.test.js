@@ -70,6 +70,63 @@ describe('settingsController', () => {
     expect(Settings.update).not.toHaveBeenCalled();
   });
 
+  test.each([true, false])('update saves showRoundingNote: %s', async (value) => {
+    Settings.update.mockResolvedValue({ showRoundingNote: value });
+    const res = mockResponse();
+
+    await controller.update({ body: { showRoundingNote: value } }, res);
+
+    expect(Settings.update).toHaveBeenCalledWith({ showRoundingNote: value });
+  });
+
+  test.each([['yes'], ['true'], [1], [0], [null], [[]]])('update rejects %j as a value of showRoundingNote', async (value) => {
+    const res = mockResponse();
+
+    await controller.update({ body: { showRoundingNote: value } }, res);
+
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(res.json).toHaveBeenCalledWith({ error: 'Invalid value for showRoundingNote' });
+    expect(Settings.update).not.toHaveBeenCalled();
+  });
+
+  test.each([[0], [15], [30]])('update saves roundingMinutes: %s', async (value) => {
+    Settings.update.mockResolvedValue({});
+    const res = mockResponse();
+
+    await controller.update({ body: { roundingMinutes: value } }, res);
+
+    expect(Settings.update).toHaveBeenCalledWith({ roundingMinutes: value });
+  });
+
+  test.each([[10], [45], [-15], ['15'], [15.5], [null], [true], [[15]]])('update rejects %j as roundingMinutes', async (value) => {
+    const res = mockResponse();
+
+    await controller.update({ body: { roundingMinutes: value } }, res);
+
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(res.json).toHaveBeenCalledWith({ error: 'Invalid value for roundingMinutes' });
+    expect(Settings.update).not.toHaveBeenCalled();
+  });
+
+  test.each([['up'], ['nearest']])('update saves roundingDirection: %s', async (value) => {
+    Settings.update.mockResolvedValue({});
+    const res = mockResponse();
+
+    await controller.update({ body: { roundingDirection: value } }, res);
+
+    expect(Settings.update).toHaveBeenCalledWith({ roundingDirection: value });
+  });
+
+  test.each([['down'], ['UP'], [''], [1], [null]])('update rejects %j as roundingDirection', async (value) => {
+    const res = mockResponse();
+
+    await controller.update({ body: { roundingDirection: value } }, res);
+
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(res.json).toHaveBeenCalledWith({ error: 'Invalid value for roundingDirection' });
+    expect(Settings.update).not.toHaveBeenCalled();
+  });
+
   test('update saves nothing when one of several values is invalid', async () => {
     const res = mockResponse();
 
