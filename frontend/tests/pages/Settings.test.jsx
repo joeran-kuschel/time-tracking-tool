@@ -4,6 +4,7 @@ import { msg } from '@lingui/core/macro'
 import { act, render, screen, within } from '../support/render'
 import { axe } from '../support/axe'
 import Settings from '@/pages/Settings'
+import { settingsGroups } from '@/settingsGroups'
 import { useSettings } from '@/hooks/useSettings'
 import { api, ApiError } from '@/api'
 import { activateLocale } from '@/i18n'
@@ -64,6 +65,52 @@ describe('Settings', () => {
     expect(within(screen.getByRole('group', { name: 'Details group' })).getByRole('checkbox', { name: 'Tidy' })).toBeChecked()
     expect(screen.queryByRole('group', { name: 'Empty group' })).not.toBeInTheDocument()
     expect(screen.getAllByRole('button', { name: 'Speichern' })).toHaveLength(1)
+  })
+
+  describe('the real groups', () => {
+    test('has the group Time and billing with the amounts option, off by default', async () => {
+      api.getSettings.mockResolvedValue({ showAmounts: false })
+      render(<Harness list={settingsGroups} />)
+
+      const group = await screen.findByRole('group', { name: 'Zeit und Abrechnung' })
+      const box = within(group).getByRole('checkbox', { name: 'Stundensatz und Beträge in Berichten anzeigen' })
+      expect(box).not.toBeChecked()
+      expect(box).toHaveAccessibleDescription('Die Berichte-Seite startet mit dieser Einstellung. Für einen einzelnen Bericht kannst du sie dort ändern.')
+    })
+
+    test('saves the option and names it in English', async () => {
+      activateLocale('en')
+      api.getSettings.mockResolvedValue({ showAmounts: false })
+      api.updateSettings.mockResolvedValue({ showAmounts: true })
+      render(<Harness list={settingsGroups} />)
+
+      await userEvent.click(await screen.findByRole('checkbox', { name: 'Show hourly rate and amounts in reports' }))
+      await userEvent.click(screen.getByRole('button', { name: 'Save' }))
+
+      expect(api.updateSettings).toHaveBeenCalledWith({ showAmounts: true })
+      expect(await screen.findByText('Settings saved.')).toBeInTheDocument()
+      expect(screen.getByRole('group', { name: 'Time and billing' })).toBeInTheDocument()
+    })
+
+    test.each(['de', 'en'])('has no detectable accessibility violations in %s', async (locale) => {
+      activateLocale(locale)
+      api.getSettings.mockResolvedValue({ showAmounts: true })
+      const { container } = render(<Harness list={settingsGroups} />)
+      await screen.findByRole('checkbox')
+
+      expect(await axe(container)).toHaveNoViolations()
+    })
+
+    test('every option of the list has a name, a known type and texts, and no name is used twice', () => {
+      const options = settingsGroups.flatMap((group) => group.options)
+
+      expect(new Set(options.map((option) => option.name)).size).toBe(options.length)
+      expect(new Set(settingsGroups.map((group) => group.id)).size).toBe(settingsGroups.length)
+      for (const option of options) {
+        expect(['checkbox', 'select']).toContain(option.type)
+        expect(option.label).toBeTruthy()
+      }
+    })
   })
 
   test('describes a field by its hint', async () => {

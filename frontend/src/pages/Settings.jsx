@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react'
 import { Trans, useLingui } from '@lingui/react/macro'
+import { useRetry } from '../hooks/useRetry'
 import ErrorMessage from '../components/ErrorMessage'
 import SettingField from '../components/SettingField'
 import { settingsGroups } from '../settingsGroups'
@@ -13,8 +14,7 @@ function Settings({ settings, groups = settingsGroups }) {
   const [changes, setChanges] = useState({})
   // What the live region says after pressing Save; cleared by the next change
   const [saved, setSaved] = useState(null)
-  // True while "Try again" loads; the button stays in place then, so keyboard focus is not lost
-  const [retrying, setRetrying] = useState(false)
+  const [retry, retrying] = useRetry(settings.load)
   // A second press before the first save has answered would send the same changes again
   const saving = useRef(false)
   const shown = groups.filter((group) => group.options.length > 0)
@@ -22,13 +22,6 @@ function Settings({ settings, groups = settingsGroups }) {
   const change = (name, value) => {
     setSaved(null)
     setChanges((current) => ({ ...current, [name]: value }))
-  }
-
-  const retry = async () => {
-    if (retrying) return
-    setRetrying(true)
-    await settings.load()
-    setRetrying(false)
   }
 
   const save = async (e) => {

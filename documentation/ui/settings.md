@@ -4,10 +4,14 @@ The **Settings** page (German: *Einstellungen*, `/settings`) is the place for op
 are saved on the server, so they are the same in every browser. The language and the theme stay browser choices in the
 header.
 
-## Now
+## Options
 
-There are no options yet: the page shows the heading and the note *There are no options yet.* The options planned for
-it (amounts in reports, rounding, default rate, your details) each come with their own issue and go into a group.
+| Group | Option | Default | Effect |
+|---|---|---|---|
+| **Time and billing** (*Zeit und Abrechnung*) | **Show hourly rate and amounts in reports** (*Stundensatz und Beträge in Berichten anzeigen*) | off | The checkbox on the [Reports page](reports.md) starts from it; ticking it there changes only that visit. |
+
+Planned: rounding, a default rate and your details, each with its own issue. With no group at all the page says
+*There are no options yet.*
 
 ## Groups and saving
 

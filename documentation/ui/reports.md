@@ -11,11 +11,19 @@ The **Reports** page (German: **Berichte**) shows a customer's time entries of o
    change loads the report again. The month name follows the language.
 3. **Show hourly rate and amounts** (German: **Stundensatz und Beträge anzeigen**) is a checkbox in the filter row,
    shown as soon as a customer is chosen, also for a month without entries.
-   - It is **off by default**: the report then lists hours only. Ticking it loads the report again with the amounts
-     (a brief *Loading...*; the checkbox stays in place and keeps focus) and adds them to the downloads below.
-   - The choice is remembered in the browser (`localStorage`, key `reportAmounts`) and applies to every customer and
-     month. It is a way of looking at the report, not part of it, so the report status is not affected. Without
-     storage (e.g. a private window) it still works for the visit.
+   - It starts from the setting **Show hourly rate and amounts in reports** ([Settings](settings.md)), which is **off by
+     default**: the report then lists hours only. Ticking it loads the report again with the amounts (a brief
+     *Loading...*; the checkbox stays in place and keeps focus) and adds them to the downloads below.
+   - A change of the checkbox counts for this visit of the page only, for every customer and month you open meanwhile:
+     it does not change the setting and is not remembered. It is a way of looking at the report, not part of it, so the
+     report status is not affected.
+   - The report loads as soon as the settings are known (`App` loads them once, so this is normally at once). If they
+     could not be loaded, the page shows the error with **Try again**, falls back to no amounts and follows the setting
+     as soon as a retry succeeds, as long as the checkbox was not touched. The button stays in place while it loads
+     (`hooks/useRetry.js`, also used by the Settings page), so keyboard focus is kept and the report on screen is not
+     loaded again if the retry fails.
+   - The choice the browser used to remember (`localStorage`, key `reportAmounts`) has no effect any more and is removed
+     when the page opens.
    - What the screen shows: see [The report](#the-report).
 4. **Download PDF** downloads the same report as a PDF, in the language the UI currently uses, with or without amounts,
    as the checkbox says. It is only shown when the month has entries.
@@ -84,7 +92,7 @@ and `€142.50` in English.
 
 ## Code
 
-`frontend/src/pages/Reports.jsx`, `reportOptions.js` (the remembered checkbox: `storedShowAmounts()` is the one place
-that reads it, so a per-user default from the server can replace it later), `api.js` (`getMonthlyReport`, `downloadPDF`,
+`frontend/src/pages/Reports.jsx` (gets `settings` from `App`; `amountsChoice` is `null` until the checkbox is touched, so
+it follows the setting), `reportOptions.js` (`forgetStoredShowAmounts()` removes the old stored choice), `api.js` (`getMonthlyReport`, `downloadPDF`,
 `downloadCSV`, each with an `amounts` argument that adds `&amounts=1` only when true), `format.js`. Tests (in
 `frontend/tests/`): `pages/Reports.test.jsx`, `api.test.js`, `reportOptions.test.js`.
