@@ -62,6 +62,35 @@ describe('generateReportPDF', () => {
     ]));
   });
 
+  test.each([
+    [{ minutes: 15, direction: 'up' }, 'en', 'Hours rounded up to quarter hours.'],
+    [{ minutes: 30, direction: 'up' }, 'en', 'Hours rounded up to half hours.'],
+    [{ minutes: 15, direction: 'nearest' }, 'en', 'Hours rounded to the nearest quarter hour.'],
+    [{ minutes: 30, direction: 'nearest' }, 'en', 'Hours rounded to the nearest half hour.'],
+    [{ minutes: 15, direction: 'up' }, 'de', 'Stunden auf Viertelstunden aufgerundet.'],
+    [{ minutes: 30, direction: 'up' }, 'de', 'Stunden auf halbe Stunden aufgerundet.'],
+    [{ minutes: 15, direction: 'nearest' }, 'de', 'Stunden auf die nächstgelegene Viertelstunde gerundet.'],
+    [{ minutes: 30, direction: 'nearest' }, 'de', 'Stunden auf die nächstgelegene halbe Stunde gerundet.'],
+  ])('names the rounding rule %j in %s', async (rounding, locale, sentence) => {
+    await generateReportPDF(entries, { customerName: 'Muster GmbH', month: 3, year: 2026, locale, rounding });
+
+    expect(PDFDocument.last.texts).toContain(sentence);
+  });
+
+  test('names no rounding rule without one', async () => {
+    const written = await texts('en');
+
+    expect(written.filter((text) => /rounded/i.test(text))).toEqual([]);
+  });
+
+  test('counts the billed hours of the entries in the rows and the total', async () => {
+    const rounded = entries.map((entry, index) => ({ ...entry, billed_hours: ['1.50', '2.50'][index] }));
+
+    await generateReportPDF(rounded, { customerName: 'Muster GmbH', month: 3, year: 2026, locale: 'en', rounding: { minutes: 30, direction: 'up' } });
+
+    expect(PDFDocument.last.texts).toEqual(expect.arrayContaining(['1.50 h', '2.50 h', '4.00 h']));
+  });
+
   test('stays German without a language, like before', async () => {
     expect(await texts(undefined)).toContain('ZEITABRECHNUNG');
   });

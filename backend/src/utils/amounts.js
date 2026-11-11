@@ -1,5 +1,5 @@
 const { i18n } = require('@lingui/core');
-const { calculateHours } = require('./hours');
+const { reportHours } = require('./hours');
 
 // Money rules of a report, in one place. Amounts are EUR only (there is no currency setting) and are counted in
 // whole cents: an entry's hours are rounded to hundredths exactly as the report prints them, its amount is rounded
@@ -8,9 +8,9 @@ const { calculateHours } = require('./hours');
 const CURRENCY = 'EUR';
 
 // An entry that ends before it starts counts as 0 hours and 0 amount, so no amount is ever negative. The hours
-// printed in the rows are not changed (calculateHours still gives the negative value).
-// An invalid start or end (NaN) counts as 0 too.
-const hundredthsOf = (entry) => Math.max(0, Math.round(Number(calculateHours(entry.start_time, entry.end_time)) * 100) || 0);
+// printed in the rows are not changed (reportHours still gives the negative value).
+// An invalid start or end (NaN) counts as 0 too. With a rounding rule the hours are the rounded ones (billed_hours).
+const hundredthsOf = (entry) => Math.max(0, Math.round(Number(reportHours(entry)) * 100) || 0);
 
 // hourly_rate is a DECIMAL(10,2) string; a missing or invalid rate counts as 0
 function rateCentsOf(entry) {

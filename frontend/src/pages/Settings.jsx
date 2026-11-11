@@ -18,6 +18,8 @@ function Settings({ settings, groups = settingsGroups }) {
   // A second press before the first save has answered would send the same changes again
   const saving = useRef(false)
   const shown = groups.filter((group) => group.options.length > 0)
+  // What the form shows: the saved values with the changes over them
+  const current = settings.values ? { ...settings.values, ...changes } : {}
 
   const change = (name, value) => {
     setSaved(null)
@@ -71,10 +73,12 @@ function Settings({ settings, groups = settingsGroups }) {
                 <SettingField
                   key={option.name}
                   option={option}
-                  value={Object.hasOwn(changes, option.name) ? changes[option.name] : settings.values[option.name]}
+                  value={current[option.name]}
+                  disabled={option.disabledWhen?.(current) ?? false}
                   onChange={(value) => change(option.name, value)}
                 />
               ))}
+              {group.note && <p className="text-sm text-muted">{i18n._(group.note)}</p>}
             </fieldset>
           </div>
         ))}

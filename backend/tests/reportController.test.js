@@ -1,5 +1,6 @@
 jest.mock('../src/models/TimeEntry');
 jest.mock('../src/models/Customer');
+jest.mock('../src/models/Settings');
 jest.mock('../src/models/ReportStatus', () => ({
   get: jest.fn(),
   set: jest.fn(),
@@ -13,6 +14,7 @@ jest.mock('../src/utils/pdfGenerator', () => ({
 const TimeEntry = require('../src/models/TimeEntry');
 const Customer = require('../src/models/Customer');
 const ReportStatus = require('../src/models/ReportStatus');
+const Settings = require('../src/models/Settings');
 const { generateReportPDF } = require('../src/utils/pdfGenerator');
 const controller = require('../src/controllers/reportController');
 const router = require('../src/routes/reports');
@@ -27,6 +29,12 @@ function mockResponse() {
   return res;
 }
 
+// No rounding unless a test sets a rule
+const NO_ROUNDING = { showAmounts: false, roundingMinutes: 0, roundingDirection: 'up', showRoundingNote: false }
+beforeEach(() => {
+  Settings.get.mockResolvedValue(NO_ROUNDING);
+});
+
 describe('reportController.generatePDF', () => {
   beforeEach(() => {
     Customer.getById.mockResolvedValue({ id: 1, name: 'Muster' });
@@ -38,7 +46,7 @@ describe('reportController.generatePDF', () => {
 
     await controller.generatePDF({ params: { customerId: '1' }, query: { month: '3', year: '2026', lang: 'en' } }, res);
 
-    expect(generateReportPDF).toHaveBeenCalledWith([{ id: 1 }], { customerName: 'Muster', month: 3, year: 2026, locale: 'en', timeZone: 'UTC' });
+    expect(generateReportPDF).toHaveBeenCalledWith([{ id: 1 }], { customerName: 'Muster', month: 3, year: 2026, locale: 'en', timeZone: 'UTC', rounding: null });
     expect(res.headers['Content-Disposition']).toBe('attachment; filename=time-report-Muster-2026-3.pdf');
   });
 
@@ -382,6 +390,7 @@ describe('reportController amounts flag: parsing and order of checks', () => {
 
   beforeEach(() => {
     jest.resetAllMocks();
+    Settings.get.mockResolvedValue(NO_ROUNDING);
     Customer.getById.mockResolvedValue({ id: 1, name: 'Muster' });
     TimeEntry.getByCustomerIdInRange.mockResolvedValue(entries);
     ReportStatus.get.mockResolvedValue('draft');
@@ -507,5 +516,155 @@ describe('reportController with an entry that ends before it starts', () => {
     await controller.exportCsv(request({ amounts: '1' }), res);
 
     expect(res.send.mock.calls[0][0].split('\r\n')[1]).toBe('2026-03-02,09:00,08:00,Muster,Web,,-1.00,80.00,0.00');
+  });
+});
+
+describe('reportController with a rounding rule', () => {
+  const at = (minutes) => ({
+    id: minutes, project_id: 7, project_name: 'Web', hourly_rate: '80.00', description: `E${minutes}`,
+    start_time: '2026-03-02T08:00:00Z', end_time: new Date(Date.UTC(2026, 2, 2, 8, minutes)).toISOString(),
+  });
+  const entries = [at(65), at(20)]; // 65 min is 1.25 h and 20 min is 0.50 h when rounded up to a quarter hour
+  const request = (query = {}) => ({ params: { customerId: '1' }, query: { month: '3', year: '2026', lang: 'en', ...query } });
+  const rule = (roundingMinutes, roundingDirection, showRoundingNote = false) =>
+    Settings.get.mockResolvedValue({ showAmounts: false, roundingMinutes, roundingDirection, showRoundingNote });
+
+  beforeEach(() => {
+    Customer.getById.mockReset().mockResolvedValue({ id: 1, name: 'Muster' });
+    TimeEntry.getByCustomerIdInRange.mockReset().mockResolvedValue(entries);
+    ReportStatus.get.mockReset().mockResolvedValue('draft');
+    Settings.get.mockClear();
+  });
+
+  test('the JSON report has billed_hours per entry, names the rule and totals the rounded hours', async () => {
+    rule(15, 'up');
+    const res = mockResponse();
+
+    await controller.getMonthlyReport(request(), res);
+
+    const body = res.json.mock.calls[0][0];
+    expect(body.rounding).toEqual({ minutes: 15, direction: 'up' });
+    expect(body.entries.map((e) => e.billed_hours)).toEqual(['1.25', '0.50']);
+    expect(body.totalHours).toBe('1.75');
+  });
+
+  test('the amounts count the rounded hours, so hours x rate equals the amount on every row', async () => {
+    rule(15, 'up');
+    const res = mockResponse();
+
+    await controller.getMonthlyReport(request({ amounts: '1' }), res);
+
+    const body = res.json.mock.calls[0][0];
+    expect(body.entries.map((e) => e.amount)).toEqual(['100.00', '40.00']);
+    expect(body.projects).toEqual([{ projectId: 7, name: 'Web', hours: '1.75', hourlyRate: '80.00', amount: '140.00' }]);
+    expect(body.totalAmount).toBe('140.00');
+  });
+
+  test('the rule "to the nearest half hour" is applied and named', async () => {
+    rule(30, 'nearest');
+    const res = mockResponse();
+
+    await controller.getMonthlyReport(request(), res);
+
+    const body = res.json.mock.calls[0][0];
+    expect(body.rounding).toEqual({ minutes: 30, direction: 'nearest' });
+    expect(body.entries.map((e) => e.billed_hours)).toEqual(['1.00', '0.50']);
+    expect(body.totalHours).toBe('1.50');
+  });
+
+  test('without a rule the JSON report is as before: no billed_hours, no rounding, the exact total', async () => {
+    rule(0, 'up');
+    const res = mockResponse();
+
+    await controller.getMonthlyReport(request(), res);
+
+    const body = res.json.mock.calls[0][0];
+    expect(body).not.toHaveProperty('rounding');
+    expect(body.entries).toEqual(entries);
+    expect(body.totalHours).toBe('1.42');
+  });
+
+  test('a running entry and one that ends before it starts are not rounded and count as before', async () => {
+    rule(15, 'up');
+    const running = { ...at(10), id: 90, end_time: null };
+    const backwards = { ...at(10), id: 91, start_time: '2026-03-02T12:00:00Z', end_time: '2026-03-02T11:30:00Z' };
+    TimeEntry.getByCustomerIdInRange.mockResolvedValue([at(65), running, backwards]);
+    const res = mockResponse();
+
+    await controller.getMonthlyReport(request(), res);
+
+    const body = res.json.mock.calls[0][0];
+    expect(body.entries.map((e) => e.billed_hours)).toEqual(['1.25', null, null]);
+    // like before: the running entry counts 0 and the backwards one its negative 0.50 h
+    expect(body.totalHours).toBe('0.75');
+  });
+
+  test('the PDF gets the rounded entries, and the rule to name only when the setting says so', async () => {
+    rule(15, 'nearest', true);
+    const res = mockResponse();
+
+    await controller.generatePDF(request(), res);
+
+    const [pdfEntries, options] = generateReportPDF.mock.calls.at(-1);
+    expect(pdfEntries.map((e) => e.billed_hours)).toEqual(['1.00', '0.25']);
+    expect(options.rounding).toEqual({ minutes: 15, direction: 'nearest' });
+  });
+
+  test('the PDF has the rounded hours but is not told to name the rule while the sentence is off', async () => {
+    rule(15, 'nearest', false);
+    const res = mockResponse();
+
+    await controller.generatePDF(request(), res);
+
+    const [pdfEntries, options] = generateReportPDF.mock.calls.at(-1);
+    expect(pdfEntries.map((e) => e.billed_hours)).toEqual(['1.00', '0.25']);
+    expect(options.rounding).toBeNull();
+  });
+
+  test('the PDF names nothing without a rounding rule, even with the sentence switched on', async () => {
+    rule(0, 'up', true);
+    const res = mockResponse();
+
+    await controller.generatePDF(request(), res);
+
+    expect(generateReportPDF.mock.calls.at(-1)[1].rounding).toBeNull();
+  });
+
+  test('the JSON report keeps naming the rule as data, whatever the sentence setting says', async () => {
+    rule(15, 'up', false);
+    const res = mockResponse();
+
+    await controller.getMonthlyReport(request(), res);
+
+    expect(res.json.mock.calls[0][0].rounding).toEqual({ minutes: 15, direction: 'up' });
+  });
+
+  test('the CSV has the rounded hours and the exact start and end times', async () => {
+    rule(15, 'up');
+    const res = mockResponse();
+
+    await controller.exportCsv(request(), res);
+
+    const csv = res.send.mock.calls[0][0];
+    expect(csv).toContain('2026-03-02,08:00,09:05,Muster,Web,E65,1.25\r\n');
+    expect(csv).toContain('2026-03-02,08:00,08:20,Muster,Web,E20,0.50\r\n');
+    expect(csv).not.toMatch(/rounded|gerundet/i);
+  });
+
+  test('the CSV with amounts uses the rounded hours for the amount too', async () => {
+    rule(15, 'up');
+    const res = mockResponse();
+
+    await controller.exportCsv(request({ amounts: '1' }), res);
+
+    expect(res.send.mock.calls[0][0]).toContain('E65,1.25,80.00,100.00\r\n');
+  });
+
+  test('reads the settings once per report', async () => {
+    rule(15, 'up');
+
+    await controller.getMonthlyReport(request(), mockResponse());
+
+    expect(Settings.get).toHaveBeenCalledTimes(1);
   });
 });

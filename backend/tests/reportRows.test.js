@@ -26,6 +26,21 @@ describe('reportRows', () => {
     ]]);
   });
 
+  test('shows the billed hours when the hours are rounded, and the exact times', () => {
+    const { rows } = reportRows([entry({ billed_hours: '1.75' })], options);
+
+    expect(rows[0]).toEqual([
+      { text: '2026-09-21' }, { text: '08:00' }, { text: '09:30' }, { text: 'Muster GmbH' },
+      { text: 'Website' }, { text: 'Konzept' }, { number: '1.75' },
+    ]);
+  });
+
+  test('shows the billed hours in German with a decimal comma', () => {
+    const { rows } = reportRows([entry({ billed_hours: '0.25' })], { ...options, locale: 'de' });
+
+    expect(rows[0].at(-1)).toEqual({ number: '0,25' });
+  });
+
   test('keeps the order of the entries', () => {
     const { rows } = reportRows([entry({ project_name: 'B' }), entry({ project_name: 'A' })], options);
 

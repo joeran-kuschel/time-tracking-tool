@@ -2,12 +2,15 @@ const { create: contentDisposition } = require('content-disposition');
 const TimeEntry = require('../models/TimeEntry');
 const Customer = require('../models/Customer');
 const ReportStatus = require('../models/ReportStatus');
+const Settings = require('../models/Settings');
 const { parseMonth, parseTimeZone, monthRange } = require('../utils/period');
 const { generateReportPDF, reportFileName } = require('../utils/pdfGenerator');
 const { reportRows } = require('../utils/reportRows');
 const { toCsv } = require('../utils/csv');
 const { activateLocale } = require('../i18n');
 const { reportAmounts, decimal, CURRENCY } = require('../utils/amounts');
+const { exactHours } = require('../utils/hours');
+const { roundingRuleOf, withBilledHours } = require('../utils/rounding');
 
 const INVALID_PERIOD = { error: 'month (1-12) and year are required' };
 const INVALID_AMOUNTS = { error: 'amounts must be 0 or 1' };
@@ -25,6 +28,13 @@ function reportPeriod(query) {
   if (!period) return null;
   const timeZone = parseTimeZone(query.tz);
   return { ...period, timeZone, range: monthRange(period, timeZone) };
+}
+
+// The rounding of the settings: the rule as { minutes, direction } or null for no rounding (utils/rounding.js), and
+// whether the report names the rule in a sentence (the PDF does; the Reports page reads the setting itself)
+async function roundingSettings() {
+  const settings = await Settings.get();
+  return { rounding: roundingRuleOf(settings), showRoundingNote: settings.showRoundingNote === true };
 }
 
 // The customer and the entries of a report's month, shared by the PDF and the CSV. Answers 400 or 404 itself and
@@ -48,12 +58,15 @@ async function loadReport(req, res) {
     return null;
   }
 
-  const entries = await TimeEntry.getByCustomerIdInRange(customerId, period.range);
-  if (entries.length === 0) {
+  const [stored, { rounding, showRoundingNote }] = await Promise.all([
+    TimeEntry.getByCustomerIdInRange(customerId, period.range),
+    roundingSettings(),
+  ]);
+  if (stored.length === 0) {
     res.status(404).json({ error: 'No time entries found for the specified month' });
     return null;
   }
-  return { customer, entries, period, amounts };
+  return { customer, entries: withBilledHours(stored, rounding), period, amounts, rounding, showRoundingNote };
 }
 
 // Sends a report file. contentDisposition escapes quotes and adds a UTF-8 file name for names like "Łódź".
@@ -70,9 +83,10 @@ exports.generatePDF = async (req, res) => {
     const report = await loadReport(req, res);
     if (!report) return;
 
-    const { customer, entries, period, amounts } = report;
+    const { customer, entries, period, amounts, rounding, showRoundingNote } = report;
     const { month, year, timeZone } = period;
-    const pdfBuffer = await generateReportPDF(entries, { customerName: customer.name, month, year, locale: lang, timeZone, ...(amounts && { amounts }) });
+    // The rounded hours are always in the PDF; the sentence that names the rule only when the setting says so
+    const pdfBuffer = await generateReportPDF(entries, { customerName: customer.name, month, year, locale: lang, timeZone, rounding: showRoundingNote ? rounding : null, ...(amounts && { amounts }) });
 
     // As a download, or with inline=1 to open in the browser (preview)
     sendFile(res, { body: pdfBuffer, contentType: 'application/pdf', customer, period, lang, extension: 'pdf', type: inline === '1' ? 'inline' : 'attachment' });
@@ -130,10 +144,13 @@ exports.getMonthlyReport = async (req, res) => {
     }
 
     const { month, year } = period;
-    const [entries, status] = await Promise.all([
+    const [stored, status, { rounding }] = await Promise.all([
       TimeEntry.getByCustomerIdInRange(customerId, period.range),
       ReportStatus.get(customerId, year, month),
+      roundingSettings(),
     ]);
+    // With a rounding rule each entry has billed_hours, and the report names the rule
+    const entries = withBilledHours(stored, rounding);
 
     res.json({
       customerId,
@@ -141,15 +158,13 @@ exports.getMonthlyReport = async (req, res) => {
       year,
       status,
       entries,
+      ...(rounding && { rounding }),
       ...(amounts && amountFields(entries)),
-      totalHours: entries.reduce((sum, entry) => {
-        if (entry.end_time) {
-          const diff = new Date(entry.end_time) - new Date(entry.start_time);
-          const hours = diff / (1000 * 60 * 60);
-          return sum + hours;
-        }
-        return sum;
-      }, 0).toFixed(2)
+      totalHours: entries.reduce(
+        // The rounded hours when there are any; otherwise the unrounded ones, so a sum of many entries keeps its precision
+        (sum, entry) => (entry.end_time ? sum + Number(entry.billed_hours ?? exactHours(entry.start_time, entry.end_time)) : sum),
+        0
+      ).toFixed(2)
     });
   } catch (err) {
     console.error(err);

@@ -1,6 +1,6 @@
 const { i18n } = require('@lingui/core');
 const { activateLocale } = require('../i18n');
-const { calculateHours } = require('./hours');
+const { reportHours } = require('./hours');
 const { reportAmounts, rateCentsOf } = require('./amounts');
 
 // Hours, rates and amounts in the active language: the shared two-decimal number format without a unit, e.g. "1,50" / "1.50"
@@ -45,7 +45,7 @@ function reportRows(entries, { customerName, locale, timeZone = 'UTC', amounts =
     text(customerName),
     text(entry.project_name),
     text(entry.description),
-    number(formatDecimal(calculateHours(entry.start_time, entry.end_time))),
+    number(formatDecimal(reportHours(entry))),
     ...(amounts ? [number(formatDecimal(rateCentsOf(entry) / 100)), number(formatDecimal(amountCents[index] / 100))] : []),
   ]);
   return { headers, rows };

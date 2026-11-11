@@ -3,7 +3,7 @@ const PDFDocument = require('pdfkit');
 const { i18n } = require('@lingui/core');
 const { activateLocale } = require('../i18n');
 
-const { calculateHours } = require('./hours');
+const { reportHours } = require('./hours');
 const { formatDecimal } = require('./reportRows');
 const { reportAmounts, formatMoney } = require('./amounts');
 
@@ -75,7 +75,19 @@ function drawCells(doc, cells, y, columns) {
   }
 }
 
-function drawTitle(doc, { customerName, month, year }) {
+// The rule of the rounded hours as a sentence, e.g. "Hours rounded up to quarter hours." (rounding: { minutes, direction })
+function roundingNote({ minutes, direction }) {
+  if (direction === 'nearest') {
+    return minutes === 15
+      ? i18n._({ id: 'report.rounding.nearest15', message: 'Hours rounded to the nearest quarter hour.' })
+      : i18n._({ id: 'report.rounding.nearest30', message: 'Hours rounded to the nearest half hour.' });
+  }
+  return minutes === 15
+    ? i18n._({ id: 'report.rounding.up15', message: 'Hours rounded up to quarter hours.' })
+    : i18n._({ id: 'report.rounding.up30', message: 'Hours rounded up to half hours.' });
+}
+
+function drawTitle(doc, { customerName, month, year, rounding }) {
   doc.fontSize(20).font(FONTS.bold.name);
   doc.text(i18n._({ id: 'report.title', message: 'TIME REPORT' }), { align: 'center' });
 
@@ -83,6 +95,10 @@ function drawTitle(doc, { customerName, month, year }) {
   const monthName = i18n.date(new Date(Date.UTC(year, month - 1, 1)), { month: 'long', year: 'numeric', timeZone: 'UTC' });
   doc.text(monthName, { align: 'center' });
   doc.text(i18n._({ id: 'report.customer', message: 'Customer: {customerName}' }, { customerName }), { align: 'center' });
+  if (rounding) {
+    doc.fontSize(10);
+    doc.text(roundingNote(rounding), { align: 'center' });
+  }
   doc.moveDown(1);
 }
 
@@ -164,14 +180,15 @@ function entryCells(entry, timeZone, cents) {
     ...(cents === undefined ? {} : { amount: formatMoney(cents) }),
     date: i18n.date(entry.start_time, { year: 'numeric', month: 'numeric', day: 'numeric', timeZone }),
     project: entry.project_name,
-    hours: formatHours(calculateHours(entry.start_time, entry.end_time)),
+    hours: formatHours(reportHours(entry)),
     description: entry.description || '',
   };
 }
 
 // All texts are translated synchronously after activateLocale, see src/i18n.js.
 // timeZone: the browser's, so dates show as on the Reports page.
-function generateReportPDF(entries, { customerName, month, year, locale, timeZone = 'UTC', amounts = false }) {
+// rounding: { minutes, direction } when the hours of the entries are rounded (billed_hours); the title names the rule.
+function generateReportPDF(entries, { customerName, month, year, locale, timeZone = 'UTC', amounts = false, rounding = null }) {
   return new Promise((resolve, reject) => {
     try {
       activateLocale(locale);
@@ -181,7 +198,7 @@ function generateReportPDF(entries, { customerName, month, year, locale, timeZon
       doc.on('data', (chunk) => chunks.push(chunk));
       doc.on('end', () => resolve(Buffer.concat(chunks)));
 
-      drawTitle(doc, { customerName, month, year });
+      drawTitle(doc, { customerName, month, year, rounding });
       const columns = columnsFor(amounts);
       const money = amounts ? reportAmounts(entries) : null;
       let y = drawTableHeader(doc, doc.y, columns);
@@ -189,7 +206,7 @@ function generateReportPDF(entries, { customerName, month, year, locale, timeZon
         y = drawRow(doc, entryCells(entry, timeZone, money?.entryCents[index]), y, columns);
       });
       if (money) y = drawProjects(doc, money.projects, y);
-      const totalHours = entries.reduce((sum, entry) => sum + Number(calculateHours(entry.start_time, entry.end_time)), 0);
+      const totalHours = entries.reduce((sum, entry) => sum + Number(reportHours(entry)), 0);
       drawTotal(doc, { hours: totalHours, cents: money?.totalCents }, y, amounts);
 
       doc.end();

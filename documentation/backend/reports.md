@@ -40,6 +40,27 @@ The money rules are in one place, `utils/amounts.js`, and are the same for all t
   printed in the entry rows and `totalHours` are not changed and still show the negative value.
 - The currency is always EUR; there is no currency setting. Projects keep the order of their first entry.
 
+## Rounding
+
+The settings `roundingMinutes` (0, 15 or 30) and `roundingDirection` (`up` or `nearest`), see [Settings API](settings.md),
+round the hours of each entry in the JSON report, the PDF and the CSV. The rule is in one place, `utils/rounding.js`:
+
+- Each entry is rounded **on its own**, not the sum of a day or month. The stored entries are never changed.
+- `up` rounds up to the next step (65 minutes at a quarter hour: 1.25 h; 75 minutes stay 1.25 h; 76 minutes: 1.50 h).
+  `nearest` rounds to the closest step and a halfway case rounds up (65 minutes: 1.00 h; 68 minutes: 1.25 h).
+- An entry longer than 0 never counts less than one step: 14 minutes at a half hour, to the nearest, are 0.50 h. An
+  entry of 0 minutes stays 0.
+- It works on whole seconds, so a multiple of a quarter hour has no float error.
+- A running entry has no end yet and counts 0 hours until it is stopped. An entry that ends before it starts is not
+  rounded and keeps its old behavior (see [Amounts](#amounts)).
+- The amounts use the rounded hours, so printed hours × rate is the printed amount on every row, and the project lines
+  and the total add up the rounded values.
+
+`reportController.js` reads the settings once per request (`roundingRuleOf`) and adds `billed_hours` (a string with two
+decimals) to each entry (`withBilledHours`); `reportHours(entry)` in `utils/hours.js` is the hours a report counts for
+an entry: `billed_hours` when there is one, otherwise the exact hours. Without a rule (the default) the entries get no
+`billed_hours` and every report is exactly as before.
+
 ## Time zone
 
 `tz` is the browser's IANA time zone (the frontend sends `Intl.DateTimeFormat().resolvedOptions().timeZone`). A month
@@ -67,7 +88,11 @@ October. Without `tz`, or with an unknown one, the month is taken in UTC.
 
 - Entries are all entries of the customer's projects whose **start time** lies in the month, newest first.
 - Running entries (no `end_time`) are included and count as 0 hours.
-- `totalHours` is a string with two decimals.
+- `totalHours` is a string with two decimals; with a rounding rule it is the sum of the rounded hours.
+- With a rounding rule (see [Rounding](#rounding)) each entry also has `billed_hours` (`null` for a running entry or
+  one that ends before it starts), and the report has `rounding`: `{ "minutes": 15, "direction": "up" }`. Without a
+  rule neither field is there. `rounding` is data about the rule, whatever the setting `showRoundingNote` says; the
+  Reports page reads that setting to decide whether to print the sentence.
 - `status` is the report status of that customer and month.
 - With `amounts=1` each entry also has `amount` (a string with two decimals), and the report has `currency` (`"EUR"`),
   `totalAmount` and `projects`, one line per project in the order of its first entry:
@@ -96,6 +121,11 @@ October. Without `tz`, or with an unknown one, the month is taken in UTC.
 - The `Content-Disposition` header is built with the `content-disposition` package: quotes are escaped, and names
   outside Latin-1 (`Łódź`, `€`) get an additional UTF-8 file name (`filename*=UTF-8''…`).
 - `404` if the customer doesn't exist or has no entries in the month.
+
+With a rounding rule the rows, the project lines and the total of the PDF show the rounded hours. The PDF names the
+rule below the customer line of the title (*Hours rounded up to quarter hours.*, in the report's language:
+`report.rounding.*` messages) only when the setting `showRoundingNote` is on (the controller then passes `rounding` to
+`generateReportPDF`; otherwise it passes `null`).
 
 ## CSV export
 
@@ -128,6 +158,10 @@ errors are the same: `400` for an invalid `month` or `year`, `404` for an unknow
   (`attachment`, non-ASCII names get `filename*=UTF-8''…`). `Content-Type` is `text/csv; charset=utf-8`.
 - `500` answers `Failed to export CSV report`.
 
+With a rounding rule the **Hours** column (and the amount columns) hold the rounded hours; the start and end times stay
+exact. The file has no note about the rule, because an extra line would break sorting and importing in spreadsheets: the
+Reports page and the PDF can name it (setting `showRoundingNote`).
+
 ## Report status
 
 Each customer's monthly report has a status: `draft`, `ready` or `sent`. It is set by hand on the Reports page and
@@ -143,13 +177,13 @@ row is a `draft`. The status is deleted with its customer.
 ## Limits
 
 - Amounts are EUR only and have to be asked for with `amounts=1`; the Reports page has a checkbox for it,
-  stored in the browser. The CSV has no total row.
+  starting from the setting *Show hourly rate and amounts in reports*. The CSV has no total row.
 - The CSV covers one customer and one month; no free date range, project filter or Excel file yet.
 
 ## Code
 
-`backend/src/routes/reports.js`, `controllers/reportController.js`, `utils/pdfGenerator.js`, `utils/reportRows.js`, `utils/amounts.js`, `utils/hours.js`, `utils/csv.js`,
+`backend/src/routes/reports.js`, `controllers/reportController.js`, `utils/pdfGenerator.js`, `utils/reportRows.js`, `utils/amounts.js`, `utils/hours.js`, `utils/rounding.js`, `utils/csv.js`,
 `models/TimeEntry.js` (`getByCustomerIdInRange`), `models/ReportStatus.js`, `utils/period.js`. Tests:
 `tests/reportStatus.model.test.js`, `tests/pdfGenerator.test.js`, `tests/period.test.js`, `tests/timeEntry.model.test.js`,
 `tests/pdfGenerator.real.test.js`, `tests/reportController.test.js`, `tests/csv.test.js`, `tests/reportRows.test.js`,
-`tests/report.export.routes.test.js`, `tests/amounts.test.js`.
+`tests/report.export.routes.test.js`, `tests/amounts.test.js`, `tests/rounding.test.js`.

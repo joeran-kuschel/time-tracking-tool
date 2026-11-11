@@ -8,6 +8,9 @@ jest.mock('../src/config/database', () => ({
 const Settings = require('../src/models/Settings');
 const OPTIONS = require('../src/config/settingsOptions');
 
+// What a fresh install has: no amounts, no rounding (direction up once a step is chosen), no sentence about it
+const DEFAULTS = { showAmounts: false, roundingMinutes: 0, roundingDirection: 'up', showRoundingNote: false };
+
 const rows = async () => (await mockPool.query('SELECT * FROM settings')).rows;
 
 describe('Settings', () => {
@@ -16,7 +19,7 @@ describe('Settings', () => {
   });
 
   test('shows no amounts in reports by default, also before anything is saved', async () => {
-    expect(await Settings.get()).toEqual({ showAmounts: false });
+    expect(await Settings.get()).toEqual(DEFAULTS);
   });
 
   test('the first read creates the single row, and later reads keep it single', async () => {
@@ -32,23 +35,83 @@ describe('Settings', () => {
   });
 
   test('saves an option, returns all options and stores it in its column', async () => {
-    expect(await Settings.update({ showAmounts: true })).toEqual({ showAmounts: true });
+    expect(await Settings.update({ showAmounts: true })).toEqual({ ...DEFAULTS, showAmounts: true });
 
     expect((await rows())[0].show_amounts).toBe(true);
-    expect(await Settings.get()).toEqual({ showAmounts: true });
+    expect(await Settings.get()).toEqual({ ...DEFAULTS, showAmounts: true });
+  });
+
+  test('does not round by default, and the direction is up', async () => {
+    expect(await Settings.get()).toMatchObject({ roundingMinutes: 0, roundingDirection: 'up' });
+  });
+
+  test('saves the rounding step and direction together in one statement', async () => {
+    expect(await Settings.update({ roundingMinutes: 15, roundingDirection: 'nearest' })).toEqual({
+      ...DEFAULTS, roundingMinutes: 15, roundingDirection: 'nearest',
+    });
+
+    const [row] = await rows();
+    expect([row.rounding_minutes, row.rounding_direction]).toEqual([15, 'nearest']);
+  });
+
+  test('saving one option leaves the others as they were', async () => {
+    await Settings.update({ roundingMinutes: 30, roundingDirection: 'nearest', showAmounts: true });
+
+    expect(await Settings.update({ roundingMinutes: 15 })).toEqual({ ...DEFAULTS, showAmounts: true, roundingMinutes: 15, roundingDirection: 'nearest' });
+  });
+
+  test.each([[{ roundingMinutes: 20 }], [{ roundingMinutes: -15 }], [{ roundingDirection: 'down' }]])(
+    'the database refuses %j', async (change) => {
+      await Settings.get();
+      const [name] = Object.keys(change);
+      const column = name === 'roundingMinutes' ? 'rounding_minutes' : 'rounding_direction';
+      const value = Object.values(change)[0];
+
+      await expect(mockPool.query(`UPDATE settings SET ${column} = $1`, [value])).rejects.toThrow();
+    }
+  );
+
+  test('reads values at the limits of the CHECK constraints', async () => {
+    await Settings.get();
+    await mockPool.query("UPDATE settings SET rounding_minutes = 30, rounding_direction = 'nearest', show_rounding_note = true");
+
+    expect(await Settings.get()).toEqual({ ...DEFAULTS, roundingMinutes: 30, roundingDirection: 'nearest', showRoundingNote: true });
+  });
+
+  test('the rounding step comes back as a number, not a string', async () => {
+    await Settings.update({ roundingMinutes: 15 });
+
+    expect((await Settings.get()).roundingMinutes).toBe(15);
+  });
+
+  test('migration 007 can run twice without error and keeps the saved values', async () => {
+    await Settings.update({ roundingMinutes: 15, roundingDirection: 'nearest', showRoundingNote: true });
+    const sql = require('fs').readFileSync(require('path').join(__dirname, '..', 'migrations', '007_settings_rounding.sql'), 'utf8');
+
+    await mockPool.query(sql);
+
+    expect(await Settings.get()).toMatchObject({ roundingMinutes: 15, roundingDirection: 'nearest', showRoundingNote: true });
+  });
+
+  test('does not name the rounding rule in reports by default, and saves the choice', async () => {
+    expect(await Settings.get()).toMatchObject({ showRoundingNote: false });
+
+    expect(await Settings.update({ showRoundingNote: true })).toMatchObject({ showRoundingNote: true });
+    expect((await rows())[0].show_rounding_note).toBe(true);
+    expect(await Settings.update({ showRoundingNote: false })).toMatchObject({ showRoundingNote: false });
   });
 
   test('saves the option back to false', async () => {
     await Settings.update({ showAmounts: true });
 
-    expect(await Settings.update({ showAmounts: false })).toEqual({ showAmounts: false });
+    expect(await Settings.update({ showAmounts: false })).toEqual(DEFAULTS);
   });
 
   test('saving nothing keeps the options and still creates the row', async () => {
     await Settings.update({ showAmounts: true });
 
-    expect(await Settings.update({})).toEqual({ showAmounts: true });
-    expect(await Settings.update(undefined)).toEqual({ showAmounts: true });
+    expect(await Settings.update({})).toEqual({ ...DEFAULTS, showAmounts: true });
+    expect(await Settings.update(undefined)).toEqual({ ...DEFAULTS, showAmounts: true });
     expect(await rows()).toHaveLength(1);
   });
 
@@ -67,7 +130,7 @@ describe('Settings', () => {
       const options = JSON.parse(JSON.stringify({ showAmounts: true }));
       Object.defineProperty(options, name, { value: 5, enumerable: true, configurable: true });
 
-      expect(await Settings.update(options)).toEqual({ showAmounts: true });
+      expect(await Settings.update(options)).toEqual({ ...DEFAULTS, showAmounts: true });
 
       expect((await rows())[0].id).toBe(1);
       expect((await mockPool.query('SELECT count(*) AS n FROM settings')).rows[0].n).toBe(1);

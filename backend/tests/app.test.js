@@ -155,6 +155,33 @@ describe('settings', () => {
     expect(Settings.update).not.toHaveBeenCalled();
   });
 
+  test.each([
+    [{ roundingMinutes: 0 }], [{ roundingMinutes: 15 }], [{ roundingMinutes: 30 }],
+    [{ roundingDirection: 'up' }], [{ roundingDirection: 'nearest' }],
+    [{ showRoundingNote: true }], [{ showRoundingNote: false }],
+    [{ roundingMinutes: 15, roundingDirection: 'nearest', showRoundingNote: true }],
+  ])('PUT saves the rounding setting %j', async (change) => {
+    Settings.update.mockResolvedValue(change);
+
+    const response = await send('PUT', change);
+
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual(change);
+    expect(Settings.update).toHaveBeenCalledWith(change);
+  });
+
+  test.each([
+    [{ roundingMinutes: 20 }], [{ roundingMinutes: -15 }], [{ roundingMinutes: '15' }], [{ roundingMinutes: 15.5 }],
+    [{ roundingMinutes: null }], [{ roundingDirection: 'down' }], [{ roundingDirection: 'UP' }], [{ roundingDirection: 15 }],
+    [{ showRoundingNote: 'true' }], [{ showRoundingNote: 1 }],
+    [{ roundingMinutes: 15, roundingDirection: 'sideways' }],
+  ])('PUT with the invalid rounding setting %j answers 400 and saves nothing', async (change) => {
+    const response = await send('PUT', change);
+
+    expect(response.status).toBe(400);
+    expect(Settings.update).not.toHaveBeenCalled();
+  });
+
   test('PUT with a valid and an unknown setting saves neither', async () => {
     const response = await send('PUT', { showAmounts: true, rounding: 15 });
 

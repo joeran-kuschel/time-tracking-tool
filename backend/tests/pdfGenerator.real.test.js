@@ -69,3 +69,29 @@ describe('a real PDF with amounts', () => {
     expect(text).not.toMatch(/<20ac>/i);
   });
 });
+
+describe('a real PDF with rounded hours', () => {
+  const rows = Array.from({ length: 70 }, (_, i) => ({
+    project_name: 'Website',
+    start_time: `2026-03-${String((i % 28) + 1).padStart(2, '0')}T08:00:00Z`,
+    end_time: `2026-03-${String((i % 28) + 1).padStart(2, '0')}T08:20:00Z`,
+    billed_hours: '0.25',
+    description: `Eintrag ${i}`,
+  }));
+  const options = { customerName: 'Muster GmbH', month: 3, year: 2026, locale: 'de' };
+  const pageCount = (pdf) => (pdf.toString('latin1').match(/\/Type \/Page\b/g) || []).length;
+
+  test('is longer than one page and still a valid PDF with the rounding sentence', async () => {
+    const pdf = await generateReportPDF(rows, { ...options, rounding: { minutes: 15, direction: 'nearest' } });
+
+    expect(pdf.subarray(0, 5).toString()).toBe('%PDF-');
+    expect(pageCount(pdf)).toBeGreaterThan(1);
+  });
+
+  test('the sentence adds no page break of its own: one page more at most than without it', async () => {
+    const without = await generateReportPDF(rows, options);
+    const withNote = await generateReportPDF(rows, { ...options, rounding: { minutes: 15, direction: 'up' } });
+
+    expect(pageCount(withNote) - pageCount(without)).toBeLessThanOrEqual(1);
+  });
+});

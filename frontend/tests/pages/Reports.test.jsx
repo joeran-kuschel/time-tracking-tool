@@ -933,6 +933,128 @@ describe('Reports, the amounts setting', () => {
   })
 })
 
+// A report whose hours the server rounded to quarter hours, up (billed_hours): 65 min is 1.25 h, 20 min is 0.50 h
+const roundedEntries = [
+  { id: 2, project_id: 7, project_name: 'Website', hourly_rate: '95.00', start_time: '2026-09-21T08:00:00Z', end_time: '2026-09-21T09:05:00Z', description: 'Konzept', billed_hours: '1.25' },
+  { id: 1, project_id: 8, project_name: 'Wartung', hourly_rate: '80.00', start_time: '2026-09-17T08:00:00Z', end_time: '2026-09-17T08:20:00Z', description: null, billed_hours: '0.50' },
+]
+const roundedReport = { entries: roundedEntries, totalHours: '1.75', rounding: { minutes: 15, direction: 'up' } }
+const roundedReportWithAmounts = {
+  ...roundedReport,
+  entries: [{ ...roundedEntries[0], amount: '118.75' }, { ...roundedEntries[1], amount: '40.00' }],
+  currency: 'EUR',
+  totalAmount: '158.75',
+  projects: [
+    { projectId: 7, name: 'Website', hours: '1.25', hourlyRate: '95.00', amount: '118.75' },
+    { projectId: 8, name: 'Wartung', hours: '0.50', hourlyRate: '80.00', amount: '40.00' },
+  ],
+}
+
+describe('Reports with rounded hours', () => {
+  beforeEach(() => {
+    settings.values.showRoundingNote = true
+  })
+
+  test('shows the rounded hours of each entry, the project lines and the total, and names the rule', async () => {
+    api.getMonthlyReport.mockResolvedValue(roundedReport)
+    renderReports('/reports/1')
+
+    expect(await screen.findByText('Konzept')).toBeInTheDocument()
+    expect(screen.getByText('Konzept').closest('tr')).toHaveTextContent('1,25 h')
+    expect(screen.getByText('—').closest('tr')).toHaveTextContent('0,50 h')
+    expect(screen.getByRole('row', { name: /Gesamt/ })).toHaveTextContent('Gesamt1,75 h')
+    expect(screen.getByText('Gesamtstunden').nextElementSibling).toHaveTextContent('1,75 h')
+    expect(screen.getByText('Website · 1,25 h')).toBeInTheDocument()
+    expect(screen.getByText('Wartung · 0,50 h')).toBeInTheDocument()
+    expect(screen.getByText('Stunden auf Viertelstunden aufgerundet.')).toBeInTheDocument()
+  })
+
+  test('shows the rounded hours with amounts, where hours x rate is the amount on every row', async () => {
+    api.getMonthlyReport.mockResolvedValue(roundedReportWithAmounts)
+    renderReports('/reports/1')
+
+    expect(await screen.findByText('Konzept')).toBeInTheDocument()
+    expect(screen.getByText('Konzept').closest('tr')).toHaveTextContent('1,25 h118,75 €')
+    expect(screen.getByRole('row', { name: /Gesamt/ })).toHaveTextContent('Gesamt1,75 h158,75 €')
+    expect(screen.getByText('Website · 1,25 h · 95,00 €/h · 118,75 €')).toBeInTheDocument()
+  })
+
+  test.each([
+    [{ minutes: 15, direction: 'up' }, 'en', 'Hours rounded up to quarter hours.'],
+    [{ minutes: 30, direction: 'up' }, 'en', 'Hours rounded up to half hours.'],
+    [{ minutes: 15, direction: 'nearest' }, 'en', 'Hours rounded to the nearest quarter hour.'],
+    [{ minutes: 30, direction: 'nearest' }, 'en', 'Hours rounded to the nearest half hour.'],
+    [{ minutes: 30, direction: 'nearest' }, 'de', 'Stunden auf die nächstgelegene halbe Stunde gerundet.'],
+    [{ minutes: 30, direction: 'up' }, 'de', 'Stunden auf halbe Stunden aufgerundet.'],
+    [{ minutes: 15, direction: 'nearest' }, 'de', 'Stunden auf die nächstgelegene Viertelstunde gerundet.'],
+  ])('names the rule %j in %s', async (rounding, locale, sentence) => {
+    switchLocale(locale)
+    api.getMonthlyReport.mockResolvedValue({ ...roundedReport, rounding })
+    renderReports('/reports/1')
+
+    expect(await screen.findByText(sentence)).toBeInTheDocument()
+  })
+
+  test('names no rule while the setting for the sentence is off, but still shows the rounded hours', async () => {
+    settings.values.showRoundingNote = false
+    api.getMonthlyReport.mockResolvedValue(roundedReport)
+    renderReports('/reports/1')
+
+    await screen.findByText('Konzept')
+
+    expect(screen.queryByText(/gerundet/)).not.toBeInTheDocument()
+    expect(screen.queryByText(/aufgerundet/)).not.toBeInTheDocument()
+    expect(screen.getByText('Konzept').closest('tr')).toHaveTextContent('1,25 h')
+    expect(screen.getByRole('row', { name: /Gesamt/ })).toHaveTextContent('Gesamt1,75 h')
+  })
+
+  test('names no rule while the settings could not be loaded', async () => {
+    settings.values = null
+    settings.error = 'Einstellungen konnten nicht geladen werden. Bitte versuche es erneut.'
+    api.getMonthlyReport.mockResolvedValue(roundedReport)
+    renderReports('/reports/1')
+
+    await screen.findByText('Konzept')
+
+    expect(screen.queryByText(/aufgerundet/)).not.toBeInTheDocument()
+  })
+
+  test('names no rule and shows the exact hours when the report is not rounded', async () => {
+    api.getMonthlyReport.mockResolvedValue(report)
+    renderReports('/reports/1')
+
+    await screen.findByText('Konzept')
+
+    expect(screen.queryByText(/gerundet/)).not.toBeInTheDocument()
+    expect(screen.getByText('Konzept').closest('tr')).toHaveTextContent('1,50 h')
+  })
+
+  test('an entry without billed hours (running, or ending before it starts) counts as before', async () => {
+    const running = { id: 3, project_id: 7, project_name: 'Website', hourly_rate: '95.00', start_time: '2026-09-22T08:00:00Z', end_time: null, description: 'läuft', billed_hours: null }
+    const backwards = { id: 4, project_id: 7, project_name: 'Website', hourly_rate: '95.00', start_time: '2026-09-22T12:00:00Z', end_time: '2026-09-22T11:00:00Z', description: 'rückwärts', billed_hours: null }
+    api.getMonthlyReport.mockResolvedValue({ ...roundedReport, entries: [roundedEntries[0], running, backwards], totalHours: '0.25' })
+    renderReports('/reports/1')
+
+    expect(await screen.findByText('läuft')).toBeInTheDocument()
+    expect(screen.getByText('läuft').closest('tr')).toHaveTextContent('0,00 h')
+    expect(screen.getByText('rückwärts').closest('tr')).toHaveTextContent('-1,00 h')
+    expect(screen.getByRole('row', { name: /Gesamt/ })).toHaveTextContent('Gesamt0,25 h')
+  })
+
+  test('has no detectable accessibility violations with the rounding sentence, in German and English', async () => {
+    api.getMonthlyReport.mockResolvedValue(roundedReportWithAmounts)
+    settings.values.showAmounts = true
+    const { container } = renderReports('/reports/1')
+    await screen.findByText('Konzept')
+    expect(await axe(container)).toHaveNoViolations()
+
+    switchLocale('en')
+
+    expect(await screen.findByText('Hours rounded up to quarter hours.')).toBeInTheDocument()
+    expect(await axe(container)).toHaveNoViolations()
+  })
+})
+
 // With the real useSettings (as App uses it): a retry clears the error for a moment, like in the app
 describe('Reports, retrying the settings', () => {
   const optionLabel = 'Stundensatz und Beträge anzeigen'
