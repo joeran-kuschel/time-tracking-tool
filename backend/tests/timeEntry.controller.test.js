@@ -1,8 +1,10 @@
 jest.mock('../src/models/TimeEntry');
 jest.mock('../src/models/Project');
+jest.mock('../src/models/Settings');
 
 const TimeEntry = require('../src/models/TimeEntry');
 const Project = require('../src/models/Project');
+const Settings = require('../src/models/Settings');
 const controller = require('../src/controllers/timeEntryController');
 
 function mockResponse() {
@@ -322,6 +324,10 @@ describe('timeEntryController.getByCustomerId', () => {
     jest.resetAllMocks();
   });
 
+  beforeEach(() => {
+    Settings.get.mockResolvedValue({ showAmounts: false, roundingMinutes: 0, roundingDirection: 'up', showRoundingNote: false });
+  });
+
   test('answers with the customer\'s entries', async () => {
     TimeEntry.getByCustomerId.mockResolvedValue([{ id: 1 }]);
     const res = mockResponse();
@@ -330,6 +336,60 @@ describe('timeEntryController.getByCustomerId', () => {
 
     expect(TimeEntry.getByCustomerId).toHaveBeenCalledWith('3');
     expect(res.json).toHaveBeenCalledWith([{ id: 1 }]);
+  });
+
+  describe('with a rounding rule', () => {
+    const entry = (id, minutes, rate = '80.00') => ({
+      id, project_id: 7, project_name: 'Web', hourly_rate: rate,
+      start_time: '2026-09-21T08:00:00Z', end_time: new Date(Date.UTC(2026, 8, 21, 8, minutes)).toISOString(),
+    });
+
+    beforeEach(() => {
+      Settings.get.mockResolvedValue({ showAmounts: false, roundingMinutes: 15, roundingDirection: 'up', showRoundingNote: false });
+    });
+
+    test('adds billed_hours and billed_amount to each entry and keeps the entries exact', async () => {
+      TimeEntry.getByCustomerId.mockResolvedValue([entry(1, 65), entry(2, 20)]);
+      const res = mockResponse();
+
+      await controller.getByCustomerId({ params: { customerId: '3' } }, res);
+
+      const body = res.json.mock.calls[0][0];
+      expect(body.map((e) => [e.billed_hours, e.billed_amount])).toEqual([['1.25', '100.00'], ['0.50', '40.00']]);
+      expect(body.every((e) => e.billed_rule.minutes === 15 && e.billed_rule.direction === 'up')).toBe(true);
+      expect(body[0].end_time).toBe(entry(1, 65).end_time);
+    });
+
+    test('a running entry and one that ends before it starts have neither', async () => {
+      const running = { ...entry(3, 10), end_time: null };
+      const backwards = { ...entry(4, 10), start_time: '2026-09-21T12:00:00Z', end_time: '2026-09-21T11:00:00Z' };
+      TimeEntry.getByCustomerId.mockResolvedValue([running, backwards]);
+      const res = mockResponse();
+
+      await controller.getByCustomerId({ params: { customerId: '3' } }, res);
+
+      expect(res.json.mock.calls[0][0].map((e) => [e.billed_hours, e.billed_amount])).toEqual([[null, null], [null, null]]);
+    });
+
+    test('reads the settings once', async () => {
+      TimeEntry.getByCustomerId.mockResolvedValue([entry(1, 65)]);
+
+      await controller.getByCustomerId({ params: { customerId: '3' } }, mockResponse());
+
+      expect(Settings.get).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  test('answers 500 when the settings can not be read', async () => {
+    TimeEntry.getByCustomerId.mockResolvedValue([{ id: 1 }]);
+    Settings.get.mockRejectedValue(new Error('down'));
+    jest.spyOn(console, 'error').mockImplementation(() => {});
+    const res = mockResponse();
+
+    await controller.getByCustomerId({ params: { customerId: '3' } }, res);
+
+    expect(res.status).toHaveBeenCalledWith(500);
+    console.error.mockRestore();
   });
 
   test('answers 500 when the query fails', async () => {

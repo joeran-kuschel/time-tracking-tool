@@ -56,6 +56,12 @@ Next to the timer, a card sums up the selected customer's current month (e.g. *S
 The summary is calculated in the browser from the entries the Time tracking page already loaded (`summary.js`), so it needs no
 extra request. It always covers all projects, also while one project is selected.
 
+With a rounding rule ([Settings](settings.md): *Round time entries*) the summary counts the **rounded hours** of the report
+(the server gives each entry `billed_hours`, `billed_amount` and `billed_rule`), so its hours and amounts equal the report of
+the month, and a note under the month names the rule the entries were rounded with (*Hours rounded up to quarter
+hours.*), so it always matches the figures. The entries below stay exact: their
+times, hours and totals are the tracked time. Without a rounding rule nothing changes.
+
 ## Add dialogs
 
 Adding a customer, a project or a time entry happens in a modal dialog (native `<dialog>`, `components/Modal.jsx`):

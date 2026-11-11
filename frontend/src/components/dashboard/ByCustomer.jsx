@@ -2,13 +2,15 @@ import { useId } from 'react'
 import { Link } from 'react-router'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { formatAmount, formatHours } from '../../format'
+import RoundingNote from '../RoundingNote'
 import ShareOfTotal from '../ShareOfTotal'
 import { trackingPath } from '../../routes'
 import { ui } from '../../ui'
 
-// Hours of the month per customer as horizontal bars, with projects and amount.
+// Hours of the month per customer as horizontal bars, with projects and amount. The hours are the billed ones: rounded
+// when there is a rounding rule (rounding: { minutes, direction }), which a note says.
 // rows: from byCustomer(); each links to the customer on the Time tracking page.
-function ByCustomer({ rows, now }) {
+function ByCustomer({ rows, now, rounding }) {
   const { i18n } = useLingui()
   const headingId = useId()
   const monthName = i18n.date(now, { month: 'long' })
@@ -18,6 +20,7 @@ function ByCustomer({ rows, now }) {
   return (
     <section aria-labelledby={headingId} className={`${ui.card} flex flex-col gap-3`}>
       <h2 id={headingId} className="text-lg font-semibold"><Trans>By customer · {monthName}</Trans></h2>
+      {rows.length > 0 && <RoundingNote rounding={rounding} />}
       {rows.length === 0 ? (
         <p className="text-sm text-muted"><Trans>No time recorded this month yet.</Trans></p>
       ) : (

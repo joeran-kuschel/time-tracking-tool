@@ -14,6 +14,7 @@ import ByCustomer from '../components/dashboard/ByCustomer'
 import BillingTable from '../components/dashboard/BillingTable'
 import RecentEntries from '../components/dashboard/RecentEntries'
 import { reportPath } from '../routes'
+import { roundingOfEntries } from '../rounding'
 import { ui } from '../ui'
 
 // The start page: track time, the month's figures, chart and billing, and the latest entries.
@@ -49,6 +50,8 @@ function Dashboard({ timer }) {
 
   const today = i18n.date(now, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
   const customers = data ? byCustomer(monthEntries(data.entries, now)) : []
+  // The rule the server applied to the billing figures, named by the notes under them
+  const rounding = data ? roundingOfEntries(data.entries) : null
 
   return (
     <div className="mx-auto flex w-full max-w-7xl flex-col gap-5 p-4 sm:p-8">
@@ -80,17 +83,18 @@ function Dashboard({ timer }) {
               timer={timer}
               onSaved={load}
             />
-            <KeyFigures entries={data.entries} lastMonthReports={data.lastMonthReports} now={now} />
+            <KeyFigures entries={data.entries} lastMonthReports={data.lastMonthReports} now={now} rounding={rounding} />
           </div>
           <div className="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,24rem)]">
             <HoursChart entries={data.entries} now={now} />
-            <ByCustomer rows={customers} now={now} />
+            <ByCustomer rows={customers} now={now} rounding={rounding} />
           </div>
           <div className="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,24rem)]">
             <BillingTable
               rows={customers}
               now={now}
               lastMonthReports={data.lastMonthReports}
+              rounding={rounding}
             />
             <RecentEntries entries={data.recent} />
           </div>

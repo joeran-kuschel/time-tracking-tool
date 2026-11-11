@@ -1,6 +1,8 @@
 const TimeEntry = require('../models/TimeEntry');
 const Project = require('../models/Project');
+const Settings = require('../models/Settings');
 const { parseEntryFilter } = require('../utils/entryFilter');
+const { roundingRuleOf, withBilling } = require('../utils/rounding');
 
 const isValidTime = (value) => typeof value === 'string' && !Number.isNaN(Date.parse(value));
 
@@ -120,10 +122,12 @@ exports.getByProjectId = async (req, res) => {
   }
 };
 
+// The customer's entries. With a rounding rule (settings) each one also has billed_hours, billed_amount and billed_rule
+// for the month summary and its note; the entries themselves stay exact (utils/rounding.js).
 exports.getByCustomerId = async (req, res) => {
   try {
-    const entries = await TimeEntry.getByCustomerId(req.params.customerId);
-    res.json(entries);
+    const [entries, settings] = await Promise.all([TimeEntry.getByCustomerId(req.params.customerId), Settings.get()]);
+    res.json(withBilling(entries, roundingRuleOf(settings)));
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Failed to fetch time entries' });

@@ -56,6 +56,12 @@ round the hours of each entry in the JSON report, the PDF and the CSV. The rule 
 - The amounts use the rounded hours, so printed hours × rate is the printed amount on every row, and the project lines
   and the total add up the rounded values.
 
+The same rounded hours reach the Dashboard and the month summary of the Time tracking page, so their billing figures equal
+the report: `withBilling` in `utils/rounding.js` adds `billed_hours`, `billed_amount` and `billed_rule` (the amount of an entry in cents
+by the rule above, as a string with two decimals) to the entries of `GET /api/dashboard` ([Dashboard
+API](dashboard.md)) and `GET /api/time-entries/customer/:id` ([Time entries API](time-entries.md)). The tracked time
+(timer, entry lists, Entries search, the Dashboard's week and month hours and chart) is never rounded.
+
 `reportController.js` reads the settings once per request (`roundingRuleOf`) and adds `billed_hours` (a string with two
 decimals) to each entry (`withBilledHours`); `reportHours(entry)` in `utils/hours.js` is the hours a report counts for
 an entry: `billed_hours` when there is one, otherwise the exact hours. Without a rule (the default) the entries get no

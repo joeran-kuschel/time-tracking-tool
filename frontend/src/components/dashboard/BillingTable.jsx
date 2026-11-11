@@ -4,6 +4,7 @@ import { Trans, useLingui } from '@lingui/react/macro'
 import { api } from '../../api'
 import { formatAmount, formatHours, formatRate } from '../../format'
 import { reportPath, trackingPath } from '../../routes'
+import RoundingNote from '../RoundingNote'
 import { ui } from '../../ui'
 
 const cell = 'px-3 py-2.5 border-b border-line-soft'
@@ -12,8 +13,10 @@ const footCell = 'px-3 py-3 border-t border-ink font-semibold'
 const link = 'inline-flex min-h-[2.75rem] items-center text-sm font-medium text-accent underline underline-offset-2 hover:text-accent-dark'
 
 // The month's billing per customer, with a PDF preview of each report, and a notice about last month's
-// reports that are not sent yet. rows: from byCustomer(); lastMonthReports: from GET /api/dashboard.
-function BillingTable({ rows, now, lastMonthReports }) {
+// reports that are not sent yet. The hours are the billed ones: rounded when there is a rounding rule
+// (rounding: { minutes, direction }), which a note says.
+// rows: from byCustomer(); lastMonthReports: from GET /api/dashboard.
+function BillingTable({ rows, now, lastMonthReports, rounding }) {
   const { t, i18n } = useLingui()
   const headingId = useId()
   const monthName = i18n.date(now, { month: 'long', year: 'numeric' })
@@ -33,6 +36,7 @@ function BillingTable({ rows, now, lastMonthReports }) {
   return (
     <section aria-labelledby={headingId} className={`${ui.card} flex flex-col gap-4`}>
       <h2 id={headingId} className="text-lg font-semibold"><Trans>Billing · {monthName}</Trans></h2>
+      {rows.length > 0 && <RoundingNote rounding={rounding} className="-mt-2 text-sm text-muted" />}
 
       {rows.length === 0 ? (
         <p className="text-sm text-muted"><Trans>No time recorded this month yet.</Trans></p>

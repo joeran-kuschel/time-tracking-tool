@@ -13,6 +13,9 @@ header.
 | | **Direction** (*Richtung*) | up | **Up** (*Aufrunden*) or **To the nearest** (*Auf- oder abrunden (nächstgelegene Stufe)*). Disabled while the step is *No rounding*, with a hint that says why. |
 | | **Name the rounding rule in reports** (*Rundungsregel in Berichten nennen*) | off | Adds a sentence such as *Hours rounded up to quarter hours.* to the Reports page and the PDF. Disabled while the step is *No rounding*, with a hint that says why. |
 
+Rounding applies to the billing numbers: the reports, the Dashboard's billing figures and the month summary on the Time
+tracking page ([Dashboard](dashboard.md#rounded-hours)).
+
 The group has a note: the rounding also applies to the reports of past months; PDF and CSV files that were already
 downloaded do not change. Stored entries are never changed, and the timer, the entry lists and the Entries search keep
 showing the exact times.

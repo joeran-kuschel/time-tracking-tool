@@ -1,19 +1,21 @@
 import { useId } from 'react'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { formatAmount, formatHours } from '../../format'
-import { byCustomer, monthEntries, startOfWeek, weekHours, workingDaysSoFar } from '../../dashboard'
+import { byCustomer, monthEntries, startOfWeek, trackedHours, weekHours, workingDaysSoFar } from '../../dashboard'
 import { ui } from '../../ui'
 
 // Four figures: hours this week, hours this month (with the average per working day so far),
 // the billable amount of the month, and how many of last month's reports were sent.
+// The hours are the tracked time, exact; the billable amount counts the rounded hours when there is a rounding rule.
 // lastMonthReports: { month, year, reports: [{ customer_id, customer_name, status }] }
-function KeyFigures({ entries, lastMonthReports, now }) {
+// rounding: { minutes, direction } of the rule, or null/undefined
+function KeyFigures({ entries, lastMonthReports, now, rounding }) {
   const { i18n } = useLingui()
   const headingId = useId()
 
   const month = monthEntries(entries, now)
   const customers = byCustomer(month)
-  const monthHours = customers.reduce((sum, c) => sum + c.hours, 0)
+  const monthHours = trackedHours(month)
   const monthAmount = customers.reduce((sum, c) => sum + c.amount, 0)
   const workingDays = workingDaysSoFar(now)
 
@@ -30,7 +32,7 @@ function KeyFigures({ entries, lastMonthReports, now }) {
   const figures = [
     { label: <Trans>This week</Trans>, value: formatHours(i18n, weekHours(entries, now)), note: <Trans>{weekStart} to {today}</Trans> },
     { label: <Trans>This month</Trans>, value: formatHours(i18n, monthHours), note: <Trans>{days} working days, {perDay} per day</Trans> },
-    { label: <Trans>Billable in {monthName}</Trans>, value: formatAmount(i18n, monthAmount), note: <Trans>Hours × hourly rate of each project</Trans> },
+    { label: <Trans>Billable in {monthName}</Trans>, value: formatAmount(i18n, monthAmount), note: rounding ? <Trans>Rounded hours × hourly rate of each project</Trans> : <Trans>Hours × hourly rate of each project</Trans> },
     {
       label: <Trans>Reports sent for {lastMonthName}</Trans>,
       value: total ? <Trans>{sent} of {total}</Trans> : '–',

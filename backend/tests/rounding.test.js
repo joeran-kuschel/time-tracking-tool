@@ -1,4 +1,5 @@
-const { roundingRuleOf, billedHours, withBilledHours } = require('../src/utils/rounding');
+const { roundingRuleOf, billedHours, withBilledHours, withBilling } = require('../src/utils/rounding');
+const { reportAmounts, decimal } = require('../src/utils/amounts');
 
 // An entry of the given length in minutes (and seconds)
 const entry = (minutes, seconds = 0) => ({
@@ -104,5 +105,85 @@ describe('withBilledHours', () => {
     expect(result.map((e) => e.billed_hours)).toEqual(['1.25', '0.50']);
     expect(entries[0]).not.toHaveProperty('billed_hours');
     expect(result[0].start_time).toBe(entries[0].start_time);
+  });
+});
+
+describe('withBilling', () => {
+  const priced = (minutes, rate, extra = {}) => ({ project_id: 1, project_name: 'Web', hourly_rate: rate, ...entry(minutes), ...extra });
+
+  test('returns the entries as they are without a rule', () => {
+    const entries = [priced(65, '80.00')];
+
+    expect(withBilling(entries, null)).toBe(entries);
+  });
+
+  test('every entry carries the rule that produced the values, also a running one', () => {
+    const running = priced(10, '80.00', { end_time: null });
+
+    const result = withBilling([priced(65, '80.00'), running], nearest30);
+
+    expect(result.map((e) => e.billed_rule)).toEqual([{ minutes: 30, direction: 'nearest' }, { minutes: 30, direction: 'nearest' }]);
+  });
+
+  test('adds billed_hours and the amount in cents of the rounded hours, as strings with two decimals', () => {
+    const result = withBilling([priced(65, '80.00'), priced(20, '95.00')], up15);
+
+    expect(result.map((e) => [e.billed_hours, e.billed_amount])).toEqual([['1.25', '100.00'], ['0.50', '47.50']]);
+  });
+
+  test('rounds the amount of each entry to cents, like the report: 0.25 h at 33.33 is 8.33', () => {
+    const [result] = withBilling([priced(7, '33.33')], up15);
+
+    expect(result.billed_hours).toBe('0.25');
+    expect(result.billed_amount).toBe('8.33');
+  });
+
+  // The Dashboard and the month summary add these up; the report adds up its entry amounts the same way
+  test('the sum of the billed amounts equals the total amount of the report for the same entries', () => {
+    const entries = [
+      priced(7, '33.33'), priced(22, '33.33'), priced(37, '33.33'), priced(61, '33.33'),
+      priced(5, '99.99'), priced(44, '99.99'), priced(91, '12.34'), priced(1, '0.07'),
+    ];
+    for (const rule of [up15, nearest15, up30, nearest30]) {
+      const billed = withBilling(entries, rule);
+      const cents = billed.reduce((sum, e) => sum + Math.round(Number(e.billed_amount) * 100), 0);
+
+      expect(decimal(cents)).toBe(decimal(reportAmounts(withBilledHours(entries, rule)).totalCents));
+    }
+  });
+
+  test('the sum of the billed hours equals the hours of the report\'s project lines', () => {
+    const entries = [priced(7, '33.33'), priced(22, '33.33'), priced(37, '33.33')];
+    const billed = withBilling(entries, nearest15);
+
+    const hours = billed.reduce((sum, e) => sum + Math.round(Number(e.billed_hours) * 100), 0);
+
+    expect(hours).toBe(reportAmounts(withBilledHours(entries, nearest15)).projects[0].hundredths);
+  });
+
+  test('a running entry and one that ends before it starts have neither billed field set', () => {
+    const running = priced(10, '80.00', { end_time: null });
+    const backwards = priced(10, '80.00', { start_time: '2026-09-21T12:00:00Z', end_time: '2026-09-21T11:00:00Z' });
+
+    const result = withBilling([running, backwards], up15);
+
+    expect(result.map((e) => [e.billed_hours, e.billed_amount])).toEqual([[null, null], [null, null]]);
+    expect(result.every((e) => e.billed_rule.minutes === 15)).toBe(true);
+  });
+
+  test('an entry without a rate has no amount to bill: 0.00', () => {
+    const [result] = withBilling([priced(65, undefined)], up15);
+
+    expect(result.billed_hours).toBe('1.25');
+    expect(result.billed_amount).toBe('0.00');
+  });
+
+  test('leaves the entries alone', () => {
+    const entries = [priced(65, '80.00')];
+
+    withBilling(entries, up15);
+
+    expect(entries[0]).not.toHaveProperty('billed_hours');
+    expect(entries[0]).not.toHaveProperty('billed_amount');
   });
 });

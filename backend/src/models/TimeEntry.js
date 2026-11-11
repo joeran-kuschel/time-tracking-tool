@@ -67,10 +67,10 @@ class TimeEntry {
     return result.rows;
   }
 
-  // All entries of a customer's projects with the project name, grouped by project name, newest first
+  // All entries of a customer's projects with the project name and its hourly rate, grouped by project name, newest first
   static async getByCustomerId(customerId) {
     const result = await pool.query(
-      `SELECT te.*, p.name as project_name
+      `SELECT te.*, p.name as project_name, p.hourly_rate
        FROM time_entries te
        JOIN projects p ON te.project_id = p.id
        WHERE p.customer_id = $1
