@@ -1,18 +1,276 @@
-import { describe, expect, test } from 'vitest'
-import { render } from '../support/render'
+import { beforeEach, describe, expect, test, vi } from 'vitest'
+import userEvent from '@testing-library/user-event'
+import { msg } from '@lingui/core/macro'
+import { act, render, screen, within } from '../support/render'
 import { axe } from '../support/axe'
 import Settings from '@/pages/Settings'
+import { useSettings } from '@/hooks/useSettings'
+import { api, ApiError } from '@/api'
+import { activateLocale } from '@/i18n'
+
+vi.mock('@/api', async (importOriginal) => ({
+  ...(await importOriginal()),
+  api: { getSettings: vi.fn(), updateSettings: vi.fn() },
+}))
+
+// Test groups: there is no real option yet. The texts are English because the catalogs only hold texts of src/
+const groups = [
+  {
+    id: 'billing',
+    label: msg`Billing group`,
+    options: [
+      { name: 'showAmounts', type: 'checkbox', label: msg`Show amounts`, hint: msg`Applies to every report.` },
+      {
+        name: 'step',
+        type: 'select',
+        label: msg`Step`,
+        choices: [{ value: 'none', label: msg`No rounding` }, { value: '15', label: msg`Quarter hour` }],
+      },
+    ],
+  },
+  { id: 'details', label: msg`Details group`, options: [{ name: 'tidy', type: 'checkbox', label: msg`Tidy` }] },
+  { id: 'empty', label: msg`Empty group`, options: [] },
+]
+const initial = { showAmounts: false, step: 'none', tidy: true }
+
+// App's part: loads the settings once and hands them to the page
+function Harness({ list = groups }) {
+  const settings = useSettings()
+  return <Settings settings={settings} groups={list} />
+}
+
+beforeEach(() => {
+  vi.resetAllMocks()
+  vi.spyOn(console, 'error').mockImplementation(() => {})
+  api.getSettings.mockResolvedValue(initial)
+  api.updateSettings.mockImplementation(async (changes) => ({ ...initial, ...changes }))
+})
 
 describe('Settings', () => {
-  test('has a heading and says there are no options yet', () => {
-    render(<Settings />)
+  test('has a heading and says there are no options while the list is empty', async () => {
+    render(<Harness list={[]} />)
 
-    expect(document.querySelector('h1')).toHaveTextContent('Einstellungen')
-    expect(document.body).toHaveTextContent('Es gibt noch keine Optionen.')
+    expect(screen.getByRole('heading', { level: 1, name: 'Einstellungen' })).toBeInTheDocument()
+    expect(screen.getByText('Es gibt noch keine Optionen.')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Speichern' })).not.toBeInTheDocument()
   })
 
-  test('has no detectable accessibility violations', async () => {
-    const { container } = render(<Settings />)
+  test('shows every group with options as a labelled group of fields, and hides a group without options', async () => {
+    render(<Harness />)
+
+    const billing = await screen.findByRole('group', { name: 'Billing group' })
+    expect(within(billing).getByRole('checkbox', { name: 'Show amounts' })).not.toBeChecked()
+    expect(within(billing).getByRole('combobox', { name: 'Step' })).toHaveValue('none')
+    expect(within(screen.getByRole('group', { name: 'Details group' })).getByRole('checkbox', { name: 'Tidy' })).toBeChecked()
+    expect(screen.queryByRole('group', { name: 'Empty group' })).not.toBeInTheDocument()
+    expect(screen.getAllByRole('button', { name: 'Speichern' })).toHaveLength(1)
+  })
+
+  test('describes a field by its hint', async () => {
+    render(<Harness />)
+
+    expect(await screen.findByRole('checkbox', { name: 'Show amounts' })).toHaveAccessibleDescription('Applies to every report.')
+  })
+
+  test('saves the changes of several groups in one request and confirms it', async () => {
+    render(<Harness />)
+
+    await userEvent.click(await screen.findByRole('checkbox', { name: 'Show amounts' }))
+    await userEvent.selectOptions(screen.getByRole('combobox', { name: 'Step' }), '15')
+    await userEvent.click(screen.getByRole('checkbox', { name: 'Tidy' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Speichern' }))
+
+    expect(api.updateSettings).toHaveBeenCalledTimes(1)
+    expect(api.updateSettings).toHaveBeenCalledWith({ showAmounts: true, step: '15', tidy: false })
+    expect(await screen.findByText('Einstellungen gespeichert.')).toBeInTheDocument()
+    expect(screen.getByRole('status')).toHaveTextContent('Einstellungen gespeichert.')
+    expect(screen.getByRole('checkbox', { name: 'Show amounts' })).toBeChecked()
+    expect(screen.getByRole('combobox', { name: 'Step' })).toHaveValue('15')
+  })
+
+  test('sends only what changed', async () => {
+    render(<Harness />)
+
+    await userEvent.click(await screen.findByRole('checkbox', { name: 'Show amounts' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Speichern' }))
+
+    expect(api.updateSettings).toHaveBeenCalledWith({ showAmounts: true })
+  })
+
+  test('sends nothing and says so when nothing changed, also after changing a field back', async () => {
+    render(<Harness />)
+    const checkbox = await screen.findByRole('checkbox', { name: 'Show amounts' })
+
+    await userEvent.click(screen.getByRole('button', { name: 'Speichern' }))
+    expect(screen.getByRole('status')).toHaveTextContent('Nichts geändert.')
+
+    await userEvent.click(checkbox)
+    await userEvent.click(checkbox)
+    await userEvent.click(screen.getByRole('button', { name: 'Speichern' }))
+
+    expect(api.updateSettings).not.toHaveBeenCalled()
+    expect(screen.getByRole('status')).toHaveTextContent('Nichts geändert.')
+  })
+
+  test('clears the confirmation when the next change starts', async () => {
+    render(<Harness />)
+
+    await userEvent.click(await screen.findByRole('checkbox', { name: 'Show amounts' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Speichern' }))
+    expect(await screen.findByText('Einstellungen gespeichert.')).toBeInTheDocument()
+
+    await userEvent.click(screen.getByRole('checkbox', { name: 'Tidy' }))
+
+    expect(screen.queryByText('Einstellungen gespeichert.')).not.toBeInTheDocument()
+  })
+
+  test('shows an error and keeps the input when saving fails, and saves it on the next try', async () => {
+    api.updateSettings.mockRejectedValueOnce(new ApiError(500, 'boom'))
+    render(<Harness />)
+
+    await userEvent.click(await screen.findByRole('checkbox', { name: 'Show amounts' }))
+    await userEvent.selectOptions(screen.getByRole('combobox', { name: 'Step' }), '15')
+    await userEvent.click(screen.getByRole('button', { name: 'Speichern' }))
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('Einstellungen konnten nicht gespeichert werden. Bitte versuche es erneut.')
+    expect(screen.getByRole('checkbox', { name: 'Show amounts' })).toBeChecked()
+    expect(screen.getByRole('combobox', { name: 'Step' })).toHaveValue('15')
+    expect(screen.queryByText('Einstellungen gespeichert.')).not.toBeInTheDocument()
+
+    await userEvent.click(screen.getByRole('button', { name: 'Speichern' }))
+
+    expect(api.updateSettings).toHaveBeenLastCalledWith({ showAmounts: true, step: '15' })
+    expect(await screen.findByText('Einstellungen gespeichert.')).toBeInTheDocument()
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+  })
+
+  test('says when the server is not reachable', async () => {
+    api.updateSettings.mockRejectedValueOnce(new ApiError(0, 'unreachable'))
+    render(<Harness />)
+
+    await userEvent.click(await screen.findByRole('checkbox', { name: 'Tidy' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Speichern' }))
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('Der Server ist nicht erreichbar.')
+  })
+
+  test('shows loading, then an error with a retry when the settings can not be loaded', async () => {
+    api.getSettings.mockRejectedValueOnce(new ApiError(500, 'boom'))
+    render(<Harness />)
+
+    expect(screen.getByText('Laden...')).toBeInTheDocument()
+    expect(await screen.findByRole('alert')).toHaveTextContent('Einstellungen konnten nicht geladen werden.')
+    expect(screen.queryByRole('button', { name: 'Speichern' })).not.toBeInTheDocument()
+
+    await userEvent.click(screen.getByRole('button', { name: 'Erneut versuchen' }))
+
+    expect(await screen.findByRole('group', { name: 'Billing group' })).toBeInTheDocument()
+    expect(api.getSettings).toHaveBeenCalledTimes(2)
+  })
+
+  test('describes a field without a hint by nothing', async () => {
+    render(<Harness />)
+
+    expect(await screen.findByRole('checkbox', { name: 'Tidy' })).toHaveAccessibleDescription('')
+    expect(screen.getByRole('combobox', { name: 'Step' })).toHaveAccessibleDescription('')
+  })
+
+  test('keeps the status region in the page, empty until Save is pressed', async () => {
+    render(<Harness />)
+    await screen.findByRole('group', { name: 'Billing group' })
+
+    expect(screen.getByRole('status')).toBeEmptyDOMElement()
+  })
+
+  test('shows an option the backend did not return as off and saves its change', async () => {
+    api.getSettings.mockResolvedValue({ step: 'none', tidy: true })
+    render(<Harness />)
+
+    const checkbox = await screen.findByRole('checkbox', { name: 'Show amounts' })
+    expect(checkbox).not.toBeChecked()
+    await userEvent.click(checkbox)
+    await userEvent.click(screen.getByRole('button', { name: 'Speichern' }))
+
+    expect(api.updateSettings).toHaveBeenCalledWith({ showAmounts: true })
+  })
+
+  test('sends one request when Save is pressed twice while saving', async () => {
+    let finish
+    api.updateSettings.mockReturnValueOnce(new Promise((resolve) => { finish = resolve }))
+    render(<Harness />)
+
+    await userEvent.click(await screen.findByRole('checkbox', { name: 'Tidy' }))
+    const save = screen.getByRole('button', { name: 'Speichern' })
+    await userEvent.click(save)
+    await userEvent.click(save)
+    await act(async () => finish({ ...initial, tidy: false }))
+
+    expect(api.updateSettings).toHaveBeenCalledTimes(1)
+  })
+
+  test('shows the saved value of an option named like a prototype key', async () => {
+    const list = [{ id: 'g', label: msg`Group`, options: [{ name: 'constructor', type: 'checkbox', label: msg`Odd` }] }]
+    api.getSettings.mockResolvedValue({ constructor: true })
+    render(<Harness list={list} />)
+
+    expect(await screen.findByRole('checkbox', { name: 'Odd' })).toBeChecked()
+  })
+
+  test('keeps focus on the retry button while the settings load again, also when it fails again', async () => {
+    api.getSettings.mockRejectedValueOnce(new ApiError(500, 'boom'))
+    render(<Harness />)
+    await screen.findByRole('alert')
+    let resolveLoad
+    api.getSettings.mockReturnValueOnce(new Promise((resolve) => { resolveLoad = resolve }))
+
+    await userEvent.click(screen.getByRole('button', { name: 'Erneut versuchen' }))
+
+    const retry = screen.getByRole('button', { name: 'Erneut versuchen' })
+    expect(retry).toHaveAttribute('aria-disabled', 'true')
+    expect(screen.getByRole('status')).toHaveTextContent('Laden...')
+    await userEvent.click(retry)
+    expect(api.getSettings).toHaveBeenCalledTimes(2)
+
+    await act(async () => resolveLoad(initial))
+    expect(await screen.findByRole('group', { name: 'Billing group' })).toBeInTheDocument()
+  })
+
+  test('removes the error of a failed save when the next Save finds nothing changed', async () => {
+    api.updateSettings.mockRejectedValueOnce(new ApiError(500, 'boom'))
+    render(<Harness />)
+    const checkbox = await screen.findByRole('checkbox', { name: 'Show amounts' })
+    await userEvent.click(checkbox)
+    await userEvent.click(screen.getByRole('button', { name: 'Speichern' }))
+    await screen.findByRole('alert')
+
+    await userEvent.click(checkbox)
+    await userEvent.click(screen.getByRole('button', { name: 'Speichern' }))
+
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+    expect(screen.getByRole('status')).toHaveTextContent('Nichts geändert.')
+  })
+
+  test('keeps what was typed when the language is switched', async () => {
+    render(<Harness />)
+    await userEvent.click(await screen.findByRole('checkbox', { name: 'Show amounts' }))
+
+    await act(async () => activateLocale('en'))
+
+    expect(screen.getByRole('heading', { level: 1, name: 'Settings' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Save' })).toBeInTheDocument()
+    expect(screen.getByRole('checkbox', { name: 'Show amounts' })).toBeChecked()
+  })
+
+  test.each(['de', 'en'])('has no detectable accessibility violations in %s, also with an error', async (locale) => {
+    activateLocale(locale)
+    api.updateSettings.mockRejectedValueOnce(new ApiError(500, 'boom'))
+    const { container } = render(<Harness />)
+    await screen.findByRole('group', { name: 'Billing group' })
+    expect(await axe(container)).toHaveNoViolations()
+
+    await userEvent.click(screen.getByRole('checkbox', { name: 'Tidy' }))
+    await userEvent.click(screen.getByRole('button', { name: locale === 'de' ? 'Speichern' : 'Save' }))
+    await screen.findByRole('alert')
 
     expect(await axe(container)).toHaveNoViolations()
   })

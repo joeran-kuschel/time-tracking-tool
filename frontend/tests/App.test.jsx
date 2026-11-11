@@ -22,6 +22,7 @@ vi.mock('@/api', async (importOriginal) => ({
     updateCustomer: vi.fn(),
     deleteCustomer: vi.fn(),
     getDashboard: vi.fn(),
+    getSettings: vi.fn(),
     searchTimeEntries: vi.fn(),
   },
 }))
@@ -54,6 +55,7 @@ beforeEach(() => {
   api.getDashboard.mockResolvedValue(emptyDashboard)
   vi.spyOn(console, 'error').mockImplementation(() => {})
   api.getActiveEntry.mockResolvedValue(null)
+  api.getSettings.mockResolvedValue({})
   api.getProjects.mockResolvedValue([{ id: 7, name: 'Website', hourly_rate: '80.00' }])
   api.getCustomerTimeEntries.mockResolvedValue([])
 })
@@ -595,6 +597,18 @@ describe('App addresses', () => {
     expect(screen.getByRole('link', { name: 'Einstellungen' })).toHaveAttribute('aria-current', 'page')
     await waitFor(() => expect(document.title).toBe('Einstellungen · Time Tracking'))
     await waitFor(() => expect(heading).toHaveFocus())
+  })
+
+  test('loads the settings once, however many pages are visited', async () => {
+    api.getCustomers.mockResolvedValue([])
+    renderAt('/')
+
+    await userEvent.click(await screen.findByRole('link', { name: 'Einstellungen' }))
+    await userEvent.click(screen.getByRole('link', { name: 'Zeiterfassung' }))
+    await userEvent.click(screen.getByRole('link', { name: 'Einstellungen' }))
+
+    expect(await screen.findByRole('heading', { level: 1, name: 'Einstellungen' })).toBeInTheDocument()
+    expect(api.getSettings).toHaveBeenCalledTimes(1)
   })
 
   test('a deep link opens that page, with or without a trailing slash', async () => {

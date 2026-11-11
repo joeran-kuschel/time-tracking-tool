@@ -1,11 +1,14 @@
 const pool = require('../config/database');
 
-// App-wide settings, stored in one row. Each option is a column of the settings table with a default there; a
-// missing row means all defaults. There are no options yet, so a settings object is empty for now.
+// App-wide settings, stored in one row. Each option is a column of the settings table with a default there, and the
+// row is created on the first read, so an option has its default until it is saved. There are no options yet, so a
+// settings object is empty for now.
 class Settings {
   static async get() {
+    // The row is created on the first read, so every option has the default of its column
+    await pool.query('INSERT INTO settings (id) VALUES (1) ON CONFLICT (id) DO NOTHING');
     const result = await pool.query('SELECT * FROM settings WHERE id = 1');
-    const { id, updated_at: updatedAt, ...options } = result.rows[0] ?? {};
+    const { id, updated_at: updatedAt, ...options } = result.rows[0];
     return options;
   }
 
