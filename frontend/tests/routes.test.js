@@ -8,6 +8,7 @@ describe('routes', () => {
       ['time-tracking', '/time-tracking'],
       ['entries', '/entries'],
       ['reports', '/reports'],
+      ['settings', '/settings'],
     ])
   })
 
@@ -29,6 +30,7 @@ describe('routes', () => {
     expect(pageFor('/')?.id).toBe('dashboard')
     expect(pageFor('/reports')?.id).toBe('reports')
     expect(pageFor('/reports/')?.id).toBe('reports')
+    expect(pageFor('/settings')?.id).toBe('settings')
   })
 
   test('pageFor finds nothing for other addresses', () => {

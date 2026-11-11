@@ -68,6 +68,8 @@ describe('protected routes', () => {
     ['GET', '/api/reports/customer/1/pdf?month=1&year=2026'],
     ['PUT', '/api/reports/customer/1/status'],
     ['GET', '/api/dashboard'],
+    ['GET', '/api/settings'],
+    ['PUT', '/api/settings'],
     ['GET', '/api/does-not-exist'],
     ['GET', '/api/auth/me'],
   ])('%s %s answers 401 without a session', async (method, path) => {

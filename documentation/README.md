@@ -10,6 +10,7 @@ Feature documentation for the time tracking tool, split into UI and Backend. Eac
 - [Navigation and addresses](ui/navigation.md): the URL of each page, the main navigation, the page title and focus on a page change
 - [Login](ui/login.md): the login page, the logout button and what happens when a session ends
 - [Timer](ui/timer.md): starting and stopping, the running timer across pages and reloads
+- [Settings](ui/settings.md): the page for app-wide options
 - [Reports](ui/reports.md): monthly reports, their status and the PDF download
 - [Languages](ui/languages.md): German and English, switching without a reload, adding texts
 - [Error messages](ui/error-messages.md): how failed requests are shown
@@ -24,6 +25,7 @@ Feature documentation for the time tracking tool, split into UI and Backend. Eac
 - [Time entries API](backend/time-entries.md): endpoints, the one-timer rule and how descriptions are kept
 - [Reports API](backend/reports.md): monthly reports as JSON and PDF, and the report status
 - [Dashboard API](backend/dashboard.md): everything the Dashboard shows in one request
+- [Settings API](backend/settings.md): app-wide options, stored in one row
 - [Translation](backend/translation.md): the translated PDF report and adding texts
 - [Database](backend/database.md): schema, migrations, connection and the remote database option
 - [Database backups](backend/database-backups.md): hourly backups of the in-cluster database and how to restore them
