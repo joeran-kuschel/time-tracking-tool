@@ -1,8 +1,10 @@
 jest.mock('../src/models/Customer');
 jest.mock('../src/models/Session');
+jest.mock('../src/models/Settings');
 
 const Customer = require('../src/models/Customer');
 const Session = require('../src/models/Session');
+const Settings = require('../src/models/Settings');
 const { createApp, parseOrigins } = require('../src/app');
 
 const FRONTEND = 'http://localhost';
@@ -101,6 +103,50 @@ describe('request bodies', () => {
     });
 
     expect(response.status).toBe(201);
+  });
+});
+
+describe('settings', () => {
+  const send = (method, body, headers = {}) => fetch(`${baseUrl}/api/settings`, {
+    method,
+    headers: { 'Content-Type': 'application/json', ...LOGGED_IN, ...headers },
+    body: body === undefined ? undefined : JSON.stringify(body),
+  });
+
+  test('GET answers with the settings of a logged-in user', async () => {
+    Settings.get.mockResolvedValue({});
+
+    const response = await send('GET');
+
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({});
+  });
+
+  test('PUT saves and answers with all settings', async () => {
+    Settings.update.mockResolvedValue({});
+
+    const response = await send('PUT', {});
+
+    expect(response.status).toBe(200);
+    expect(Settings.update).toHaveBeenCalledWith({});
+  });
+
+  test('PUT with an unknown setting answers 400 and saves nothing', async () => {
+    const response = await send('PUT', { rounding: 15 });
+
+    expect(response.status).toBe(400);
+    expect(Settings.update).not.toHaveBeenCalled();
+  });
+
+  test('PUT with a JSON array answers 400', async () => {
+    expect((await send('PUT', [])).status).toBe(400);
+  });
+
+  test('PUT from another origin is refused', async () => {
+    const response = await send('PUT', {}, { Origin: 'https://evil.example' });
+
+    expect(response.status).toBe(403);
+    expect(Settings.update).not.toHaveBeenCalled();
   });
 });
 

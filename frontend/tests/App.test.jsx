@@ -279,7 +279,7 @@ describe('App', () => {
 
     expect(await screen.findByRole('heading', { level: 1, name: 'Dashboard' })).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Dashboard' })).toHaveAttribute('aria-current', 'page')
-    expect(screen.getByRole('navigation').textContent).toBe('DashboardZeiterfassungEinträgeBerichte')
+    expect(screen.getByRole('navigation').textContent).toBe('DashboardZeiterfassungEinträgeBerichteEinstellungen')
     expect(api.getDashboard).toHaveBeenCalledTimes(1)
 
     await userEvent.click(screen.getByRole('link', { name: 'Zeiterfassung' }))
@@ -287,7 +287,7 @@ describe('App', () => {
 
     await userEvent.click(screen.getByRole('button', { name: 'English' }))
     expect(screen.getByRole('heading', { level: 1, name: 'Time tracking' })).toBeInTheDocument()
-    expect(screen.getByRole('navigation').textContent).toBe('DashboardTime trackingEntriesReports')
+    expect(screen.getByRole('navigation').textContent).toBe('DashboardTime trackingEntriesReportsSettings')
   })
 
   test('the Entries page searches all customers and opens a result on the Time tracking page', async () => {
@@ -580,10 +580,21 @@ describe('App addresses', () => {
 
     const nav = within(await screen.findByRole('navigation', { name: 'Hauptnavigation' }))
     expect(nav.getAllByRole('link').map((link) => link.getAttribute('href'))).toEqual(
-      ['/', '/time-tracking', '/entries', '/reports']
+      ['/', '/time-tracking', '/entries', '/reports', '/settings']
     )
     expect(nav.getByRole('link', { name: 'Dashboard' })).toHaveAttribute('aria-current', 'page')
     expect(nav.getByRole('link', { name: 'Berichte' })).not.toHaveAttribute('aria-current')
+  })
+
+  test('opens the Settings page from the navigation, with its title and focus on the heading', async () => {
+    renderAt('/')
+
+    await userEvent.click(await screen.findByRole('link', { name: 'Einstellungen' }))
+
+    const heading = await screen.findByRole('heading', { level: 1, name: 'Einstellungen' })
+    expect(screen.getByRole('link', { name: 'Einstellungen' })).toHaveAttribute('aria-current', 'page')
+    await waitFor(() => expect(document.title).toBe('Einstellungen · Time Tracking'))
+    await waitFor(() => expect(heading).toHaveFocus())
   })
 
   test('a deep link opens that page, with or without a trailing slash', async () => {

@@ -188,7 +188,7 @@ msgstr "Customer: {customerName}"
 msgid "Customers"
 msgstr "Customers"
 
-#: src/App.jsx:43
+#: src/App.jsx:44
 msgid "Customers could not be loaded."
 msgstr "Customers could not be loaded."
 
@@ -402,7 +402,7 @@ msgstr "Light"
 msgid "Like the system"
 msgstr "Like the system"
 
-#: src/App.jsx:70
+#: src/App.jsx:72
 #: src/components/AuthGate.jsx:70
 #: src/pages/Dashboard.jsx:72
 #: src/pages/Reports.jsx:219
@@ -415,7 +415,7 @@ msgstr "Loading..."
 msgid "Log in"
 msgstr "Log in"
 
-#: src/App.jsx:99
+#: src/App.jsx:101
 msgid "Log out"
 msgstr "Log out"
 
@@ -427,7 +427,7 @@ msgstr "Logging out failed."
 msgid "Login failed."
 msgstr "Login failed."
 
-#: src/App.jsx:81
+#: src/App.jsx:83
 msgid "Main"
 msgstr "Main"
 
@@ -522,7 +522,7 @@ msgstr "Open report"
 msgid "Open report for {customerName}"
 msgstr "Open report for {customerName}"
 
-#: src/App.jsx:34
+#: src/App.jsx:35
 #: src/pages/NotFound.jsx:9
 msgid "Page not found"
 msgstr "Page not found"
@@ -700,6 +700,11 @@ msgstr "Select a project to start the timer."
 msgid "Sent"
 msgstr "Sent"
 
+#: src/pages/Settings.jsx:8
+#: src/routes.js:13
+msgid "Settings"
+msgstr "Settings"
+
 #: src/pages/TimeTracking.jsx:344
 msgid "Show all projects"
 msgstr "Show all projects"
@@ -766,6 +771,10 @@ msgstr "The timer is running for {trackedProject}. Stop it to start {selectedPro
 msgid "Theme"
 msgstr "Theme"
 
+#: src/pages/Settings.jsx:9
+msgid "There are no options yet."
+msgstr "There are no options yet."
+
 #: src/pages/NotFound.jsx:10
 msgid "There is no page at this address."
 msgstr "There is no page at this address."
@@ -827,11 +836,11 @@ msgstr "Timer could not be started."
 msgid "Timer could not be stopped."
 msgstr "Timer could not be stopped."
 
-#: src/App.jsx:60
+#: src/App.jsx:61
 msgid "Timer started for {announcedProject}"
 msgstr "Timer started for {announcedProject}"
 
-#: src/App.jsx:60
+#: src/App.jsx:61
 msgid "Timer stopped"
 msgstr "Timer stopped"
 
@@ -862,7 +871,7 @@ msgstr "Total hours"
 msgid "Track time"
 msgstr "Track time"
 
-#: src/App.jsx:110
+#: src/App.jsx:112
 #: src/components/AuthGate.jsx:66
 #: src/pages/Dashboard.jsx:69
 msgid "Try again"

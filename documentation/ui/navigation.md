@@ -15,6 +15,7 @@ visited pages, and a page can be bookmarked or opened in a new tab.
 | `/reports` | Reports, no customer selected |
 | `/reports/:customerId` | Reports of the customer for the current month |
 | `/reports/:customerId/:yearMonth` | the report of a month, e.g. `/reports/3/2026-09` |
+| `/settings` | Settings |
 | anything else | *Page not found* (German: *Seite nicht gefunden*) with a link to the Dashboard |
 
 A trailing slash is the same address (`/reports/`), and the case of the letters does not matter.
@@ -67,7 +68,8 @@ route table checks this.
   click and "open in new tab" work. The current page has `aria-current="page"` and the underline, on every address of
   the page including its selections (`pageFor` in `routes.js` matches the page's pattern; a trailing slash counts). On `/reports/1/2026-09` the
   *Reports* link is current; on an address that is *Page not found*, such as `/reports/1/foo`, no link is. `NavLink`
-  with `end` is not used because it does not match `/reports/`.
+  with `end` is not used because it does not match `/reports/`. On a narrow screen (phone width) the links wrap onto a
+  second row, so none is pushed out of view.
 - **Server:** the frontend's nginx answers unknown paths with `index.html` (`try_files`), so a reload on any address
   works behind the Ingress and in Docker Compose; `/api/` and `/health` go to the backend first. `index.html` carries
   `Cache-Control: no-cache` (the fallback and `error_page 404` end up in that location too), so a reload after a

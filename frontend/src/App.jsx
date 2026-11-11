@@ -16,6 +16,7 @@ import Dashboard from './pages/Dashboard'
 import TimeTracking from './pages/TimeTracking'
 import Entries from './pages/Entries'
 import Reports from './pages/Reports'
+import Settings from './pages/Settings'
 import NotFound from './pages/NotFound'
 import { pageFor, pages } from './routes'
 import { ui } from './ui'
@@ -64,6 +65,7 @@ function App({ onLogout, logoutError, focusOnStart }) {
     'time-tracking': <TimeTracking customers={customers} onCustomersChange={loadCustomers} timer={timer} />,
     entries: <Entries customers={customers} />,
     reports: <Reports customers={customers} />,
+    settings: <Settings />,
   }
 
   if (loading) {
@@ -78,7 +80,7 @@ function App({ onLogout, logoutError, focusOnStart }) {
             <ClockIcon aria-hidden="true" className="h-6 w-6 text-accent" />
             Time Tracking
           </p>
-          <nav aria-label={t`Main`} className="flex gap-1 self-stretch">
+          <nav aria-label={t`Main`} className="flex flex-wrap gap-x-1 self-stretch">
             {pages.map(({ id, path, label }) => (
               <Link
                 key={id}

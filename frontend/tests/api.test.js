@@ -62,6 +62,8 @@ describe('api', () => {
     ['deleteTimeEntry', [5], '/time-entries/5', 'DELETE', undefined],
     ['createTimeEntry', [7, 's', 'Konzept', 'e'], '/time-entries', 'POST', { projectId: 7, startTime: 's', description: 'Konzept', endTime: 'e' }],
     ['setReportStatus', [1, 8, 2026, 'sent'], '/reports/customer/1/status', 'PUT', { month: 8, year: 2026, status: 'sent' }],
+    ['getSettings', [], '/settings', 'GET', undefined],
+    ['updateSettings', [{}], '/settings', 'PUT', {}],
   ])('%s calls %s', async (name, args, path, method, body) => {
     const fetch = mockFetch(200, { id: 1 })
     await api[name](...args)
@@ -259,6 +261,7 @@ describe('login', () => {
     ['createCustomer', ['Kunde', 'a@b.de']],
     ['deleteProject', [3]],
     ['getDashboard', ['f', 't', 9, 2026]],
+    ['getSettings', []],
     ['downloadPDF', [1, 9, 2026, 'de']],
     ['downloadCSV', [1, 9, 2026, 'de']],
   ])('%s sends the login cookie', async (name, args) => {

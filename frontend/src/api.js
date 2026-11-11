@@ -144,6 +144,12 @@ export const api = {
     return request(`/time-entries/search?${[...params, `tz=${timeZone()}`].join('&')}`)
   },
 
+  // App-wide settings: an object with one entry per option (none yet)
+  getSettings: () => request('/settings'),
+
+  // options: the settings to change; answers with all settings
+  updateSettings: (options) => request('/settings', { method: 'PUT', body: options }),
+
   // Reports
   getMonthlyReport: (customerId, month, year, amounts) =>
     request(`/reports/customer/${customerId}?month=${month}&year=${year}&tz=${timeZone()}${amountsParam(amounts)}`),

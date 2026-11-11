@@ -10,6 +10,7 @@ export const pages = [
   { id: 'time-tracking', path: '/time-tracking', pattern: '/time-tracking/:customerId?/:projectId?', label: msg`Time tracking` },
   { id: 'entries', path: '/entries', pattern: '/entries', label: msg`Entries` },
   { id: 'reports', path: '/reports', pattern: '/reports/:customerId?/:yearMonth?', label: msg`Reports` },
+  { id: 'settings', path: '/settings', pattern: '/settings', label: msg`Settings` },
 ]
 
 // The page an address belongs to (a trailing slash is the same address), or undefined. A month that is none
