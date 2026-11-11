@@ -6,6 +6,7 @@ import { Trans, useLingui } from '@lingui/react/macro'
 import { api } from './api'
 import { useAction } from './hooks/useAction'
 import { useActiveEntry } from './hooks/useActiveEntry'
+import { useSettings } from './hooks/useSettings'
 import { useFocusOnPageChange } from './hooks/useFocusOnPageChange'
 import { usePageTitle } from './hooks/usePageTitle'
 import ErrorMessage from './components/ErrorMessage'
@@ -27,6 +28,8 @@ function App({ onLogout, logoutError, focusOnStart }) {
   const [loading, setLoading] = useState(true)
   const [run, error] = useAction()
   const timer = useActiveEntry()
+  // Loaded once here, so every page sees a saved change without a reload
+  const settings = useSettings()
   const main = useRef(null)
   const { t, i18n } = useLingui()
   // The current page: a match of the address (a trailing slash counts, so do the selections after the page), also for the navigation below
@@ -65,7 +68,7 @@ function App({ onLogout, logoutError, focusOnStart }) {
     'time-tracking': <TimeTracking customers={customers} onCustomersChange={loadCustomers} timer={timer} />,
     entries: <Entries customers={customers} />,
     reports: <Reports customers={customers} />,
-    settings: <Settings />,
+    settings: <Settings settings={settings} />,
   }
 
   if (loading) {

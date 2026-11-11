@@ -188,7 +188,7 @@ msgstr "Customer: {customerName}"
 msgid "Customers"
 msgstr "Customers"
 
-#: src/App.jsx:44
+#: src/App.jsx:47
 msgid "Customers could not be loaded."
 msgstr "Customers could not be loaded."
 
@@ -402,10 +402,12 @@ msgstr "Light"
 msgid "Like the system"
 msgstr "Like the system"
 
-#: src/App.jsx:72
+#: src/App.jsx:75
 #: src/components/AuthGate.jsx:70
 #: src/pages/Dashboard.jsx:72
 #: src/pages/Reports.jsx:219
+#: src/pages/Settings.jsx:63
+#: src/pages/Settings.jsx:69
 msgid "Loading..."
 msgstr "Loading..."
 
@@ -415,7 +417,7 @@ msgstr "Loading..."
 msgid "Log in"
 msgstr "Log in"
 
-#: src/App.jsx:101
+#: src/App.jsx:104
 msgid "Log out"
 msgstr "Log out"
 
@@ -427,7 +429,7 @@ msgstr "Logging out failed."
 msgid "Login failed."
 msgstr "Login failed."
 
-#: src/App.jsx:83
+#: src/App.jsx:86
 msgid "Main"
 msgstr "Main"
 
@@ -505,6 +507,10 @@ msgstr "No filters active"
 msgid "No time recorded this month yet."
 msgstr "No time recorded this month yet."
 
+#: src/pages/Settings.jsx:92
+msgid "Nothing has changed."
+msgstr "Nothing has changed."
+
 #: src/components/EntryFilters.jsx:21
 msgid "Oldest first"
 msgstr "Oldest first"
@@ -522,7 +528,7 @@ msgstr "Open report"
 msgid "Open report for {customerName}"
 msgstr "Open report for {customerName}"
 
-#: src/App.jsx:35
+#: src/App.jsx:38
 #: src/pages/NotFound.jsx:9
 msgid "Page not found"
 msgstr "Page not found"
@@ -665,6 +671,7 @@ msgstr "Running timer could not be loaded."
 
 #: src/components/EditableRecord.jsx:21
 #: src/components/EntriesList.jsx:32
+#: src/pages/Settings.jsx:89
 #: src/pages/TimeTracking.jsx:396
 #: src/pages/TimeTracking.jsx:400
 #: src/pages/TimeTracking.jsx:404
@@ -700,10 +707,22 @@ msgstr "Select a project to start the timer."
 msgid "Sent"
 msgstr "Sent"
 
-#: src/pages/Settings.jsx:8
+#: src/pages/Settings.jsx:102
 #: src/routes.js:13
 msgid "Settings"
 msgstr "Settings"
+
+#: src/hooks/useSettings.js:14
+msgid "Settings could not be loaded."
+msgstr "Settings could not be loaded."
+
+#: src/hooks/useSettings.js:23
+msgid "Settings could not be saved."
+msgstr "Settings could not be saved."
+
+#: src/pages/Settings.jsx:91
+msgid "Settings saved."
+msgstr "Settings saved."
 
 #: src/pages/TimeTracking.jsx:344
 msgid "Show all projects"
@@ -771,7 +790,7 @@ msgstr "The timer is running for {trackedProject}. Stop it to start {selectedPro
 msgid "Theme"
 msgstr "Theme"
 
-#: src/pages/Settings.jsx:9
+#: src/pages/Settings.jsx:58
 msgid "There are no options yet."
 msgstr "There are no options yet."
 
@@ -836,11 +855,11 @@ msgstr "Timer could not be started."
 msgid "Timer could not be stopped."
 msgstr "Timer could not be stopped."
 
-#: src/App.jsx:61
+#: src/App.jsx:64
 msgid "Timer started for {announcedProject}"
 msgstr "Timer started for {announcedProject}"
 
-#: src/App.jsx:61
+#: src/App.jsx:64
 msgid "Timer stopped"
 msgstr "Timer stopped"
 
@@ -871,9 +890,10 @@ msgstr "Total hours"
 msgid "Track time"
 msgstr "Track time"
 
-#: src/App.jsx:112
+#: src/App.jsx:115
 #: src/components/AuthGate.jsx:66
 #: src/pages/Dashboard.jsx:69
+#: src/pages/Settings.jsx:65
 msgid "Try again"
 msgstr "Try again"
 
