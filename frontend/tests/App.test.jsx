@@ -23,6 +23,7 @@ vi.mock('@/api', async (importOriginal) => ({
     deleteCustomer: vi.fn(),
     getDashboard: vi.fn(),
     getSettings: vi.fn(),
+    updateSettings: vi.fn(),
     searchTimeEntries: vi.fn(),
   },
 }))
@@ -597,6 +598,24 @@ describe('App addresses', () => {
     expect(screen.getByRole('link', { name: 'Einstellungen' })).toHaveAttribute('aria-current', 'page')
     await waitFor(() => expect(document.title).toBe('Einstellungen · Time Tracking'))
     await waitFor(() => expect(heading).toHaveFocus())
+  })
+
+  test('a saved setting applies on the Reports page without a reload', async () => {
+    api.getSettings.mockResolvedValue({ showAmounts: false })
+    api.updateSettings.mockResolvedValue({ showAmounts: true })
+    renderAt('/settings')
+
+    await userEvent.click(await screen.findByRole('checkbox', { name: 'Stundensatz und Beträge in Berichten anzeigen' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Speichern' }))
+    expect(await screen.findByText('Einstellungen gespeichert.')).toBeInTheDocument()
+    expect(api.updateSettings).toHaveBeenCalledWith({ showAmounts: true })
+
+    await userEvent.click(screen.getByRole('link', { name: 'Berichte' }))
+    await userEvent.selectOptions(await screen.findByLabelText('Kunde'), 'Muster GmbH')
+
+    expect(await screen.findByLabelText('Stundensatz und Beträge anzeigen')).toBeChecked()
+    await waitFor(() => expect(api.getMonthlyReport).toHaveBeenLastCalledWith(1, new Date().getMonth() + 1, new Date().getFullYear(), true))
+    expect(api.getSettings).toHaveBeenCalledTimes(1)
   })
 
   test('loads the settings once, however many pages are visited', async () => {

@@ -67,7 +67,7 @@ function App({ onLogout, logoutError, focusOnStart }) {
     dashboard: <Dashboard timer={timer} />,
     'time-tracking': <TimeTracking customers={customers} onCustomersChange={loadCustomers} timer={timer} />,
     entries: <Entries customers={customers} />,
-    reports: <Reports customers={customers} />,
+    reports: <Reports customers={customers} settings={settings} />,
     settings: <Settings settings={settings} />,
   }
 

@@ -76,6 +76,9 @@ data:
       id SMALLINT PRIMARY KEY DEFAULT 1 CHECK (id = 1),
       updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
+  006_settings_show_amounts.sql: |
+    -- Setting: whether reports show hourly rates and amounts by default (the Reports page starts from it). Off by default.
+    ALTER TABLE settings ADD COLUMN IF NOT EXISTS show_amounts BOOLEAN NOT NULL DEFAULT false;
 kind: ConfigMap
 metadata:
   name: postgres-init-scripts

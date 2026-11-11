@@ -50,6 +50,35 @@ describe('settingsController', () => {
     expect(res.json).toHaveBeenCalledWith({});
   });
 
+  test.each([true, false])('update saves showAmounts: %s', async (value) => {
+    Settings.update.mockResolvedValue({ showAmounts: value });
+    const res = mockResponse();
+
+    await controller.update({ body: { showAmounts: value } }, res);
+
+    expect(Settings.update).toHaveBeenCalledWith({ showAmounts: value });
+    expect(res.json).toHaveBeenCalledWith({ showAmounts: value });
+  });
+
+  test.each([['yes'], ['true'], [1], [0], [null], [[]], [{}]])('update rejects %j as a value of showAmounts', async (value) => {
+    const res = mockResponse();
+
+    await controller.update({ body: { showAmounts: value } }, res);
+
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(res.json).toHaveBeenCalledWith({ error: 'Invalid value for showAmounts' });
+    expect(Settings.update).not.toHaveBeenCalled();
+  });
+
+  test('update saves nothing when one of several values is invalid', async () => {
+    const res = mockResponse();
+
+    await controller.update({ body: { showAmounts: true, rounding: 15 } }, res);
+
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(Settings.update).not.toHaveBeenCalled();
+  });
+
   test.each([[[]], ['text'], [null]])('update rejects %j as the settings', async (body) => {
     const res = mockResponse();
 

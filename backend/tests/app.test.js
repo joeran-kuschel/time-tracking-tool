@@ -138,6 +138,30 @@ describe('settings', () => {
     expect(Settings.update).not.toHaveBeenCalled();
   });
 
+  test.each([true, false])('PUT saves showAmounts %p and answers with the stored settings', async (value) => {
+    Settings.update.mockResolvedValue({ showAmounts: value });
+
+    const response = await send('PUT', { showAmounts: value });
+
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({ showAmounts: value });
+    expect(Settings.update).toHaveBeenCalledWith({ showAmounts: value });
+  });
+
+  test.each(['true', 1, null, {}])('PUT with showAmounts %p answers 400 and saves nothing', async (value) => {
+    const response = await send('PUT', { showAmounts: value });
+
+    expect(response.status).toBe(400);
+    expect(Settings.update).not.toHaveBeenCalled();
+  });
+
+  test('PUT with a valid and an unknown setting saves neither', async () => {
+    const response = await send('PUT', { showAmounts: true, rounding: 15 });
+
+    expect(response.status).toBe(400);
+    expect(Settings.update).not.toHaveBeenCalled();
+  });
+
   test('PUT with a JSON array answers 400', async () => {
     expect((await send('PUT', [])).status).toBe(400);
   });

@@ -5,10 +5,11 @@ import { msg } from '@lingui/core/macro'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { api } from '../api'
 import { useAction } from '../hooks/useAction'
+import { useRetry } from '../hooks/useRetry'
 import ErrorMessage from '../components/ErrorMessage'
 import MissingRecord from '../components/MissingRecord'
 import { formatAmount, formatHours, formatRate, hoursBetween } from '../format'
-import { saveShowAmounts, storedShowAmounts } from '../reportOptions'
+import { forgetStoredShowAmounts } from '../reportOptions'
 import { idFromParam, periodFromParam, reportPath } from '../routes'
 import NotFound from './NotFound'
 import { ui } from '../ui'
@@ -46,7 +47,9 @@ const currentPeriod = () => {
 
 // A customer's month: the report loads as soon as customer or month change. Both are in the address
 // (/reports/:customerId/:yearMonth, e.g. /reports/3/2026-09); without a month, the current one opens.
-function Reports({ customers }) {
+// settings is useSettings() of App: its showAmounts is where the amounts checkbox starts. A change of the checkbox
+// counts for this visit of the page only; it never changes the setting.
+function Reports({ customers, settings }) {
   const params = useParams()
   const navigate = useNavigate()
   const requestedCustomerId = idFromParam(params.customerId)
@@ -55,7 +58,14 @@ function Reports({ customers }) {
   const customerId = customers.some((c) => c.id === requestedCustomerId) ? requestedCustomerId : null
   const customerMissing = Boolean(params.customerId) && !customerId
   const [report, setReport] = useState(null)
-  const [showAmounts, setShowAmounts] = useState(storedShowAmounts)
+  // null until the checkbox is touched: it follows the setting, which is off while the settings are not loaded
+  const [amountsChoice, setAmountsChoice] = useState(null)
+  const showAmounts = amountsChoice ?? settings.values?.showAmounts ?? false
+  // "Try again" for settings that could not be loaded; the button stays in place while it loads
+  const [retrySettings, retryingSettings] = useRetry(settings.load)
+  // The first report waits for the settings (or their failure), so it is not loaded twice. A retry clears the error
+  // for a moment; the report that is shown stays.
+  const settingsReady = Boolean(settings.values || settings.error || retryingSettings)
   const [loading, setLoading] = useState(false)
   const [run, error] = useAction()
   const [runStatus, statusError] = useAction()
@@ -69,10 +79,13 @@ function Reports({ customers }) {
   const monthLabelId = useId()
   const reportHeadingId = useId()
 
+  // The choice the browser used to remember is the setting now
+  useEffect(forgetStoredShowAmounts, [])
+
   const { month, year } = period ?? {}
   useEffect(() => {
     setReport(null)
-    if (!customerId || !period) return
+    if (!customerId || !period || !settingsReady) return
     // Only the answer for the current choice is shown
     let current = true
     setLoading(true)
@@ -82,7 +95,7 @@ function Reports({ customers }) {
       setLoading(false)
     })
     return () => { current = false }
-  }, [customerId, month, year, showAmounts])
+  }, [customerId, month, year, showAmounts, settingsReady])
 
   // Choosing a customer adds a history entry, stepping through the months replaces the current one
   const openCustomer = (id) => navigate(reportPath(id, period.year, params.yearMonth && period.month))
@@ -124,10 +137,6 @@ function Reports({ customers }) {
   const reportCustomer = customer?.name
   const reportPeriod = i18n.date(new Date(period.year, period.month - 1, 1), { month: 'long', year: 'numeric' })
   const hasEntries = report?.entries.length > 0
-  const changeShowAmounts = (show) => {
-    setShowAmounts(show)
-    saveShowAmounts(show)
-  }
   // The report on screen follows what it was loaded with, so a toggle never meets a report without amounts
   const withAmounts = report?.totalAmount !== undefined
   const totalHundredths = report ? report.entries.reduce((sum, entry) => sum + hundredthsOf(entry), 0) : 0
@@ -184,7 +193,7 @@ function Reports({ customers }) {
             <input
               type="checkbox"
               checked={showAmounts}
-              onChange={(e) => changeShowAmounts(e.target.checked)}
+              onChange={(e) => setAmountsChoice(e.target.checked)}
               className="h-5 w-5 accent-accent"
             />
             <Trans>Show hourly rate and amounts</Trans>
@@ -205,6 +214,19 @@ function Reports({ customers }) {
         )}
       </div>
 
+      {!settings.values && (settings.error || retryingSettings) && (
+        <div className="flex flex-wrap items-center gap-4">
+          <ErrorMessage message={settings.error} />
+          <button
+            type="button"
+            onClick={retrySettings}
+            aria-disabled={retryingSettings}
+            className={`${ui.buttonSecondary} aria-disabled:opacity-70`}
+          >
+            <Trans>Try again</Trans>
+          </button>
+        </div>
+      )}
       <ErrorMessage message={error} />
       <ErrorMessage message={statusError} />
       <ErrorMessage message={downloadError} />
@@ -216,7 +238,7 @@ function Reports({ customers }) {
         />
       )}
       {!customerId && !customerMissing && <p className="text-muted"><Trans>Select a customer to see the report.</Trans></p>}
-      {loading && <p className="text-muted"><Trans>Loading...</Trans></p>}
+      {(loading || (customerId && !settingsReady)) && <p className="text-muted"><Trans>Loading...</Trans></p>}
 
       {report && (
         <section aria-labelledby={reportHeadingId} className={`${ui.card} flex flex-col gap-7 sm:px-9 sm:py-8`}>
