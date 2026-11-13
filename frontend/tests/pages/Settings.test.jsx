@@ -88,13 +88,14 @@ describe('Settings', () => {
         api.updateSettings.mockImplementation(async (changes) => ({ ...saved, ...changes }))
       })
 
-      test('offers no rounding, quarter hour and half hour, and does not round by default', async () => {
+      test('offers no rounding and the steps 5, 10, 15, 30 and 60 minutes, and does not round by default', async () => {
         render(<Harness list={settingsGroups} />)
 
         await screen.findByRole('group', { name: 'Zeit und Abrechnung' })
         expect(within(step()).getAllByRole('option').map((option) => option.textContent)).toEqual([
-          'Keine Rundung', 'Viertelstunde (15 Minuten)', 'Halbe Stunde (30 Minuten)',
+          'Keine Rundung', '5 Minuten', '10 Minuten', 'Viertelstunde (15 Minuten)', 'Halbe Stunde (30 Minuten)', 'Stunde (60 Minuten)',
         ])
+        expect(within(step()).getAllByRole('option').map((option) => option.value)).toEqual(['0', '5', '10', '15', '30', '60'])
         expect(step()).toHaveValue('0')
         expect(within(direction()).getAllByRole('option').map((option) => option.textContent)).toEqual(['Aufrunden', 'Auf- oder abrunden (nächstgelegene Stufe)'])
         expect(direction()).toHaveValue('up')
@@ -186,6 +187,30 @@ describe('Settings', () => {
         expect(await screen.findByText('Einstellungen gespeichert.')).toBeInTheDocument()
         expect(step()).toHaveValue('30')
         expect(direction()).toHaveValue('nearest')
+      })
+
+      test.each([['5 Minuten', 5], ['10 Minuten', 10], ['Stunde (60 Minuten)', 60]])('saves the new step %s as the number %s', async (label, minutes) => {
+        render(<Harness list={settingsGroups} />)
+        await screen.findByRole('group', { name: 'Zeit und Abrechnung' })
+
+        await userEvent.selectOptions(step(), label)
+        expect(direction()).toBeEnabled()
+        await userEvent.click(screen.getByRole('button', { name: 'Speichern' }))
+
+        expect(api.updateSettings).toHaveBeenCalledWith({ roundingMinutes: minutes })
+        expect(await screen.findByText('Einstellungen gespeichert.')).toBeInTheDocument()
+        expect(step()).toHaveValue(String(minutes))
+      })
+
+      test('names the new steps in English', async () => {
+        activateLocale('en')
+        render(<Harness list={settingsGroups} />)
+
+        await screen.findByRole('group', { name: 'Time and billing' })
+
+        for (const name of ['5 minutes', '10 minutes', 'Hour (60 minutes)']) {
+          expect(screen.getByRole('option', { name })).toBeInTheDocument()
+        }
       })
 
       test('saves only the step when the direction was left alone', async () => {

@@ -156,7 +156,7 @@ describe('settings', () => {
   });
 
   test.each([
-    [{ roundingMinutes: 0 }], [{ roundingMinutes: 15 }], [{ roundingMinutes: 30 }],
+    [{ roundingMinutes: 0 }], [{ roundingMinutes: 5 }], [{ roundingMinutes: 10 }], [{ roundingMinutes: 15 }], [{ roundingMinutes: 30 }], [{ roundingMinutes: 60 }],
     [{ roundingDirection: 'up' }], [{ roundingDirection: 'nearest' }],
     [{ showRoundingNote: true }], [{ showRoundingNote: false }],
     [{ roundingMinutes: 15, roundingDirection: 'nearest', showRoundingNote: true }],
@@ -171,7 +171,7 @@ describe('settings', () => {
   });
 
   test.each([
-    [{ roundingMinutes: 20 }], [{ roundingMinutes: -15 }], [{ roundingMinutes: '15' }], [{ roundingMinutes: 15.5 }],
+    [{ roundingMinutes: 20 }], [{ roundingMinutes: 45 }], [{ roundingMinutes: 120 }], [{ roundingMinutes: -15 }], [{ roundingMinutes: '15' }], [{ roundingMinutes: 15.5 }],
     [{ roundingMinutes: null }], [{ roundingDirection: 'down' }], [{ roundingDirection: 'UP' }], [{ roundingDirection: 15 }],
     [{ showRoundingNote: 'true' }], [{ showRoundingNote: 1 }],
     [{ roundingMinutes: 15, roundingDirection: 'sideways' }],

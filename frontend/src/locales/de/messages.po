@@ -59,6 +59,14 @@ msgstr "{total} gesamt"
 msgid "{weekStart} to {today}"
 msgstr "{weekStart} bis {today}"
 
+#: src/settingsGroups.js:37
+msgid "10 minutes"
+msgstr "10 Minuten"
+
+#: src/settingsGroups.js:36
+msgid "5 minutes"
+msgstr "5 Minuten"
+
 #: src/hooks/useActiveEntry.js:46
 msgid "A timer is already running."
 msgstr "Es läuft bereits ein Timer."
@@ -85,7 +93,7 @@ msgstr "Lege zuerst auf der Seite Zeiterfassung einen Kunden und ein Projekt an.
 msgid "Add time"
 msgstr "Zeit nachtragen"
 
-#: src/settingsGroups.js:55
+#: src/settingsGroups.js:58
 msgid "Adds a sentence such as \"Hours rounded up to quarter hours.\" to the Reports page and the PDF."
 msgstr "Fügt der Berichte-Seite und dem PDF einen Satz hinzu, z. B. \"Stunden auf Viertelstunden aufgerundet.\""
 
@@ -152,11 +160,11 @@ msgstr "Ansicht des Diagramms"
 msgid "Check email and password."
 msgstr "Prüfe E-Mail und Passwort."
 
-#: src/settingsGroups.js:57
+#: src/settingsGroups.js:60
 msgid "Choose a step in \"Round time entries\" first."
 msgstr "Wähle zuerst bei \"Zeiteinträge runden\" eine Stufe."
 
-#: src/settingsGroups.js:49
+#: src/settingsGroups.js:52
 msgid "Choose a step in \"Round time entries\" to set the direction."
 msgstr "Wähle bei \"Zeiteinträge runden\" eine Stufe, um die Richtung festzulegen."
 
@@ -267,7 +275,7 @@ msgstr "Beschreibung"
 msgid "Description (optional)"
 msgstr "Beschreibung (optional)"
 
-#: src/settingsGroups.js:43
+#: src/settingsGroups.js:46
 msgid "Direction"
 msgstr "Richtung"
 
@@ -358,9 +366,13 @@ msgstr "Von"
 msgid "Go to the Dashboard"
 msgstr "Zum Dashboard"
 
-#: src/settingsGroups.js:37
+#: src/settingsGroups.js:39
 msgid "Half hour (30 minutes)"
 msgstr "Halbe Stunde (30 Minuten)"
+
+#: src/settingsGroups.js:40
+msgid "Hour (60 minutes)"
+msgstr "Stunde (60 Minuten)"
 
 #: src/pages/TimeTracking.jsx:169
 msgid "Hourly rate (€)"
@@ -394,21 +406,45 @@ msgstr "Stunden pro Woche"
 msgid "Hours per week, {monthName}"
 msgstr "Stunden pro Woche, {monthName}"
 
-#: src/rounding.js:9
+#: src/rounding.js:12
+msgid "Hours rounded to the nearest 10 minutes."
+msgstr "Stunden auf die nächstgelegenen 10 Minuten gerundet."
+
+#: src/rounding.js:11
+msgid "Hours rounded to the nearest 5 minutes."
+msgstr "Stunden auf die nächstgelegenen 5 Minuten gerundet."
+
+#: src/rounding.js:15
+msgid "Hours rounded to the nearest full hour."
+msgstr "Stunden auf die nächstgelegene volle Stunde gerundet."
+
+#: src/rounding.js:14
 msgid "Hours rounded to the nearest half hour."
 msgstr "Stunden auf die nächstgelegene halbe Stunde gerundet."
 
-#: src/rounding.js:8
+#: src/rounding.js:13
 msgid "Hours rounded to the nearest quarter hour."
 msgstr "Stunden auf die nächstgelegene Viertelstunde gerundet."
 
-#: src/rounding.js:7
+#: src/rounding.js:10
+msgid "Hours rounded up to full hours."
+msgstr "Stunden auf volle Stunden aufgerundet."
+
+#: src/rounding.js:9
 msgid "Hours rounded up to half hours."
 msgstr "Stunden auf halbe Stunden aufgerundet."
 
-#: src/rounding.js:6
+#: src/rounding.js:8
 msgid "Hours rounded up to quarter hours."
 msgstr "Stunden auf Viertelstunden aufgerundet."
+
+#: src/rounding.js:7
+msgid "Hours rounded up to steps of 10 minutes."
+msgstr "Stunden auf Schritte von 10 Minuten aufgerundet."
+
+#: src/rounding.js:6
+msgid "Hours rounded up to steps of 5 minutes."
+msgstr "Stunden auf Schritte von 5 Minuten aufgerundet."
 
 #: src/components/MonthSummary.jsx:21
 msgid "Hours this month"
@@ -494,7 +530,7 @@ msgstr "Monatsabrechnungen"
 msgid "Name"
 msgstr "Name"
 
-#: src/settingsGroups.js:54
+#: src/settingsGroups.js:57
 msgid "Name the rounding rule in reports"
 msgstr "Rundungsregel in Berichten nennen"
 
@@ -647,7 +683,7 @@ msgstr "Projekte"
 msgid "Projects could not be loaded."
 msgstr "Projekte konnten nicht geladen werden."
 
-#: src/settingsGroups.js:36
+#: src/settingsGroups.js:38
 msgid "Quarter hour (15 minutes)"
 msgstr "Viertelstunde (15 Minuten)"
 
@@ -943,7 +979,7 @@ msgstr "Timer gestoppt"
 msgid "To"
 msgstr "Bis"
 
-#: src/settingsGroups.js:46
+#: src/settingsGroups.js:49
 msgid "To the nearest"
 msgstr "Auf- oder abrunden (nächstgelegene Stufe)"
 
@@ -978,7 +1014,7 @@ msgstr "Zeit erfassen"
 msgid "Try again"
 msgstr "Erneut versuchen"
 
-#: src/settingsGroups.js:45
+#: src/settingsGroups.js:48
 msgid "Up"
 msgstr "Aufrunden"
 

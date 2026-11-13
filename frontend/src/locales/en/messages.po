@@ -59,6 +59,14 @@ msgstr "{total} total"
 msgid "{weekStart} to {today}"
 msgstr "{weekStart} to {today}"
 
+#: src/settingsGroups.js:37
+msgid "10 minutes"
+msgstr "10 minutes"
+
+#: src/settingsGroups.js:36
+msgid "5 minutes"
+msgstr "5 minutes"
+
 #: src/hooks/useActiveEntry.js:46
 msgid "A timer is already running."
 msgstr "A timer is already running."
@@ -85,7 +93,7 @@ msgstr "Add a customer and a project on the Time tracking page first."
 msgid "Add time"
 msgstr "Add time"
 
-#: src/settingsGroups.js:55
+#: src/settingsGroups.js:58
 msgid "Adds a sentence such as \"Hours rounded up to quarter hours.\" to the Reports page and the PDF."
 msgstr "Adds a sentence such as \"Hours rounded up to quarter hours.\" to the Reports page and the PDF."
 
@@ -152,11 +160,11 @@ msgstr "Chart view"
 msgid "Check email and password."
 msgstr "Check email and password."
 
-#: src/settingsGroups.js:57
+#: src/settingsGroups.js:60
 msgid "Choose a step in \"Round time entries\" first."
 msgstr "Choose a step in \"Round time entries\" first."
 
-#: src/settingsGroups.js:49
+#: src/settingsGroups.js:52
 msgid "Choose a step in \"Round time entries\" to set the direction."
 msgstr "Choose a step in \"Round time entries\" to set the direction."
 
@@ -267,7 +275,7 @@ msgstr "Description"
 msgid "Description (optional)"
 msgstr "Description (optional)"
 
-#: src/settingsGroups.js:43
+#: src/settingsGroups.js:46
 msgid "Direction"
 msgstr "Direction"
 
@@ -358,9 +366,13 @@ msgstr "From"
 msgid "Go to the Dashboard"
 msgstr "Go to the Dashboard"
 
-#: src/settingsGroups.js:37
+#: src/settingsGroups.js:39
 msgid "Half hour (30 minutes)"
 msgstr "Half hour (30 minutes)"
+
+#: src/settingsGroups.js:40
+msgid "Hour (60 minutes)"
+msgstr "Hour (60 minutes)"
 
 #: src/pages/TimeTracking.jsx:169
 msgid "Hourly rate (€)"
@@ -394,21 +406,45 @@ msgstr "Hours per week"
 msgid "Hours per week, {monthName}"
 msgstr "Hours per week, {monthName}"
 
-#: src/rounding.js:9
+#: src/rounding.js:12
+msgid "Hours rounded to the nearest 10 minutes."
+msgstr "Hours rounded to the nearest 10 minutes."
+
+#: src/rounding.js:11
+msgid "Hours rounded to the nearest 5 minutes."
+msgstr "Hours rounded to the nearest 5 minutes."
+
+#: src/rounding.js:15
+msgid "Hours rounded to the nearest full hour."
+msgstr "Hours rounded to the nearest full hour."
+
+#: src/rounding.js:14
 msgid "Hours rounded to the nearest half hour."
 msgstr "Hours rounded to the nearest half hour."
 
-#: src/rounding.js:8
+#: src/rounding.js:13
 msgid "Hours rounded to the nearest quarter hour."
 msgstr "Hours rounded to the nearest quarter hour."
 
-#: src/rounding.js:7
+#: src/rounding.js:10
+msgid "Hours rounded up to full hours."
+msgstr "Hours rounded up to full hours."
+
+#: src/rounding.js:9
 msgid "Hours rounded up to half hours."
 msgstr "Hours rounded up to half hours."
 
-#: src/rounding.js:6
+#: src/rounding.js:8
 msgid "Hours rounded up to quarter hours."
 msgstr "Hours rounded up to quarter hours."
+
+#: src/rounding.js:7
+msgid "Hours rounded up to steps of 10 minutes."
+msgstr "Hours rounded up to steps of 10 minutes."
+
+#: src/rounding.js:6
+msgid "Hours rounded up to steps of 5 minutes."
+msgstr "Hours rounded up to steps of 5 minutes."
 
 #: src/components/MonthSummary.jsx:21
 msgid "Hours this month"
@@ -494,7 +530,7 @@ msgstr "Monthly reports"
 msgid "Name"
 msgstr "Name"
 
-#: src/settingsGroups.js:54
+#: src/settingsGroups.js:57
 msgid "Name the rounding rule in reports"
 msgstr "Name the rounding rule in reports"
 
@@ -647,7 +683,7 @@ msgstr "Projects"
 msgid "Projects could not be loaded."
 msgstr "Projects could not be loaded."
 
-#: src/settingsGroups.js:36
+#: src/settingsGroups.js:38
 msgid "Quarter hour (15 minutes)"
 msgstr "Quarter hour (15 minutes)"
 
@@ -943,7 +979,7 @@ msgstr "Timer stopped"
 msgid "To"
 msgstr "To"
 
-#: src/settingsGroups.js:46
+#: src/settingsGroups.js:49
 msgid "To the nearest"
 msgstr "To the nearest"
 
@@ -978,7 +1014,7 @@ msgstr "Track time"
 msgid "Try again"
 msgstr "Try again"
 
-#: src/settingsGroups.js:45
+#: src/settingsGroups.js:48
 msgid "Up"
 msgstr "Up"
 

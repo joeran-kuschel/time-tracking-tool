@@ -9,7 +9,7 @@ header.
 | Group | Option | Default | Effect |
 |---|---|---|---|
 | **Time and billing** (*Zeit und Abrechnung*) | **Show hourly rate and amounts in reports** (*Stundensatz und Beträge in Berichten anzeigen*) | off | The checkbox on the [Reports page](reports.md) starts from it; ticking it there changes only that visit. |
-| | **Round time entries** (*Zeiteinträge runden*) | no rounding | **No rounding**, **Quarter hour (15 minutes)** or **Half hour (30 minutes)**: the hours of each entry are rounded in reports ([Reports](reports.md#rounded-hours)). |
+| | **Round time entries** (*Zeiteinträge runden*) | no rounding | **No rounding**, **5 minutes**, **10 minutes**, **Quarter hour (15 minutes)**, **Half hour (30 minutes)** or **Hour (60 minutes)** (German: *5 Minuten*, *10 Minuten*, *Viertelstunde*, *Halbe Stunde*, *Stunde*): the hours of each entry are rounded in reports ([Reports](reports.md#rounded-hours)). |
 | | **Direction** (*Richtung*) | up | **Up** (*Aufrunden*) or **To the nearest** (*Auf- oder abrunden (nächstgelegene Stufe)*). Disabled while the step is *No rounding*, with a hint that says why. |
 | | **Name the rounding rule in reports** (*Rundungsregel in Berichten nennen*) | off | Adds a sentence such as *Hours rounded up to quarter hours.* to the Reports page and the PDF. Disabled while the step is *No rounding*, with a hint that says why. |
 

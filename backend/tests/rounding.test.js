@@ -10,6 +10,12 @@ const up15 = { minutes: 15, direction: 'up' };
 const nearest15 = { minutes: 15, direction: 'nearest' };
 const up30 = { minutes: 30, direction: 'up' };
 const nearest30 = { minutes: 30, direction: 'nearest' };
+const up5 = { minutes: 5, direction: 'up' };
+const nearest5 = { minutes: 5, direction: 'nearest' };
+const up10 = { minutes: 10, direction: 'up' };
+const nearest10 = { minutes: 10, direction: 'nearest' };
+const up60 = { minutes: 60, direction: 'up' };
+const nearest60 = { minutes: 60, direction: 'nearest' };
 
 describe('roundingRuleOf', () => {
   test.each([
@@ -34,6 +40,14 @@ describe('billedHours', () => {
     ['quarter hour, nearest', nearest15, [[65, '1.00'], [68, '1.25'], [67, '1.00'], [76, '1.25'], [5, '0.25'], [7, '0.25'], [8, '0.25'], [22, '0.25'], [23, '0.50'], [60, '1.00']]],
     ['half hour, up', up30, [[20, '0.50'], [30, '0.50'], [31, '1.00'], [1, '0.50'], [60, '1.00'], [61, '1.50']]],
     ['half hour, nearest', nearest30, [[14, '0.50'], [15, '0.50'], [44, '0.50'], [45, '1.00'], [1, '0.50'], [30, '0.50'], [60, '1.00'], [74, '1.00'], [75, '1.50']]],
+    // 5 minutes: 0.0833 h, printed with two decimals like every hour of a report
+    ['5 minutes, up', up5, [[1, '0.08'], [5, '0.08'], [6, '0.17'], [10, '0.17'], [11, '0.25'], [60, '1.00'], [61, '1.08'], [65, '1.08'], [66, '1.17']]],
+    ['5 minutes, nearest', nearest5, [[1, '0.08'], [2, '0.08'], [3, '0.08'], [7, '0.08'], [8, '0.17'], [12, '0.17'], [13, '0.25'], [62, '1.00'], [63, '1.08']]],
+    // 10 minutes: 0.1667 h
+    ['10 minutes, up', up10, [[1, '0.17'], [10, '0.17'], [11, '0.33'], [20, '0.33'], [21, '0.50'], [60, '1.00'], [61, '1.17']]],
+    ['10 minutes, nearest', nearest10, [[1, '0.17'], [4, '0.17'], [5, '0.17'], [14, '0.17'], [15, '0.33'], [24, '0.33'], [25, '0.50'], [64, '1.00'], [65, '1.17']]],
+    ['full hour, up', up60, [[1, '1.00'], [59, '1.00'], [60, '1.00'], [61, '2.00'], [120, '2.00'], [121, '3.00']]],
+    ['full hour, nearest', nearest60, [[1, '1.00'], [29, '1.00'], [30, '1.00'], [89, '1.00'], [90, '2.00'], [119, '2.00'], [150, '3.00'], [149, '2.00']]],
   ])('%s', (name, rule, cases) => {
     for (const [minutes, hours] of cases) {
       expect([name, minutes, billedHours(entry(minutes), rule)]).toEqual([name, minutes, hours]);
@@ -48,6 +62,22 @@ describe('billedHours', () => {
     expect(billedHours(entry(37, 30), nearest15)).toBe('0.75');
     expect(billedHours(entry(22, 29), nearest15)).toBe('0.25');
     expect(billedHours(entry(22, 30), nearest15)).toBe('0.50');
+  });
+
+  test('a halfway case rounds up for every step, on the second', () => {
+    expect(billedHours(entry(2, 29), nearest5)).toBe('0.08');
+    expect(billedHours(entry(7, 30), nearest5)).toBe('0.17');
+    expect(billedHours(entry(7, 29), nearest5)).toBe('0.08');
+    expect(billedHours(entry(30, 0), nearest60)).toBe('1.00');
+    expect(billedHours(entry(90, 0), nearest60)).toBe('2.00');
+    expect(billedHours(entry(89, 59), nearest60)).toBe('1.00');
+  });
+
+  test('printed with two decimals, blocks of 5 or 10 minutes do not add up to the clean hour (documented behavior)', () => {
+    const hours = (rule) => Array.from({ length: rule === up5 ? 12 : 6 }, () => Number(billedHours(entry(rule === up5 ? 5 : 10), rule))).reduce((a, b) => a + b, 0);
+
+    expect(hours(up5)).toBeCloseTo(0.96, 10);
+    expect(hours(up10)).toBeCloseTo(1.02, 10);
   });
 
   test('an entry of 0 minutes stays 0, also with a rule', () => {
@@ -74,7 +104,7 @@ describe('billedHours', () => {
   });
 
   test('is a multiple of a quarter hour for every length from 1 to 600 minutes, for every rule', () => {
-    for (const rule of [up15, nearest15, up30, nearest30]) {
+    for (const rule of [up15, nearest15, up30, nearest30, up60, nearest60]) {
       for (let minutes = 1; minutes <= 600; minutes++) {
         const hours = Number(billedHours(entry(minutes), rule));
         expect((hours * 60) % rule.minutes).toBe(0);
@@ -185,5 +215,66 @@ describe('withBilling', () => {
 
     expect(entries[0]).not.toHaveProperty('billed_hours');
     expect(entries[0]).not.toHaveProperty('billed_amount');
+  });
+});
+
+// Steps of 5 and 10 minutes are not whole hundredths of an hour, so the billed hours are the step count converted and
+// printed with two decimals; the rounding itself (the number of steps) must still be exact.
+describe('billedHours for the steps of 5 and 10 minutes', () => {
+  test.each([[up5, 5], [nearest5, 5], [up10, 10], [nearest10, 10]])('rounds to a whole number of %j steps (%s minutes)', (rule, step) => {
+    for (let minutes = 1; minutes <= 600; minutes++) {
+      const rounded = Number(billedHours(entry(minutes), rule));
+      // the printed hours are the exact step count x step / 60, rounded to two decimals
+      const steps = Math.round((rounded * 60) / step);
+      expect(rounded).toBe(Number(((steps * step) / 60).toFixed(2)));
+      expect(steps).toBeGreaterThanOrEqual(1);
+    }
+  });
+
+  test('up never gives less than the exact time, apart from the printing to two decimals', () => {
+    for (let minutes = 1; minutes <= 300; minutes++) {
+      expect(Number(billedHours(entry(minutes), up5)) * 60).toBeGreaterThanOrEqual(minutes - 0.3);
+      expect(Number(billedHours(entry(minutes), up10)) * 60).toBeGreaterThanOrEqual(minutes - 0.6);
+    }
+  });
+});
+
+describe('withBilling for the steps of 5, 10 and 60 minutes', () => {
+  const priced = (minutes, rate) => ({ project_id: 1, project_name: 'Web', hourly_rate: rate, ...entry(minutes) });
+
+  test('the amount counts the printed hours: 7 minutes up to 5 minutes is 0.17 h, so 0.17 x 33.33 is 5.67', () => {
+    const [result] = withBilling([priced(7, '33.33')], up5);
+
+    expect(result.billed_hours).toBe('0.17');
+    expect(result.billed_amount).toBe('5.67');
+  });
+
+  test('10 minutes at 33.33: 0.17 h gives 5.67, and a full hour step gives the rate', () => {
+    expect(withBilling([priced(3, '33.33')], up10)[0]).toMatchObject({ billed_hours: '0.17', billed_amount: '5.67' });
+    expect(withBilling([priced(3, '33.33')], up60)[0]).toMatchObject({ billed_hours: '1.00', billed_amount: '33.33' });
+  });
+
+  test('the sum of the billed amounts and hours equals the report totals for the same entries, for every new rule', () => {
+    const entries = [
+      priced(7, '33.33'), priced(22, '33.33'), priced(37, '33.33'), priced(61, '33.33'),
+      priced(5, '99.99'), priced(44, '99.99'), priced(91, '12.34'), priced(1, '0.07'),
+    ];
+    for (const rule of [up5, nearest5, up10, nearest10, up60, nearest60]) {
+      const billed = withBilling(entries, rule);
+      const cents = billed.reduce((sum, e) => sum + Math.round(Number(e.billed_amount) * 100), 0);
+      const hundredths = billed.reduce((sum, e) => sum + Math.round(Number(e.billed_hours) * 100), 0);
+      const report = reportAmounts(withBilledHours(entries, rule));
+
+      expect([rule, decimal(cents)]).toEqual([rule, decimal(report.totalCents)]);
+      expect([rule, hundredths]).toEqual([rule, report.projects[0].hundredths]);
+    }
+  });
+
+  test('every printed row equals printed hours x rate to the cent, also with hours like 0.08 and 0.17', () => {
+    const entries = [priced(1, '33.33'), priced(6, '33.33'), priced(11, '80.00'), priced(66, '99.99')];
+
+    for (const e of withBilling(entries, up5)) {
+      expect(Math.round(Number(e.billed_hours) * Number(e.hourly_rate) * 100)).toBeCloseTo(Number(e.billed_amount) * 100, 5);
+    }
   });
 });

@@ -39,6 +39,16 @@ describe('BillingTable', () => {
     expect(screen.getByText('Hours rounded up to half hours.')).toBeInTheDocument()
   })
 
+  test.each([
+    [{ minutes: 5, direction: 'up' }, 'Stunden auf Schritte von 5 Minuten aufgerundet.'],
+    [{ minutes: 10, direction: 'nearest' }, 'Stunden auf die nächstgelegenen 10 Minuten gerundet.'],
+    [{ minutes: 60, direction: 'up' }, 'Stunden auf volle Stunden aufgerundet.'],
+  ])('names the new rule %j', (rounding, sentence) => {
+    renderTable({ rounding })
+
+    expect(screen.getAllByText(sentence)).toHaveLength(1)
+  })
+
   test('names no rule without one', () => {
     const { rerender } = renderTable()
     expect(screen.queryByText(/gerundet/)).not.toBeInTheDocument()

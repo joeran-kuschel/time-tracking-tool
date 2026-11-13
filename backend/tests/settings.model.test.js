@@ -1,3 +1,5 @@
+const fs = require('fs');
+const path = require('path');
 const { createTestPool } = require('./helpers/testDb');
 
 let mockPool;
@@ -60,6 +62,10 @@ describe('Settings', () => {
     expect(await Settings.update({ roundingMinutes: 15 })).toEqual({ ...DEFAULTS, showAmounts: true, roundingMinutes: 15, roundingDirection: 'nearest' });
   });
 
+  test.each([[5], [10], [15], [30], [60], [0]])('the database accepts the step %s and the model returns it as a number', async (minutes) => {
+    expect(await Settings.update({ roundingMinutes: minutes })).toMatchObject({ roundingMinutes: minutes });
+  });
+
   test.each([[{ roundingMinutes: 20 }], [{ roundingMinutes: -15 }], [{ roundingDirection: 'down' }]])(
     'the database refuses %j', async (change) => {
       await Settings.get();
@@ -70,6 +76,42 @@ describe('Settings', () => {
       await expect(mockPool.query(`UPDATE settings SET ${column} = $1`, [value])).rejects.toThrow();
     }
   );
+
+  describe('migration 008 (the steps 5, 10 and 60)', () => {
+    const migration = fs.readFileSync(path.join(__dirname, '..', 'migrations', '008_settings_rounding_steps.sql'), 'utf8');
+    const accepts = async (minutes) => {
+      try {
+        await mockPool.query('UPDATE settings SET rounding_minutes = $1', [minutes]);
+        return true;
+      } catch {
+        return false;
+      }
+    };
+
+    test('brings an install that applied the first 007 (steps 0, 15, 30) to the new steps', async () => {
+      await Settings.get();
+      // The state of such an install: the check as the first 007 made it
+      await mockPool.query('ALTER TABLE settings DROP CONSTRAINT settings_rounding_minutes_check');
+      await mockPool.query('ALTER TABLE settings ADD CONSTRAINT settings_rounding_minutes_check CHECK (rounding_minutes IN (0, 15, 30))');
+      expect([await accepts(5), await accepts(60), await accepts(15)]).toEqual([false, false, true]);
+
+      await mockPool.query(migration);
+
+      expect([await accepts(5), await accepts(10), await accepts(60), await accepts(30)]).toEqual([true, true, true, true]);
+      expect([await accepts(20), await accepts(45), await accepts(-5)]).toEqual([false, false, false]);
+    });
+
+    test('can run again, also on a fresh install that has the check from 007, and keeps the saved step', async () => {
+      await Settings.update({ roundingMinutes: 10, roundingDirection: 'nearest' });
+
+      await mockPool.query(migration);
+      await mockPool.query(migration);
+
+      expect(await Settings.get()).toMatchObject({ roundingMinutes: 10, roundingDirection: 'nearest' });
+      expect(await accepts(60)).toBe(true);
+      expect(await accepts(20)).toBe(false);
+    });
+  });
 
   test('reads values at the limits of the CHECK constraints', async () => {
     await Settings.get();
