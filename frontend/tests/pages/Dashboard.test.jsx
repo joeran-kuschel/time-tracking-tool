@@ -379,3 +379,68 @@ describe('Dashboard with a rounding rule', () => {
     expect(await axe(container)).toHaveNoViolations()
   })
 })
+
+// Two customers with different rules (billed_rule is per entry: the rule of the entry's customer, or null for none).
+// Muster: 65 min up to a quarter hour = 1.25 h = 118.75; Berger: 65 min up to 1 hour = 2.00 h = 170.00 (rate 85.00)
+describe('Dashboard with customers on different rounding rules', () => {
+  const up15 = { minutes: 15, direction: 'up' }
+  const up60 = { minutes: 60, direction: 'up' }
+  const mixedData = {
+    ...data,
+    entries: [
+      { ...entry(1, muster, 7, 'Website', '95.00', '2026-09-01T09:00:00', '2026-09-01T10:05:00'), ...billed('1.25', '118.75', up15) },
+      { ...entry(3, berger, 9, 'Pflege', '85.00', '2026-09-22T13:00:00', '2026-09-22T14:05:00', 'Updates'), ...billed('2.00', '170.00', up60) },
+    ],
+  }
+
+  beforeEach(() => {
+    api.getDashboard.mockResolvedValue(mixedData)
+  })
+
+  test('adds up each customer with its own rule and says the rounding differs', async () => {
+    renderDashboard()
+    const table = await screen.findByRole('table', { name: 'Abrechnung · September 2026' })
+
+    const [, first, second, total] = within(table).getAllByRole('row')
+    expect(first).toHaveTextContent(/Berger12,00 h85,00\s€\/h170,00\s€/)
+    expect(second).toHaveTextContent(/Muster GmbH11,25 h95,00\s€\/h118,75\s€/)
+    expect(total).toHaveTextContent(/Gesamt3,25 h288,75\s€/)
+    expect(screen.getAllByText('Die Rundung unterscheidet sich je Kunde.')).toHaveLength(2)
+    expect(screen.queryByText(/aufgerundet/)).not.toBeInTheDocument()
+  })
+
+  test('names the one rule when all customers share it', async () => {
+    api.getDashboard.mockResolvedValue({ ...mixedData, entries: mixedData.entries.map((e) => ({ ...e, billed_rule: up15 })) })
+    renderDashboard()
+    await loaded()
+
+    expect(screen.getAllByText('Stunden auf Viertelstunden aufgerundet.')).toHaveLength(2)
+    expect(screen.queryByText('Die Rundung unterscheidet sich je Kunde.')).not.toBeInTheDocument()
+  })
+
+  test('says the rounding differs when one customer has no rounding and the other has', async () => {
+    api.getDashboard.mockResolvedValue({
+      ...mixedData,
+      entries: [mixedData.entries[0], { ...mixedData.entries[1], billed_hours: null, billed_amount: null, billed_rule: null }],
+    })
+    renderDashboard()
+    await loaded()
+
+    expect(screen.getAllByText('Die Rundung unterscheidet sich je Kunde.')).toHaveLength(2)
+  })
+
+  test('the tracked time stays exact for both customers', async () => {
+    renderDashboard()
+    const figures = within(await screen.findByRole('region', { name: 'Kennzahlen' }))
+
+    // 65 + 65 minutes in the month
+    expect(figures.getByText('Dieser Monat').nextSibling).toHaveTextContent('2,17 h')
+  })
+
+  test('has no detectable accessibility violations with the mixed note', async () => {
+    const { container } = renderDashboard()
+    await loaded()
+
+    expect(await axe(container)).toHaveNoViolations()
+  })
+})

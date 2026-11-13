@@ -114,3 +114,11 @@ describe('MonthSummary with a rounding rule', () => {
     expect(await axe(container)).toHaveNoViolations()
   })
 })
+
+describe('MonthSummary with a rounding rule that is mixed', () => {
+  test('says the rounding differs by customer', () => {
+    render(<MonthSummary entries={entries} projects={projects} customerId={3} now={now} rounding={{ mixed: true }} />)
+
+    expect(screen.getByText('Die Rundung unterscheidet sich je Kunde.')).toBeInTheDocument()
+  })
+})

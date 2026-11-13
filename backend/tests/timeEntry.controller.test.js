@@ -371,6 +371,28 @@ describe('timeEntryController.getByCustomerId', () => {
       expect(res.json.mock.calls[0][0].map((e) => [e.billed_hours, e.billed_amount])).toEqual([[null, null], [null, null]]);
     });
 
+    test('the customer\'s own rule wins over the global one, and no rounding for the customer keeps the hours exact', async () => {
+      const own = (minutes, direction) => ({ customer_rounding_minutes: minutes, customer_rounding_direction: direction });
+      TimeEntry.getByCustomerId.mockResolvedValueOnce([{ ...entry(1, 65), ...own(60, 'up') }]).mockResolvedValueOnce([{ ...entry(2, 65), ...own(0, 'up') }]);
+      const a = mockResponse();
+      const b = mockResponse();
+
+      await controller.getByCustomerId({ params: { customerId: '3' } }, a);
+      await controller.getByCustomerId({ params: { customerId: '3' } }, b);
+
+      expect(a.json.mock.calls[0][0][0]).toMatchObject({ billed_hours: '2.00', billed_amount: '160.00', billed_rule: { minutes: 60, direction: 'up' } });
+      expect(b.json.mock.calls[0][0][0]).toMatchObject({ billed_hours: null, billed_amount: null, billed_rule: null });
+    });
+
+    test('a running entry of a customer with an own rule carries the rule but no billed values', async () => {
+      TimeEntry.getByCustomerId.mockResolvedValue([{ ...entry(5, 10), end_time: null, customer_rounding_minutes: 30, customer_rounding_direction: 'up' }]);
+      const res = mockResponse();
+
+      await controller.getByCustomerId({ params: { customerId: '3' } }, res);
+
+      expect(res.json.mock.calls[0][0][0]).toMatchObject({ billed_hours: null, billed_amount: null, billed_rule: { minutes: 30, direction: 'up' } });
+    });
+
     test('reads the settings once', async () => {
       TimeEntry.getByCustomerId.mockResolvedValue([entry(1, 65)]);
 

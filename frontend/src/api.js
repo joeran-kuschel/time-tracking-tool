@@ -98,11 +98,13 @@ export const api = {
   // Customers
   getCustomers: () => request('/customers'),
 
-  createCustomer: (name, email) =>
-    request('/customers', { method: 'POST', body: { name, email } }),
+  // rounding: { roundingMinutes, roundingDirection } of the customer's own rounding rule (both null: the global
+  // setting, see customerRounding.js); without it the stored rule is kept (or, for a new customer, the global one is used)
+  createCustomer: (name, email, rounding) =>
+    request('/customers', { method: 'POST', body: { name, email, ...rounding } }),
 
-  updateCustomer: (id, name, email) =>
-    request(`/customers/${id}`, { method: 'PUT', body: { name, email } }),
+  updateCustomer: (id, name, email, rounding) =>
+    request(`/customers/${id}`, { method: 'PUT', body: { name, email, ...rounding } }),
 
   deleteCustomer: (id) => request(`/customers/${id}`, { method: 'DELETE' }),
 

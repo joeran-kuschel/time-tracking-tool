@@ -55,6 +55,9 @@ describe('api', () => {
 
   test.each([
     ['updateCustomer', [1, 'Neu', 'a@b.de'], '/customers/1', 'PUT', { name: 'Neu', email: 'a@b.de' }],
+    ['updateCustomer', [1, 'Neu', 'a@b.de', { roundingMinutes: 15, roundingDirection: 'up' }], '/customers/1', 'PUT', { name: 'Neu', email: 'a@b.de', roundingMinutes: 15, roundingDirection: 'up' }],
+    ['updateCustomer', [1, 'Neu', 'a@b.de', { roundingMinutes: null, roundingDirection: null }], '/customers/1', 'PUT', { name: 'Neu', email: 'a@b.de', roundingMinutes: null, roundingDirection: null }],
+    ['createCustomer', ['Neu', 'a@b.de', { roundingMinutes: 0, roundingDirection: 'up' }], '/customers', 'POST', { name: 'Neu', email: 'a@b.de', roundingMinutes: 0, roundingDirection: 'up' }],
     ['deleteCustomer', [1], '/customers/1', 'DELETE', undefined],
     ['updateProject', [3, 'Web', 80], '/projects/3', 'PUT', { name: 'Web', hourlyRate: 80 }],
     ['deleteProject', [3], '/projects/3', 'DELETE', undefined],

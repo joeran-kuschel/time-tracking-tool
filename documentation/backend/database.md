@@ -5,11 +5,11 @@ instead.
 
 ## Schema
 
-Defined in `backend/migrations/001_init_schema.sql`, `002_report_status.sql`, `003_one_running_timer.sql`, `004_auth.sql`, `005_settings.sql`, `006_settings_show_amounts.sql`, `007_settings_rounding.sql` and `008_settings_rounding_steps.sql`:
+Defined in `backend/migrations/001_init_schema.sql`, `002_report_status.sql`, `003_one_running_timer.sql`, `004_auth.sql`, `005_settings.sql`, `006_settings_show_amounts.sql`, `007_settings_rounding.sql`, `008_settings_rounding_steps.sql` and `009_customer_rounding.sql`:
 
 | Table | Columns | Relations |
 |---|---|---|
-| `customers` | `id`, `name`, `email`, `created_at`, `updated_at` | |
+| `customers` | `id`, `name`, `email`, `rounding_minutes`, `rounding_direction` (both empty: the global rounding setting; see [Customers API](customers.md#rounding-rule)), `created_at`, `updated_at` | |
 | `projects` | `id`, `customer_id`, `name`, `hourly_rate` (decimal 10,2, default 0), `created_at`, `updated_at` | `customer_id` → `customers`, `ON DELETE CASCADE` |
 | `time_entries` | `id`, `project_id`, `start_time`, `end_time` (null while running), `description`, `created_at`, `updated_at` | `project_id` → `projects`, `ON DELETE CASCADE` |
 | `report_status` | `customer_id`, `year`, `month` (1–12), `status` (`draft`, `ready` or `sent`), `updated_at`; primary key `(customer_id, year, month)` | `customer_id` → `customers`, `ON DELETE CASCADE` |

@@ -77,3 +77,12 @@ describe('KeyFigures with a rounding rule', () => {
     expect(await axe(container)).toHaveNoViolations()
   })
 })
+
+describe('KeyFigures with rounding rules that differ by customer', () => {
+  test('bills the rounded hours and names the way in the note of the amount', () => {
+    render(<KeyFigures entries={rounded} lastMonthReports={lastMonthReports} now={now} rounding={{ mixed: true }} />)
+
+    expect(figure('Abrechenbar im September')).toHaveTextContent(/60,00\s€/)
+    expect(figure('Abrechenbar im September')).toHaveTextContent('Gerundete Stunden × Stundensatz des Projekts')
+  })
+})

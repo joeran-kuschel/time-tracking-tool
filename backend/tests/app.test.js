@@ -70,7 +70,7 @@ describe('request bodies', () => {
     });
 
     expect(response.status).toBe(201);
-    expect(Customer.create).toHaveBeenCalledWith('Muster', null);
+    expect(Customer.create).toHaveBeenCalledWith('Muster', null, undefined);
   });
 
   test('ignores form data, which other sites can send without a CORS check', async () => {

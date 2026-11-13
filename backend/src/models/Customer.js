@@ -11,18 +11,28 @@ class Customer {
     return result.rows[0];
   }
 
-  static async create(name, email) {
+  // rounding: the customer's own rounding rule { minutes, direction }, or null/undefined to use the global setting
+  static async create(name, email, rounding) {
     const result = await pool.query(
-      'INSERT INTO customers (name, email) VALUES ($1, $2) RETURNING *',
-      [name, email]
+      'INSERT INTO customers (name, email, rounding_minutes, rounding_direction) VALUES ($1, $2, $3, $4) RETURNING *',
+      [name, email, rounding?.minutes ?? null, rounding?.direction ?? null]
     );
     return result.rows[0];
   }
 
-  static async update(id, name, email) {
+  // rounding: undefined keeps the stored rule, null sets "use the global setting", { minutes, direction } sets an own rule
+  static async update(id, name, email, rounding) {
+    if (rounding === undefined) {
+      const result = await pool.query(
+        'UPDATE customers SET name = $1, email = $2, updated_at = CURRENT_TIMESTAMP WHERE id = $3 RETURNING *',
+        [name, email, id]
+      );
+      return result.rows[0];
+    }
     const result = await pool.query(
-      'UPDATE customers SET name = $1, email = $2, updated_at = CURRENT_TIMESTAMP WHERE id = $3 RETURNING *',
-      [name, email, id]
+      `UPDATE customers SET name = $1, email = $2, rounding_minutes = $3, rounding_direction = $4, updated_at = CURRENT_TIMESTAMP
+       WHERE id = $5 RETURNING *`,
+      [name, email, rounding?.minutes ?? null, rounding?.direction ?? null, id]
     );
     return result.rows[0];
   }

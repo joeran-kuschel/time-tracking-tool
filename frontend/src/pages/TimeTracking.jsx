@@ -10,6 +10,7 @@ import MissingRecord from '../components/MissingRecord'
 import Timer from '../components/Timer'
 import MonthSummary from '../components/MonthSummary'
 import { roundingOfEntries } from '../rounding'
+import { GLOBAL_ROUNDING, ownRoundingLabel, roundingFieldsOf, roundingOptions, roundingValueOf } from '../customerRounding'
 import EntriesList from '../components/EntriesList'
 import EditableRecord from '../components/EditableRecord'
 import RecordForm from '../components/RecordForm'
@@ -59,6 +60,8 @@ function TimeTracking({ customers, onCustomersChange, timer }) {
 
   const selectedCustomer = customers.find((c) => c.id === requestedCustomerId) ?? null
   const selectedCustomerId = selectedCustomer?.id ?? null
+  // The customer's own rounding rule as text, or null when it uses the global setting
+  const customerRounding = selectedCustomer ? ownRoundingLabel(i18n, selectedCustomer) : null
   const selectedProject = projects.find((p) => p.id === requestedProjectId) ?? null
   const selectedProjectId = selectedProject?.id ?? null
   // An address for a record that does not exist (any more)
@@ -138,11 +141,16 @@ function TimeTracking({ customers, onCustomersChange, timer }) {
   const customerFields = [
     { name: 'name', label: t`Name`, required: true },
     { name: 'email', label: t`Email (optional)`, type: 'email' },
+    { name: 'rounding', label: t`Rounding`, type: 'select', options: roundingOptions(i18n) },
   ]
-  const customerForm = { legend: t`Edit customer`, fields: customerFields, toValues: (c) => ({ name: c.name, email: c.email ?? '' }) }
+  const customerForm = {
+    legend: t`Edit customer`,
+    fields: customerFields,
+    toValues: (c) => ({ name: c.name, email: c.email ?? '', rounding: roundingValueOf(c) }),
+  }
 
-  const addCustomer = async ({ name, email }) => {
-    const created = await runAdd(() => api.createCustomer(name.trim(), email.trim()), msg`Customer could not be created.`)
+  const addCustomer = async ({ name, email, rounding }) => {
+    const created = await runAdd(() => api.createCustomer(name.trim(), email.trim(), roundingFieldsOf(rounding)), msg`Customer could not be created.`)
     if (created) {
       closeDialog()
       onCustomersChange()
@@ -150,9 +158,11 @@ function TimeTracking({ customers, onCustomersChange, timer }) {
     return created
   }
 
-  const updateCustomer = async (customer, { name, email }) => {
-    const saved = await api.updateCustomer(customer.id, name.trim(), email.trim())
+  const updateCustomer = async (customer, { name, email, rounding }) => {
+    const saved = await api.updateCustomer(customer.id, name.trim(), email.trim(), roundingFieldsOf(rounding))
     await onCustomersChange()
+    // The server rounds the entries by the customer's rule, so a changed rule needs the entries (and the month summary) again
+    if (rounding !== roundingValueOf(customer)) await refreshEntries()
     return saved
   }
 
@@ -316,6 +326,7 @@ function TimeTracking({ customers, onCustomersChange, timer }) {
                   <div className="min-w-0 flex-1">
                     <h1 className="font-serif text-4xl font-semibold leading-tight">{selectedCustomer.name}</h1>
                     {selectedCustomer.email && <p className="text-sm text-muted">{selectedCustomer.email}</p>}
+                    {customerRounding && <p className="text-sm text-muted">{t`Rounding: ${customerRounding}`}</p>}
                   </div>
                   <div className="flex gap-1">{actions}</div>
                 </div>
@@ -394,7 +405,7 @@ function TimeTracking({ customers, onCustomersChange, timer }) {
       </div>
 
       <Modal title={t`New customer`} open={dialog === 'customer'} onClose={closeDialog}>
-        <RecordForm fields={customerFields} initialValues={{ name: '', email: '' }} submitLabel={t`Save`}
+        <RecordForm fields={customerFields} initialValues={{ name: '', email: '', rounding: GLOBAL_ROUNDING }} submitLabel={t`Save`}
           onSubmit={addCustomer} onCancel={closeDialog} error={addError} />
       </Modal>
       <Modal title={t`New project`} open={dialog === 'project'} onClose={closeDialog}>

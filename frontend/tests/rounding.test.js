@@ -27,22 +27,54 @@ describe('roundingNote', () => {
 
 describe('roundingOfEntries', () => {
   const rule = { minutes: 15, direction: 'up' }
+  const other = { minutes: 60, direction: 'nearest' }
+  const done = (extra) => ({ end_time: '2026-09-21T10:00:00', ...extra })
 
-  test('takes the rule the server applied from the entries', () => {
-    expect(roundingOfEntries([{ id: 1, billed_hours: '1.25', billed_rule: rule }, { id: 2, billed_hours: '0.50', billed_rule: rule }])).toEqual(rule)
+  test('takes the rule the server applied from the finished entries', () => {
+    expect(roundingOfEntries([done({ billed_hours: '1.25', billed_rule: rule }), done({ billed_hours: '0.50', billed_rule: rule })])).toEqual(rule)
   })
 
-  test('finds it on any entry, also when the first is a running one', () => {
-    expect(roundingOfEntries([{ id: 1, billed_hours: null, billed_rule: rule }])).toEqual(rule)
-    expect(roundingOfEntries([{ id: 1 }, { id: 2, billed_rule: rule }])).toEqual(rule)
+  test('counts finished entries only, like the figures: a running entry does not count', () => {
+    expect(roundingOfEntries([{ id: 1, billed_hours: null, billed_rule: rule }])).toBeNull()
+    expect(roundingOfEntries([{ id: 1, billed_rule: other }, done({ billed_rule: rule })])).toEqual(rule)
   })
 
-  test.each([[[]], [[{ id: 1 }]], [[{ id: 1, billed_rule: null }]], [null], [undefined]])('is null for %j (no rounding)', (entries) => {
+  test('says the rounding is mixed when customers have different rules', () => {
+    expect(roundingOfEntries([done({ billed_rule: rule }), done({ billed_rule: other })])).toEqual({ mixed: true })
+  })
+
+  test('says it is mixed when the rules differ only in the direction', () => {
+    expect(roundingOfEntries([done({ billed_rule: rule }), done({ billed_rule: { ...rule, direction: 'nearest' } })])).toEqual({ mixed: true })
+  })
+
+  test('does not mutate the entries', () => {
+    const entries = [done({ billed_rule: rule }), done({ billed_rule: other })]
+    const copy = JSON.parse(JSON.stringify(entries))
+
+    roundingOfEntries(entries)
+
+    expect(entries).toEqual(copy)
+  })
+
+  test('says it is mixed when one customer is rounded and another is exact', () => {
+    expect(roundingOfEntries([done({ billed_rule: rule }), done({ billed_rule: null })])).toEqual({ mixed: true })
+  })
+
+  test('is null when the entries are exact: no rule field, or all customers without a rule', () => {
+    expect(roundingOfEntries([done({ id: 1 }), done({ id: 2 })])).toBeNull()
+    expect(roundingOfEntries([done({ billed_rule: null }), done({ billed_rule: null })])).toBeNull()
+  })
+
+  test.each([[[]], [null], [undefined]])('is null for %j', (entries) => {
     expect(roundingOfEntries(entries)).toBeNull()
   })
 
   test('gives a rule that roundingNote can name', () => {
-    expect(roundingNote(roundingOfEntries([{ billed_rule: rule }])).message).toBe('Hours rounded up to quarter hours.')
+    expect(roundingNote(roundingOfEntries([done({ billed_rule: rule })])).message).toBe('Hours rounded up to quarter hours.')
+  })
+
+  test('gives a note for mixed rules', () => {
+    expect(roundingNote(roundingOfEntries([done({ billed_rule: rule }), done({ billed_rule: other })])).message).toBe('Rounding differs by customer.')
   })
 })
 

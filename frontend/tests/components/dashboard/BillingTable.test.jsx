@@ -72,3 +72,18 @@ describe('BillingTable', () => {
     expect(await axe(container)).toHaveNoViolations()
   })
 })
+
+describe('BillingTable with rounding rules that differ by customer', () => {
+  test('says so once under the heading and keeps the figures', () => {
+    renderTable({ rounding: { mixed: true } })
+
+    expect(screen.getAllByText('Die Rundung unterscheidet sich je Kunde.')).toHaveLength(1)
+    expect(within(screen.getByRole('table', { name: 'Abrechnung · September 2026' })).getAllByRole('row')[3]).toHaveTextContent(/Gesamt2,00 h180,00\s€/)
+  })
+
+  test('has no detectable accessibility violations', async () => {
+    const { container } = renderTable({ rounding: { mixed: true } })
+
+    expect(await axe(container)).toHaveNoViolations()
+  })
+})

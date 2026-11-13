@@ -35,8 +35,71 @@ describe('customerController', () => {
   test('update saves name and email', async () => {
     Customer.update.mockResolvedValue({ id: 1, name: 'Neu', email: 'a@b.de' });
     const res = await call(customers.update, { params: { id: '1' }, body: { name: 'Neu', email: 'a@b.de' } });
-    expect(Customer.update).toHaveBeenCalledWith('1', 'Neu', 'a@b.de');
+    expect(Customer.update).toHaveBeenCalledWith('1', 'Neu', 'a@b.de', undefined);
     expect(res.json).toHaveBeenCalledWith({ id: 1, name: 'Neu', email: 'a@b.de' });
+  });
+
+  describe('the rounding rule of a customer', () => {
+    const own = { roundingMinutes: 15, roundingDirection: 'nearest' };
+
+    test('create saves an own rule', async () => {
+      Customer.create.mockResolvedValue({ id: 1 });
+      const res = await call(customers.create, { body: { name: 'Neu', ...own } });
+
+      expect(Customer.create).toHaveBeenCalledWith('Neu', null, { minutes: 15, direction: 'nearest' });
+      expect(res.status).toHaveBeenCalledWith(201);
+    });
+
+    test('create without the fields uses the global setting', async () => {
+      Customer.create.mockResolvedValue({ id: 1 });
+      await call(customers.create, { body: { name: 'Neu' } });
+
+      expect(Customer.create).toHaveBeenCalledWith('Neu', null, undefined);
+    });
+
+    test('create with both fields null uses the global setting explicitly', async () => {
+      Customer.create.mockResolvedValue({ id: 1 });
+      await call(customers.create, { body: { name: 'Neu', roundingMinutes: null, roundingDirection: null } });
+
+      expect(Customer.create).toHaveBeenCalledWith('Neu', null, null);
+    });
+
+    test.each([[0, 'up'], [5, 'up'], [10, 'nearest'], [30, 'up'], [60, 'nearest']])('update saves the rule %s minutes, %s', async (minutes, direction) => {
+      Customer.update.mockResolvedValue({ id: 1 });
+      await call(customers.update, { params: { id: '1' }, body: { name: 'Neu', roundingMinutes: minutes, roundingDirection: direction } });
+
+      expect(Customer.update).toHaveBeenCalledWith('1', 'Neu', null, { minutes, direction });
+    });
+
+    test('update with both fields null removes the own rule', async () => {
+      Customer.update.mockResolvedValue({ id: 1 });
+      await call(customers.update, { params: { id: '1' }, body: { name: 'Neu', roundingMinutes: null, roundingDirection: null } });
+
+      expect(Customer.update).toHaveBeenCalledWith('1', 'Neu', null, null);
+    });
+
+    test.each([
+      [{ roundingMinutes: 20, roundingDirection: 'up' }],
+      [{ roundingMinutes: -15, roundingDirection: 'up' }],
+      [{ roundingMinutes: '15', roundingDirection: 'up' }],
+      [{ roundingMinutes: 15, roundingDirection: 'down' }],
+      [{ roundingMinutes: 15, roundingDirection: null }],
+      [{ roundingMinutes: null, roundingDirection: 'up' }],
+      [{ roundingMinutes: 15 }],
+      [{ roundingDirection: 'up' }],
+      [{ roundingMinutes: undefined, roundingDirection: 'up' }],
+      [{ roundingMinutes: true, roundingDirection: 'up' }],
+      [{ roundingMinutes: [15], roundingDirection: ['up'] }],
+    ])('rejects %j with 400 and saves nothing, on create and update', async (rule) => {
+      const created = await call(customers.create, { body: { name: 'Neu', ...rule } });
+      const updated = await call(customers.update, { params: { id: '1' }, body: { name: 'Neu', ...rule } });
+
+      expect(created.status).toHaveBeenCalledWith(400);
+      expect(updated.status).toHaveBeenCalledWith(400);
+      expect(created.json.mock.calls[0][0].error).toMatch(/roundingMinutes and roundingDirection/);
+      expect(Customer.create).not.toHaveBeenCalled();
+      expect(Customer.update).not.toHaveBeenCalled();
+    });
   });
 
   test('delete refuses while a timer of the customer runs', async () => {
