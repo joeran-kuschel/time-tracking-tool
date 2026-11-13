@@ -55,6 +55,14 @@ Body: `{ endTime, startTime?, projectId?, description? }`. `endTime` is required
 
 This is a single `UPDATE` (`backend/src/models/TimeEntry.js`, `update(id, { startTime, endTime, projectId, description })`).
 
+## Rounding columns on entries
+
+The entry queries that feed rounded figures (the Dashboard's `entries`, the report entries, the customer's entries) also
+select the customer's own rule as `customer_rounding_minutes` and `customer_rounding_direction` (both `null`: the global
+setting), because the server resolves the rounding rule per entry from them ([Rounding](reports.md#rounding)). The same two
+keys are in the other answers built from those queries (`recent`, the Entries search); they carry no data that
+`GET /api/customers` does not return, and nothing uses them there.
+
 ## Entries that end before they start
 
 Before this check, stopping the timer could save an entry that ends before it starts. Such old entries count as 0 hours

@@ -36,6 +36,8 @@ on first use and updates it.
 ## Adding an option
 
 1. A migration with `ALTER TABLE settings ADD COLUMN … DEFAULT …` (and `./k8s/generate-init-scripts.sh`).
+   The list of rounding steps is in two checks, `settings_rounding_minutes_check` and `customers_rounding_minutes_check`
+   (the customer's own rule uses the same steps): a migration that adds a step replaces both, by name.
    Give a `CHECK` an explicit name (`CONSTRAINT settings_<column>_check CHECK (…)`): a later migration has to drop it
    by name, and pg-mem (the tests) names an unnamed check differently from Postgres.
 2. An entry in `config/settingsOptions.js` (name, column, `isValid`). `Settings.get()` and `Settings.update()` and the

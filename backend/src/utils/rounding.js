@@ -13,6 +13,21 @@ function roundingRuleOf(settings) {
   return { minutes: settings.roundingMinutes, direction: settings.roundingDirection === 'nearest' ? 'nearest' : 'up' };
 }
 
+// The rule a customer's columns give (rounding_minutes, rounding_direction): both null/undefined use the global rule,
+// minutes 0 is no rounding for this customer (null), otherwise the customer's own { minutes, direction }. globalRule is
+// the rule of the settings ({ minutes, direction } or null).
+function customerRuleOf(minutes, direction, globalRule) {
+  if (minutes === null || minutes === undefined) return globalRule;
+  return minutes > 0 ? { minutes, direction } : null;
+}
+
+// The rule that applies to an entry: the one of its customer (the entry queries add customer_rounding_minutes and
+// customer_rounding_direction, see models/TimeEntry.js), else the global one
+const ruleOfEntry = (entry, globalRule) => customerRuleOf(entry.customer_rounding_minutes, entry.customer_rounding_direction, globalRule);
+
+// The rule that applies to a customer row (columns rounding_minutes and rounding_direction)
+const ruleOfCustomer = (customer, globalRule) => customerRuleOf(customer?.rounding_minutes, customer?.rounding_direction, globalRule);
+
 // A duration in whole seconds rounded to the rule's step; 0 stays 0
 function roundSeconds(seconds, { minutes, direction }) {
   const step = minutes * 60;
@@ -31,27 +46,30 @@ function billedHours(entry, rule) {
   return (roundSeconds(seconds, rule) / 3600).toFixed(2);
 }
 
-// The entries with billed_hours added; without a rule the entries are returned as they are
-function withBilledHours(entries, rule) {
-  if (!rule) return entries;
-  return entries.map((entry) => ({ ...entry, billed_hours: billedHours(entry, rule) }));
+// The entries with billed_hours added, each with the rule that applies to it: the one of its customer, else the global
+// rule (a customer can have its own rule or none, see ruleOfEntry). Entries are returned as they are when no rule applies to
+// any of them.
+function withBilledHours(entries, globalRule) {
+  if (!globalRule && !entries.some((entry) => entry.customer_rounding_minutes != null)) return entries;
+  return entries.map((entry) => ({ ...entry, billed_hours: billedHours(entry, ruleOfEntry(entry, globalRule)) }));
 }
 
 // The entries with billed_hours and, for the figures of the Dashboard and the month summary, billed_amount (a string
 // with two decimals, rounded to cents per entry by the rule of the reports, see utils/amounts.js), so those figures add
 // up exactly like the report. Both are null for an entry without billed hours (running, or ending before it starts):
 // the client counts those as before. Every entry also carries billed_rule, the { minutes, direction } that produced
-// the values, so the client names the rule that was really applied (the note under those figures) without asking the
-// settings again. The entries need hourly_rate. Without a rule they are returned as they are.
-function withBilling(entries, rule) {
-  if (!rule) return entries;
-  const rounded = withBilledHours(entries, rule);
+// the values (null when no rule applies to the entry's customer), so the client names the rule that was really applied
+// (the note under those figures) without asking the settings again. The entries need hourly_rate. Without a rule
+// anywhere they are returned as they are.
+function withBilling(entries, globalRule) {
+  const rounded = withBilledHours(entries, globalRule);
+  if (rounded === entries) return entries;
   const { entryCents } = reportAmounts(rounded);
   return rounded.map((entry, index) => ({
     ...entry,
     billed_amount: entry.billed_hours === null ? null : decimal(entryCents[index]),
-    billed_rule: rule,
+    billed_rule: ruleOfEntry(entry, globalRule),
   }));
 }
 
-module.exports = { roundingRuleOf, billedHours, withBilledHours, withBilling };
+module.exports = { roundingRuleOf, ruleOfEntry, ruleOfCustomer, billedHours, withBilledHours, withBilling };

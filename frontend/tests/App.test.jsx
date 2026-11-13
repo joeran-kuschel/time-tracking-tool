@@ -6,6 +6,7 @@ import { axe } from './support/axe'
 import App from '@/App'
 import { api, ApiError } from '@/api'
 import { fromInputs } from '@/entryTime'
+import { i18n } from '@/i18n'
 
 vi.mock('@/api', async (importOriginal) => ({
   ...(await importOriginal()),
@@ -264,6 +265,200 @@ describe('App', () => {
     expect(screen.queryByText(/gerundet/)).not.toBeInTheDocument()
   })
 
+  describe('the rounding rule of a customer', () => {
+    const labelOf = 'Rundung'
+
+    test('a new customer uses the global setting unless a rule is chosen', async () => {
+      api.getCustomers.mockResolvedValue([])
+      api.createCustomer.mockResolvedValue({ id: 2, name: 'Eigen AG' })
+      await renderTimeTracking()
+      const dialog = await openNewCustomer()
+
+      expect(within(dialog).getByLabelText(labelOf)).toHaveValue('global')
+      await userEvent.type(within(dialog).getByLabelText('Name'), 'Eigen AG')
+      await userEvent.selectOptions(within(dialog).getByLabelText(labelOf), 'Viertelstunde (15 Minuten), Auf- oder abrunden (nächstgelegene Stufe)')
+      await userEvent.click(within(dialog).getByRole('button', { name: 'Speichern' }))
+
+      expect(api.createCustomer).toHaveBeenCalledWith('Eigen AG', '', { roundingMinutes: 15, roundingDirection: 'nearest' })
+    })
+
+    test('offers the global setting, no rounding and every step in both directions', async () => {
+      api.getCustomers.mockResolvedValue([])
+      await renderTimeTracking()
+      const dialog = await openNewCustomer()
+
+      const options = within(within(dialog).getByLabelText(labelOf)).getAllByRole('option')
+
+      expect(options).toHaveLength(2 + 5 * 2)
+      expect(options.slice(0, 4).map((o) => o.textContent)).toEqual([
+        'Globale Einstellung verwenden', 'Keine Rundung', '5 Minuten, Aufrunden', '5 Minuten, Auf- oder abrunden (nächstgelegene Stufe)',
+      ])
+      expect(options.map((o) => o.value)).toEqual(['global', 'none', '5-up', '5-nearest', '10-up', '10-nearest', '15-up', '15-nearest', '30-up', '30-nearest', '60-up', '60-nearest'])
+    })
+
+    test('the edit form shows the customer\'s rule and saves a changed one', async () => {
+      api.getCustomers.mockResolvedValue([{ id: 1, name: 'Muster GmbH', email: null, rounding_minutes: 30, rounding_direction: 'up' }])
+      api.updateCustomer.mockResolvedValue({ id: 1 })
+      await renderTimeTracking()
+      await userEvent.click(await screen.findByRole('button', { name: 'Muster GmbH' }))
+
+      await userEvent.click(await screen.findByRole('button', { name: 'Muster GmbH bearbeiten' }))
+      expect(screen.getByLabelText(labelOf)).toHaveValue('30-up')
+      await userEvent.selectOptions(screen.getByLabelText(labelOf), 'none')
+      await userEvent.click(screen.getByRole('button', { name: 'Speichern' }))
+
+      expect(api.updateCustomer).toHaveBeenCalledWith(1, 'Muster GmbH', '', { roundingMinutes: 0, roundingDirection: 'up' })
+    })
+
+    test('a changed rule loads the customer\'s entries again, so the month summary follows it; an unchanged rule does not', async () => {
+      const now = new Date()
+      const at = (hour, minute) => new Date(now.getFullYear(), now.getMonth(), 2, hour, minute).toISOString()
+      const entry = (extra) => ({ id: 1, project_id: 7, project_name: 'Website', description: 'Konzept', start_time: at(9, 0), end_time: at(10, 5), ...extra })
+      api.getCustomers.mockResolvedValue([{ id: 1, name: 'Muster GmbH', rounding_minutes: 15, rounding_direction: 'up' }])
+      api.getCustomerTimeEntries
+        .mockResolvedValueOnce([entry({ billed_hours: '1.25', billed_amount: '118.75', billed_rule: { minutes: 15, direction: 'up' } })])
+        .mockResolvedValue([entry({ billed_hours: '2.00', billed_amount: '190.00', billed_rule: { minutes: 60, direction: 'up' } })])
+      api.updateCustomer.mockResolvedValue({ id: 1 })
+      await renderTimeTracking()
+      await userEvent.click(await screen.findByRole('button', { name: 'Muster GmbH' }))
+      expect(await screen.findByText('Stunden auf Viertelstunden aufgerundet.')).toBeInTheDocument()
+      expect(screen.getByText('Stunden diesen Monat').nextElementSibling).toHaveTextContent('1,25 h')
+      expect(api.getCustomerTimeEntries).toHaveBeenCalledTimes(1)
+
+      // the rule stays: no new load
+      await userEvent.click(screen.getByRole('button', { name: 'Muster GmbH bearbeiten' }))
+      await userEvent.click(screen.getByRole('button', { name: 'Speichern' }))
+      await waitFor(() => expect(api.updateCustomer).toHaveBeenCalledTimes(1))
+      await screen.findByRole('button', { name: 'Muster GmbH bearbeiten' })
+      expect(api.getCustomerTimeEntries).toHaveBeenCalledTimes(1)
+
+      // the rule changes: the entries are loaded again and the summary shows the new rounding
+      await userEvent.click(screen.getByRole('button', { name: 'Muster GmbH bearbeiten' }))
+      await userEvent.selectOptions(screen.getByLabelText('Rundung'), '60-up')
+      await userEvent.click(screen.getByRole('button', { name: 'Speichern' }))
+
+      expect(await screen.findByText('Stunden auf volle Stunden aufgerundet.')).toBeInTheDocument()
+      expect(screen.getByText('Stunden diesen Monat').nextElementSibling).toHaveTextContent('2,00 h')
+      expect(api.getCustomerTimeEntries).toHaveBeenCalledTimes(2)
+    })
+
+    test('the edit form can go back to the global setting', async () => {
+      api.getCustomers.mockResolvedValue([{ id: 1, name: 'Muster GmbH', rounding_minutes: 60, rounding_direction: 'nearest' }])
+      api.updateCustomer.mockResolvedValue({ id: 1 })
+      await renderTimeTracking()
+      await userEvent.click(await screen.findByRole('button', { name: 'Muster GmbH' }))
+
+      await userEvent.click(await screen.findByRole('button', { name: 'Muster GmbH bearbeiten' }))
+      await userEvent.selectOptions(screen.getByLabelText(labelOf), 'global')
+      await userEvent.click(screen.getByRole('button', { name: 'Speichern' }))
+
+      expect(api.updateCustomer).toHaveBeenCalledWith(1, 'Muster GmbH', '', { roundingMinutes: null, roundingDirection: null })
+    })
+
+    test('a failed save keeps the dialog with the chosen rule, shows the error and sends nothing twice', async () => {
+      api.getCustomers.mockResolvedValue([])
+      api.createCustomer.mockRejectedValueOnce(new ApiError('Server error', 500))
+      await renderTimeTracking()
+      const dialog = await openNewCustomer()
+
+      await userEvent.type(within(dialog).getByLabelText('Name'), 'Eigen AG')
+      await userEvent.selectOptions(within(dialog).getByLabelText(labelOf), '60-up')
+      await userEvent.click(within(dialog).getByRole('button', { name: 'Speichern' }))
+
+      expect(await within(dialog).findByRole('alert')).toHaveTextContent('Kunde konnte nicht angelegt werden.')
+      expect(within(dialog).getByLabelText(labelOf)).toHaveValue('60-up')
+      expect(api.createCustomer).toHaveBeenCalledTimes(1)
+    })
+
+    test('the select is reached with Tab after name and email (jsdom cannot open a native select), and Escape closes the dialog without saving', async () => {
+      api.getCustomers.mockResolvedValue([])
+      await renderTimeTracking()
+      const dialog = await openNewCustomer()
+      const select = within(dialog).getByLabelText(labelOf)
+
+      within(dialog).getByLabelText('Name').focus()
+      await userEvent.tab()
+      await userEvent.tab()
+      expect(select).toHaveFocus()
+      await userEvent.keyboard('{Escape}')
+
+      expect(api.createCustomer).not.toHaveBeenCalled()
+      expect(screen.getByRole('button', { name: 'Neuer Kunde' })).toHaveFocus()
+    })
+
+    test('the select of the new customer dialog has no accessibility violations, in German and English', async () => {
+      api.getCustomers.mockResolvedValue([])
+      const { container, unmount } = await renderTimeTracking()
+      await openNewCustomer()
+      expect(await axe(container)).toHaveNoViolations()
+      unmount()
+
+      i18n.activate('en')
+      const english = await renderTimeTracking()
+      await userEvent.click(await screen.findByRole('button', { name: 'New customer' }))
+      expect(within(screen.getByRole('dialog', { name: 'New customer' })).getByLabelText('Rounding')).toHaveValue('global')
+      expect(await axe(english.container)).toHaveNoViolations()
+    })
+
+    test('a failed update of the rule shows the error and does not load the entries again', async () => {
+      api.getCustomers.mockResolvedValue([{ id: 1, name: 'Muster GmbH', rounding_minutes: 15, rounding_direction: 'up' }])
+      api.updateCustomer.mockRejectedValue(new ApiError('Server error', 500))
+      await renderTimeTracking()
+      await userEvent.click(await screen.findByRole('button', { name: 'Muster GmbH' }))
+      await waitFor(() => expect(api.getCustomerTimeEntries).toHaveBeenCalledTimes(1))
+
+      await userEvent.click(await screen.findByRole('button', { name: 'Muster GmbH bearbeiten' }))
+      await userEvent.selectOptions(screen.getByLabelText(labelOf), '60-up')
+      await userEvent.click(screen.getByRole('button', { name: 'Speichern' }))
+
+      expect(await screen.findByRole('alert')).toBeInTheDocument()
+      expect(api.getCustomerTimeEntries).toHaveBeenCalledTimes(1)
+      expect(screen.getByLabelText(labelOf)).toHaveValue('60-up')
+    })
+
+    test('a customer with an own rule can be deleted', async () => {
+      api.getCustomers.mockResolvedValue([{ id: 1, name: 'Muster GmbH', rounding_minutes: 15, rounding_direction: 'up' }])
+      api.deleteCustomer.mockResolvedValue({})
+      await renderTimeTracking()
+      await userEvent.click(await screen.findByRole('button', { name: 'Muster GmbH' }))
+
+      await userEvent.click(await screen.findByRole('button', { name: 'Muster GmbH löschen' }))
+      await userEvent.click(screen.getByRole('button', { name: /^(Löschen|Ja, löschen)/ }))
+
+      await waitFor(() => expect(api.deleteCustomer).toHaveBeenCalledWith(1))
+    })
+
+    test('the header follows a language switch', async () => {
+      api.getCustomers.mockResolvedValue([{ id: 1, name: 'Muster GmbH', rounding_minutes: 30, rounding_direction: 'nearest' }])
+      await renderTimeTracking()
+      await userEvent.click(await screen.findByRole('button', { name: 'Muster GmbH' }))
+      expect(await screen.findByText('Rundung: Halbe Stunde (30 Minuten), Auf- oder abrunden (nächstgelegene Stufe)')).toBeInTheDocument()
+
+      act(() => { i18n.activate('en') })
+
+      expect(await screen.findByText('Rounding: Half hour (30 minutes), To the nearest')).toBeInTheDocument()
+    })
+
+    test('the customer\'s header names an own rule, and shows nothing for the global setting', async () => {
+      api.getCustomers.mockResolvedValue([
+        { id: 1, name: 'Muster GmbH', rounding_minutes: 15, rounding_direction: 'up' },
+        { id: 2, name: 'Global AG', rounding_minutes: null, rounding_direction: null },
+        { id: 3, name: 'Exakt AG', rounding_minutes: 0, rounding_direction: 'up' },
+      ])
+      await renderTimeTracking()
+
+      await userEvent.click(await screen.findByRole('button', { name: 'Muster GmbH' }))
+      expect(await screen.findByText('Rundung: Viertelstunde (15 Minuten), Aufrunden')).toBeInTheDocument()
+
+      await userEvent.click(screen.getByRole('button', { name: 'Global AG' }))
+      await screen.findByRole('heading', { level: 1, name: 'Global AG' })
+      expect(screen.queryByText(/^Rundung:/)).not.toBeInTheDocument()
+
+      await userEvent.click(screen.getByRole('button', { name: 'Exakt AG' }))
+      expect(await screen.findByText('Rundung: Keine Rundung')).toBeInTheDocument()
+    })
+  })
+
   test('opens the report of the selected customer from the month summary', async () => {
     api.getCustomers.mockResolvedValue([{ id: 1, name: 'Muster GmbH' }])
     api.getMonthlyReport.mockResolvedValue({ entries: [], totalHours: '0.00' })
@@ -307,7 +502,7 @@ describe('App', () => {
     await userEvent.type(within(dialog).getByLabelText('E-Mail (optional)'), 'info@neu.de')
     await userEvent.click(within(dialog).getByRole('button', { name: 'Speichern' }))
 
-    expect(api.createCustomer).toHaveBeenCalledWith('Neu AG', 'info@neu.de')
+    expect(api.createCustomer).toHaveBeenCalledWith('Neu AG', 'info@neu.de', { roundingMinutes: null, roundingDirection: null })
     expect(await screen.findByRole('button', { name: 'Neu AG', pressed: false })).toBeInTheDocument()
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Neuer Kunde' })).toHaveFocus()
@@ -477,7 +672,7 @@ describe('App', () => {
     await userEvent.type(name, 'Muster AG')
     await userEvent.click(screen.getByRole('button', { name: 'Speichern' }))
 
-    expect(api.updateCustomer).toHaveBeenCalledWith(1, 'Muster AG', '')
+    expect(api.updateCustomer).toHaveBeenCalledWith(1, 'Muster AG', '', { roundingMinutes: null, roundingDirection: null })
     expect(await screen.findByRole('button', { name: 'Muster AG', pressed: true })).toBeInTheDocument()
     expect(screen.getByRole('heading', { name: 'Einträge für Website' })).toBeInTheDocument()
     expect(api.getProjects).toHaveBeenCalledTimes(1)

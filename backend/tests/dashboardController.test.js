@@ -159,3 +159,48 @@ describe('dashboardController.get with a rounding rule', () => {
     console.error.mockRestore();
   });
 });
+
+describe('dashboardController.get with the rounding rules of customers', () => {
+  const entry = (id, customer, minutes, own = {}) => ({
+    id, project_id: customer, project_name: 'Web', hourly_rate: '80.00', customer_id: customer, customer_name: `K${customer}`,
+    start_time: '2026-09-21T08:00:00Z', end_time: new Date(Date.UTC(2026, 8, 21, 8, minutes)).toISOString(),
+    customer_rounding_minutes: null, customer_rounding_direction: null, ...own,
+  });
+  const settings = (roundingMinutes) =>
+    Settings.get.mockResolvedValue({ showAmounts: false, roundingMinutes, roundingDirection: 'up', showRoundingNote: false });
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    TimeEntry.getRecent.mockResolvedValue([]);
+    Project.getAllWithCustomer.mockResolvedValue([]);
+    ReportStatus.forMonth.mockResolvedValue([]);
+  });
+
+  test('each entry is billed by the rule of its customer', async () => {
+    settings(15);
+    TimeEntry.getInRange.mockResolvedValue([
+      entry(1, 1, 65),
+      entry(2, 2, 65, { customer_rounding_minutes: 60, customer_rounding_direction: 'up' }),
+      entry(3, 3, 65, { customer_rounding_minutes: 0, customer_rounding_direction: 'up' }),
+    ]);
+    const res = mockResponse();
+
+    await controller.get({ query }, res);
+
+    const { entries } = res.json.mock.calls[0][0];
+    expect(entries.map((e) => [e.billed_hours, e.billed_amount])).toEqual([['1.25', '100.00'], ['2.00', '160.00'], [null, null]]);
+    expect(entries.map((e) => e.billed_rule)).toEqual([{ minutes: 15, direction: 'up' }, { minutes: 60, direction: 'up' }, null]);
+  });
+
+  test('an own rule rounds although the global setting is off, the others stay exact', async () => {
+    settings(0);
+    TimeEntry.getInRange.mockResolvedValue([entry(1, 1, 65), entry(2, 2, 65, { customer_rounding_minutes: 30, customer_rounding_direction: 'nearest' })]);
+    const res = mockResponse();
+
+    await controller.get({ query }, res);
+
+    const { entries } = res.json.mock.calls[0][0];
+    expect(entries.map((e) => e.billed_hours)).toEqual([null, '1.00']);
+    expect(entries.map((e) => e.billed_rule)).toEqual([null, { minutes: 30, direction: 'nearest' }]);
+  });
+});

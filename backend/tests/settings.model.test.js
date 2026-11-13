@@ -113,6 +113,23 @@ describe('Settings', () => {
     });
   });
 
+  // The steps are in settings_rounding_minutes_check and customers_rounding_minutes_check; see customer.model.test.js
+  test('the steps the database accepts for the settings are exactly those of config/settingsOptions.js', async () => {
+    const OPTIONS = require('../src/config/settingsOptions');
+    await Settings.get();
+    const accepted = [];
+    for (let minutes = -5; minutes <= 180; minutes++) {
+      try {
+        await mockPool.query('UPDATE settings SET rounding_minutes = $1', [minutes]);
+        accepted.push(minutes);
+      } catch {
+        // refused by the check
+      }
+    }
+
+    expect(accepted).toEqual(Array.from({ length: 186 }, (_, i) => i - 5).filter((minutes) => OPTIONS.roundingMinutes.isValid(minutes)));
+  });
+
   test('reads values at the limits of the CHECK constraints', async () => {
     await Settings.get();
     await mockPool.query("UPDATE settings SET rounding_minutes = 30, rounding_direction = 'nearest', show_rounding_note = true");

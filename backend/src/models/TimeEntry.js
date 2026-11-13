@@ -4,7 +4,9 @@ const pool = require('../config/database');
 const PROJECT_AND_CUSTOMER_JOINS = `FROM time_entries te
        JOIN projects p ON te.project_id = p.id
        JOIN customers c ON p.customer_id = c.id`;
-const WITH_PROJECT_AND_CUSTOMER = `SELECT te.*, p.name as project_name, p.hourly_rate, c.name as customer_name, c.id as customer_id
+// customer_rounding_*: the customer's own rounding rule (both null: use the global setting), see utils/rounding.js
+const CUSTOMER_ROUNDING = 'c.rounding_minutes AS customer_rounding_minutes, c.rounding_direction AS customer_rounding_direction';
+const WITH_PROJECT_AND_CUSTOMER = `SELECT te.*, p.name as project_name, p.hourly_rate, c.name as customer_name, c.id as customer_id, ${CUSTOMER_ROUNDING}
        ${PROJECT_AND_CUSTOMER_JOINS}`;
 
 // Whitelist of the sort orders of the search; the id breaks ties so that pages never overlap
@@ -67,12 +69,14 @@ class TimeEntry {
     return result.rows;
   }
 
-  // All entries of a customer's projects with the project name and its hourly rate, grouped by project name, newest first
+  // All entries of a customer's projects with the project name, its hourly rate and the customer's rounding rule,
+  // grouped by project name, newest first
   static async getByCustomerId(customerId) {
     const result = await pool.query(
-      `SELECT te.*, p.name as project_name, p.hourly_rate
+      `SELECT te.*, p.name as project_name, p.hourly_rate, ${CUSTOMER_ROUNDING}
        FROM time_entries te
        JOIN projects p ON te.project_id = p.id
+       JOIN customers c ON p.customer_id = c.id
        WHERE p.customer_id = $1
        ORDER BY p.name, te.start_time DESC`,
       [customerId]

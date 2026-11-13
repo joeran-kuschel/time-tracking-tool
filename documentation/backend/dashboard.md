@@ -33,9 +33,12 @@ hours and amounts (`frontend/src/dashboard.js`).
   with two decimals) and `billed_amount` (the amount of the rounded hours, rounded to cents per entry like the report;
   `utils/rounding.js` `withBilling`), both `null` for a running entry or one that ends before it starts, and
   `billed_rule`: `{ "minutes": 15, "direction": "up" }`, the rule that produced the values (on every entry, also a
-  running one). The Dashboard adds up the billed values for its billing figures and takes the rule for the notes under
+  running one; `null` for a customer without rounding, and it can differ between customers, because a customer can have its
+  own rule, see [Customers API](customers.md#rounding-rule)). The Dashboard adds up the billed values for its billing figures and takes the rule for the notes under
   them from the entries, so a note always names the rule of the figures next to it. The entries themselves and `recent`
   stay exact. Without a rule none of this is there.
+- Each entry also has `customer_rounding_minutes` and `customer_rounding_direction`, the customer's own rounding rule
+  (both `null` for the global setting), see [Time entries API](time-entries.md#rounding-columns-on-entries).
 - `projects` are all projects, ordered by customer name, then project name.
 - `lastMonthReports.reports` has one row per customer with entries in that month, ordered by name; without a stored
   status it is `draft`. See [Reports API](reports.md#report-status).

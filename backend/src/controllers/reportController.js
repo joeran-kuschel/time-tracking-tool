@@ -10,7 +10,7 @@ const { toCsv } = require('../utils/csv');
 const { activateLocale } = require('../i18n');
 const { reportAmounts, decimal, CURRENCY } = require('../utils/amounts');
 const { exactHours } = require('../utils/hours');
-const { roundingRuleOf, withBilledHours } = require('../utils/rounding');
+const { roundingRuleOf, ruleOfCustomer, withBilledHours } = require('../utils/rounding');
 
 const INVALID_PERIOD = { error: 'month (1-12) and year are required' };
 const INVALID_AMOUNTS = { error: 'amounts must be 0 or 1' };
@@ -66,7 +66,8 @@ async function loadReport(req, res) {
     res.status(404).json({ error: 'No time entries found for the specified month' });
     return null;
   }
-  return { customer, entries: withBilledHours(stored, rounding), period, amounts, rounding, showRoundingNote };
+  // The report is about one customer, so it has one rule: the customer's own, else the global one
+  return { customer, entries: withBilledHours(stored, rounding), period, amounts, rounding: ruleOfCustomer(customer, rounding), showRoundingNote };
 }
 
 // Sends a report file. contentDisposition escapes quotes and adds a UTF-8 file name for names like "Łódź".
@@ -144,13 +145,16 @@ exports.getMonthlyReport = async (req, res) => {
     }
 
     const { month, year } = period;
-    const [stored, status, { rounding }] = await Promise.all([
+    const [stored, status, settings, customer] = await Promise.all([
       TimeEntry.getByCustomerIdInRange(customerId, period.range),
       ReportStatus.get(customerId, year, month),
       roundingSettings(),
+      Customer.getById(customerId),
     ]);
-    // With a rounding rule each entry has billed_hours, and the report names the rule
-    const entries = withBilledHours(stored, rounding);
+    // With a rounding rule each entry has billed_hours, and the report names the rule: the customer's own, else the global
+    // one (also for a month without entries). An unknown customer gets the global rule.
+    const entries = withBilledHours(stored, settings.rounding);
+    const rounding = ruleOfCustomer(customer, settings.rounding);
 
     res.json({
       customerId,

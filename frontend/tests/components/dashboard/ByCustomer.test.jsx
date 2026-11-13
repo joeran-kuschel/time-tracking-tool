@@ -79,3 +79,28 @@ describe('ByCustomer', () => {
     expect(await axe(container)).toHaveNoViolations()
   })
 })
+
+describe('ByCustomer with rounding rules that differ by customer', () => {
+  test('says so once under the heading, in German and English', () => {
+    const { unmount } = render(<ByCustomer rows={rows} now={now} rounding={{ mixed: true }} />)
+    expect(screen.getAllByText('Die Rundung unterscheidet sich je Kunde.')).toHaveLength(1)
+    unmount()
+
+    i18n.activate('en')
+    render(<ByCustomer rows={rows} now={now} rounding={{ mixed: true }} />)
+
+    expect(screen.getAllByText('Rounding differs by customer.')).toHaveLength(1)
+  })
+
+  test('says nothing for an empty month', () => {
+    render(<ByCustomer rows={[]} now={now} rounding={{ mixed: true }} />)
+
+    expect(screen.queryByText(/unterscheidet sich/)).not.toBeInTheDocument()
+  })
+
+  test('has no detectable accessibility violations', async () => {
+    const { container } = render(<ByCustomer rows={rows} now={now} rounding={{ mixed: true }} />)
+
+    expect(await axe(container)).toHaveNoViolations()
+  })
+})

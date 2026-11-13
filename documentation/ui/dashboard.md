@@ -53,7 +53,7 @@ the report, so they equal the report of the same customer and month: the **billa
 German: *Stunden auf Viertelstunden aufgerundet.*), whatever the setting *Name the rounding rule in reports* says: that
 setting is about the report a customer receives, these are your own screens. The **tracked time** stays exact: *This
 week*, *This month* (and its average per day), the hours chart and the recent entries. That is why *This month* can show
-less than the hours in *Billing*. Without a rounding rule nothing here changes. (An entry that ends before it starts
+less than the hours in *Billing*. Customers can have their own rounding rule ([Time tracking](time-tracking.md#customers)): the figures of each customer follow its rule, and when the customers of the month do not share one rule the two notes say *Rounding differs by customer.* (German: *Die Rundung unterscheidet sich je Kunde.*) instead of naming a rule, and the customer's own report names its rule. Without a rounding rule nothing here changes. (An entry that ends before it starts
 keeps counting with its negative hours here, as before; the report counts it as 0, see [Time
 entries](../backend/time-entries.md#entries-that-end-before-they-start).)
 

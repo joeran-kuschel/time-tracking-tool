@@ -49,9 +49,10 @@ function Dashboard({ timer }) {
   }, [activeId])
 
   const today = i18n.date(now, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
-  const customers = data ? byCustomer(monthEntries(data.entries, now)) : []
-  // The rule the server applied to the billing figures, named by the notes under them
-  const rounding = data ? roundingOfEntries(data.entries) : null
+  const month = data ? monthEntries(data.entries, now) : []
+  const customers = data ? byCustomer(month) : []
+  // The rule the server applied to the billing figures (one for all customers, or differing), named by the notes under them
+  const rounding = roundingOfEntries(month)
 
   return (
     <div className="mx-auto flex w-full max-w-7xl flex-col gap-5 p-4 sm:p-8">

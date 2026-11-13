@@ -730,3 +730,133 @@ describe('reportController with a rounding rule', () => {
     expect(Settings.get).toHaveBeenCalledTimes(1);
   });
 });
+
+describe('reportController with the rounding rule of a customer', () => {
+  const at = (minutes, own = {}) => ({
+    id: minutes, project_id: 7, project_name: 'Web', hourly_rate: '80.00', description: `E${minutes}`,
+    start_time: '2026-03-02T08:00:00Z', end_time: new Date(Date.UTC(2026, 2, 2, 8, minutes)).toISOString(),
+    customer_rounding_minutes: null, customer_rounding_direction: null, ...own,
+  });
+  const request = (query = {}) => ({ params: { customerId: '1' }, query: { month: '3', year: '2026', lang: 'en', ...query } });
+  // The customer row and its entries both carry the rule (the entry queries join the customer)
+  const customer = (minutes, direction, entryMinutes = [65, 20], globalMinutes = 15, showRoundingNote = true) => {
+    Customer.getById.mockReset().mockResolvedValue({ id: 1, name: 'Muster', rounding_minutes: minutes, rounding_direction: direction });
+    TimeEntry.getByCustomerIdInRange.mockReset().mockResolvedValue(
+      entryMinutes.map((m) => at(m, { customer_rounding_minutes: minutes, customer_rounding_direction: direction }))
+    );
+    Settings.get.mockResolvedValue({ showAmounts: false, roundingMinutes: globalMinutes, roundingDirection: 'up', showRoundingNote });
+  };
+
+  beforeEach(() => {
+    ReportStatus.get.mockReset().mockResolvedValue('draft');
+  });
+
+  test('the JSON report uses the own rule instead of the global one', async () => {
+    customer(60, 'up');
+    const res = mockResponse();
+
+    await controller.getMonthlyReport(request(), res);
+
+    const body = res.json.mock.calls[0][0];
+    expect(body.rounding).toEqual({ minutes: 60, direction: 'up' });
+    expect(body.entries.map((e) => e.billed_hours)).toEqual(['2.00', '1.00']);
+    expect(body.totalHours).toBe('3.00');
+  });
+
+  test('the JSON report rounds by the own rule although the global setting is off', async () => {
+    customer(30, 'nearest', [65, 20], 0);
+    const res = mockResponse();
+
+    await controller.getMonthlyReport(request(), res);
+
+    const body = res.json.mock.calls[0][0];
+    expect(body.rounding).toEqual({ minutes: 30, direction: 'nearest' });
+    expect(body.totalHours).toBe('1.50');
+  });
+
+  test('a customer set to no rounding gets an exact JSON report without a rule', async () => {
+    customer(0, 'up');
+    const res = mockResponse();
+
+    await controller.getMonthlyReport(request(), res);
+
+    const body = res.json.mock.calls[0][0];
+    expect(body).not.toHaveProperty('rounding');
+    expect(body.entries.map((e) => e.billed_hours)).toEqual([null, null]);
+    expect(body.totalHours).toBe('1.42');
+  });
+
+  test('the PDF is made with the own rule and names it while the sentence is on', async () => {
+    customer(10, 'nearest');
+    const res = mockResponse();
+
+    await controller.generatePDF(request(), res);
+
+    const [pdfEntries, options] = generateReportPDF.mock.calls.at(-1);
+    expect(pdfEntries.map((e) => e.billed_hours)).toEqual(['1.17', '0.33']);
+    expect(options.rounding).toEqual({ minutes: 10, direction: 'nearest' });
+  });
+
+  test('the PDF of a customer set to no rounding has exact hours and names no rule although the global rule rounds', async () => {
+    customer(0, 'up');
+    const res = mockResponse();
+
+    await controller.generatePDF(request(), res);
+
+    const [pdfEntries, options] = generateReportPDF.mock.calls.at(-1);
+    expect(pdfEntries.map((e) => e.billed_hours)).toEqual([null, null]);
+    expect(options.rounding).toBeNull();
+  });
+
+  test('the PDF does not name the own rule while the sentence is off', async () => {
+    customer(10, 'nearest', [65, 20], 15, false);
+    const res = mockResponse();
+
+    await controller.generatePDF(request(), res);
+
+    expect(generateReportPDF.mock.calls.at(-1)[1].rounding).toBeNull();
+    expect(generateReportPDF.mock.calls.at(-1)[0].map((e) => e.billed_hours)).toEqual(['1.17', '0.33']);
+  });
+
+  test('the CSV has the hours of the own rule and the amounts count them', async () => {
+    customer(60, 'up');
+    const res = mockResponse();
+
+    await controller.exportCsv(request({ amounts: '1' }), res);
+
+    const csv = res.send.mock.calls[0][0];
+    expect(csv).toContain('E65,2.00,80.00,160.00\r\n');
+    expect(csv).toContain('E20,1.00,80.00,80.00\r\n');
+  });
+
+  test('a customer without entries in the month answers 404 for PDF and CSV, whatever its rule', async () => {
+    customer(60, 'up', []);
+    const pdf = mockResponse();
+    const csv = mockResponse();
+
+    await controller.generatePDF(request(), pdf);
+    await controller.exportCsv(request(), csv);
+
+    expect(pdf.status).toHaveBeenCalledWith(404);
+    expect(csv.status).toHaveBeenCalledWith(404);
+  });
+
+  test('the JSON report of an empty month has no entries and total 0.00', async () => {
+    customer(60, 'up', []);
+    const res = mockResponse();
+
+    await controller.getMonthlyReport(request(), res);
+
+    expect(res.json.mock.calls[0][0]).toMatchObject({ entries: [], totalHours: '0.00' });
+  });
+
+  test('the PDF and the JSON agree on the rule when the customer row and its entries carry the same rule', async () => {
+    customer(30, 'up');
+    const json = mockResponse();
+
+    await controller.getMonthlyReport(request(), json);
+    await controller.generatePDF(request(), mockResponse());
+
+    expect(generateReportPDF.mock.calls.at(-1)[1].rounding).toEqual(json.json.mock.calls[0][0].rounding);
+  });
+});

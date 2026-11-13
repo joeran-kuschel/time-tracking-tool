@@ -42,10 +42,15 @@ The money rules are in one place, `utils/amounts.js`, and are the same for all t
 
 ## Rounding
 
-The settings `roundingMinutes` (0, 5, 10, 15, 30 or 60) and `roundingDirection` (`up` or `nearest`), see [Settings API](settings.md),
+A customer can have its own rule ([Customers API](customers.md#rounding-rule)); otherwise the settings `roundingMinutes` (0, 5, 10, 15, 30 or 60) and `roundingDirection` (`up` or `nearest`), see [Settings API](settings.md),
 round the hours of each entry in the JSON report, the PDF and the CSV. The rule is in one place, `utils/rounding.js`:
 
 - Each entry is rounded **on its own**, not the sum of a day or month. The stored entries are never changed.
+- **Which rule:** the one of the entry's customer, otherwise the global one. A customer set to *no rounding* stays exact
+  although the global setting rounds, and a customer with an own rule is rounded although the global setting is off. The
+  entry queries add the customer's columns as `customer_rounding_minutes` and `customer_rounding_direction`
+  (`models/TimeEntry.js`), and `withBilledHours` / `withBilling` resolve the rule per entry. A report is about one
+  customer, so it has exactly one rule (`ruleOfCustomer`) and the sentence, the PDF note and `rounding` work as before.
 - `up` rounds up to the next step (65 minutes at a quarter hour: 1.25 h; 75 minutes stay 1.25 h; 76 minutes: 1.50 h).
   `nearest` rounds to the closest step and a halfway case rounds up (65 minutes: 1.00 h; 68 minutes: 1.25 h). The step
   of 60 minutes gives full hours: 61 minutes up are 2.00 h, 30 minutes to the nearest are 1.00 h.
@@ -63,7 +68,7 @@ round the hours of each entry in the JSON report, the PDF and the CSV. The rule 
   and the total add up the rounded values.
 
 The same rounded hours reach the Dashboard and the month summary of the Time tracking page, so their billing figures equal
-the report: `withBilling` in `utils/rounding.js` adds `billed_hours`, `billed_amount` and `billed_rule` (the amount of an entry in cents
+the report: `withBilling` in `utils/rounding.js` adds `billed_hours`, `billed_amount` and `billed_rule` (the rule that applies to the entry's customer, or `null` when none does; the amount of an entry in cents
 by the rule above, as a string with two decimals) to the entries of `GET /api/dashboard` ([Dashboard
 API](dashboard.md)) and `GET /api/time-entries/customer/:id` ([Time entries API](time-entries.md)). The tracked time
 (timer, entry lists, Entries search, the Dashboard's week and month hours and chart) is never rounded.

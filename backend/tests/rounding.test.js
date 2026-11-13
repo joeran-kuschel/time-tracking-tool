@@ -1,4 +1,4 @@
-const { roundingRuleOf, billedHours, withBilledHours, withBilling } = require('../src/utils/rounding');
+const { roundingRuleOf, ruleOfEntry, ruleOfCustomer, billedHours, withBilledHours, withBilling } = require('../src/utils/rounding');
 const { reportAmounts, decimal } = require('../src/utils/amounts');
 
 // An entry of the given length in minutes (and seconds)
@@ -276,5 +276,106 @@ describe('withBilling for the steps of 5, 10 and 60 minutes', () => {
     for (const e of withBilling(entries, up5)) {
       expect(Math.round(Number(e.billed_hours) * Number(e.hourly_rate) * 100)).toBeCloseTo(Number(e.billed_amount) * 100, 5);
     }
+  });
+});
+
+describe('the rule of a customer', () => {
+  const global = { minutes: 15, direction: 'up' };
+
+  test.each([
+    [null, null, global, global],
+    [undefined, undefined, global, global],
+    [null, null, null, null],
+    [30, 'nearest', global, { minutes: 30, direction: 'nearest' }],
+    [30, 'nearest', null, { minutes: 30, direction: 'nearest' }],
+    [5, 'up', global, { minutes: 5, direction: 'up' }],
+    [0, 'up', global, null],
+    [0, 'up', null, null],
+  ])('columns %s/%s with the global rule %j give %j', (minutes, direction, globalRule, expected) => {
+    expect(ruleOfCustomer({ rounding_minutes: minutes, rounding_direction: direction }, globalRule)).toEqual(expected);
+    expect(ruleOfEntry({ customer_rounding_minutes: minutes, customer_rounding_direction: direction }, globalRule)).toEqual(expected);
+  });
+
+  test('an entry or a customer without the columns uses the global rule', () => {
+    expect(ruleOfEntry({ id: 1 }, global)).toEqual(global);
+    expect(ruleOfCustomer({ id: 1 }, global)).toEqual(global);
+    expect(ruleOfCustomer(undefined, global)).toEqual(global);
+  });
+});
+
+describe('entries of customers with their own rules', () => {
+  // 65 minutes at 80.00; the customer columns come from the entry queries (models/TimeEntry.js)
+  const of = (customer, minutes, direction, extra = {}) => ({
+    ...entry(65), project_id: 1, project_name: 'Web', hourly_rate: '80.00', customer_id: customer,
+    customer_rounding_minutes: minutes, customer_rounding_direction: direction, ...extra,
+  });
+  const global = { minutes: 15, direction: 'up' };
+
+  test('each entry is rounded by the rule of its own customer', () => {
+    const result = withBilling([of(1, null, null), of(2, 60, 'up'), of(3, 5, 'nearest'), of(4, 0, 'up')], global);
+
+    expect(result.map((e) => e.billed_hours)).toEqual(['1.25', '2.00', '1.08', null]);
+    expect(result.map((e) => e.billed_amount)).toEqual(['100.00', '160.00', '86.40', null]);
+    expect(result.map((e) => e.billed_rule)).toEqual([global, { minutes: 60, direction: 'up' }, { minutes: 5, direction: 'nearest' }, null]);
+  });
+
+  test('a customer with an own rule is rounded although the global setting is off', () => {
+    const result = withBilling([of(1, null, null), of(2, 30, 'up')], null);
+
+    expect(result.map((e) => e.billed_hours)).toEqual([null, '1.50']);
+    expect(result.map((e) => e.billed_rule)).toEqual([null, { minutes: 30, direction: 'up' }]);
+  });
+
+  test('a customer set to no rounding stays exact although the global setting rounds', () => {
+    const [result] = withBilledHours([of(1, 0, 'up')], global);
+
+    expect(result.billed_hours).toBeNull();
+  });
+
+  test('without a rule anywhere the entries are returned as they are', () => {
+    const entries = [of(1, null, null), of(2, null, null)];
+
+    expect(withBilling(entries, null)).toBe(entries);
+    expect(withBilledHours(entries, null)).toBe(entries);
+  });
+
+  test('a running entry of a customer with an own rule is not billed, but carries the rule', () => {
+    const [result] = withBilling([of(1, 30, 'up', { end_time: null })], null);
+
+    expect(result.billed_hours).toBeNull();
+    expect(result.billed_rule).toEqual({ minutes: 30, direction: 'up' });
+  });
+
+  test('the sum of the billed amounts equals the report total of each customer', () => {
+    const entries = [of(1, 15, 'up'), of(1, 15, 'up', { id: 2 }), of(2, 5, 'nearest'), of(2, 5, 'nearest', { id: 3 })];
+    const billed = withBilling(entries, null);
+
+    for (const customer of [1, 2]) {
+      const own = entries.filter((e) => e.customer_id === customer);
+      const cents = billed.filter((e) => e.customer_id === customer).reduce((sum, e) => sum + Math.round(Number(e.billed_amount) * 100), 0);
+
+      expect(decimal(cents)).toBe(decimal(reportAmounts(withBilledHours(own, null)).totalCents));
+    }
+  });
+
+  test('entries without the customer columns next to entries with them: the global rule for the first, the own one for the others', () => {
+    const bare = { ...entry(65), project_id: 1, hourly_rate: '80.00' };
+    const result = withBilling([bare, of(2, 60, 'up')], global);
+
+    expect(result.map((e) => e.billed_hours)).toEqual(['1.25', '2.00']);
+    expect(result.map((e) => e.billed_rule)).toEqual([global, { minutes: 60, direction: 'up' }]);
+  });
+
+  test('only the entries without an own rule stay exact when there is no global rule', () => {
+    const result = withBilledHours([of(1, null, null), of(2, 15, 'up')], null);
+
+    expect(result.map((e) => e.billed_hours)).toEqual([null, '1.25']);
+  });
+
+  test('a customer set to no rounding alone and no global rule: the entries come back as they are', () => {
+    const entries = [of(1, 0, 'up')];
+
+    // "no rounding" is a rule of its own (0), so the entries get billed_hours null; the answer must not break
+    expect(withBilledHours(entries, null).map((e) => e.billed_hours)).toEqual([null]);
   });
 });

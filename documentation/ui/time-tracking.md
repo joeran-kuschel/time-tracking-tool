@@ -15,14 +15,21 @@ screens the sidebar sits above the main area (see [Design](design.md)).
 - The sidebar lists all customers, sorted by name. Selecting one opens it in the main area; the selected one is marked
   with `aria-pressed`. The customer of the running timer has a red dot, and its button name ends in *, Timer läuft*
   (*, timer running*).
-- **+** (*New customer*) next to the heading opens a dialog with name and optional email. The new customer is added to
-  the list but not selected.
+- **+** (*New customer*) next to the heading opens a dialog with name, optional email and **Rounding** (see below). The
+  new customer is added to the list but not selected.
 - The main area shows the customer's name as the page heading (`<h1>`) and its email. Next to it:
-  - The pencil icon (**Edit**) replaces the heading with a form (*Edit customer*: name, email); **Save**, **Cancel** or
-    Escape close it.
+  - The pencil icon (**Edit**) replaces the heading with a form (*Edit customer*: name, email, **Rounding**); **Save**,
+    **Cancel** or Escape close it.
   - The trash icon (**Delete**) asks in place first (*Delete Muster GmbH and all its projects and time entries?*). This
     can't be undone. While the running timer belongs to the customer, deleting fails with *Stop the running timer
     first.* After deleting, focus moves to the customer list.
+- **Rounding** (German: *Rundung*) is one select in the customer form: **Use the global setting** (default),
+  **No rounding**, or a step (**5 minutes**, **10 minutes**, **Quarter hour (15 minutes)**, **Half hour (30 minutes)**,
+  **Hour (60 minutes)**) with **Up** or **To the nearest** (for example *Quarter hour (15 minutes), Up*). The labels are those
+  of the [settings](settings.md); the list of steps comes from there, so a new step appears here too. A customer with
+  its own rule shows it under the name (*Rounding: Quarter hour (15 minutes), Up*); a customer on the global setting
+  shows nothing. The rule applies to the customer's reports, the Dashboard and the month summary; the entries below stay
+  exact. Details: [Customers API](../backend/customers.md#rounding-rule).
 - Without a selected customer, the main area says *Select a customer* and only shows the timer.
 - Switching to another customer clears the previous customer's projects and entries at once, and answers that arrive
   late for a customer that is no longer selected are ignored. So clicking quickly through customers never shows one
@@ -121,7 +128,8 @@ Loading or saving failures are shown next to the part they belong to. See [Error
 
 - `frontend/src/pages/TimeTracking.jsx`: layout, selection (kept as ids), loading and saving
 - `components/EditableRecord.jsx`: the selected customer and project, edited or deleted in place
-- `components/MonthSummary.jsx`, `summary.js`: the month summary and its calculation
+- `components/MonthSummary.jsx`, `summary.js`: the month summary and its calculation; `customerRounding.js`: the choices of
+  the customer's rounding select and their conversion to the API fields
 - `components/RecordForm.jsx`: forms with visible labels, for creating and editing
 - `components/Modal.jsx`: the add dialogs
 - `components/EntryForm.jsx`, `entryTime.js`: the time entry form and its local date/time conversion

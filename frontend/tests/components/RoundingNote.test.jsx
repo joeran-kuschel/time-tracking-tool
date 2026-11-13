@@ -22,6 +22,17 @@ describe('RoundingNote', () => {
     expect(screen.getByText(sentence)).toBeInTheDocument()
   })
 
+  test('says the rounding differs by customer for mixed rules, in German and English', () => {
+    const { unmount } = render(<RoundingNote rounding={{ mixed: true }} />)
+    expect(screen.getByText('Die Rundung unterscheidet sich je Kunde.')).toBeInTheDocument()
+    unmount()
+
+    i18n.activate('en')
+    render(<RoundingNote rounding={{ mixed: true }} />)
+
+    expect(screen.getByText('Rounding differs by customer.')).toBeInTheDocument()
+  })
+
   test('names the rule in English', () => {
     i18n.activate('en')
     render(<RoundingNote rounding={{ minutes: 15, direction: 'nearest' }} />)
