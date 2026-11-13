@@ -987,6 +987,10 @@ describe('Reports with rounded hours', () => {
     [{ minutes: 30, direction: 'nearest' }, 'de', 'Stunden auf die nächstgelegene halbe Stunde gerundet.'],
     [{ minutes: 30, direction: 'up' }, 'de', 'Stunden auf halbe Stunden aufgerundet.'],
     [{ minutes: 15, direction: 'nearest' }, 'de', 'Stunden auf die nächstgelegene Viertelstunde gerundet.'],
+    [{ minutes: 60, direction: 'up' }, 'de', 'Stunden auf volle Stunden aufgerundet.'],
+    [{ minutes: 5, direction: 'nearest' }, 'de', 'Stunden auf die nächstgelegenen 5 Minuten gerundet.'],
+    [{ minutes: 10, direction: 'up' }, 'en', 'Hours rounded up to steps of 10 minutes.'],
+    [{ minutes: 60, direction: 'nearest' }, 'en', 'Hours rounded to the nearest full hour.'],
   ])('names the rule %j in %s', async (rounding, locale, sentence) => {
     switchLocale(locale)
     api.getMonthlyReport.mockResolvedValue({ ...roundedReport, rounding })

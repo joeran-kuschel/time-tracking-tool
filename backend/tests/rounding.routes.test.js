@@ -134,3 +134,39 @@ describe('GET /api/time-entries/customer/:id with a rounding rule', () => {
     expect(response.status).toBe(401);
   });
 });
+
+// 65 minutes at 95 EUR/h: 5 minutes up = 1.08 h (102.60), 10 minutes nearest = 70 min = 1.17 h (111.15), full hour up = 2.00 h (190.00)
+describe.each([
+  [5, 'up', '1.08', '102.60'],
+  [10, 'nearest', '1.17', '111.15'],
+  [60, 'up', '2.00', '190.00'],
+  [60, 'nearest', '1.00', '95.00'],
+])('the new step %s minutes, %s', (minutes, direction, hours, amount) => {
+  beforeEach(() => setRounding(minutes, direction));
+
+  test('the Dashboard entries carry the billed fields and the rule', async () => {
+    const { status, body } = await dashboard();
+
+    expect(status).toBe(200);
+    expect(body.entries.find((e) => e.end_time)).toMatchObject({
+      billed_hours: hours, billed_amount: amount, billed_rule: { minutes, direction },
+    });
+    expect(body.entries.find((e) => !e.end_time)).toMatchObject({ billed_hours: null, billed_amount: null });
+  });
+
+  test('the entries of a customer carry the billed fields', async () => {
+    const { body } = await getJson(`/api/time-entries/customer/${customerId}`);
+
+    expect(body.find((e) => e.end_time)).toMatchObject({ billed_hours: hours, billed_amount: amount });
+  });
+});
+
+test('an awkward rate with a 5-minute step: 0.08 h at 33.33 is 2.67', async () => {
+  await setRounding(5, 'up');
+  const projectId = (await mockPool.query("INSERT INTO projects (customer_id, name, hourly_rate) VALUES ($1, 'App', 33.33) RETURNING id", [customerId])).rows[0].id;
+  await mockPool.query("INSERT INTO time_entries (project_id, start_time, end_time) VALUES ($1, '2026-09-23 09:00:00', '2026-09-23 09:03:00')", [projectId]);
+
+  const { body } = await getJson(`/api/time-entries/customer/${customerId}`);
+
+  expect(body.find((e) => e.project_id === projectId)).toMatchObject({ billed_hours: '0.08', billed_amount: '2.67' });
+});

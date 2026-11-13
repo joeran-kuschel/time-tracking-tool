@@ -10,6 +10,12 @@ describe('RoundingNote', () => {
     [{ minutes: 30, direction: 'up' }, 'Stunden auf halbe Stunden aufgerundet.'],
     [{ minutes: 15, direction: 'nearest' }, 'Stunden auf die nächstgelegene Viertelstunde gerundet.'],
     [{ minutes: 30, direction: 'nearest' }, 'Stunden auf die nächstgelegene halbe Stunde gerundet.'],
+    [{ minutes: 60, direction: 'up' }, 'Stunden auf volle Stunden aufgerundet.'],
+    [{ minutes: 60, direction: 'nearest' }, 'Stunden auf die nächstgelegene volle Stunde gerundet.'],
+    [{ minutes: 5, direction: 'up' }, 'Stunden auf Schritte von 5 Minuten aufgerundet.'],
+    [{ minutes: 10, direction: 'up' }, 'Stunden auf Schritte von 10 Minuten aufgerundet.'],
+    [{ minutes: 5, direction: 'nearest' }, 'Stunden auf die nächstgelegenen 5 Minuten gerundet.'],
+    [{ minutes: 10, direction: 'nearest' }, 'Stunden auf die nächstgelegenen 10 Minuten gerundet.'],
   ])('names the rule %j in German', (rounding, sentence) => {
     render(<RoundingNote rounding={rounding} />)
 

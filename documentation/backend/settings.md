@@ -20,7 +20,7 @@ saved then). `500` when the database fails.
 | Name | Column | Valid | Default | Meaning |
 |---|---|---|---|---|
 | `showAmounts` | `show_amounts` | `true` or `false` | `false` | Reports start with hourly rates and amounts ([Reports page](../ui/reports.md)) |
-| `roundingMinutes` | `rounding_minutes` | `0`, `15` or `30` (a number) | `0` | The step the hours of an entry are rounded to in reports; 0 is no rounding ([Rounding](reports.md#rounding)) |
+| `roundingMinutes` | `rounding_minutes` | `0`, `5`, `10`, `15`, `30` or `60` (a number) | `0` | The step the hours of an entry are rounded to in reports; 0 is no rounding ([Rounding](reports.md#rounding)) |
 | `roundingDirection` | `rounding_direction` | `"up"` or `"nearest"` | `"up"` | Whether an entry is rounded up or to the nearest step; without effect while the step is 0 |
 | `showRoundingNote` | `show_rounding_note` | `true` or `false` | `false` | The Reports page and the PDF name the rounding rule in a sentence; without effect while the step is 0 |
 
@@ -28,7 +28,7 @@ The list lives in `backend/src/config/settingsOptions.js`: the name, the column 
 
 ## Storage
 
-`backend/migrations/005_settings.sql` creates the table `settings` (`006_settings_show_amounts.sql` and `007_settings_rounding.sql` add the columns): a single row (`id` is always 1, enforced by a
+`backend/migrations/005_settings.sql` creates the table `settings` (`006_settings_show_amounts.sql`, `007_settings_rounding.sql` and `008_settings_rounding_steps.sql` add the columns and the steps): a single row (`id` is always 1, enforced by a
 `CHECK`) with one typed column per option, each with its default. The row is created on the first read, so a fresh
 install behaves as before and every option has its default until something is saved. `models/Settings.js` creates the row
 on first use and updates it.
@@ -36,6 +36,8 @@ on first use and updates it.
 ## Adding an option
 
 1. A migration with `ALTER TABLE settings ADD COLUMN … DEFAULT …` (and `./k8s/generate-init-scripts.sh`).
+   Give a `CHECK` an explicit name (`CONSTRAINT settings_<column>_check CHECK (…)`): a later migration has to drop it
+   by name, and pg-mem (the tests) names an unnamed check differently from Postgres.
 2. An entry in `config/settingsOptions.js` (name, column, `isValid`). `Settings.get()` and `Settings.update()` and the
    controller's validation use that list, so nothing else changes. Column names come only from this list, never from the
    request body: only values can be parameterized, so names taken from the body would allow SQL injection.

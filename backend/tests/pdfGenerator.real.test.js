@@ -95,3 +95,31 @@ describe('a real PDF with rounded hours', () => {
     expect(pageCount(withNote) - pageCount(without)).toBeLessThanOrEqual(1);
   });
 });
+
+describe('the rounding sentences on a real A4 page', () => {
+  // Content width: A4 (595 pt) minus the margins of 50 pt. The sentence is centered at 10 pt and must fit on one line.
+  const sentences = [
+    'Stunden auf die nächstgelegenen 10 Minuten gerundet.',
+    'Stunden auf die nächstgelegene volle Stunde gerundet.',
+    'Stunden auf Schritte von 10 Minuten aufgerundet.',
+    'Hours rounded up to steps of 10 minutes.',
+    'Hours rounded to the nearest full hour.',
+  ];
+
+  test.each(sentences)('"%s" fits on one line', (sentence) => {
+    const PDFDocument = require('pdfkit');
+    const path = require('path');
+    const doc = new PDFDocument();
+    doc.registerFont('Plex', path.join(__dirname, '..', 'assets', 'fonts', 'IBMPlexSans-Regular.woff'));
+
+    expect(doc.font('Plex').fontSize(10).widthOfString(sentence)).toBeLessThan(495);
+  });
+
+  test.each([5, 10, 60])('a report with the step %s minutes is a valid PDF', async (minutes) => {
+    const rows = [{ project_name: 'Website', start_time: '2026-03-02T08:00:00Z', end_time: '2026-03-02T08:20:00Z', billed_hours: '0.33', description: 'x' }];
+
+    const pdf = await generateReportPDF(rows, { customerName: 'Muster GmbH', month: 3, year: 2026, locale: 'de', rounding: { minutes, direction: 'nearest' } });
+
+    expect(pdf.subarray(0, 5).toString()).toBe('%PDF-');
+  });
+});

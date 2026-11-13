@@ -14,7 +14,7 @@ msgstr ""
 "Plural-Forms: \n"
 
 #. js-lingui-explicit-id
-#: src/utils/pdfGenerator.js:112
+#: src/utils/pdfGenerator.js:126
 msgid "report.amount"
 msgstr "Betrag"
 
@@ -29,18 +29,18 @@ msgid "export.customer"
 msgstr "Kunde"
 
 #. js-lingui-explicit-id
-#: src/utils/pdfGenerator.js:97
+#: src/utils/pdfGenerator.js:110
 msgid "report.customer"
 msgstr "Kunde: {customerName}"
 
 #. js-lingui-explicit-id
-#: src/utils/pdfGenerator.js:108
+#: src/utils/pdfGenerator.js:122
 #: src/utils/reportRows.js:28
 msgid "report.date"
 msgstr "Datum"
 
 #. js-lingui-explicit-id
-#: src/utils/pdfGenerator.js:111
+#: src/utils/pdfGenerator.js:125
 #: src/utils/reportRows.js:33
 msgid "report.description"
 msgstr "Beschreibung"
@@ -51,44 +51,64 @@ msgid "export.end"
 msgstr "Ende"
 
 #. js-lingui-explicit-id
-#: src/utils/pdfGenerator.js:110
+#: src/utils/pdfGenerator.js:124
 #: src/utils/reportRows.js:34
 msgid "report.hours"
 msgstr "Stunden"
 
 #. js-lingui-explicit-id
-#: src/utils/pdfGenerator.js:83
+#: src/utils/pdfGenerator.js:99
+msgid "report.rounding.nearestMinutes"
+msgstr "Stunden auf die nächstgelegenen {minutes} Minuten gerundet."
+
+#. js-lingui-explicit-id
+#: src/utils/pdfGenerator.js:94
+msgid "report.rounding.nearest60"
+msgstr "Stunden auf die nächstgelegene volle Stunde gerundet."
+
+#. js-lingui-explicit-id
+#: src/utils/pdfGenerator.js:89
 msgid "report.rounding.nearest30"
 msgstr "Stunden auf die nächstgelegene halbe Stunde gerundet."
 
 #. js-lingui-explicit-id
-#: src/utils/pdfGenerator.js:82
+#: src/utils/pdfGenerator.js:84
 msgid "report.rounding.nearest15"
 msgstr "Stunden auf die nächstgelegene Viertelstunde gerundet."
 
 #. js-lingui-explicit-id
-#: src/utils/pdfGenerator.js:87
+#: src/utils/pdfGenerator.js:95
+msgid "report.rounding.up60"
+msgstr "Stunden auf volle Stunden aufgerundet."
+
+#. js-lingui-explicit-id
+#: src/utils/pdfGenerator.js:90
 msgid "report.rounding.up30"
 msgstr "Stunden auf halbe Stunden aufgerundet."
 
 #. js-lingui-explicit-id
-#: src/utils/pdfGenerator.js:86
+#: src/utils/pdfGenerator.js:85
 msgid "report.rounding.up15"
 msgstr "Stunden auf Viertelstunden aufgerundet."
 
 #. js-lingui-explicit-id
-#: src/utils/pdfGenerator.js:165
+#: src/utils/pdfGenerator.js:100
+msgid "report.rounding.upMinutes"
+msgstr "Stunden auf Schritte von {minutes} Minuten aufgerundet."
+
+#. js-lingui-explicit-id
+#: src/utils/pdfGenerator.js:179
 msgid "report.projects"
 msgstr "Je Projekt"
 
 #. js-lingui-explicit-id
-#: src/utils/pdfGenerator.js:109
+#: src/utils/pdfGenerator.js:123
 #: src/utils/reportRows.js:32
 msgid "report.project"
 msgstr "Projekt"
 
 #. js-lingui-explicit-id
-#: src/utils/pdfGenerator.js:113
+#: src/utils/pdfGenerator.js:127
 msgid "report.rate"
 msgstr "Stundensatz"
 
@@ -103,7 +123,7 @@ msgid "export.start"
 msgstr "Beginn"
 
 #. js-lingui-explicit-id
-#: src/utils/pdfGenerator.js:92
+#: src/utils/pdfGenerator.js:105
 msgid "report.title"
 msgstr "ZEITABRECHNUNG"
 
@@ -113,11 +133,11 @@ msgid "report.filename"
 msgstr "abrechnung"
 
 #. js-lingui-explicit-id
-#: src/utils/pdfGenerator.js:152
+#: src/utils/pdfGenerator.js:166
 msgid "report.totalAmount"
 msgstr "GESAMTBETRAG:"
 
 #. js-lingui-explicit-id
-#: src/utils/pdfGenerator.js:149
+#: src/utils/pdfGenerator.js:163
 msgid "report.total"
 msgstr "GESAMTSTUNDEN:"

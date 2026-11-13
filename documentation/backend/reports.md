@@ -42,15 +42,21 @@ The money rules are in one place, `utils/amounts.js`, and are the same for all t
 
 ## Rounding
 
-The settings `roundingMinutes` (0, 15 or 30) and `roundingDirection` (`up` or `nearest`), see [Settings API](settings.md),
+The settings `roundingMinutes` (0, 5, 10, 15, 30 or 60) and `roundingDirection` (`up` or `nearest`), see [Settings API](settings.md),
 round the hours of each entry in the JSON report, the PDF and the CSV. The rule is in one place, `utils/rounding.js`:
 
 - Each entry is rounded **on its own**, not the sum of a day or month. The stored entries are never changed.
 - `up` rounds up to the next step (65 minutes at a quarter hour: 1.25 h; 75 minutes stay 1.25 h; 76 minutes: 1.50 h).
-  `nearest` rounds to the closest step and a halfway case rounds up (65 minutes: 1.00 h; 68 minutes: 1.25 h).
+  `nearest` rounds to the closest step and a halfway case rounds up (65 minutes: 1.00 h; 68 minutes: 1.25 h). The step
+  of 60 minutes gives full hours: 61 minutes up are 2.00 h, 30 minutes to the nearest are 1.00 h.
 - An entry longer than 0 never counts less than one step: 14 minutes at a half hour, to the nearest, are 0.50 h. An
   entry of 0 minutes stays 0.
-- It works on whole seconds, so a multiple of a quarter hour has no float error.
+- It works on whole seconds, so the rounding itself has no float error.
+- **Hours are printed with two decimals**, like every hour of a report, and the amounts are calculated from the printed
+  hours. A multiple of 15 minutes is exact (0.25 h, 0.50 h, 1.00 h). A step of **5 or 10 minutes is not**: 5 minutes is
+  0.0833 h and prints as **0.08 h**, 10 minutes is 0.1667 h and prints as **0.17 h**. So twelve entries of 5 minutes
+  add up to 0.96 h and six of 10 minutes to 1.02 h, not to 1.00 h; the amounts follow the printed hours. This is the
+  same as without rounding (20 minutes print as 0.33 h).
 - A running entry has no end yet and counts 0 hours until it is stopped. An entry that ends before it starts is not
   rounded and keeps its old behavior (see [Amounts](#amounts)).
 - The amounts use the rounded hours, so printed hours × rate is the printed amount on every row, and the project lines

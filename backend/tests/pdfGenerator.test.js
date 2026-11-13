@@ -71,10 +71,49 @@ describe('generateReportPDF', () => {
     [{ minutes: 30, direction: 'up' }, 'de', 'Stunden auf halbe Stunden aufgerundet.'],
     [{ minutes: 15, direction: 'nearest' }, 'de', 'Stunden auf die nächstgelegene Viertelstunde gerundet.'],
     [{ minutes: 30, direction: 'nearest' }, 'de', 'Stunden auf die nächstgelegene halbe Stunde gerundet.'],
+    [{ minutes: 60, direction: 'up' }, 'en', 'Hours rounded up to full hours.'],
+    [{ minutes: 60, direction: 'nearest' }, 'en', 'Hours rounded to the nearest full hour.'],
+    [{ minutes: 60, direction: 'up' }, 'de', 'Stunden auf volle Stunden aufgerundet.'],
+    [{ minutes: 60, direction: 'nearest' }, 'de', 'Stunden auf die nächstgelegene volle Stunde gerundet.'],
+    [{ minutes: 5, direction: 'up' }, 'en', 'Hours rounded up to steps of 5 minutes.'],
+    [{ minutes: 10, direction: 'up' }, 'en', 'Hours rounded up to steps of 10 minutes.'],
+    [{ minutes: 5, direction: 'nearest' }, 'en', 'Hours rounded to the nearest 5 minutes.'],
+    [{ minutes: 10, direction: 'nearest' }, 'en', 'Hours rounded to the nearest 10 minutes.'],
+    [{ minutes: 5, direction: 'up' }, 'de', 'Stunden auf Schritte von 5 Minuten aufgerundet.'],
+    [{ minutes: 10, direction: 'up' }, 'de', 'Stunden auf Schritte von 10 Minuten aufgerundet.'],
+    [{ minutes: 5, direction: 'nearest' }, 'de', 'Stunden auf die nächstgelegenen 5 Minuten gerundet.'],
+    [{ minutes: 10, direction: 'nearest' }, 'de', 'Stunden auf die nächstgelegenen 10 Minuten gerundet.'],
   ])('names the rounding rule %j in %s', async (rounding, locale, sentence) => {
     await generateReportPDF(entries, { customerName: 'Muster GmbH', month: 3, year: 2026, locale, rounding });
 
     expect(PDFDocument.last.texts).toContain(sentence);
+  });
+
+  // A step added to config/settingsOptions.js (and the database check) needs a sentence in the PDF and the catalogs
+  describe('every rounding step the settings allow has a sentence', () => {
+    const OPTIONS = require('../src/config/settingsOptions');
+    const steps = Array.from({ length: 181 }, (_, minutes) => minutes).filter((minutes) => minutes > 0 && OPTIONS.roundingMinutes.isValid(minutes));
+
+    test('lists the steps of the settings', () => {
+      expect(steps).toEqual([5, 10, 15, 30, 60]);
+    });
+
+    test.each(steps.flatMap((minutes) => ['up', 'nearest'].flatMap((direction) => [['en', minutes, direction], ['de', minutes, direction]])))(
+      'in %s: %s minutes, %s', async (locale, minutes, direction) => {
+        await generateReportPDF(entries, { customerName: 'Muster GmbH', month: 3, year: 2026, locale, rounding: { minutes, direction } });
+
+        const sentences = PDFDocument.last.texts.filter((text) => /^(Hours rounded|Stunden auf)/.test(text));
+        expect(sentences).toHaveLength(1);
+        expect(sentences[0]).not.toMatch(/\{|undefined/);
+        if ([5, 10].includes(minutes)) expect(sentences[0]).toContain(String(minutes));
+      }
+    );
+
+    test('writes no sentence for a step it has none for, instead of a wrong one', async () => {
+      await generateReportPDF(entries, { customerName: 'Muster GmbH', month: 3, year: 2026, locale: 'en', rounding: { minutes: 20, direction: 'up' } });
+
+      expect(PDFDocument.last.texts.filter((text) => /rounded/i.test(text))).toEqual([]);
+    });
   });
 
   test('names no rounding rule without one', async () => {

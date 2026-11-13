@@ -33,8 +33,11 @@ export const settingsGroups = [
         hint: msg`Each entry is rounded on its own in reports. The stored times never change.`,
         choices: [
           { value: 0, label: msg`No rounding` },
+          { value: 5, label: msg`5 minutes` },
+          { value: 10, label: msg`10 minutes` },
           { value: 15, label: msg`Quarter hour (15 minutes)` },
           { value: 30, label: msg`Half hour (30 minutes)` },
+          { value: 60, label: msg`Hour (60 minutes)` },
         ],
       },
       {

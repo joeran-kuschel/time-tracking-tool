@@ -89,7 +89,7 @@ describe('settingsController', () => {
     expect(Settings.update).not.toHaveBeenCalled();
   });
 
-  test.each([[0], [15], [30]])('update saves roundingMinutes: %s', async (value) => {
+  test.each([[0], [5], [10], [15], [30], [60]])('update saves roundingMinutes: %s', async (value) => {
     Settings.update.mockResolvedValue({});
     const res = mockResponse();
 
@@ -98,7 +98,7 @@ describe('settingsController', () => {
     expect(Settings.update).toHaveBeenCalledWith({ roundingMinutes: value });
   });
 
-  test.each([[10], [45], [-15], ['15'], [15.5], [null], [true], [[15]]])('update rejects %j as roundingMinutes', async (value) => {
+  test.each([[1], [7], [20], [45], [90], [120], [-15], ['15'], ['60'], [15.5], [null], [true], [[15]]])('update rejects %j as roundingMinutes', async (value) => {
     const res = mockResponse();
 
     await controller.update({ body: { roundingMinutes: value } }, res);

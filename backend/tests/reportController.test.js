@@ -548,6 +548,33 @@ describe('reportController with a rounding rule', () => {
     expect(body.totalHours).toBe('1.75');
   });
 
+  test('a step of 5 minutes: the billed hours are printed with two decimals and the amounts use exactly those', async () => {
+    rule(5, 'up');
+    const res = mockResponse();
+
+    await controller.getMonthlyReport(request({ amounts: '1' }), res);
+
+    const body = res.json.mock.calls[0][0];
+    // 65 min is 13 steps = 1.0833 h, printed 1.08; 20 min is 4 steps = 0.3333 h, printed 0.33
+    expect(body.rounding).toEqual({ minutes: 5, direction: 'up' });
+    expect(body.entries.map((e) => e.billed_hours)).toEqual(['1.08', '0.33']);
+    expect(body.entries.map((e) => e.amount)).toEqual(['86.40', '26.40']);
+    expect(body.totalHours).toBe('1.41');
+    expect(body.totalAmount).toBe('112.80');
+  });
+
+  test('a step of a full hour', async () => {
+    rule(60, 'nearest');
+    const res = mockResponse();
+
+    await controller.getMonthlyReport(request(), res);
+
+    const body = res.json.mock.calls[0][0];
+    expect(body.rounding).toEqual({ minutes: 60, direction: 'nearest' });
+    expect(body.entries.map((e) => e.billed_hours)).toEqual(['1.00', '1.00']);
+    expect(body.totalHours).toBe('2.00');
+  });
+
   test('the amounts count the rounded hours, so hours x rate equals the amount on every row', async () => {
     rule(15, 'up');
     const res = mockResponse();
@@ -658,6 +685,41 @@ describe('reportController with a rounding rule', () => {
     await controller.exportCsv(request({ amounts: '1' }), res);
 
     expect(res.send.mock.calls[0][0]).toContain('E65,1.25,80.00,100.00\r\n');
+  });
+
+  test('the CSV with a 5-minute step and amounts: the amount is the printed hours x the rate', async () => {
+    rule(5, 'up');
+    const res = mockResponse();
+
+    await controller.exportCsv(request({ amounts: '1' }), res);
+
+    const csv = res.send.mock.calls[0][0];
+    // 65 min = 13 steps = 1.08 h (x 80 = 86.40); 20 min = 4 steps = 0.33 h (x 80 = 26.40)
+    expect(csv).toContain('E65,1.08,80.00,86.40\r\n');
+    expect(csv).toContain('E20,0.33,80.00,26.40\r\n');
+    expect(csv).toContain('2026-03-02,08:00,09:05,');
+  });
+
+  test('the CSV with a full-hour step has whole hours', async () => {
+    rule(60, 'up');
+    const res = mockResponse();
+
+    await controller.exportCsv(request(), res);
+
+    const csv = res.send.mock.calls[0][0];
+    expect(csv).toContain('E65,2.00\r\n');
+    expect(csv).toContain('E20,1.00\r\n');
+  });
+
+  test('a 10-minute step in the PDF gives the PDF the rounded hours and the rule', async () => {
+    rule(10, 'nearest', true);
+    const res = mockResponse();
+
+    await controller.generatePDF(request(), res);
+
+    const [pdfEntries, options] = generateReportPDF.mock.calls.at(-1);
+    expect(pdfEntries.map((e) => e.billed_hours)).toEqual(['1.17', '0.33']);
+    expect(options.rounding).toEqual({ minutes: 10, direction: 'nearest' });
   });
 
   test('reads the settings once per report', async () => {

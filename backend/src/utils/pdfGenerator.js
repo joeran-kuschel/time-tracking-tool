@@ -75,16 +75,29 @@ function drawCells(doc, cells, y, columns) {
   }
 }
 
-// The rule of the rounded hours as a sentence, e.g. "Hours rounded up to quarter hours." (rounding: { minutes, direction })
+// The rule of the rounded hours as a sentence, e.g. "Hours rounded up to quarter hours." (rounding: { minutes, direction }),
+// or null for a step that has no sentence (the steps are listed in config/settingsOptions.js)
 function roundingNote({ minutes, direction }) {
-  if (direction === 'nearest') {
-    return minutes === 15
+  const nearest = direction === 'nearest';
+  if (minutes === 15) {
+    return nearest
       ? i18n._({ id: 'report.rounding.nearest15', message: 'Hours rounded to the nearest quarter hour.' })
-      : i18n._({ id: 'report.rounding.nearest30', message: 'Hours rounded to the nearest half hour.' });
+      : i18n._({ id: 'report.rounding.up15', message: 'Hours rounded up to quarter hours.' });
   }
-  return minutes === 15
-    ? i18n._({ id: 'report.rounding.up15', message: 'Hours rounded up to quarter hours.' })
-    : i18n._({ id: 'report.rounding.up30', message: 'Hours rounded up to half hours.' });
+  if (minutes === 30) {
+    return nearest
+      ? i18n._({ id: 'report.rounding.nearest30', message: 'Hours rounded to the nearest half hour.' })
+      : i18n._({ id: 'report.rounding.up30', message: 'Hours rounded up to half hours.' });
+  }
+  if (minutes === 60) {
+    return nearest
+      ? i18n._({ id: 'report.rounding.nearest60', message: 'Hours rounded to the nearest full hour.' })
+      : i18n._({ id: 'report.rounding.up60', message: 'Hours rounded up to full hours.' });
+  }
+  if (minutes !== 5 && minutes !== 10) return null;
+  return nearest
+    ? i18n._({ id: 'report.rounding.nearestMinutes', message: 'Hours rounded to the nearest {minutes} minutes.' }, { minutes })
+    : i18n._({ id: 'report.rounding.upMinutes', message: 'Hours rounded up to steps of {minutes} minutes.' }, { minutes });
 }
 
 function drawTitle(doc, { customerName, month, year, rounding }) {
@@ -95,9 +108,10 @@ function drawTitle(doc, { customerName, month, year, rounding }) {
   const monthName = i18n.date(new Date(Date.UTC(year, month - 1, 1)), { month: 'long', year: 'numeric', timeZone: 'UTC' });
   doc.text(monthName, { align: 'center' });
   doc.text(i18n._({ id: 'report.customer', message: 'Customer: {customerName}' }, { customerName }), { align: 'center' });
-  if (rounding) {
+  const note = rounding && roundingNote(rounding);
+  if (note) {
     doc.fontSize(10);
-    doc.text(roundingNote(rounding), { align: 'center' });
+    doc.text(note, { align: 'center' });
   }
   doc.moveDown(1);
 }
