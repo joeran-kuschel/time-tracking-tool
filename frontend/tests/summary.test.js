@@ -12,14 +12,14 @@ describe('summarize', () => {
   test('adds up hours and amounts of finished entries, per project in project order', () => {
     const summary = summarize(entries, projects)
 
-    expect(summary.hours).toBe(5)
+    expect(summary.minutes).toBe(300)
     expect(summary.amount).toBe(3.5 * 95 + 1.5 * 80)
     expect(summary.count).toBe(2)
-    expect(summary.projects.map((p) => [p.project.name, p.hours])).toEqual([['Website', 3.5], ['Wartung', 1.5]])
+    expect(summary.projects.map((p) => [p.project.name, p.minutes])).toEqual([['Website', 210], ['Wartung', 90]])
   })
 
   test('is empty without entries', () => {
-    expect(summarize([], projects)).toEqual({ hours: 0, amount: 0, count: 0, projects: [] })
+    expect(summarize([], projects)).toEqual({ minutes: 0, amount: 0, count: 0, projects: [] })
   })
 })
 
@@ -33,10 +33,10 @@ describe('summarize with rounded hours (billed_hours and billed_amount from the 
   test('counts the billed hours and the billed amounts, not the exact ones', () => {
     const summary = summarize(rounded, projects)
 
-    expect(summary.hours).toBe(1.75)
+    expect(summary.minutes).toBe(105)
     expect(summary.amount).toBeCloseTo(158.75, 10)
     expect(summary.count).toBe(2)
-    expect(summary.projects.map((p) => [p.project.name, p.hours, p.amount])).toEqual([['Website', 1.25, 118.75], ['Wartung', 0.5, 40]])
+    expect(summary.projects.map((p) => [p.project.name, p.minutes, p.amount])).toEqual([['Website', 75, 118.75], ['Wartung', 30, 40]])
   })
 
   test('uses the amounts of the server, rounded to cents per entry like the report, not hours x rate of the sum', () => {
@@ -48,7 +48,7 @@ describe('summarize with rounded hours (billed_hours and billed_amount from the 
 
     const summary = summarize(three, project)
 
-    expect(summary.hours).toBe(0.75)
+    expect(summary.minutes).toBe(45)
     expect(summary.amount).toBeCloseTo(24.99, 10)
   })
 
@@ -57,7 +57,7 @@ describe('summarize with rounded hours (billed_hours and billed_amount from the 
 
     const summary = summarize([...rounded, backwards], projects)
 
-    expect(summary.projects.map((p) => [p.project.name, p.hours])).toEqual([['Website', 0.25], ['Wartung', 0.5]])
+    expect(summary.projects.map((p) => [p.project.name, p.minutes])).toEqual([['Website', 15], ['Wartung', 30]])
     expect(summary.amount).toBeCloseTo(118.75 - 95 + 40, 10)
   })
 
@@ -67,13 +67,13 @@ describe('summarize with rounded hours (billed_hours and billed_amount from the 
     const summary = summarize([...rounded, running], projects)
 
     expect(summary.count).toBe(2)
-    expect(summary.hours).toBe(1.75)
+    expect(summary.minutes).toBe(105)
   })
 
   test('without billed fields the figures are exactly as before', () => {
     const before = summarize(entries, projects)
 
-    expect(before.hours).toBe(5)
+    expect(before.minutes).toBe(300)
     expect(before.amount).toBe(3.5 * 95 + 1.5 * 80)
   })
 
@@ -84,7 +84,7 @@ describe('summarize with rounded hours (billed_hours and billed_amount from the 
     const summary = summarize([onlyHours, onlyAmount], projects)
 
     // 65 min and 20 min at their project's rate, exact
-    expect(summary.hours).toBeCloseTo((65 + 20) / 60, 10)
+    expect(summary.minutes).toBe(65 + 20)
     expect(summary.amount).toBeCloseTo((65 / 60) * 95 + (20 / 60) * 80, 10)
   })
 })
@@ -117,7 +117,7 @@ describe('summarize with projects missing a rate', () => {
   test('counts the hours of exact entries and an amount of 0', () => {
     const summary = summarize(entries, noRate)
 
-    expect(summary.hours).toBe(5)
+    expect(summary.minutes).toBe(300)
     expect(summary.amount).toBe(0)
   })
 
@@ -126,7 +126,7 @@ describe('summarize with projects missing a rate', () => {
 
     const summary = summarize([rounded], noRate)
 
-    expect(summary.hours).toBe(0.5)
+    expect(summary.minutes).toBe(30)
     expect(summary.amount).toBe(0)
   })
 })
@@ -140,8 +140,36 @@ describe('summarize with a customer with mixed entries', () => {
 
     const summary = summarize(mixed, projects)
 
-    expect(summary.hours).toBe(2.25)
+    expect(summary.minutes).toBe(135)
     expect(summary.amount).toBeCloseTo(118.75 + 95, 10)
     expect(summary.count).toBe(2)
+  })
+})
+
+describe('summarize in whole minutes', () => {
+  const project = [{ id: 7, name: 'Website', hourly_rate: '60.00' }]
+  const billed = (id, hours) => ({ id, project_id: 7, start_time: '2026-09-21T09:00:00', end_time: '2026-09-21T09:03:00', billed_hours: hours, billed_amount: '1.00' })
+
+  test('six entries rounded to 10 minutes (billed 0.17 h) add up to 60 minutes', () => {
+    expect(summarize([1, 2, 3, 4, 5, 6].map((id) => billed(id, '0.17')), project).minutes).toBe(60)
+  })
+
+  test('twelve entries rounded to 5 minutes (billed 0.08 h) add up to 60 minutes', () => {
+    expect(summarize(Array.from({ length: 12 }, (_, i) => billed(i + 1, '0.08')), project).minutes).toBe(60)
+  })
+
+  test('exact entries count whole minutes each, so the rows add up to the total', () => {
+    // 30 s count as a minute, 29 s as none: 1 + 0 + 2 = 3, not 1.4 rounded in the end
+    const at = (id, end) => ({ id, project_id: 7, start_time: '2026-09-21T09:00:00', end_time: end })
+    const summary = summarize([at(1, '2026-09-21T09:00:30'), at(2, '2026-09-21T09:00:29'), at(3, '2026-09-21T09:01:30')], project)
+
+    expect(summary.minutes).toBe(3)
+    expect(summary.projects[0].minutes).toBe(summary.minutes)
+  })
+
+  test('leaves out a project whose entries are all under 30 seconds', () => {
+    const short = { id: 1, project_id: 7, start_time: '2026-09-21T09:00:00', end_time: '2026-09-21T09:00:20' }
+
+    expect(summarize([short], project)).toMatchObject({ minutes: 0, projects: [] })
   })
 })

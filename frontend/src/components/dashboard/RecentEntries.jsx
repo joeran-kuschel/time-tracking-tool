@@ -1,7 +1,8 @@
 import { useId } from 'react'
 import { Link } from 'react-router'
 import { Trans, useLingui } from '@lingui/react/macro'
-import { formatDay, formatHours, hoursBetween } from '../../format'
+import { formatDay, minutesBetween } from '../../format'
+import Duration from '../Duration'
 import { trackingPath } from '../../routes'
 import { ui } from '../../ui'
 
@@ -40,7 +41,7 @@ function RecentEntries({ entries }) {
                   <span className="truncate">{entry.description || <span className="text-muted"><Trans>No description</Trans></span>}</span>
                   <span className="truncate text-sm text-muted">{entry.customer_name} · {entry.project_name}</span>
                 </span>
-                <span className="shrink-0 font-mono text-sm">{formatHours(i18n, hoursBetween(entry.start_time, entry.end_time))}</span>
+                <span className="shrink-0 font-mono text-sm"><Duration minutes={minutesBetween(entry.start_time, entry.end_time)} /></span>
               </Link>
             </li>
           ))}

@@ -1,14 +1,15 @@
 import { useId } from 'react'
 import { Link } from 'react-router'
 import { Trans, useLingui } from '@lingui/react/macro'
-import { formatAmount, formatHours } from '../format'
+import { formatAmount } from '../format'
 import { inMonth, summarize } from '../summary'
 import RoundingNote from './RoundingNote'
 import { reportPath } from '../routes'
+import Duration from './Duration'
 import ShareOfTotal from './ShareOfTotal'
 import { ui } from '../ui'
 
-// The current month of a customer: hours, billable amount (hours × hourly rate), entries and hours per project.
+// The current month of a customer: time, billable amount (hours × hourly rate), entries and hours per project.
 // Running entries don't count yet. The link opens the customer's report. The hours are the billed ones: rounded when
 // there is a rounding rule (rounding: { minutes, direction }), which a note says; the entry list below stays exact.
 function MonthSummary({ customerId, entries, projects, now = new Date(), rounding }) {
@@ -18,7 +19,7 @@ function MonthSummary({ customerId, entries, projects, now = new Date(), roundin
   const month = i18n.date(now, { month: 'long', year: 'numeric' })
 
   const figures = [
-    { label: <Trans>Hours this month</Trans>, value: formatHours(i18n, summary.hours) },
+    { label: <Trans>Hours this month</Trans>, value: <Duration minutes={summary.minutes} /> },
     { label: <Trans>Billable amount</Trans>, value: formatAmount(i18n, summary.amount) },
     { label: <Trans>Entries</Trans>, value: i18n.number(summary.count) },
   ]
@@ -45,13 +46,13 @@ function MonthSummary({ customerId, entries, projects, now = new Date(), roundin
 
       {summary.projects.length > 0 ? (
         <ul className="flex flex-col gap-2.5 border-t border-line-soft pt-4 text-sm">
-          {summary.projects.map(({ project, hours }) => (
+          {summary.projects.map(({ project, minutes }) => (
             <li key={project.id} className="flex items-center gap-3">
               <span className="w-40 shrink-0 truncate">{project.name}</span>
               <span aria-hidden="true" className="flex h-2 flex-1 rounded-sm bg-line-soft">
-                <span className="rounded-sm bg-accent" style={{ width: `${(hours / summary.hours) * 100}%` }} />
+                <span className="rounded-sm bg-accent" style={{ width: `${(minutes / summary.minutes) * 100}%` }} />
               </span>
-              <span className="w-20 shrink-0 text-right font-mono">{formatHours(i18n, hours)}<ShareOfTotal hours={hours} total={summary.hours} /></span>
+              <span className="w-20 shrink-0 text-right font-mono"><Duration minutes={minutes} /><ShareOfTotal minutes={minutes} total={summary.minutes} /></span>
             </li>
           ))}
         </ul>

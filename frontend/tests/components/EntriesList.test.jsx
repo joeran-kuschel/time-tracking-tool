@@ -20,9 +20,24 @@ describe('EntriesList', () => {
     render(<EntriesList entries={grouped} projects={[{ id: 9, name: 'Leer' }, ...projects, { id: 8, name: 'App' }]} />)
 
     const headings = screen.getAllByRole('heading', { level: 3 })
-    expect(headings.map((h) => h.textContent)).toEqual(['Website · 1,50 h gesamt', 'App · 2,00 h gesamt'])
+    expect(headings.map((h) => h.textContent)).toEqual(['Website · 1:30 h gesamt', 'App · 2:00 h gesamt'])
     expect(screen.getByRole('table', { name: /^App/ })).toHaveTextContent('App-Arbeit')
     expect(screen.getByRole('table', { name: /^Website/ })).toHaveTextContent('Konzept')
+  })
+
+  test('the rows of a project add up to its total: whole minutes each, not rounded in the end', () => {
+    // three entries of 20 s (0 minutes) and two of 40 s (1 minute): 2 minutes, not the 3 of the exact sum 200 s
+    const at = (id, end) => ({ id, project_id: 7, start_time: '2026-09-21T08:00:00Z', end_time: end, description: null })
+    const short = [at(1, '2026-09-21T08:00:20Z'), at(2, '2026-09-21T08:00:20Z'), at(3, '2026-09-21T08:00:20Z'), at(4, '2026-09-21T08:00:40Z'), at(5, '2026-09-21T08:00:40Z')]
+    render(<EntriesList entries={short} projects={projects} />)
+
+    expect(screen.getByRole('heading', { level: 3 })).toHaveTextContent('Website · 0:02 h gesamt')
+  })
+
+  test('shows the duration of an entry as a time element', () => {
+    render(<EntriesList entries={entries} projects={projects} />)
+
+    expect(screen.getAllByRole('row')[1].querySelector('time')).toHaveAttribute('datetime', 'PT1H30M')
   })
 
   test('shows an empty state without entries', () => {
@@ -38,8 +53,8 @@ describe('EntriesList', () => {
     render(<EntriesList entries={local} projects={projects} />)
 
     const rows = screen.getAllByRole('row')
-    expect(rows[1]).toHaveTextContent('Mo., 21. Sept.09:00 – 12:303,50 hKonzept')
-    expect(rows[2]).toHaveTextContent('Di., 22. Sept.10:02 – läuft0,00 h')
+    expect(rows[1]).toHaveTextContent('Mo., 21. Sept.09:00 – 12:303:30 hKonzept')
+    expect(rows[2]).toHaveTextContent('Di., 22. Sept.10:02 – läuft0:00 h')
   })
 
   test('has no detectable accessibility violations', async () => {

@@ -2,7 +2,8 @@ import { useId } from 'react'
 import { Link } from 'react-router'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { api } from '../../api'
-import { formatAmount, formatHours, formatRate } from '../../format'
+import { formatAmount, formatRate } from '../../format'
+import Duration from '../Duration'
 import { reportPath, trackingPath } from '../../routes'
 import RoundingNote from '../RoundingNote'
 import { ui } from '../../ui'
@@ -23,7 +24,7 @@ function BillingTable({ rows, now, lastMonthReports, rounding }) {
   const month = now.getMonth() + 1
   const year = now.getFullYear()
 
-  const totalHours = rows.reduce((sum, r) => sum + r.hours, 0)
+  const totalMinutes = rows.reduce((sum, r) => sum + r.minutes, 0)
   const totalAmount = rows.reduce((sum, r) => sum + r.amount, 0)
 
   const { reports } = lastMonthReports
@@ -64,7 +65,7 @@ function BillingTable({ rows, now, lastMonthReports, rounding }) {
                       </Link>
                     </th>
                     <td className={`${cell} text-right font-mono text-sm`}>{i18n.number(row.projects.length)}</td>
-                    <td className={`${cell} whitespace-nowrap text-right font-mono text-sm`}>{formatHours(i18n, row.hours)}</td>
+                    <td className={`${cell} whitespace-nowrap text-right font-mono text-sm`}><Duration minutes={row.minutes} /></td>
                     <td className={`${cell} whitespace-nowrap text-right font-mono text-sm`}>
                       {row.rates.map((rate) => formatRate(i18n, rate)).join(', ')}
                     </td>
@@ -87,7 +88,7 @@ function BillingTable({ rows, now, lastMonthReports, rounding }) {
             <tfoot>
               <tr>
                 <th scope="row" colSpan={2} className={`${footCell} text-left`}><Trans>Total</Trans></th>
-                <td className={`${footCell} whitespace-nowrap text-right font-mono text-sm`}>{formatHours(i18n, totalHours)}</td>
+                <td className={`${footCell} whitespace-nowrap text-right font-mono text-sm`}><Duration minutes={totalMinutes} /></td>
                 <td className={footCell} />
                 <td className={`${footCell} whitespace-nowrap text-right font-mono text-sm`}>{formatAmount(i18n, totalAmount)}</td>
                 <td className={footCell} />

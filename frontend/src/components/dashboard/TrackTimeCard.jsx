@@ -3,7 +3,7 @@ import { msg } from '@lingui/core/macro'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { api } from '../../api'
 import { useAction } from '../../hooks/useAction'
-import { formatHours, hoursBetween } from '../../format'
+import { formatDuration, minutesBetween } from '../../format'
 import { ui } from '../../ui'
 import EntryForm from '../EntryForm'
 import Tabs from '../Tabs'
@@ -34,7 +34,7 @@ function TrackTimeCard({ projects, defaultProjectId, timer, onSaved }) {
     const running = timer.activeEntry
     const stopped = await timer.stop()
     if (stopped) {
-      setSaved({ hours: hoursBetween(stopped.start_time, stopped.end_time), projectName: running.project_name })
+      setSaved({ minutes: minutesBetween(stopped.start_time, stopped.end_time), projectName: running.project_name })
     }
     return stopped
   }
@@ -48,7 +48,7 @@ function TrackTimeCard({ projects, defaultProjectId, timer, onSaved }) {
     return created
   }
 
-  const savedHours = saved && formatHours(i18n, saved.hours)
+  const savedDuration = saved && formatDuration(i18n, saved.minutes)
   const savedProject = saved?.projectName
 
   const timerPanel = (
@@ -71,7 +71,7 @@ function TrackTimeCard({ projects, defaultProjectId, timer, onSaved }) {
       )}
       <Timer project={project} activeEntry={timer.activeEntry} onStart={start} onStop={stop} error={timer.error} busy={timer.busy} bare />
       {saved && !timer.activeEntry && (
-        <p className="text-sm text-muted"><Trans>Saved {savedHours} to {savedProject}.</Trans></p>
+        <p className="text-sm text-muted"><Trans>Saved {savedDuration} to {savedProject}.</Trans></p>
       )}
     </div>
   )

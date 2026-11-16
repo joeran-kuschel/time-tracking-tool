@@ -212,13 +212,13 @@ describe('App', () => {
     await userEvent.click(await screen.findByRole('button', { name: 'Muster GmbH' }))
 
     const summary = within(await screen.findByRole('region', { name: new RegExp(String(now.getFullYear())) }))
-    expect(summary.getByText('Stunden diesen Monat').nextElementSibling).toHaveTextContent('1,75 h')
+    expect(summary.getByText('Stunden diesen Monat').nextElementSibling).toHaveTextContent('1:45 h')
     expect(summary.getByText('Abrechenbarer Betrag').nextElementSibling).toHaveTextContent(/166,25\s€/)
     expect(summary.getByText('Stunden auf Viertelstunden aufgerundet.')).toBeInTheDocument()
     // the entries below show the exact times and total
-    expect(screen.getByText('Konzept').closest('tr')).toHaveTextContent('1,08 h')
-    expect(screen.getByText('Abstimmung').closest('tr')).toHaveTextContent('0,33 h')
-    expect(screen.getByText(/1,42 h gesamt/)).toBeInTheDocument()
+    expect(screen.getByText('Konzept').closest('tr')).toHaveTextContent('1:05 h')
+    expect(screen.getByText('Abstimmung').closest('tr')).toHaveTextContent('0:20 h')
+    expect(screen.getByText(/1:25 h gesamt/)).toBeInTheDocument()
   })
 
   test('the month summary names no rule when there is no rounding', async () => {
@@ -246,7 +246,7 @@ describe('App', () => {
     await userEvent.click(await screen.findByRole('button', { name: 'Muster GmbH' }))
 
     expect(await screen.findByText('Stunden diesen Monat')).toBeInTheDocument()
-    expect(screen.getByText('Stunden diesen Monat').nextElementSibling).toHaveTextContent('1,25 h')
+    expect(screen.getByText('Stunden diesen Monat').nextElementSibling).toHaveTextContent('1:15 h')
     expect(screen.getByText('Stunden auf die nächstgelegene halbe Stunde gerundet.')).toBeInTheDocument()
   })
 
@@ -261,7 +261,7 @@ describe('App', () => {
     await userEvent.click(await screen.findByRole('button', { name: 'Muster GmbH' }))
 
     expect(await screen.findByText('Stunden diesen Monat')).toBeInTheDocument()
-    expect(screen.getByText('Stunden diesen Monat').nextElementSibling).toHaveTextContent('1,00 h')
+    expect(screen.getByText('Stunden diesen Monat').nextElementSibling).toHaveTextContent('1:00 h')
     expect(screen.queryByText(/gerundet/)).not.toBeInTheDocument()
   })
 
@@ -322,7 +322,7 @@ describe('App', () => {
       await renderTimeTracking()
       await userEvent.click(await screen.findByRole('button', { name: 'Muster GmbH' }))
       expect(await screen.findByText('Stunden auf Viertelstunden aufgerundet.')).toBeInTheDocument()
-      expect(screen.getByText('Stunden diesen Monat').nextElementSibling).toHaveTextContent('1,25 h')
+      expect(screen.getByText('Stunden diesen Monat').nextElementSibling).toHaveTextContent('1:15 h')
       expect(api.getCustomerTimeEntries).toHaveBeenCalledTimes(1)
 
       // the rule stays: no new load
@@ -338,7 +338,7 @@ describe('App', () => {
       await userEvent.click(screen.getByRole('button', { name: 'Speichern' }))
 
       expect(await screen.findByText('Stunden auf volle Stunden aufgerundet.')).toBeInTheDocument()
-      expect(screen.getByText('Stunden diesen Monat').nextElementSibling).toHaveTextContent('2,00 h')
+      expect(screen.getByText('Stunden diesen Monat').nextElementSibling).toHaveTextContent('2:00 h')
       expect(api.getCustomerTimeEntries).toHaveBeenCalledTimes(2)
     })
 

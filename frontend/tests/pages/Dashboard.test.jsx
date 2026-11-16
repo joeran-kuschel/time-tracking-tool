@@ -80,9 +80,9 @@ describe('Dashboard', () => {
     renderDashboard()
     const figures = within(await screen.findByRole('region', { name: 'Kennzahlen' }))
 
-    expect(figures.getByText('Diese Woche').nextSibling).toHaveTextContent('5,50 h')
-    expect(figures.getByText('Dieser Monat').nextSibling).toHaveTextContent('9,00 h')
-    expect(figures.getByText('18 Arbeitstage, 0,50 h pro Tag')).toBeInTheDocument()
+    expect(figures.getByText('Diese Woche').nextSibling).toHaveTextContent('5:30 h')
+    expect(figures.getByText('Dieser Monat').nextSibling).toHaveTextContent('9:00 h')
+    expect(figures.getByText('18 Arbeitstage, 0:30 h pro Tag')).toBeInTheDocument()
     expect(figures.getByText('Abrechenbar im September').nextSibling).toHaveTextContent(/792,50\s€/)
     expect(figures.getByText('Abrechnungen für August verschickt').nextSibling).toHaveTextContent('1 von 2')
   })
@@ -90,21 +90,21 @@ describe('Dashboard', () => {
   test('the chart shows the month total, and the value of a bar on hover or with the arrow keys', async () => {
     renderDashboard()
     await loaded()
-    const readout = screen.getByText('9,00 h in diesem Monat')
+    const readout = screen.getByText('9:00 h in diesem Monat')
     expect(readout).toHaveAttribute('aria-live', 'polite')
 
     const bars = screen.getByRole('group', { name: 'Balken, mit den Pfeiltasten die Werte lesen' })
     await userEvent.tab()
     while (document.activeElement !== bars) await userEvent.tab()
     await userEvent.keyboard('{ArrowRight}')
-    expect(readout).toHaveTextContent('Di., 1. Sept.: 3,50 h')
+    expect(readout).toHaveTextContent('Di., 1. Sept.: 3:30 h')
     await userEvent.keyboard('{End}')
     expect(readout).toHaveTextContent('Mi., 30. Sept.: noch offen')
 
     await userEvent.hover(bars.children[2 + 20]) // two gridlines, then 21 September
-    expect(readout).toHaveTextContent('Mo., 21. Sept.: 1,50 h')
+    expect(readout).toHaveTextContent('Mo., 21. Sept.: 1:30 h')
     await userEvent.unhover(bars)
-    expect(readout).toHaveTextContent('9,00 h in diesem Monat')
+    expect(readout).toHaveTextContent('9:00 h in diesem Monat')
   })
 
   test('switches the chart to weeks, with a table of the values for screen readers', async () => {
@@ -118,10 +118,10 @@ describe('Dashboard', () => {
     const table = screen.getByRole('table', { name: 'Stunden pro Woche, September 2026' })
     const rows = within(table).getAllByRole('row').slice(1)
     expect(rows.map((row) => row.textContent)).toEqual([
-      'Woche 36, 1. Sept. – 6. Sept.3,50 h',
-      'Woche 37, 7. Sept. – 13. Sept.0,00 h',
-      'Woche 38, 14. Sept. – 20. Sept.0,00 h',
-      'Woche 39, 21. Sept. – 27. Sept.5,50 h',
+      'Woche 36, 1. Sept. – 6. Sept.3:30 h',
+      'Woche 37, 7. Sept. – 13. Sept.0:00 h',
+      'Woche 38, 14. Sept. – 20. Sept.0:00 h',
+      'Woche 39, 21. Sept. – 27. Sept.5:30 h',
       'Woche 40, 28. Sept. – 30. Sept.noch offen',
     ])
   })
@@ -131,8 +131,8 @@ describe('Dashboard', () => {
     const section = within(await screen.findByRole('region', { name: 'Nach Kunde · September' }))
 
     const links = section.getAllByRole('link')
-    expect(links[0]).toHaveTextContent(/Muster GmbH5,00 h, 56 % vom GesamtwertWebsite, Shop · 452,50\s€/)
-    expect(links[1]).toHaveTextContent(/Berger4,00 h, 44 % vom GesamtwertPflege · 340,00\s€/)
+    expect(links[0]).toHaveTextContent(/Muster GmbH5:00 h, 56 % vom GesamtwertWebsite, Shop · 452,50\s€/)
+    expect(links[1]).toHaveTextContent(/Berger4:00 h, 44 % vom GesamtwertPflege · 340,00\s€/)
     expect(links[0]).toHaveAttribute('href', '/time-tracking/1')
     expect(links[1]).toHaveAttribute('href', '/time-tracking/2')
   })
@@ -142,8 +142,8 @@ describe('Dashboard', () => {
     const table = await screen.findByRole('table', { name: 'Abrechnung · September 2026' })
 
     const [, first, , total] = within(table).getAllByRole('row')
-    expect(first).toHaveTextContent(/Muster GmbH25,00 h80,00\s€\/h, 95,00\s€\/h452,50\s€PDF ansehen/)
-    expect(total).toHaveTextContent(/Gesamt9,00 h792,50\s€/)
+    expect(first).toHaveTextContent(/Muster GmbH25:00 h80,00\s€\/h, 95,00\s€\/h452,50\s€PDF ansehen/)
+    expect(total).toHaveTextContent(/Gesamt9:00 h792,50\s€/)
     const preview = within(first).getByRole('link', { name: 'PDF ansehen für Muster GmbH (öffnet in einem neuen Tab)' })
     expect(preview).toHaveAttribute('href', expect.stringMatching(/\/reports\/customer\/1\/pdf\?month=9&year=2026&lang=de&tz=[^&]+&inline=1$/))
     expect(preview).toHaveAttribute('target', '_blank')
@@ -158,7 +158,7 @@ describe('Dashboard', () => {
     renderDashboard()
     const section = within(await screen.findByRole('region', { name: 'Letzte Einträge' }))
 
-    expect(section.getByRole('link', { name: /Updates.*Berger · Pflege.*4,00 h/ })).toBeInTheDocument()
+    expect(section.getByRole('link', { name: /Updates.*Berger · Pflege.*4:00 h/ })).toBeInTheDocument()
     expect(section.getByRole('link', { name: /Ohne Beschreibung.*Muster GmbH · Shop/ })).toHaveAttribute('href', '/time-tracking/1/8')
     expect(section.getByRole('link', { name: 'Alle ansehen' })).toHaveAttribute('href', '/time-tracking/2')
   })
@@ -203,7 +203,7 @@ describe('Dashboard', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Stop' }))
     rerender(<Dashboard timer={{ ...timer, activeEntry: null }} />)
 
-    expect(await screen.findByText('1,50 h für Website gespeichert.')).toBeInTheDocument()
+    expect(await screen.findByText('1:30 h für Website gespeichert.')).toBeInTheDocument()
     expect(api.getDashboard).toHaveBeenCalledTimes(2)
   })
 
@@ -282,9 +282,9 @@ describe('Dashboard with a rounding rule', () => {
     expect(figures.getByText('Abrechenbar im September').parentElement).toHaveTextContent('Gerundete Stunden × Stundensatz des Projekts')
     const table = await screen.findByRole('table', { name: 'Abrechnung · September 2026' })
     const [, first, second, total] = within(table).getAllByRole('row')
-    expect(first).toHaveTextContent(/Muster GmbH21,75 h80,00\s€\/h, 95,00\s€\/h158,75\s€/)
-    expect(second).toHaveTextContent(/Berger10,25 h85,00\s€\/h21,25\s€/)
-    expect(total).toHaveTextContent(/Gesamt2,00 h180,00\s€/)
+    expect(first).toHaveTextContent(/Muster GmbH21:45 h80,00\s€\/h, 95,00\s€\/h158,75\s€/)
+    expect(second).toHaveTextContent(/Berger10:15 h85,00\s€\/h21,25\s€/)
+    expect(total).toHaveTextContent(/Gesamt2:00 h180,00\s€/)
   })
 
   test('the hours by customer are the billed ones', async () => {
@@ -292,8 +292,8 @@ describe('Dashboard with a rounding rule', () => {
     const section = within(await screen.findByRole('region', { name: 'Nach Kunde · September' }))
 
     const links = section.getAllByRole('link')
-    expect(links[0]).toHaveTextContent(/Muster GmbH1,75 h.*158,75\s€/)
-    expect(links[1]).toHaveTextContent(/Berger0,25 h.*21,25\s€/)
+    expect(links[0]).toHaveTextContent(/Muster GmbH1:45 h.*158,75\s€/)
+    expect(links[1]).toHaveTextContent(/Berger0:15 h.*21,25\s€/)
   })
 
   test('the tracked time stays exact: this week, this month and the recent entries', async () => {
@@ -301,11 +301,11 @@ describe('Dashboard with a rounding rule', () => {
     const figures = within(await screen.findByRole('region', { name: 'Kennzahlen' }))
 
     // 65 + 20 + 7 minutes in the month, 20 + 7 minutes in the week
-    expect(figures.getByText('Diese Woche').nextSibling).toHaveTextContent('0,45 h')
-    expect(figures.getByText('Dieser Monat').nextSibling).toHaveTextContent('1,53 h')
+    expect(figures.getByText('Diese Woche').nextSibling).toHaveTextContent('0:27 h')
+    expect(figures.getByText('Dieser Monat').nextSibling).toHaveTextContent('1:32 h')
     const recent = within(screen.getByRole('region', { name: 'Letzte Einträge' }))
-    expect(recent.getByText('0,12 h')).toBeInTheDocument()
-    expect(recent.getByText('0,33 h')).toBeInTheDocument()
+    expect(recent.getByText('0:07 h')).toBeInTheDocument()
+    expect(recent.getByText('0:20 h')).toBeInTheDocument()
   })
 
   test('names the rule under By customer and Billing', async () => {
@@ -320,10 +320,10 @@ describe('Dashboard with a rounding rule', () => {
     const table = await screen.findByRole('table', { name: 'Abrechnung · September 2026' })
 
     const rows = within(table).getAllByRole('row')
-    // 1,75 h + 0,25 h = 2,00 h and 158,75 + 21,25 = 180,00, the totals of the two reports of the month
-    expect(rows[1]).toHaveTextContent('1,75 h')
-    expect(rows[2]).toHaveTextContent('0,25 h')
-    expect(rows[3]).toHaveTextContent(/2,00 h180,00\s€/)
+    // 1:45 h + 0:15 h = 2:00 h and 158,75 + 21,25 = 180,00, the totals of the two reports of the month
+    expect(rows[1]).toHaveTextContent('1:45 h')
+    expect(rows[2]).toHaveTextContent('0:15 h')
+    expect(rows[3]).toHaveTextContent(/2:00 h180,00\s€/)
   })
 
   test('shows no note and no rounding without a rule', async () => {
@@ -356,7 +356,7 @@ describe('Dashboard with a rounding rule', () => {
 
     const table = await screen.findByRole('table', { name: 'Abrechnung · September 2026' })
 
-    expect(within(table).getAllByRole('row')[3]).toHaveTextContent(/Gesamt2,00 h180,00\s€/)
+    expect(within(table).getAllByRole('row')[3]).toHaveTextContent(/Gesamt2:00 h180,00\s€/)
   })
 
   test('does not break when the entries carry billed values but no billed_rule: the figures show, no note', async () => {
@@ -368,7 +368,7 @@ describe('Dashboard with a rounding rule', () => {
 
     const table = await screen.findByRole('table', { name: 'Abrechnung · September 2026' })
 
-    expect(within(table).getAllByRole('row')[3]).toHaveTextContent(/Gesamt2,00 h180,00\s€/)
+    expect(within(table).getAllByRole('row')[3]).toHaveTextContent(/Gesamt2:00 h180,00\s€/)
     expect(screen.queryByText(/gerundet/)).not.toBeInTheDocument()
   })
 
@@ -402,9 +402,9 @@ describe('Dashboard with customers on different rounding rules', () => {
     const table = await screen.findByRole('table', { name: 'Abrechnung · September 2026' })
 
     const [, first, second, total] = within(table).getAllByRole('row')
-    expect(first).toHaveTextContent(/Berger12,00 h85,00\s€\/h170,00\s€/)
-    expect(second).toHaveTextContent(/Muster GmbH11,25 h95,00\s€\/h118,75\s€/)
-    expect(total).toHaveTextContent(/Gesamt3,25 h288,75\s€/)
+    expect(first).toHaveTextContent(/Berger12:00 h85,00\s€\/h170,00\s€/)
+    expect(second).toHaveTextContent(/Muster GmbH11:15 h95,00\s€\/h118,75\s€/)
+    expect(total).toHaveTextContent(/Gesamt3:15 h288,75\s€/)
     expect(screen.getAllByText('Die Rundung unterscheidet sich je Kunde.')).toHaveLength(2)
     expect(screen.queryByText(/aufgerundet/)).not.toBeInTheDocument()
   })
@@ -434,7 +434,7 @@ describe('Dashboard with customers on different rounding rules', () => {
     const figures = within(await screen.findByRole('region', { name: 'Kennzahlen' }))
 
     // 65 + 65 minutes in the month
-    expect(figures.getByText('Dieser Monat').nextSibling).toHaveTextContent('2,17 h')
+    expect(figures.getByText('Dieser Monat').nextSibling).toHaveTextContent('2:10 h')
   })
 
   test('has no detectable accessibility violations with the mixed note', async () => {
@@ -442,5 +442,41 @@ describe('Dashboard with customers on different rounding rules', () => {
     await loaded()
 
     expect(await axe(container)).toHaveNoViolations()
+  })
+})
+
+describe('Dashboard: the rows add up to the total in whole minutes', () => {
+  // each entry is billed at its own rounded hours, which the server sends as two decimals
+  const many = (customer, projectId, count, hours) => Array.from({ length: count }, (_, i) => ({
+    ...entry(customer.customer_id * 100 + i, customer, projectId, `P${projectId}`, '60.00', '2026-09-21T09:00:00', '2026-09-21T09:03:00'),
+    ...billed(hours, '1.00', { minutes: 5, direction: 'nearest' }),
+  }))
+
+  test.each([
+    ['six entries rounded to 10 minutes (0.17 h)', 6, '0.17'],
+    ['twelve entries of 5 minutes (0.08 h)', 12, '0.08'],
+  ])('%s show 1:00 h in the billing table and by customer', async (_, count, hours) => {
+    api.getDashboard.mockResolvedValue({ ...data, entries: many(muster, 7, count, hours), recent: [] })
+    renderDashboard()
+
+    const table = await screen.findByRole('table', { name: 'Abrechnung · September 2026' })
+    const [, row, total] = within(table).getAllByRole('row')
+    expect(row).toHaveTextContent(/Muster GmbH11:00 h/)
+    expect(total).toHaveTextContent(/Gesamt1:00 h/)
+    const section = within(screen.getByRole('region', { name: 'Nach Kunde · September' }))
+    expect(section.getByRole('link')).toHaveTextContent(/Muster GmbH1:00 h/)
+  })
+
+  test('the tracked time of the chart and the key figures counts whole minutes per entry', async () => {
+    // three entries of 40 seconds on 21 September: 1 minute each, 3 minutes, not 2
+    const short = [1, 2, 3].map((id) => entry(id, muster, 7, 'Website', '95.00', '2026-09-21T09:00:00', '2026-09-21T09:00:40'))
+    api.getDashboard.mockResolvedValue({ ...data, entries: short, recent: [] })
+    renderDashboard()
+    const figures = within(await screen.findByRole('region', { name: 'Kennzahlen' }))
+
+    expect(figures.getByText('Dieser Monat').nextSibling).toHaveTextContent('0:03 h')
+    expect(screen.getByText('0:03 h in diesem Monat')).toBeInTheDocument()
+    const day = within(screen.getByRole('table', { name: 'Stunden pro Tag, September 2026' })).getAllByRole('row')[21]
+    expect(day).toHaveTextContent('Mo., 21. Sept.0:03 h')
   })
 })

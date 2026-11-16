@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest'
 import { i18n } from '@/i18n'
-import { formatAmount, formatClock, formatDay, formatHours, formatRate, formatShare, hoursBetween } from '@/format'
+import { formatAmount, formatClock, formatDay, formatHours, formatRate, formatShare, hoursBetween, formatDuration, isoDuration, minutesBetween, minutesOfHours, roundMinutes } from '@/format'
 
 describe('hoursBetween', () => {
   test('returns the hours between start and end', () => {
@@ -44,5 +44,75 @@ describe('formatShare', () => {
   test('is 0 when the total is 0', () => {
     i18n.activate('en')
     expect(formatShare(i18n, 0, 0)).toBe('0%')
+  })
+})
+
+describe('minutesBetween', () => {
+  const at = (seconds) => minutesBetween('2026-09-21T08:00:00Z', new Date(Date.UTC(2026, 8, 21, 8, 0, seconds)).toISOString())
+
+  test('counts whole minutes, 30 seconds up', () => {
+    expect(at(0)).toBe(0)
+    expect(at(29)).toBe(0)
+    expect(at(30)).toBe(1)
+    expect(at(59)).toBe(1)
+    expect(at(90)).toBe(2)
+  })
+
+  test('is 0 for a running entry', () => {
+    expect(minutesBetween('2026-09-21T08:00:00Z', null)).toBe(0)
+  })
+
+  test('rounds a negative span away from zero, like the database', () => {
+    expect(minutesBetween('2026-09-21T08:01:30Z', '2026-09-21T08:00:00Z')).toBe(-2)
+  })
+})
+
+describe('minutesOfHours', () => {
+  test('turns decimal hours of the server into whole minutes', () => {
+    expect(minutesOfHours('0.08')).toBe(5)
+    expect(minutesOfHours('0.17')).toBe(10)
+    expect(minutesOfHours('1.25')).toBe(75)
+    expect(minutesOfHours(0)).toBe(0)
+    expect(minutesOfHours('-0.5')).toBe(-30)
+  })
+
+  test('roundMinutes rounds halves away from zero', () => {
+    expect(roundMinutes(0.5)).toBe(1)
+    expect(roundMinutes(-0.5)).toBe(-1)
+    expect(roundMinutes(2.4)).toBe(2)
+  })
+})
+
+describe('formatDuration', () => {
+  test.each(['de', 'en'])('shows h:mm h the same in %s', (language) => {
+    i18n.activate(language)
+    expect(formatDuration(i18n, 0)).toBe('0:00 h')
+    expect(formatDuration(i18n, 5)).toBe('0:05 h')
+    expect(formatDuration(i18n, 239)).toBe('3:59 h')
+    expect(formatDuration(i18n, 60)).toBe('1:00 h')
+    expect(formatDuration(i18n, 6045)).toBe('100:45 h')
+    expect(formatDuration(i18n, -90)).toBe('-1:30 h')
+  })
+
+  test('rounds fractions of a minute and never shows -0:00', () => {
+    expect(formatDuration(i18n, 0.5)).toBe('0:01 h')
+    expect(formatDuration(i18n, 0.4)).toBe('0:00 h')
+    expect(formatDuration(i18n, -0.4)).toBe('0:00 h')
+  })
+
+  test('takes the minutes of numeric strings', () => {
+    expect(formatDuration(i18n, '75')).toBe('1:15 h')
+  })
+})
+
+describe('isoDuration', () => {
+  test('writes the duration for the datetime attribute', () => {
+    expect(isoDuration(239)).toBe('PT3H59M')
+    expect(isoDuration(0)).toBe('PT0H0M')
+    expect(isoDuration(6045)).toBe('PT100H45M')
+  })
+
+  test('has none for a negative duration', () => {
+    expect(isoDuration(-90)).toBeNull()
   })
 })

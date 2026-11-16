@@ -6,9 +6,9 @@ import BillingTable from '@/components/dashboard/BillingTable'
 
 const now = new Date(2026, 8, 22, 12, 0)
 const lastMonthReports = { month: 8, year: 2026, reports: [] }
-const row = (customerId, name, hours, amount, rates) => ({ customerId, name, hours, amount, rates, projects: [{ project: { name: 'Website' } }] })
+const row = (customerId, name, minutes, amount, rates) => ({ customerId, name, minutes, amount, rates, projects: [{ project: { name: 'Website' } }] })
 // the hours and amounts are the billed ones (summed by byCustomer)
-const rows = [row(1, 'Muster GmbH', 1.75, 158.75, [80, 95]), row(2, 'Berger', 0.25, 21.25, [85])]
+const rows = [row(1, 'Muster GmbH', 105, 158.75, [80, 95]), row(2, 'Berger', 15, 21.25, [85])]
 const rule = { minutes: 15, direction: 'up' }
 
 function renderTable(props = {}) {
@@ -21,9 +21,9 @@ describe('BillingTable', () => {
 
     const [, muster, berger, total] = within(screen.getByRole('table', { name: 'Abrechnung · September 2026' })).getAllByRole('row')
     // the digit after the name is the number of projects
-    expect(muster).toHaveTextContent(/Muster GmbH11,75 h80,00\s€\/h, 95,00\s€\/h158,75\s€/)
-    expect(berger).toHaveTextContent(/Berger10,25 h85,00\s€\/h21,25\s€/)
-    expect(total).toHaveTextContent(/Gesamt2,00 h180,00\s€/)
+    expect(muster).toHaveTextContent(/Muster GmbH11:45 h80,00\s€\/h, 95,00\s€\/h158,75\s€/)
+    expect(berger).toHaveTextContent(/Berger10:15 h85,00\s€\/h21,25\s€/)
+    expect(total).toHaveTextContent(/Gesamt2:00 h180,00\s€/)
   })
 
   test('names the rounding rule once, under the heading', () => {
@@ -78,7 +78,7 @@ describe('BillingTable with rounding rules that differ by customer', () => {
     renderTable({ rounding: { mixed: true } })
 
     expect(screen.getAllByText('Die Rundung unterscheidet sich je Kunde.')).toHaveLength(1)
-    expect(within(screen.getByRole('table', { name: 'Abrechnung · September 2026' })).getAllByRole('row')[3]).toHaveTextContent(/Gesamt2,00 h180,00\s€/)
+    expect(within(screen.getByRole('table', { name: 'Abrechnung · September 2026' })).getAllByRole('row')[3]).toHaveTextContent(/Gesamt2:00 h180,00\s€/)
   })
 
   test('has no detectable accessibility violations', async () => {

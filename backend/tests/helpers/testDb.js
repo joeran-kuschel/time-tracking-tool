@@ -15,6 +15,13 @@ function createTestPool() {
     returns: DataType.integer,
     implementation: (text, search) => text.indexOf(search) + 1,
   });
+  // pg-mem lacks round (halves away from zero, like Postgres rounds a numeric), which the entry search uses
+  db.public.registerFunction({
+    name: 'round',
+    args: [DataType.float],
+    returns: DataType.float,
+    implementation: (value) => Math.sign(value) * Math.round(Math.abs(value)),
+  });
   for (const file of fs.readdirSync(migrationsDir).filter((f) => f.endsWith('.sql')).sort()) {
     db.public.none(fs.readFileSync(path.join(migrationsDir, file), 'utf8'));
   }

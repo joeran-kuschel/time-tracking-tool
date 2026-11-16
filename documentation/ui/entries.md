@@ -41,7 +41,7 @@ month again. There is no URL state.
 
 ## Results
 
-- A status line says how many entries match and their hours, e.g. *12 entries, 31.50 h*, or *No entries found*. The
+- A status line says how many entries match and their hours, e.g. *12 entries, 31:30 h* ([Durations](durations.md)), or *No entries found*. The
   count covers all matches, the hours only finished entries (a running entry counts as an entry, with no hours yet).
 - The entries are a table: *Date*, *Customer*, *Project*, *Time*, *Hours*, *Description*, *Actions*. Below the `sm`
   breakpoint every row becomes a card whose cells show their column name, so the page reflows at 320 px without
