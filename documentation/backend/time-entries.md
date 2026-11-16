@@ -93,7 +93,8 @@ parameter given. All parameters are optional; without any, it returns everything
 
 Response: `{ entries, total, hours, limit, offset }`. `entries` are one page with `project_name`, `hourly_rate`,
 `customer_id` and `customer_name`. `total` counts **all** matches, not only the page. `hours` is the sum of the
-finished matches in decimal hours (running entries count in `total` but add no hours); `0` when nothing matches.
+finished matches in decimal hours, each entry rounded to whole minutes first (half up), so it equals the minutes
+the page shows (running entries count in `total` but add no hours); `0` when nothing matches.
 
 - **Time zone rule:** an entry belongs to the day it **starts** in (`start_time`), like in the reports. `dayRange` in
   `backend/src/utils/period.js` turns the days into instants, `from <= start_time < to`, so a daylight saving switch

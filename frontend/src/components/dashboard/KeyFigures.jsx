@@ -1,7 +1,8 @@
 import { useId } from 'react'
 import { Trans, useLingui } from '@lingui/react/macro'
-import { formatAmount, formatHours } from '../../format'
-import { byCustomer, monthEntries, startOfWeek, trackedHours, weekHours, workingDaysSoFar } from '../../dashboard'
+import { formatAmount, formatDuration } from '../../format'
+import Duration from '../Duration'
+import { byCustomer, monthEntries, startOfWeek, trackedMinutes, weekMinutes, workingDaysSoFar } from '../../dashboard'
 import { ui } from '../../ui'
 
 // Four figures: hours this week, hours this month (with the average per working day so far),
@@ -15,13 +16,13 @@ function KeyFigures({ entries, lastMonthReports, now, rounding }) {
 
   const month = monthEntries(entries, now)
   const customers = byCustomer(month)
-  const monthHours = trackedHours(month)
+  const monthMinutes = trackedMinutes(month)
   const monthAmount = customers.reduce((sum, c) => sum + c.amount, 0)
   const workingDays = workingDaysSoFar(now)
 
   const weekStart = i18n.date(startOfWeek(now), { weekday: 'short', day: 'numeric' })
   const today = i18n.date(now, { weekday: 'short', day: 'numeric', month: 'short' })
-  const perDay = formatHours(i18n, workingDays ? monthHours / workingDays : 0)
+  const perDay = formatDuration(i18n, workingDays ? monthMinutes / workingDays : 0)
   const days = i18n.number(workingDays)
   const monthName = i18n.date(now, { month: 'long' })
   const reports = lastMonthReports.reports
@@ -30,8 +31,8 @@ function KeyFigures({ entries, lastMonthReports, now, rounding }) {
   const lastMonthName = i18n.date(new Date(lastMonthReports.year, lastMonthReports.month - 1, 1), { month: 'long' })
 
   const figures = [
-    { label: <Trans>This week</Trans>, value: formatHours(i18n, weekHours(entries, now)), note: <Trans>{weekStart} to {today}</Trans> },
-    { label: <Trans>This month</Trans>, value: formatHours(i18n, monthHours), note: <Trans>{days} working days, {perDay} per day</Trans> },
+    { label: <Trans>This week</Trans>, value: <Duration minutes={weekMinutes(entries, now)} />, note: <Trans>{weekStart} to {today}</Trans> },
+    { label: <Trans>This month</Trans>, value: <Duration minutes={monthMinutes} />, note: <Trans>{days} working days, {perDay} per day</Trans> },
     { label: <Trans>Billable in {monthName}</Trans>, value: formatAmount(i18n, monthAmount), note: rounding ? <Trans>Rounded hours × hourly rate of each project</Trans> : <Trans>Hours × hourly rate of each project</Trans> },
     {
       label: <Trans>Reports sent for {lastMonthName}</Trans>,

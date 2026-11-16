@@ -23,26 +23,26 @@ describe('MonthSummary', () => {
     render(<MonthSummary entries={entries} projects={projects} customerId={3} now={now} />)
 
     expect(screen.getByRole('heading', { name: 'September 2026' })).toBeInTheDocument()
-    expect(figure('Stunden diesen Monat')).toHaveTextContent('5,00 h')
+    expect(figure('Stunden diesen Monat')).toHaveTextContent('5:00 h')
     expect(figure('Abrechenbarer Betrag')).toHaveTextContent('452,50 €')
     expect(figure('Einträge')).toHaveTextContent('2')
     const perProject = screen.getAllByRole('listitem')
     expect(within(perProject[0]).getByText('Website')).toBeInTheDocument()
-    expect(perProject[0]).toHaveTextContent('3,50 h')
-    expect(perProject[1]).toHaveTextContent('1,50 h')
+    expect(perProject[0]).toHaveTextContent('3:30 h')
+    expect(perProject[1]).toHaveTextContent('1:30 h')
   })
 
   test("gives screen readers each project's share of the total", () => {
     render(<MonthSummary entries={entries} projects={projects} customerId={3} now={now} />)
     const perProject = screen.getAllByRole('listitem')
-    expect(perProject[0]).toHaveTextContent('3,50 h, 70 % vom Gesamtwert')
-    expect(perProject[1]).toHaveTextContent('1,50 h, 30 % vom Gesamtwert')
+    expect(perProject[0]).toHaveTextContent('3:30 h, 70 % vom Gesamtwert')
+    expect(perProject[1]).toHaveTextContent('1:30 h, 30 % vom Gesamtwert')
   })
 
   test('words the share in the active language', () => {
     i18n.activate('en')
     render(<MonthSummary entries={entries} projects={projects} customerId={3} now={now} />)
-    expect(screen.getAllByRole('listitem')[0]).toHaveTextContent('3.50 h, 70% of total')
+    expect(screen.getAllByRole('listitem')[0]).toHaveTextContent('3:30 h, 70% of total')
   })
 
   test('says so when nothing is recorded this month', () => {
@@ -66,6 +66,12 @@ describe('MonthSummary', () => {
     expect(list.className).not.toMatch(/grid-cols/)
   })
 
+  test('marks the durations as a length of time for assistive technology', () => {
+    const { container } = render(<MonthSummary entries={entries} projects={projects} customerId={3} now={now} />)
+
+    expect([...container.querySelectorAll('time')].map((t) => t.getAttribute('datetime'))).toEqual(['PT5H0M', 'PT3H30M', 'PT1H30M'])
+  })
+
   test('has no detectable accessibility violations', async () => {
     const { container } = render(<MonthSummary entries={entries} projects={projects} customerId={3} now={now} />)
     expect(await axe(container)).toHaveNoViolations()
@@ -84,13 +90,13 @@ describe('MonthSummary with a rounding rule', () => {
   test('shows the billed hours and amounts, per project too, and names the rule', () => {
     render(<MonthSummary entries={rounded} projects={projects} customerId={3} now={now} rounding={rule} />)
 
-    expect(figure('Stunden diesen Monat')).toHaveTextContent('1,75 h')
+    expect(figure('Stunden diesen Monat')).toHaveTextContent('1:45 h')
     expect(figure('Abrechenbarer Betrag')).toHaveTextContent(/158,75\s€/)
     expect(figure('Einträge')).toHaveTextContent('2')
     const perProject = screen.getAllByRole('listitem')
     expect(perProject[0]).toHaveTextContent('Website')
-    expect(perProject[0]).toHaveTextContent('1,25 h')
-    expect(perProject[1]).toHaveTextContent('0,50 h')
+    expect(perProject[0]).toHaveTextContent('1:15 h')
+    expect(perProject[1]).toHaveTextContent('0:30 h')
     expect(screen.getByText('Stunden auf Viertelstunden aufgerundet.')).toBeInTheDocument()
   })
 
@@ -98,7 +104,17 @@ describe('MonthSummary with a rounding rule', () => {
     render(<MonthSummary entries={entries} projects={projects} customerId={3} now={now} />)
 
     expect(screen.queryByText(/gerundet/)).not.toBeInTheDocument()
-    expect(figure('Stunden diesen Monat')).toHaveTextContent('5,00 h')
+    expect(figure('Stunden diesen Monat')).toHaveTextContent('5:00 h')
+  })
+
+  test.each([['0.17', 6, 'ten minutes'], ['0.08', 12, 'five minutes']])('%s h billed per entry, %i entries: exactly 1:00 h, %s', (billed, count, _) => {
+    const many = Array.from({ length: count }, (_, i) => ({
+      id: i + 1, project_id: 7, start_time: '2026-09-21T09:00:00', end_time: '2026-09-21T09:03:00', billed_hours: billed, billed_amount: '1.00',
+    }))
+    render(<MonthSummary entries={many} projects={projects} customerId={3} now={now} rounding={{ minutes: 5, direction: 'nearest' }} />)
+
+    expect(figure('Stunden diesen Monat')).toHaveTextContent('1:00 h')
+    expect(screen.getAllByRole('listitem')[0]).toHaveTextContent('1:00 h')
   })
 
   test('names the rule in English', () => {

@@ -25,7 +25,7 @@ The UI has to meet WCAG 2.2 level AA (see `CLAUDE.md`). This chapter lists what 
   values; **Preview PDF** links say that they open a new tab. See [Dashboard](dashboard.md).
 - **Entries page:** the filters are a `<form role="search">` named *Filter entries*. Its heading *Filters* contains a
   disclosure button (`aria-expanded`, `aria-controls`; Enter and Space; focus stays on it) that hides the fields; the
-  active filters stay visible as removable chips. The status line (*12 entries, 31.50 h*) is a local polite live
+  active filters stay visible as removable chips. The status line (*12 entries, 31:30 h*) is a local polite live
   region that changes once per answer, not per keystroke. See [Entries](entries.md).
 - **Labels:** all fields have visible labels (`RecordForm`, the timer, the Reports page); edit forms are grouped with a
   legend such as *Edit customer*. The month buttons on the Reports page are a group named *Month*; its option *Show

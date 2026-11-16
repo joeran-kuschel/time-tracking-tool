@@ -1,7 +1,8 @@
 import { useId, useRef } from 'react'
 import { msg } from '@lingui/core/macro'
 import { Trans, useLingui } from '@lingui/react/macro'
-import { formatClock, formatDay, formatHours, hoursBetween } from '../format'
+import { formatClock, formatDay, formatDuration, minutesBetween } from '../format'
+import Duration from './Duration'
 import { useEditable } from '../hooks/useEditable'
 import EntryForm from './EntryForm'
 import ConfirmDelete from './ConfirmDelete'
@@ -49,7 +50,7 @@ function EntryRow({ entry, projects, onUpdate, onDelete, onDeleted }) {
           ? <span className="font-sans font-semibold text-danger"><Trans>running</Trans></span>
           : formatClock(i18n, entry.end_time)}
       </td>
-      <td className={`${cell} whitespace-nowrap text-right font-mono`}>{formatHours(i18n, hoursBetween(entry.start_time, entry.end_time))}</td>
+      <td className={`${cell} whitespace-nowrap text-right font-mono`}><Duration minutes={minutesBetween(entry.start_time, entry.end_time)} /></td>
       <td className={cell}>{entry.description || <span className="text-muted">—</span>}</td>
       <td className={cell}>
         {!isRunning && (
@@ -69,11 +70,11 @@ function EntryRow({ entry, projects, onUpdate, onDelete, onDeleted }) {
   )
 }
 
-// One project's entries under a heading with its total hours
+// One project's entries under a heading with its total time
 function ProjectGroup({ project, entries, projects, onUpdate, onDelete, onDeleted }) {
   const { t, i18n } = useLingui()
   const headingId = useId()
-  const total = formatHours(i18n, entries.reduce((sum, e) => sum + hoursBetween(e.start_time, e.end_time), 0))
+  const total = formatDuration(i18n, entries.reduce((sum, e) => sum + minutesBetween(e.start_time, e.end_time), 0))
 
   return (
     <div>

@@ -28,7 +28,7 @@ description survives switching.
   project of the newest entry), the description and **Start**.
 - **Timer, running:** the customer, the project, *Running since 09:12*, the clock and **Stop**. It is the same timer as
   in the header (App's `useActiveEntry`), so stopping in one place stops both. After stopping, the card confirms
-  *Saved 1.50 h to Website.*
+  *Saved 1:30 h to Website.*
 - **Manual entry:** the existing entry form (`EntryForm`): project, date, start, end and description, then **Add**.
   The mockup's decimal hours field was not built; entries keep real start and end times.
 
@@ -65,7 +65,7 @@ Bars for the month, with a **Days / Weeks** switch (buttons with `aria-pressed`)
 - **Weeks:** one bar per calendar week touching the month (ISO week numbers), counting only that month's days; scale 0
   to 40 h. Labels *Week 36* plus the date range, the current week as *This week*.
 - Next to the title, a readout shows the month total. Hovering a bar shows its value there instead (*Mon, Sep 21:
-  1.50 h*; future days read *upcoming*).
+  1:30 h*; future days read *upcoming*).
 - **Keyboard and screen readers:** the bars are one tab stop (a group named *Bars, use the arrow keys to read the
   values*). The arrow keys, Home and End move between bars and update the readout, which is a polite live region. A
   visually hidden table (*Hours per day, September 2026*) lists every value.
@@ -98,7 +98,7 @@ One request, `GET /api/dashboard` (see [Dashboard API](../backend/dashboard.md))
 the current week, the recent entries, all projects and last month's report statuses. `dashboard.js` calculates all
 sums in the browser, reusing `summarize` and `projectsOf` from `summary.js`. With a rounding rule the entries carry
 `billed_hours`, `billed_amount` and `billed_rule` from the server, and `summarize` adds the billed values up for the billing
-figures (an entry with only one of the two is counted exactly, so hours and amount never disagree; `trackedHours` in
+figures (an entry with only one of the two is counted exactly, so hours and amount never disagree; `trackedMinutes` in
 `dashboard.js` is the exact sum for the key figures). The notes name the rule from the entries (`roundingOfEntries` in
 `rounding.js`), so they always match the figures; the browser never calculates the rounding. The page loads again after a manual entry
 and whenever the timer starts or stops (also from the header). The date is taken when the page opens.

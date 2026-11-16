@@ -24,6 +24,7 @@ How to write an entry and cut a release: [documentation/backend/changelog.md](do
 
 ### Changed
 
+- Durations are shown as hours and minutes: `3:59 h` instead of `3,98 h` on the Dashboard (this week, this month, the average per day, the chart and its table, *By customer*, *Billing*, recent entries, the message after stopping the timer), on the Time tracking page (entries, the total of each project, the month summary) and on the Entries page. Each entry counts whole minutes and totals add up those minutes, so the rows always add up exactly to their total; with a rounding rule of 5 or 10 minutes, six entries of 10 minutes show `1:00 h`. The Reports page, the PDF and the CSV still show decimal hours for now. Nothing in your data changes.
 - Tooling: the documentation chapters for the Dashboard, Time tracking and Reports now show a screenshot of the page (`documentation/ui/images/`); the browser review chapter explains how to take them, and a test checks that every linked image exists and has an alt text.
 - Tooling: the router tests wait for the address, the page title and the focus instead of checking them at once, so they no longer fail at random.
 - The Reports page no longer shows hourly rates and amounts by default; tick *Show hourly rate and amounts* to see them again, also in the PDF and CSV downloads. The choice the browser used to remember is gone: the default is now a setting (see above), and the old stored choice is removed from your browser on the next visit of the Reports page.

@@ -77,7 +77,7 @@ describe('Entries', () => {
     const rows = within(table).getAllByRole('row')
     expect(within(rows[1]).getByText('Muster GmbH')).toBeInTheDocument()
     expect(within(rows[1]).getByText('Website')).toBeInTheDocument()
-    expect(within(rows[1]).getByText('1,50 h')).toBeInTheDocument()
+    expect(within(rows[1]).getByText('1:30 h')).toBeInTheDocument()
     expect(within(rows[1]).getByText('Eintrag 1')).toBeInTheDocument()
     expect(within(rows[2]).getByText('läuft')).toBeInTheDocument()
     expect(within(rows[2]).getByText('Ohne Beschreibung')).toBeInTheDocument()
@@ -88,21 +88,35 @@ describe('Entries', () => {
       api.searchTimeEntries.mockResolvedValue(answer([entry(1), entry(2)], 2, 3))
       renderPage()
 
-      await waitFor(() => expect(status()).toHaveTextContent('2 Einträge, 3,00 h'))
+      await waitFor(() => expect(status()).toHaveTextContent('2 Einträge, 3:00 h'))
+    })
+
+    test('shows the hours of the server in whole minutes, also as a numeric string', async () => {
+      api.searchTimeEntries.mockResolvedValue(answer([entry(1)], 3, '12.25'))
+      renderPage()
+
+      await waitFor(() => expect(status()).toHaveTextContent('3 Einträge, 12:15 h'))
+    })
+
+    test('shows a sum of a few seconds as 0:00 h', async () => {
+      api.searchTimeEntries.mockResolvedValue(answer([entry(1)], 1, 0.004))
+      renderPage()
+
+      await waitFor(() => expect(status()).toHaveTextContent('1 Eintrag, 0:00 h'))
     })
 
     test('uses the singular for one entry', async () => {
       api.searchTimeEntries.mockResolvedValue(answer([entry(1)], 1, 1.5))
       renderPage()
 
-      await waitFor(() => expect(status()).toHaveTextContent('1 Eintrag, 1,50 h'))
+      await waitFor(() => expect(status()).toHaveTextContent('1 Eintrag, 1:30 h'))
     })
 
     test('counts all matches, not only the loaded ones', async () => {
       api.searchTimeEntries.mockResolvedValue(answer([entry(1)], 120, 40))
       renderPage()
 
-      await waitFor(() => expect(status()).toHaveTextContent('120 Einträge, 40,00 h'))
+      await waitFor(() => expect(status()).toHaveTextContent('120 Einträge, 40:00 h'))
     })
 
     test('says when nothing was found', async () => {
@@ -133,9 +147,9 @@ describe('Entries', () => {
 
       await userEvent.selectOptions(screen.getByLabelText('Sortierung'), 'Älteste zuerst')
 
-      expect(status()).toHaveTextContent('2 Einträge, 3,00 h')
+      expect(status()).toHaveTextContent('2 Einträge, 3:00 h')
       await act(async () => next.resolve(answer([entry(5)], 1, 1)))
-      expect(status()).toHaveTextContent('1 Eintrag, 1,00 h')
+      expect(status()).toHaveTextContent('1 Eintrag, 1:00 h')
     })
   })
 
@@ -311,7 +325,7 @@ describe('Entries', () => {
       expect(screen.getByText('Eintrag 1')).toBeInTheDocument()
       expect(screen.getAllByRole('row')).toHaveLength(4)
       expect(screen.queryByRole('button', { name: 'Mehr anzeigen' })).not.toBeInTheDocument()
-      expect(status()).toHaveTextContent('3 Einträge, 4,50 h')
+      expect(status()).toHaveTextContent('3 Einträge, 4:30 h')
     })
 
     test('moves focus to the list when the button goes away', async () => {
@@ -455,11 +469,11 @@ describe('Entries', () => {
       renderPage()
       await waitFor(() => expect(status()).toHaveTextContent('1 Eintrag'))
       act(() => switchLocale('en'))
-      expect(status()).toHaveTextContent('1 entry, 1.50 h')
+      expect(status()).toHaveTextContent('1 entry, 1:30 h')
 
       await userEvent.selectOptions(screen.getByLabelText('Sort'), 'Oldest first')
 
-      await waitFor(() => expect(status()).toHaveTextContent('2 entries, 3.00 h'))
+      await waitFor(() => expect(status()).toHaveTextContent('2 entries, 3:00 h'))
     })
 
     test('says how many of the matches are shown, in English', async () => {
@@ -598,7 +612,7 @@ describe('Entries', () => {
 
       await userEvent.click(await screen.findByRole('button', { name: 'Mehr anzeigen' }))
 
-      await waitFor(() => expect(status()).toHaveTextContent('3 Einträge, 4,25 h'))
+      await waitFor(() => expect(status()).toHaveTextContent('3 Einträge, 4:15 h'))
     })
   })
 })

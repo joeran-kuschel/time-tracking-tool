@@ -24,8 +24,8 @@ describe('KeyFigures with a rounding rule', () => {
   test('keeps this week and this month exact and bills the rounded hours', () => {
     render(<KeyFigures entries={rounded} lastMonthReports={lastMonthReports} now={now} rounding={rule} />)
 
-    expect(figure('Diese Woche')).toHaveTextContent('0,45 h')
-    expect(figure('Dieser Monat')).toHaveTextContent('0,45 h')
+    expect(figure('Diese Woche')).toHaveTextContent('0:27 h')
+    expect(figure('Dieser Monat')).toHaveTextContent('0:27 h')
     expect(figure('Abrechenbar im September')).toHaveTextContent(/60,00\s€/)
     expect(figure('Abrechenbar im September')).toHaveTextContent('Gerundete Stunden × Stundensatz des Projekts')
   })
@@ -57,7 +57,7 @@ describe('KeyFigures with a rounding rule', () => {
     const running = entry(3, '2026-09-24T09:00:00', null, [null, null])
     render(<KeyFigures entries={[...rounded, { ...running, billed_hours: null, billed_amount: null }]} lastMonthReports={lastMonthReports} now={now} rounding={rule} />)
 
-    expect(figure('Dieser Monat')).toHaveTextContent('0,45 h')
+    expect(figure('Dieser Monat')).toHaveTextContent('0:27 h')
     expect(figure('Abrechenbar im September')).toHaveTextContent(/60,00\s€/)
   })
 
@@ -67,8 +67,25 @@ describe('KeyFigures with a rounding rule', () => {
     const late = entry(5, '2026-10-01T09:00:00', '2026-10-01T10:05:00', ['1.25', '100.00'])
     render(<KeyFigures entries={[...rounded, early, late]} lastMonthReports={lastMonthReports} now={now} rounding={rule} />)
 
-    expect(figure('Dieser Monat')).toHaveTextContent('0,45 h')
+    expect(figure('Dieser Monat')).toHaveTextContent('0:27 h')
     expect(figure('Abrechenbar im September')).toHaveTextContent(/60,00\s€/)
+  })
+
+  test('writes the average per working day in minutes, rounded to a whole minute', () => {
+    // 100 minutes in 18 working days is 5.56 minutes a day
+    const month = [entry(1, '2026-09-21T09:00:00', '2026-09-21T10:40:00')]
+    render(<KeyFigures entries={month} lastMonthReports={lastMonthReports} now={now} />)
+
+    expect(screen.getByText('18 Arbeitstage, 0:06 h pro Tag')).toBeInTheDocument()
+    expect(figure('Dieser Monat')).toHaveTextContent('1:40 h')
+  })
+
+  test('writes the durations the same in English', () => {
+    i18n.activate('en')
+    render(<KeyFigures entries={rounded} lastMonthReports={lastMonthReports} now={now} rounding={rule} />)
+
+    expect(figure('This week')).toHaveTextContent('0:27 h')
+    expect(screen.getByText('18 working days, 0:02 h per day')).toBeInTheDocument()
   })
 
   test('has no detectable accessibility violations', async () => {

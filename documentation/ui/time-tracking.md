@@ -97,12 +97,12 @@ See [Timer](timer.md).
 - Shown once a customer is selected. The heading reads *Entries for Muster GmbH*, or *Entries for Website* while a
   project is selected.
 - Entries are grouped by project, in the order of the project list; projects without entries are left out. Each group
-  has a heading with the project name and its total hours (*Website · 12,50 h gesamt*) and its own table (named by
-  that heading): date, time, hours and description, newest first. A running entry counts `0` hours in the total, as
+  has a heading with the project name and its total time (*Website · 12:30 h gesamt*, see
+  [Durations](durations.md)) and its own table (named by that heading): date, time, hours and description, newest first. A running entry counts `0` hours in the total, as
   in its row.
 - With a project selected, only its group is shown.
 - The date is short with the weekday (`Mo., 21. Sept.` / `Mon, Sep 21`), the time is start and end (`09:00 – 12:30`).
-- A running entry has a light red row and shows *läuft* (*running*) as its end and `0,00 h` / `0.00 h`. It appears as
+- A running entry has a light red row and shows *läuft* (*running*) as its end and `0:00 h`. It appears as
   soon as the timer starts, also when it is started or stopped from the header. It can't be edited or deleted; stop
   the timer first.
 

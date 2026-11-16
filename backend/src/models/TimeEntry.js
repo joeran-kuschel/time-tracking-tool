@@ -134,7 +134,8 @@ class TimeEntry {
 
   // Entries of all customers matching the filter (see parseEntryFilter in utils/entryFilter.js: q, customerId,
   // projectId, from/to as ISO instants with from <= start_time < to, sort), running ones included.
-  // limit null returns all rows. total counts all matches, hours sums the finished ones.
+  // limit null returns all rows. total counts all matches, hours sums the finished ones, each rounded to whole minutes first (half up), so the
+  // total is what the shown rows add up to.
   static async search(filter, { limit = null, offset = 0 } = {}) {
     const { where, params } = searchWhere(filter);
     const order = SEARCH_ORDER[filter.sort] || SEARCH_ORDER.newest;
@@ -149,7 +150,7 @@ class TimeEntry {
       pool.query(
         `SELECT COUNT(*)::int AS total,
                 COALESCE(SUM(CASE WHEN te.end_time IS NOT NULL
-                  THEN EXTRACT(EPOCH FROM te.end_time) - EXTRACT(EPOCH FROM te.start_time) ELSE 0 END), 0) / 3600 AS hours
+                  THEN ROUND((EXTRACT(EPOCH FROM te.end_time) - EXTRACT(EPOCH FROM te.start_time))::numeric / 60) ELSE 0 END), 0) / 60 AS hours
          ${PROJECT_AND_CUSTOMER_JOINS}
          ${where}`,
         params

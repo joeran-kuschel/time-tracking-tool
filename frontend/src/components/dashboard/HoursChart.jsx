@@ -1,8 +1,8 @@
 import { useId, useState } from 'react'
 import { msg } from '@lingui/core/macro'
 import { Trans, useLingui } from '@lingui/react/macro'
-import { dailyHours, weeklyHours } from '../../dashboard'
-import { formatDay, formatHours } from '../../format'
+import { dailyMinutes, weeklyMinutes } from '../../dashboard'
+import { formatDay, formatDuration } from '../../format'
 import { ui } from '../../ui'
 
 const views = [
@@ -24,24 +24,24 @@ function HoursChart({ entries, now }) {
 
   const dayMonth = (date) => i18n.date(date, { day: 'numeric', month: 'short' })
   const bars = view === 'days'
-    ? dailyHours(entries, now).map(({ date, hours }) => {
+    ? dailyMinutes(entries, now).map(({ date, minutes }) => {
         const day = formatDay(i18n, date)
         const isToday = sameDay(date, now)
         return {
           name: day,
-          hours,
+          minutes,
           future: date > now && !isToday,
           current: isToday,
           label: isToday ? t`Today` : date.getDate() === 1 || date.getDay() === 1 ? i18n.number(date.getDate()) : '',
           sub: '',
         }
       })
-    : weeklyHours(entries, now).map(({ week, start, end, hours }) => {
+    : weeklyMinutes(entries, now).map(({ week, start, end, minutes }) => {
         const range = sameDay(start, end) ? dayMonth(start) : `${dayMonth(start)} – ${dayMonth(end)}`
         const current = now >= start && now < new Date(end.getFullYear(), end.getMonth(), end.getDate() + 1)
         return {
           name: t`Week ${week}, ${range}`,
-          hours,
+          minutes,
           future: start > now,
           current,
           label: current ? t`This week` : t`Week ${week}`,
@@ -50,9 +50,9 @@ function HoursChart({ entries, now }) {
       })
 
   const { scale: minScale } = views.find((v) => v.id === view)
-  const scale = Math.max(minScale, Math.ceil(Math.max(...bars.map((b) => b.hours))))
-  const total = formatHours(i18n, bars.reduce((sum, b) => sum + b.hours, 0))
-  const value = (bar) => (bar.future ? t`upcoming` : formatHours(i18n, bar.hours))
+  const scale = Math.max(minScale, Math.ceil(Math.max(...bars.map((b) => b.minutes)) / 60))
+  const total = formatDuration(i18n, bars.reduce((sum, b) => sum + b.minutes, 0))
+  const value = (bar) => (bar.future ? t`upcoming` : formatDuration(i18n, bar.minutes))
   const activeBar = active !== null ? bars[active] : null
   const readout = activeBar ? `${activeBar.name}: ${value(activeBar)}` : t`${total} this month`
 
@@ -127,7 +127,7 @@ function HoursChart({ entries, now }) {
                   className={`w-[62%] rounded-t-xs ${index === active ? 'bg-accent-dark' : 'bg-accent'} ${
                     index === active ? 'outline outline-2 outline-offset-1 outline-ink' : ''
                   }`}
-                  style={{ height: `${(bar.hours / scale) * 100}%` }}
+                  style={{ height: `${(bar.minutes / 60 / scale) * 100}%` }}
                 />
               </div>
             ))}

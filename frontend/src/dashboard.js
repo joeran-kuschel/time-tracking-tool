@@ -1,7 +1,7 @@
-import { hoursBetween } from './format'
+import { minutesBetween } from './format'
 import { inMonth, projectsOf, summarize } from './summary'
 
-// Calculations for the dashboard, all in local time. Running entries (no end_time) count 0 hours.
+// Calculations for the dashboard, all in local time. Running entries (no end_time) count 0 minutes.
 // Entries come from GET /api/dashboard and carry project_name, hourly_rate, customer_id and customer_name.
 
 const DAY = 24 * 60 * 60 * 1000
@@ -11,10 +11,10 @@ const firstOfMonth = (date) => new Date(date.getFullYear(), date.getMonth(), 1)
 const daysInMonth = (date) => new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate()
 const isWeekday = (date) => date.getDay() !== 0 && date.getDay() !== 6
 
-const sumHours = (entries) => entries.reduce((sum, e) => sum + hoursBetween(e.start_time, e.end_time), 0)
+const sumMinutes = (entries) => entries.reduce((sum, e) => sum + minutesBetween(e.start_time, e.end_time), 0)
 
-// The tracked time of the entries, exact: never the rounded billed hours (running entries count 0)
-export const trackedHours = sumHours
+// The tracked time of the entries in minutes, exact: never the rounded billed hours (running entries count 0)
+export const trackedMinutes = sumMinutes
 const startsIn = (from, to) => (entry) => {
   const start = new Date(entry.start_time)
   return start >= from && start < to
@@ -41,10 +41,10 @@ export function dashboardRange(now) {
   return { from: weekStart < monthStart ? weekStart : monthStart, to: weekEnd > nextMonth ? weekEnd : nextMonth }
 }
 
-// Hours of the current week (Monday to Sunday)
-export function weekHours(entries, now) {
+// Minutes of the current week (Monday to Sunday)
+export function weekMinutes(entries, now) {
   const from = startOfWeek(now)
-  return sumHours(entries.filter(startsIn(from, addDays(from, 7))))
+  return sumMinutes(entries.filter(startsIn(from, addDays(from, 7))))
 }
 
 export function monthEntries(entries, now) {
@@ -60,34 +60,34 @@ export function workingDaysSoFar(now) {
   return count
 }
 
-// One row per day of the month: { date, hours }
-export function dailyHours(entries, now) {
+// One row per day of the month: { date, minutes }
+export function dailyMinutes(entries, now) {
   const month = monthEntries(entries, now)
   return Array.from({ length: daysInMonth(now) }, (_, i) => {
     const date = new Date(now.getFullYear(), now.getMonth(), i + 1)
-    return { date, hours: sumHours(month.filter(startsIn(date, addDays(date, 1)))) }
+    return { date, minutes: sumMinutes(month.filter(startsIn(date, addDays(date, 1)))) }
   })
 }
 
 // One row per calendar week touching the month, counting only the month's days:
-// { week, start, end } with start and end clipped to the month, and hours
-export function weeklyHours(entries, now) {
-  const days = dailyHours(entries, now)
+// { week, start, end } with start and end clipped to the month, and minutes
+export function weeklyMinutes(entries, now) {
+  const days = dailyMinutes(entries, now)
   const weeks = []
-  for (const { date, hours } of days) {
+  for (const { date, minutes } of days) {
     const last = weeks[weeks.length - 1]
     if (last && date.getDay() !== 1) {
       last.end = date
-      last.hours += hours
+      last.minutes += minutes
     } else {
-      weeks.push({ week: isoWeek(date), start: date, end: date, hours })
+      weeks.push({ week: isoWeek(date), start: date, end: date, minutes })
     }
   }
   return weeks
 }
 
-// Hours and amounts of the month per customer, most hours first:
-// { customerId, name, hours, amount, rates (distinct hourly rates), projects: [{ project, hours, amount }] }
+// Minutes and amounts of the month per customer, most minutes first:
+// { customerId, name, minutes, amount, rates (distinct hourly rates), projects: [{ project, minutes, amount }] }
 export function byCustomer(entries) {
   const groups = new Map()
   for (const e of entries.filter((entry) => entry.end_time)) {
@@ -98,7 +98,7 @@ export function byCustomer(entries) {
     .map(([customerId, { name, entries: own }]) => {
       const summary = summarize(own, projectsOf(own))
       const rates = [...new Set(summary.projects.map((p) => Number(p.project.hourly_rate ?? 0)))].sort((a, b) => a - b)
-      return { customerId, name, hours: summary.hours, amount: summary.amount, rates, projects: summary.projects }
+      return { customerId, name, minutes: summary.minutes, amount: summary.amount, rates, projects: summary.projects }
     })
-    .sort((a, b) => b.hours - a.hours || a.name.localeCompare(b.name))
+    .sort((a, b) => b.minutes - a.minutes || a.name.localeCompare(b.name))
 }

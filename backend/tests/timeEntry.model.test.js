@@ -369,6 +369,24 @@ describe('TimeEntry.search', () => {
     expect(result).toMatchObject({ total: 1, hours: 1 });
   });
 
+  test('sums each entry rounded to whole minutes: three entries of 30 seconds are 3 minutes, 0.05 h', async () => {
+    for (const day of ['01', '02', '03']) {
+      await TimeEntry.create(projectId, `2026-09-${day}T08:00:00Z`, `2026-09-${day}T08:00:30Z`, 'kurz');
+    }
+
+    const result = await search({});
+
+    // the exact sum is 1.5 minutes; the rows show 1 minute each
+    expect(Number(result.hours) * 60).toBeCloseTo(3, 6);
+  });
+
+  test('rounds an entry under 30 seconds down to 0 minutes', async () => {
+    await TimeEntry.create(projectId, '2026-09-01T08:00:00Z', '2026-09-01T08:00:29Z', 'kürzer');
+    await TimeEntry.create(projectId, '2026-09-01T09:00:00Z', '2026-09-01T10:00:29Z', 'eine Stunde');
+
+    expect(Number((await search({})).hours)).toBeCloseTo(1, 6);
+  });
+
   test('sums the hours of the matches only, with fractions of an hour', async () => {
     await TimeEntry.create(projectId, '2026-09-01T08:00:00Z', '2026-09-01T08:20:00Z', 'treffer');
     await TimeEntry.create(projectId, '2026-09-02T08:00:00Z', '2026-09-02T10:00:00Z', 'anderes');

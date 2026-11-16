@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest'
 import {
-  byCustomer, dailyHours, dashboardRange, isoWeek, startOfWeek, trackedHours, weekHours, weeklyHours, workingDaysSoFar,
+  byCustomer, dailyMinutes, dashboardRange, isoWeek, startOfWeek, trackedMinutes, weekMinutes, weeklyMinutes, workingDaysSoFar,
 } from '@/dashboard'
 
 // Thursday, 24 September 2026
@@ -53,13 +53,13 @@ describe('dashboardRange', () => {
   })
 })
 
-describe('weekHours', () => {
+describe('weekMinutes', () => {
   test('adds up the finished entries of the current week', () => {
-    expect(weekHours(entries, now)).toBe(1.5 + 4)
+    expect(weekMinutes(entries, now)).toBe(90 + 240)
   })
 
   test('includes the days of the week in the month before', () => {
-    expect(weekHours(entries, new Date(2026, 8, 2))).toBe(2 + 3.5)
+    expect(weekMinutes(entries, new Date(2026, 8, 2))).toBe(120 + 210)
   })
 })
 
@@ -69,26 +69,26 @@ test('workingDaysSoFar counts Monday to Friday up to today', () => {
   expect(workingDaysSoFar(new Date(2026, 10, 1))).toBe(0) // a Sunday
 })
 
-describe('dailyHours', () => {
+describe('dailyMinutes', () => {
   test('has one row per day of the month, without entries of other months', () => {
-    const days = dailyHours(entries, now)
+    const days = dailyMinutes(entries, now)
 
     expect(days).toHaveLength(30)
-    expect(days[0]).toEqual({ date: new Date(2026, 8, 1), hours: 3.5 })
-    expect(days[20].hours).toBe(1.5)
-    expect(days[23].hours).toBe(0)
-    expect(days.reduce((sum, d) => sum + d.hours, 0)).toBe(9)
+    expect(days[0]).toEqual({ date: new Date(2026, 8, 1), minutes: 210 })
+    expect(days[20].minutes).toBe(90)
+    expect(days[23].minutes).toBe(0)
+    expect(days.reduce((sum, d) => sum + d.minutes, 0)).toBe(540)
   })
 })
 
-describe('weeklyHours', () => {
+describe('weeklyMinutes', () => {
   test('has one row per calendar week touching the month, clipped to the month', () => {
-    const weeks = weeklyHours(entries, now)
+    const weeks = weeklyMinutes(entries, now)
 
     expect(weeks.map((w) => w.week)).toEqual([36, 37, 38, 39, 40])
-    expect(weeks[0]).toEqual({ week: 36, start: new Date(2026, 8, 1), end: new Date(2026, 8, 6), hours: 3.5 })
-    expect(weeks[3].hours).toBe(5.5)
-    expect(weeks[4]).toMatchObject({ start: new Date(2026, 8, 28), end: new Date(2026, 8, 30), hours: 0 })
+    expect(weeks[0]).toEqual({ week: 36, start: new Date(2026, 8, 1), end: new Date(2026, 8, 6), minutes: 210 })
+    expect(weeks[3].minutes).toBe(330)
+    expect(weeks[4]).toMatchObject({ start: new Date(2026, 8, 28), end: new Date(2026, 8, 30), minutes: 0 })
   })
 })
 
@@ -96,9 +96,9 @@ describe('byCustomer', () => {
   test('adds up hours and amounts per customer, most hours first, with rates and projects', () => {
     const rows = byCustomer(entries.slice(1))
 
-    expect(rows.map((r) => [r.name, r.hours, r.amount])).toEqual([
-      ['Muster GmbH', 5, 3.5 * 95 + 1.5 * 80],
-      ['Berger', 4, 4 * 85],
+    expect(rows.map((r) => [r.name, r.minutes, r.amount])).toEqual([
+      ['Muster GmbH', 300, 3.5 * 95 + 1.5 * 80],
+      ['Berger', 240, 4 * 85],
     ])
     expect(rows[0].rates).toEqual([80, 95])
     expect(rows[0].projects.map((p) => p.project.name)).toEqual(['Website', 'Shop'])
@@ -123,22 +123,41 @@ describe('billing figures with rounded hours', () => {
   test('byCustomer adds up the billed hours and amounts per customer', () => {
     const rows = byCustomer(rounded)
 
-    expect(rows.map((r) => [r.name, r.hours, r.amount])).toEqual([['K1', 1.75, 158.75], ['K2', 0.25, 21.25]])
+    expect(rows.map((r) => [r.name, r.minutes, r.amount])).toEqual([['K1', 105, 158.75], ['K2', 15, 21.25]])
   })
 
-  test('the tracked hours stay exact: trackedHours ignores billed_hours', () => {
-    expect(trackedHours(rounded)).toBeCloseTo((65 + 20 + 7) / 60, 10)
-    expect(trackedHours(rounded)).not.toBeCloseTo(2, 3)
+  test('the tracked minutes stay exact: trackedMinutes ignores billed_hours', () => {
+    expect(trackedMinutes(rounded)).toBe(65 + 20 + 7)
+    expect(trackedMinutes(rounded)).not.toBe(120)
   })
 
-  test('the week hours and the daily hours stay exact', () => {
+  test('the week minutes and the daily minutes stay exact', () => {
     const now = new Date(2026, 8, 24, 15, 0)
 
-    expect(weekHours(rounded, now)).toBeCloseTo((20 + 7) / 60, 10)
-    expect(dailyHours(rounded, now)[0].hours).toBeCloseTo(65 / 60, 10)
+    expect(weekMinutes(rounded, now)).toBe(20 + 7)
+    expect(dailyMinutes(rounded, now)[0].minutes).toBe(65)
   })
 
-  test('trackedHours counts a running entry as 0', () => {
-    expect(trackedHours([{ start_time: '2026-09-22T10:00:00', end_time: null }])).toBe(0)
+  test('trackedMinutes counts a running entry as 0', () => {
+    expect(trackedMinutes([{ start_time: '2026-09-22T10:00:00', end_time: null }])).toBe(0)
+  })
+})
+
+describe('byCustomer in whole minutes', () => {
+  test('twelve entries of 5 minutes (billed 0.08 h) are 60 minutes, six of 10 minutes (0.17 h) too', () => {
+    const many = (customer, count, billed) => Array.from({ length: count }, (_, i) => ({
+      id: customer * 100 + i, customer_id: customer, customer_name: `K${customer}`, project_id: customer, project_name: 'P', hourly_rate: '60.00',
+      start_time: '2026-09-21T09:00:00', end_time: '2026-09-21T09:03:00', billed_hours: billed, billed_amount: '1.00',
+    }))
+
+    const rows = byCustomer([...many(1, 12, '0.08'), ...many(2, 6, '0.17')])
+
+    expect(rows.map((r) => [r.name, r.minutes])).toEqual([['K1', 60], ['K2', 60]])
+  })
+
+  test('sums whole minutes per entry: three entries of 30 seconds are 3 minutes', () => {
+    const half = (id) => ({ id, start_time: '2026-09-21T09:00:00', end_time: '2026-09-21T09:00:30' })
+
+    expect(trackedMinutes([1, 2, 3].map(half))).toBe(3)
   })
 })

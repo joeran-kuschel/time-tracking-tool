@@ -1,7 +1,8 @@
 import { useEffect, useId, useRef } from 'react'
 import { Link } from 'react-router'
 import { Plural, Trans, useLingui } from '@lingui/react/macro'
-import { formatClock, formatDay, formatHours, hoursBetween } from '../format'
+import { formatClock, formatDay, minutesBetween, minutesOfHours } from '../format'
+import Duration from './Duration'
 import { trackingPath } from '../routes'
 import { ui } from '../ui'
 
@@ -45,7 +46,7 @@ function EntryResults({ results, busy, loadingMore, onShowMore }) {
       <p role="status" aria-live="polite" aria-atomic="true" className="text-sm text-muted">
         {results && (results.total === 0
           ? <Trans>No entries found</Trans>
-          : <><Plural value={results.total} one="# entry" other="# entries" />, {formatHours(i18n, results.hours)}</>)}
+          : <><Plural value={results.total} one="# entry" other="# entries" />, <Duration minutes={minutesOfHours(results.hours)} /></>)}
       </p>
 
       {entries.length > 0 && (
@@ -79,7 +80,7 @@ function EntryResults({ results, busy, loadingMore, onShowMore }) {
                         : formatClock(i18n, entry.end_time)}
                     </td>
                     <td data-label={labels.hours} className={`${cell} whitespace-nowrap font-mono sm:text-right`}>
-                      {formatHours(i18n, hoursBetween(entry.start_time, entry.end_time))}
+                      <Duration minutes={minutesBetween(entry.start_time, entry.end_time)} />
                     </td>
                     <td data-label={labels.description} className={cell}>
                       {entry.description || <span className="text-muted"><Trans>No description</Trans></span>}
