@@ -1,8 +1,4 @@
-// Locale-aware formatting of hours, amounts and times, shared by the time tracking page and the report.
-export function hoursBetween(startTime, endTime) {
-  if (!endTime) return 0
-  return (new Date(endTime) - new Date(startTime)) / (1000 * 60 * 60)
-}
+// Locale-aware formatting of durations, amounts and times, shared by the time tracking page and the report.
 
 // Whole minutes between start and end (half up, 30 seconds count as a minute); 0 for a running entry. Every duration
 // of the app is counted in these, so rows add up exactly to their total.
@@ -17,6 +13,10 @@ export const roundMinutes = (minutes) => Math.sign(minutes) * Math.round(Math.ab
 // The minutes of decimal hours from the server (billed_hours, hours of a search)
 export const minutesOfHours = (hours) => roundMinutes(Number(hours) * 60)
 
+// The minutes a report counts for an entry, the same as the backend's reportMinutes (utils/hours.js): the rounded
+// billed_hours the server sends when a rounding rule is set, otherwise the whole minutes between start and end
+export const entryMinutes = (entry) => (entry.billed_hours != null ? minutesOfHours(entry.billed_hours) : minutesBetween(entry.start_time, entry.end_time))
+
 // "3:59 h", "0:05 h", "123:45 h", "-1:30 h": hours without limit, minutes with two digits, the same in both languages
 export function formatDuration(i18n, minutes) {
   const whole = roundMinutes(Number(minutes))
@@ -28,10 +28,6 @@ export function formatDuration(i18n, minutes) {
 export function isoDuration(minutes) {
   const whole = roundMinutes(Number(minutes))
   return whole < 0 ? null : `PT${Math.floor(whole / 60)}H${whole % 60}M`
-}
-
-export function formatHours(i18n, hours) {
-  return `${i18n.number(Number(hours), { minimumFractionDigits: 2, maximumFractionDigits: 2 })} h`
 }
 
 // "42 %" / "42%": the part's share of the total, 0 when the total is 0

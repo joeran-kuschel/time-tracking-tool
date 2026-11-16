@@ -8,7 +8,8 @@ import { useAction } from '../hooks/useAction'
 import { useRetry } from '../hooks/useRetry'
 import ErrorMessage from '../components/ErrorMessage'
 import MissingRecord from '../components/MissingRecord'
-import { formatAmount, formatHours, formatRate, hoursBetween } from '../format'
+import { entryMinutes, formatAmount, formatRate } from '../format'
+import Duration from '../components/Duration'
 import { forgetStoredShowAmounts } from '../reportOptions'
 import { idFromParam, periodFromParam, reportPath } from '../routes'
 import { roundingNote } from '../rounding'
@@ -25,18 +26,14 @@ const statuses = [
   { value: 'sent', label: msg`Sent` },
 ]
 
-// Hours of an entry in hundredths, as the report counts them: the rounded hours the server sends when a rounding rule
-// is set (billed_hours), otherwise rounded to hundredths like the backend does (toFixed(2) in utils/hours.js, which
-// also gives the PDF and CSV rows); a running entry has none yet. Whole hundredths add up without float errors.
-const hundredthsOf = (entry) => Math.round(Number(entry.billed_hours ?? hoursBetween(entry.start_time, entry.end_time).toFixed(2)) * 100)
-
-// Hours per project in hundredths, in the order the projects first appear: [{ id, name, hundredths }]
+// Minutes per project, in the order the projects first appear: [{ id, name, minutes }]. The minutes of an entry are
+// the report's (entryMinutes), whole, so rows add up exactly.
 function projectHours(entries) {
   const byId = new Map()
   for (const entry of entries) {
-    const project = byId.get(entry.project_id) ?? { id: entry.project_id, name: entry.project_name, hundredths: 0 }
+    const project = byId.get(entry.project_id) ?? { id: entry.project_id, name: entry.project_name, minutes: 0 }
     // like the server's project lines (utils/amounts.js), an entry that ends before it starts counts as 0 here
-    project.hundredths += Math.max(0, hundredthsOf(entry))
+    project.minutes += Math.max(0, entryMinutes(entry))
     byId.set(entry.project_id, project)
   }
   return [...byId.values()]
@@ -141,7 +138,8 @@ function Reports({ customers, settings }) {
   const hasEntries = report?.entries.length > 0
   // The report on screen follows what it was loaded with, so a toggle never meets a report without amounts
   const withAmounts = report?.totalAmount !== undefined
-  const totalHundredths = report ? report.entries.reduce((sum, entry) => sum + hundredthsOf(entry), 0) : 0
+  const totalMinutes = report ? report.entries.reduce((sum, entry) => sum + entryMinutes(entry), 0) : 0
+  const minutesByProject = new Map(report ? projectHours(report.entries).map((p) => [p.id, p.minutes]) : [])
   // The sentence that names the rounding rule: only when the hours of this report are rounded and the setting says so
   const roundingSentence = settings.values?.showRoundingNote ? roundingNote(report?.rounding) : null
 
@@ -259,7 +257,7 @@ function Reports({ customers, settings }) {
               <dl className={`grid gap-4 ${withAmounts ? 'sm:grid-cols-3' : 'sm:grid-cols-2'}`}>
                 <div className="flex flex-col gap-1.5 rounded-xl bg-paper/70 px-5 py-4">
                   <dt className="text-sm text-muted"><Trans>Total hours</Trans></dt>
-                  <dd className={ui.figure}>{formatHours(i18n, totalHundredths / 100)}</dd>
+                  <dd className={ui.figure}><Duration minutes={totalMinutes} /></dd>
                 </div>
                 {withAmounts && (
                   <div className="flex flex-col gap-1.5 rounded-xl bg-paper/70 px-5 py-4">
@@ -274,11 +272,11 @@ function Reports({ customers, settings }) {
                       {withAmounts
                         ? report.projects.map((p) => (
                           <li key={p.projectId}>
-                            {p.name} · {formatHours(i18n, p.hours)} · {formatRate(i18n, p.hourlyRate)} · {formatAmount(i18n, p.amount)}
+                            {p.name} · <Duration minutes={minutesByProject.get(p.projectId)} /> · {formatRate(i18n, p.hourlyRate)} · {formatAmount(i18n, p.amount)}
                           </li>
                         ))
                         : projectHours(report.entries).map((p) => (
-                          <li key={p.id}>{p.name} · {formatHours(i18n, p.hundredths / 100)}</li>
+                          <li key={p.id}>{p.name} · <Duration minutes={p.minutes} /></li>
                         ))}
                     </ul>
                   </dd>
@@ -304,7 +302,7 @@ function Reports({ customers, settings }) {
                         </td>
                         <td className={cell}>{entry.project_name}</td>
                         <td className={cell}>{entry.description || <span className="text-muted">—</span>}</td>
-                        <td className={`${cell} whitespace-nowrap text-right font-mono text-sm`}>{formatHours(i18n, hundredthsOf(entry) / 100)}</td>
+                        <td className={`${cell} whitespace-nowrap text-right font-mono text-sm`}><Duration minutes={entryMinutes(entry)} /></td>
                         {withAmounts && (
                           <td className={`${cell} whitespace-nowrap text-right font-mono text-sm`}>{formatAmount(i18n, entry.amount)}</td>
                         )}
@@ -314,7 +312,7 @@ function Reports({ customers, settings }) {
                   <tfoot>
                     <tr>
                       <th scope="row" colSpan={3} className={`${footCell} text-left`}><Trans>Total</Trans></th>
-                      <td className={`${footCell} whitespace-nowrap text-right font-mono text-sm`}>{formatHours(i18n, totalHundredths / 100)}</td>
+                      <td className={`${footCell} whitespace-nowrap text-right font-mono text-sm`}><Duration minutes={totalMinutes} /></td>
                       {withAmounts && (
                         <td className={`${footCell} whitespace-nowrap text-right font-mono text-sm`}>{formatAmount(i18n, report.totalAmount)}</td>
                       )}

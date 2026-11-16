@@ -9,7 +9,7 @@ import Duration from './Duration'
 import ShareOfTotal from './ShareOfTotal'
 import { ui } from '../ui'
 
-// The current month of a customer: time, billable amount (hours × hourly rate), entries and hours per project.
+// The current month of a customer: time, billable amount (time × hourly rate), entries and hours per project.
 // Running entries don't count yet. The link opens the customer's report. The hours are the billed ones: rounded when
 // there is a rounding rule (rounding: { minutes, direction }), which a note says; the entry list below stays exact.
 function MonthSummary({ customerId, entries, projects, now = new Date(), rounding }) {

@@ -107,11 +107,11 @@ msgid "All projects"
 msgstr "All projects"
 
 #: src/components/dashboard/BillingTable.jsx:53
-#: src/pages/Reports.jsx:296
+#: src/pages/Reports.jsx:294
 msgid "Amount"
 msgstr "Amount"
 
-#: src/pages/Reports.jsx:266
+#: src/pages/Reports.jsx:264
 msgid "Amount (net)"
 msgstr "Amount (net)"
 
@@ -119,7 +119,7 @@ msgstr "Amount (net)"
 msgid "Any time"
 msgstr "Any time"
 
-#: src/pages/Reports.jsx:241
+#: src/pages/Reports.jsx:239
 msgid "Back to Reports"
 msgstr "Back to Reports"
 
@@ -168,7 +168,7 @@ msgstr "Choose a step in \"Round time entries\" first."
 msgid "Choose a step in \"Round time entries\" to set the direction."
 msgstr "Choose a step in \"Round time entries\" to set the direction."
 
-#: src/pages/Reports.jsx:125
+#: src/pages/Reports.jsx:122
 msgid "CSV could not be downloaded."
 msgstr "CSV could not be downloaded."
 
@@ -179,7 +179,7 @@ msgstr "Custom"
 #: src/components/dashboard/BillingTable.jsx:49
 #: src/components/EntryFilters.jsx:137
 #: src/components/EntryResults.jsx:41
-#: src/pages/Reports.jsx:154
+#: src/pages/Reports.jsx:152
 msgid "Customer"
 msgstr "Customer"
 
@@ -228,7 +228,7 @@ msgstr "Dashboard could not be loaded."
 #: src/components/EntriesList.jsx:87
 #: src/components/EntryForm.jsx:37
 #: src/components/EntryResults.jsx:41
-#: src/pages/Reports.jsx:292
+#: src/pages/Reports.jsx:290
 msgid "Date"
 msgstr "Date"
 
@@ -266,7 +266,7 @@ msgstr "Delete the entry from {start}?"
 
 #: src/components/EntriesList.jsx:90
 #: src/components/EntryResults.jsx:41
-#: src/pages/Reports.jsx:294
+#: src/pages/Reports.jsx:292
 msgid "Description"
 msgstr "Description"
 
@@ -279,11 +279,11 @@ msgstr "Description (optional)"
 msgid "Direction"
 msgstr "Direction"
 
-#: src/pages/Reports.jsx:211
+#: src/pages/Reports.jsx:209
 msgid "Download CSV"
 msgstr "Download CSV"
 
-#: src/pages/Reports.jsx:215
+#: src/pages/Reports.jsx:213
 msgid "Download PDF"
 msgstr "Download PDF"
 
@@ -291,7 +291,7 @@ msgstr "Download PDF"
 msgid "draft"
 msgstr "draft"
 
-#: src/pages/Reports.jsx:23
+#: src/pages/Reports.jsx:24
 msgid "Draft"
 msgstr "Draft"
 
@@ -382,7 +382,7 @@ msgstr "Hourly rate (€)"
 #: src/components/dashboard/HoursChart.jsx:151
 #: src/components/EntriesList.jsx:89
 #: src/components/EntryResults.jsx:41
-#: src/pages/Reports.jsx:295
+#: src/pages/Reports.jsx:293
 msgid "Hours"
 msgstr "Hours"
 
@@ -481,7 +481,7 @@ msgstr "Like the system"
 #: src/App.jsx:75
 #: src/components/AuthGate.jsx:70
 #: src/pages/Dashboard.jsx:76
-#: src/pages/Reports.jsx:245
+#: src/pages/Reports.jsx:243
 #: src/pages/Settings.jsx:58
 #: src/pages/Settings.jsx:64
 msgid "Loading..."
@@ -513,11 +513,11 @@ msgstr "Main"
 msgid "Manual entry"
 msgstr "Manual entry"
 
-#: src/pages/Reports.jsx:169
+#: src/pages/Reports.jsx:167
 msgid "Month"
 msgstr "Month"
 
-#: src/pages/Reports.jsx:250
+#: src/pages/Reports.jsx:248
 msgid "Monthly report"
 msgstr "Monthly report"
 
@@ -548,7 +548,7 @@ msgstr "New project"
 msgid "Newest first"
 msgstr "Newest first"
 
-#: src/pages/Reports.jsx:175
+#: src/pages/Reports.jsx:173
 msgid "Next month"
 msgstr "Next month"
 
@@ -557,7 +557,7 @@ msgstr "Next month"
 msgid "No description"
 msgstr "No description"
 
-#: src/pages/Reports.jsx:327
+#: src/pages/Reports.jsx:325
 msgid "No entries for this period"
 msgstr "No entries for this period"
 
@@ -622,7 +622,7 @@ msgstr "Page not found"
 msgid "Password"
 msgstr "Password"
 
-#: src/pages/Reports.jsx:123
+#: src/pages/Reports.jsx:120
 msgid "PDF could not be downloaded."
 msgstr "PDF could not be downloaded."
 
@@ -646,14 +646,14 @@ msgstr "Preview PDF"
 msgid "Preview PDF for {customerName} (opens in a new tab)"
 msgstr "Preview PDF for {customerName} (opens in a new tab)"
 
-#: src/pages/Reports.jsx:171
+#: src/pages/Reports.jsx:169
 msgid "Previous month"
 msgstr "Previous month"
 
 #: src/components/EntryFilters.jsx:150
 #: src/components/EntryForm.jsx:36
 #: src/components/EntryResults.jsx:41
-#: src/pages/Reports.jsx:293
+#: src/pages/Reports.jsx:291
 msgid "Project"
 msgstr "Project"
 
@@ -674,7 +674,7 @@ msgid "Project: {projectName}"
 msgstr "Project: {projectName}"
 
 #: src/components/dashboard/BillingTable.jsx:50
-#: src/pages/Reports.jsx:271
+#: src/pages/Reports.jsx:269
 #: src/pages/TimeTracking.jsx:240
 msgid "Projects"
 msgstr "Projects"
@@ -696,7 +696,7 @@ msgstr "Rate"
 msgid "ready to send"
 msgstr "ready to send"
 
-#: src/pages/Reports.jsx:24
+#: src/pages/Reports.jsx:25
 msgid "Ready to send"
 msgstr "Ready to send"
 
@@ -712,19 +712,19 @@ msgstr "Remove filter: {label}"
 msgid "Report"
 msgstr "Report"
 
-#: src/pages/Reports.jsx:252
+#: src/pages/Reports.jsx:250
 msgid "Report {reportCustomer} – {reportPeriod}"
 msgstr "Report {reportCustomer} – {reportPeriod}"
 
-#: src/pages/Reports.jsx:94
+#: src/pages/Reports.jsx:91
 msgid "Report could not be loaded."
 msgstr "Report could not be loaded."
 
-#: src/pages/Reports.jsx:130
+#: src/pages/Reports.jsx:127
 msgid "Report status could not be saved."
 msgstr "Report status could not be saved."
 
-#: src/pages/Reports.jsx:150
+#: src/pages/Reports.jsx:148
 #: src/routes.js:12
 msgid "Reports"
 msgstr "Reports"
@@ -803,12 +803,12 @@ msgstr "Search in descriptions"
 msgid "Search: {query}"
 msgstr "Search: {query}"
 
-#: src/pages/Reports.jsx:161
+#: src/pages/Reports.jsx:159
 #: src/pages/TimeTracking.jsx:371
 msgid "Select a customer"
 msgstr "Select a customer"
 
-#: src/pages/Reports.jsx:244
+#: src/pages/Reports.jsx:242
 msgid "Select a customer to see the report."
 msgstr "Select a customer to see the report."
 
@@ -816,7 +816,7 @@ msgstr "Select a customer to see the report."
 msgid "Select a project to start the timer."
 msgstr "Select a project to start the timer."
 
-#: src/pages/Reports.jsx:25
+#: src/pages/Reports.jsx:26
 msgid "Sent"
 msgstr "Sent"
 
@@ -841,7 +841,7 @@ msgstr "Settings saved."
 msgid "Show all projects"
 msgstr "Show all projects"
 
-#: src/pages/Reports.jsx:203
+#: src/pages/Reports.jsx:201
 msgid "Show hourly rate and amounts"
 msgstr "Show hourly rate and amounts"
 
@@ -870,7 +870,7 @@ msgstr "Sort: {sortName}"
 msgid "Start"
 msgstr "Start"
 
-#: src/pages/Reports.jsx:183
+#: src/pages/Reports.jsx:181
 msgid "Status"
 msgstr "Status"
 
@@ -919,7 +919,7 @@ msgstr "There are no options yet."
 msgid "There is no page at this address."
 msgstr "There is no page at this address."
 
-#: src/pages/Reports.jsx:239
+#: src/pages/Reports.jsx:237
 #: src/pages/TimeTracking.jsx:366
 msgid "This customer does not exist (any more)."
 msgstr "This customer does not exist (any more)."
@@ -1007,11 +1007,11 @@ msgid "Too many failed attempts. Try again in a few minutes."
 msgstr "Too many failed attempts. Try again in a few minutes."
 
 #: src/components/dashboard/BillingTable.jsx:90
-#: src/pages/Reports.jsx:316
+#: src/pages/Reports.jsx:314
 msgid "Total"
 msgstr "Total"
 
-#: src/pages/Reports.jsx:261
+#: src/pages/Reports.jsx:259
 msgid "Total hours"
 msgstr "Total hours"
 
@@ -1023,7 +1023,7 @@ msgstr "Track time"
 #: src/App.jsx:115
 #: src/components/AuthGate.jsx:66
 #: src/pages/Dashboard.jsx:73
-#: src/pages/Reports.jsx:230
+#: src/pages/Reports.jsx:228
 #: src/pages/Settings.jsx:60
 msgid "Try again"
 msgstr "Try again"

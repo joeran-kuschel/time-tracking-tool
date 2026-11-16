@@ -1,9 +1,10 @@
 const { i18n } = require('@lingui/core');
 const { activateLocale } = require('../i18n');
-const { reportHours } = require('./hours');
+const { reportMinutes } = require('./hours');
 const { reportAmounts, rateCentsOf } = require('./amounts');
 
-// Hours, rates and amounts in the active language: the shared two-decimal number format without a unit, e.g. "1,50" / "1.50"
+// Hours, rates and amounts in the active language: the shared two-decimal number format without a unit, e.g. "1,50" / "1.50".
+// The CSV keeps decimal hours (a spreadsheet can sum them), each the entry's whole minutes / 60.
 function formatDecimal(hours) {
   return i18n.number(Number(hours), { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
@@ -45,7 +46,7 @@ function reportRows(entries, { customerName, locale, timeZone = 'UTC', amounts =
     text(customerName),
     text(entry.project_name),
     text(entry.description),
-    number(formatDecimal(reportHours(entry))),
+    number(formatDecimal(reportMinutes(entry) / 60)),
     ...(amounts ? [number(formatDecimal(rateCentsOf(entry) / 100)), number(formatDecimal(amountCents[index] / 100))] : []),
   ]);
   return { headers, rows };

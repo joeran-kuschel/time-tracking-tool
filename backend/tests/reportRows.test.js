@@ -1,5 +1,4 @@
 const { reportRows, formatDecimal } = require('../src/utils/reportRows');
-const { calculateHours } = require('../src/utils/hours');
 const { activateLocale } = require('../src/i18n');
 
 const entry = (overrides) => ({
@@ -62,6 +61,23 @@ describe('reportRows', () => {
     expect(rows[0][6]).toEqual({ number: '0.33' });
   });
 
+  test.each([
+    // [end, English, German]: the CSV keeps decimal hours, each the entry's whole minutes / 60
+    ['2026-09-21T08:05:00Z', '0.08', '0,08'],
+    ['2026-09-21T09:05:00Z', '1.08', '1,08'],
+    ['2026-09-21T08:29:29Z', '0.48', '0,48'], // 29 seconds are dropped: 29 min
+    ['2026-09-21T08:29:30Z', '0.50', '0,50'], // 30 seconds count as a minute: 30 min
+  ])('writes %s as decimal hours of whole minutes: %s / %s', (end_time, english, german) => {
+    expect(reportRows([entry({ end_time })], options).rows[0][6]).toEqual({ number: english });
+    expect(reportRows([entry({ end_time })], { ...options, locale: 'de' }).rows[0][6]).toEqual({ number: german });
+  });
+
+  test('keeps a negative duration of an entry that ends before it starts', () => {
+    const { rows } = reportRows([entry({ end_time: '2026-09-21T07:00:00Z' })], options);
+
+    expect(rows[0][6]).toEqual({ number: '-1.00' });
+  });
+
   test('shows a running entry with an empty end and 0 hours', () => {
     const { rows } = reportRows([entry({ end_time: null })], options);
 
@@ -102,12 +118,7 @@ describe('reportRows', () => {
   });
 });
 
-describe('calculateHours and formatDecimal', () => {
-  test('calculateHours gives two decimals, or 0 for a running entry', () => {
-    expect(calculateHours('2026-09-21T08:00:00Z', '2026-09-21T09:30:00Z')).toBe('1.50');
-    expect(calculateHours('2026-09-21T08:00:00Z', null)).toBe(0);
-  });
-
+describe('formatDecimal', () => {
   test('formatDecimal follows the active language', () => {
     activateLocale('de');
     expect(formatDecimal('1234.5')).toBe('1.234,50');
@@ -127,10 +138,22 @@ describe('reportRows with amounts', () => {
   });
 
   test('writes the rate and the amount of printed hours x printed rate as number cells', () => {
-    // 20 minutes are printed as 0.33 h: 0.33 x 33.33 = 11.00
+    // 20 minutes are printed as 0.33 h; the amount is 20 min x 33.33 / 60 = 11.11
     const { rows } = reportRows([priced({ end_time: '2026-09-21T08:20:00Z' })], { ...options, amounts: true });
 
-    expect(rows[0].slice(6)).toEqual([{ number: '0.33' }, { number: '33.33' }, { number: '11.00' }]);
+    expect(rows[0].slice(6)).toEqual([{ number: '0.33' }, { number: '33.33' }, { number: '11.11' }]);
+  });
+
+  test('1:05 h at 95.00 per hour is 102.92 with 1.08 hours', () => {
+    const { rows } = reportRows([priced({ hourly_rate: '95.00', end_time: '2026-09-21T09:05:00Z' })], { ...options, amounts: true });
+
+    expect(rows[0].slice(6)).toEqual([{ number: '1.08' }, { number: '95.00' }, { number: '102.92' }]);
+  });
+
+  test('an entry that ends before it starts keeps its negative hours and has amount 0', () => {
+    const { rows } = reportRows([priced({ end_time: '2026-09-21T07:00:00Z' })], { ...options, amounts: true });
+
+    expect(rows[0].slice(6)).toEqual([{ number: '-1.00' }, { number: '33.33' }, { number: '0.00' }]);
   });
 
   test('uses the decimal comma in German', () => {

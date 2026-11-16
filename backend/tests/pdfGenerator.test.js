@@ -50,7 +50,7 @@ describe('generateReportPDF', () => {
     const written = await texts('en');
     expect(written).toEqual(expect.arrayContaining([
       'TIME REPORT', 'March 2026', 'Customer: Muster GmbH', 'Date', 'Project', 'Hours', 'Description',
-      '3/2/2026', '1.50 h', '2.25 h', 'TOTAL HOURS:', '3.75 h',
+      '3/2/2026', '1:30 h', '2:15 h', 'TOTAL HOURS:', '3:45 h',
     ]));
   });
 
@@ -58,7 +58,7 @@ describe('generateReportPDF', () => {
     const written = await texts('de');
     expect(written).toEqual(expect.arrayContaining([
       'ZEITABRECHNUNG', 'März 2026', 'Kunde: Muster GmbH', 'Datum', 'Projekt', 'Stunden', 'Beschreibung',
-      '2.3.2026', '1,50 h', '2,25 h', 'GESAMTSTUNDEN:', '3,75 h',
+      '2.3.2026', '1:30 h', '2:15 h', 'GESAMTSTUNDEN:', '3:45 h',
     ]));
   });
 
@@ -127,7 +127,48 @@ describe('generateReportPDF', () => {
 
     await generateReportPDF(rounded, { customerName: 'Muster GmbH', month: 3, year: 2026, locale: 'en', rounding: { minutes: 30, direction: 'up' } });
 
-    expect(PDFDocument.last.texts).toEqual(expect.arrayContaining(['1.50 h', '2.50 h', '4.00 h']));
+    expect(PDFDocument.last.texts).toEqual(expect.arrayContaining(['1:30 h', '2:30 h', '4:00 h']));
+  });
+
+  // billed_hours is a decimal rounded to hundredths (10 min = 0.17 h, 5 min = 0.08 h); the report counts whole minutes
+  test.each([[6, '0.17', 10], [12, '0.08', 5]])('%p entries of %p billed hours (%p minutes) add up to 1:00 h, the same in both languages', async (count, billed, minutes) => {
+    const list = Array.from({ length: count }, (_, i) => ({
+      start_time: `2026-03-02T${String(8 + i).padStart(2, '0')}:00:00Z`, end_time: `2026-03-02T${String(8 + i).padStart(2, '0')}:07:00Z`,
+      project_name: 'Website', description: null, billed_hours: billed,
+    }));
+
+    for (const locale of ['en', 'de']) {
+      await generateReportPDF(list, { customerName: 'Muster GmbH', month: 3, year: 2026, locale, rounding: { minutes, direction: 'up' } });
+
+      const written = PDFDocument.last.texts;
+      expect(written.filter((text) => text === `0:${String(minutes).padStart(2, '0')} h`)).toHaveLength(count);
+      expect(written.filter((text) => text === '1:00 h')).toHaveLength(1);
+    }
+  });
+
+  test.each([
+    [29, '0:00 h'],
+    [30, '0:01 h'],
+  ])('counts an entry of %p seconds as %p', async (seconds, text) => {
+    const entry = { start_time: '2026-03-02T08:00:00Z', end_time: new Date(Date.parse('2026-03-02T08:00:00Z') + seconds * 1000).toISOString(), project_name: 'Website' };
+
+    await generateReportPDF([entry], { customerName: 'Muster GmbH', month: 3, year: 2026, locale: 'en' });
+
+    expect(PDFDocument.last.texts.filter((value) => value === text)).toHaveLength(2); // row and total
+  });
+
+  test('counts a running entry as 0:00 h, the same in the row and the total', async () => {
+    await generateReportPDF([{ ...entries[0], end_time: null }], { customerName: 'Muster GmbH', month: 3, year: 2026, locale: 'en' });
+
+    expect(PDFDocument.last.texts.filter((value) => value === '0:00 h')).toHaveLength(2);
+  });
+
+  test('writes more than 99 hours with as many digits as needed', async () => {
+    const long = { ...entries[0], end_time: '2026-03-06T12:45:00Z' }; // 4 days 4:45 h
+
+    await generateReportPDF([long], { customerName: 'Muster GmbH', month: 3, year: 2026, locale: 'en' });
+
+    expect(PDFDocument.last.texts).toContain('100:45 h');
   });
 
   test('stays German without a language, like before', async () => {
@@ -214,15 +255,16 @@ describe('generateReportPDF with amounts', () => {
   test('writes the amount per row, the block per project and the total amount in English', async () => {
     const written = await run({ locale: 'en', amounts: true });
 
-    expect(written).toEqual(expect.arrayContaining(['Amount', '€120.00', '€0.00', '€11.00', '€80.00', 'Per project', 'Rate', '€80.00/h', '€33.33/h', 'TOTAL AMOUNT:', '€211.00']));
-    // 1.50 + 1.00 + 0.33 + 1.00 + 0 = 3.83 hours
-    expect(written).toEqual(expect.arrayContaining(['TOTAL HOURS:', '3.83 h']));
+    // 20 minutes at 33.33 per hour are 11.11 (not 11.00 as with hours rounded to hundredths)
+    expect(written).toEqual(expect.arrayContaining(['Amount', '€120.00', '€0.00', '€11.11', '€80.00', 'Per project', 'Rate', '€80.00/h', '€33.33/h', 'TOTAL AMOUNT:', '€211.11']));
+    // 1:30 + 1:00 + 0:20 + 1:00 + 0 = 3:50 hours
+    expect(written).toEqual(expect.arrayContaining(['TOTAL HOURS:', '3:50 h', '0:20 h']));
   });
 
   test('writes them in German', async () => {
     const written = await run({ locale: 'de', amounts: true });
 
-    expect(written).toEqual(expect.arrayContaining(['Betrag', 'Je Projekt', 'Stundensatz', '80,00 €/h', '0,00 €/h', '33,33 €/h', 'GESAMTBETRAG:', '211,00 €', '2,50 h']));
+    expect(written).toEqual(expect.arrayContaining(['Betrag', 'Je Projekt', 'Stundensatz', '80,00 €/h', '0,00 €/h', '33,33 €/h', 'GESAMTBETRAG:', '211,11 €', '2:30 h']));
   });
 
   test('lists a project once, in the order of its first entry, with the sum of its rounded hours and amounts', async () => {
@@ -254,7 +296,7 @@ describe('generateReportPDF with amounts', () => {
 
     expect(PDFDocument.last.calls.map(({ value, y, page }) => [value, y, page])).toEqual(plain);
     expect(off).toEqual(before);
-    for (const word of ['Betrag', 'Stundensatz', 'Je Projekt', 'GESAMTBETRAG:', '211,00 €']) expect(before).not.toContain(word);
+    for (const word of ['Betrag', 'Stundensatz', 'Je Projekt', 'GESAMTBETRAG:', '211,11 €']) expect(before).not.toContain(word);
     expect(before.filter((value) => /€/.test(value))).toEqual([]);
   });
 
@@ -342,14 +384,15 @@ describe('generateReportPDF with an entry that ends before it starts', () => {
   test('without amounts it still prints the negative hours and the total as before', async () => {
     const written = await run({});
 
-    expect(written).toEqual(expect.arrayContaining(['-1.00 h', '1.50 h', 'TOTAL HOURS:', '0.50 h']));
+    expect(written).toEqual(expect.arrayContaining(['-1:00 h', '1:30 h', 'TOTAL HOURS:', '0:30 h']));
   });
 
   test('with amounts the row keeps its hours, the project and the totals count it as 0', async () => {
     const written = await run({ amounts: true });
 
-    expect(written).toEqual(expect.arrayContaining(['-1.00 h', '€0.00', '€120.00', '€80.00/h', 'TOTAL AMOUNT:']));
-    // The project block and the total amount: 1.50 h and 120.00, never below zero
+    expect(written).toEqual(expect.arrayContaining(['-1:00 h', '€0.00', '€120.00', '€80.00/h', 'TOTAL AMOUNT:']));
+    // The project block and the total amount: 1:30 h and 120.00, never below zero
+    expect(written.filter((value) => value === '1:30 h')).toHaveLength(2); // row and project line
     expect(written.filter((value) => value === '€120.00')).toHaveLength(3);
     expect(written.filter((value) => /^-€|^€-/.test(value))).toEqual([]);
   });

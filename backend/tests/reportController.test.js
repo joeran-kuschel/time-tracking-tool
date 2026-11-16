@@ -548,6 +548,20 @@ describe('reportController with a rounding rule', () => {
     expect(body.totalHours).toBe('1.75');
   });
 
+  test.each([[10, 6], [5, 12]])('a step of %p minutes: %p entries of 1 to the step add up to exactly 1.00 hours', async (step, count) => {
+    rule(step, 'up');
+    TimeEntry.getByCustomerIdInRange.mockResolvedValue(Array.from({ length: count }, () => ({ ...at(step - 1), id: 1 })));
+    const res = mockResponse();
+
+    await controller.getMonthlyReport(request({ amounts: '1' }), res);
+
+    const body = res.json.mock.calls[0][0];
+    expect(body.totalHours).toBe('1.00');
+    expect(body.projects[0].hours).toBe('1.00');
+    // each entry's amount is rounded to cents (13.33 and 6.67), and the total adds those up
+    expect(body.totalAmount).toBe(step === 10 ? '79.98' : '80.04');
+  });
+
   test('a step of 5 minutes: the billed hours are printed with two decimals and the amounts use exactly those', async () => {
     rule(5, 'up');
     const res = mockResponse();
@@ -555,12 +569,12 @@ describe('reportController with a rounding rule', () => {
     await controller.getMonthlyReport(request({ amounts: '1' }), res);
 
     const body = res.json.mock.calls[0][0];
-    // 65 min is 13 steps = 1.0833 h, printed 1.08; 20 min is 4 steps = 0.3333 h, printed 0.33
+    // 65 min is 13 steps = 1.0833 h, printed 1.08; 20 min is 4 steps = 0.3333 h, printed 0.33; the amounts use 65 and 20 whole minutes
     expect(body.rounding).toEqual({ minutes: 5, direction: 'up' });
     expect(body.entries.map((e) => e.billed_hours)).toEqual(['1.08', '0.33']);
-    expect(body.entries.map((e) => e.amount)).toEqual(['86.40', '26.40']);
-    expect(body.totalHours).toBe('1.41');
-    expect(body.totalAmount).toBe('112.80');
+    expect(body.entries.map((e) => e.amount)).toEqual(['86.67', '26.67']);
+    expect(body.totalHours).toBe('1.42'); // 85 minutes
+    expect(body.totalAmount).toBe('113.34');
   });
 
   test('a step of a full hour', async () => {
@@ -687,16 +701,16 @@ describe('reportController with a rounding rule', () => {
     expect(res.send.mock.calls[0][0]).toContain('E65,1.25,80.00,100.00\r\n');
   });
 
-  test('the CSV with a 5-minute step and amounts: the amount is the printed hours x the rate', async () => {
+  test('the CSV with a 5-minute step and amounts: the amount is the whole minutes x the rate / 60', async () => {
     rule(5, 'up');
     const res = mockResponse();
 
     await controller.exportCsv(request({ amounts: '1' }), res);
 
     const csv = res.send.mock.calls[0][0];
-    // 65 min = 13 steps = 1.08 h (x 80 = 86.40); 20 min = 4 steps = 0.33 h (x 80 = 26.40)
-    expect(csv).toContain('E65,1.08,80.00,86.40\r\n');
-    expect(csv).toContain('E20,0.33,80.00,26.40\r\n');
+    // 65 min = 13 steps = 1.08 h (65 x 80 / 60 = 86.67); 20 min = 4 steps = 0.33 h (20 x 80 / 60 = 26.67)
+    expect(csv).toContain('E65,1.08,80.00,86.67\r\n');
+    expect(csv).toContain('E20,0.33,80.00,26.67\r\n');
     expect(csv).toContain('2026-03-02,08:00,09:05,');
   });
 
@@ -858,5 +872,90 @@ describe('reportController with the rounding rule of a customer', () => {
     await controller.generatePDF(request(), mockResponse());
 
     expect(generateReportPDF.mock.calls.at(-1)[1].rounding).toEqual(json.json.mock.calls[0][0].rounding);
+  });
+});
+
+// Durations are whole minutes everywhere; the JSON and the CSV stay decimal (data, not display)
+describe('reportController with whole minutes', () => {
+  const at = (minutes, extra = {}) => ({
+    id: 1, project_id: 1, project_name: 'Web', hourly_rate: '95.00', description: null,
+    start_time: '2026-03-02T08:00:00Z', end_time: new Date(Date.parse('2026-03-02T08:00:00Z') + minutes * 60000).toISOString(), ...extra,
+  });
+  const request = (query = {}) => ({ params: { customerId: '1' }, query: { month: '3', year: '2026', lang: 'en', ...query } });
+  const report = async (list, query) => {
+    TimeEntry.getByCustomerIdInRange.mockResolvedValue(list);
+    const res = mockResponse();
+    await controller.getMonthlyReport(request(query), res);
+    return res.json.mock.calls[0][0];
+  };
+
+  beforeEach(() => {
+    Customer.getById.mockReset().mockResolvedValue({ id: 1, name: 'Muster' });
+    TimeEntry.getByCustomerIdInRange.mockReset();
+    ReportStatus.get.mockReset().mockResolvedValue('draft');
+  });
+
+  test('1:05 h at 95.00 per hour is 102.92 with the hours 1.08, in the JSON and the CSV', async () => {
+    const body = await report([at(65)], { amounts: '1' });
+    TimeEntry.getByCustomerIdInRange.mockResolvedValue([at(65)]);
+    const res = mockResponse();
+    await controller.exportCsv(request({ amounts: '1' }), res);
+
+    expect(body.entries[0].amount).toBe('102.92');
+    expect(body.totalAmount).toBe('102.92');
+    expect(body.projects).toEqual([{ projectId: 1, name: 'Web', hours: '1.08', hourlyRate: '95.00', amount: '102.92' }]);
+    expect(body.totalHours).toBe('1.08');
+    expect(res.send.mock.calls[0][0].split('\r\n')[1]).toBe('2026-03-02,08:00,09:05,Muster,Web,,1.08,95.00,102.92');
+  });
+
+  test('totalHours is the sum of the entries\' whole minutes / 60, not the sum of rounded decimals', async () => {
+    // three entries of 20 minutes: 3 x 0.33 would be 0.99 h, but 60 minutes are 1.00 h
+    const body = await report([at(20), at(20), at(20)]);
+
+    expect(body.totalHours).toBe('1.00');
+  });
+
+  test('29 seconds count as no minute and 30 seconds as one in totalHours', async () => {
+    const plus = (seconds) => at(0, { end_time: new Date(Date.parse('2026-03-02T08:00:00Z') + seconds * 1000).toISOString() });
+
+    expect((await report([plus(29)])).totalHours).toBe('0.00');
+    expect((await report([plus(30)])).totalHours).toBe('0.02');
+    expect((await report([plus(29), plus(29), plus(29)])).totalHours).toBe('0.00');
+  });
+
+  test('a running entry counts 0 in totalHours and the project hours', async () => {
+    const body = await report([at(60), at(0, { end_time: null })], { amounts: '1' });
+
+    expect(body.totalHours).toBe('1.00');
+    expect(body.projects[0].hours).toBe('1.00');
+  });
+
+  test('a backwards entry keeps its negative minutes in totalHours but counts 0 in the project line', async () => {
+    const body = await report([at(-60), at(90)], { amounts: '1' });
+
+    expect(body.totalHours).toBe('0.50');
+    expect(body.projects[0].hours).toBe('1.50');
+  });
+
+  test.each([
+    [6, '0.17', 10],
+    [12, '0.08', 5],
+  ])('%p entries rounded to %p billed hours (%p minutes) total 1.00 hours in the JSON', async (count, billed) => {
+    const list = Array.from({ length: count }, () => at(7, { billed_hours: billed }));
+    const body = await report(list);
+
+    expect(body.totalHours).toBe('1.00');
+  });
+
+  test('the CSV hours of each entry are its whole minutes / 60: 5 minutes 0,08 in German and 0.08 in English', async () => {
+    TimeEntry.getByCustomerIdInRange.mockResolvedValue([at(5)]);
+    const de = mockResponse();
+    const en = mockResponse();
+
+    await controller.exportCsv(request({ lang: 'de' }), de);
+    await controller.exportCsv(request({ lang: 'en' }), en);
+
+    expect(de.send.mock.calls[0][0].split('\r\n')[1]).toMatch(/;0,08$/);
+    expect(en.send.mock.calls[0][0].split('\r\n')[1]).toMatch(/,0\.08$/);
   });
 });

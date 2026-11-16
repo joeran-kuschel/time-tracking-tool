@@ -40,7 +40,7 @@ Without any project, the card asks to add a customer and a project on the Time t
 |---|---|
 | This week | Hours Monday to today, including days of the previous month (tracked time, always exact) |
 | This month | Hours this month, with the number of working days (Monday to Friday) so far and the average per working day (tracked time, always exact) |
-| Billable in *month* | Hours × the hourly rate of each project; with a rounding rule the rounded hours (*Rounded hours × hourly rate of each project*) |
+| Billable in *month* | Time × the hourly rate of each project (rate × minutes / 60, rounded to cents per entry, like the report); with a rounding rule the rounded hours (*Rounded hours × hourly rate of each project*) |
 | Reports sent for *last month* | Reports with status *Sent* out of all customers with entries last month; "–" without any |
 
 Running entries count 0 hours everywhere, as in the rest of the app.
