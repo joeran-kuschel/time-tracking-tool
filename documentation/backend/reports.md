@@ -26,16 +26,19 @@ same PDF layout and the same CSV columns. The Dashboard and its **Preview PDF** 
 
 The money rules are in one place, `utils/amounts.js`, and are the same for all three formats:
 
-- An entry's hours are rounded to hundredths exactly as the PDF and the CSV print them (`calculateHours`).
+- An entry counts whole minutes (`reportMinutes` in `utils/hours.js`): the time between start and end rounded to a whole
+  minute (half up), or with a rounding rule the rounded `billed_hours`. The PDF and the Reports page print them as
+  `h:mm h` ([Durations](../ui/durations.md)).
 - The rate is the project's `hourly_rate` (`DECIMAL(10,2)`), counted in cents. A missing or invalid rate counts as 0.
-- An entry's amount is `round(hours in hundredths × rate in cents / 100)` cents, so every printed row equals the
-  printed hours × the printed rate.
+- An entry's amount is `round(minutes × rate in cents / 60)` cents, so every printed row equals the printed time × the
+  printed rate (1:05 h at 95,00 €/h is 102,92 €; before durations became `h:mm`, the amount was calculated from the
+  printed 1,08 h and was 102,60 €).
 - A project's amount is the sum of its entries' amounts and the total is the sum of the projects, so the printed
-  numbers add up exactly (20 minutes at 33,33 €/h are 0,33 h = 11,00 €, not 11,11 €). Hours per project and in the
-  total add up the rounded entry hours (except entries that end before they start, see below).
-- A running entry (no end time) has 0 hours and 0 amount; its row is still shown. A project with a rate of 0 is shown
+  numbers add up exactly (20 minutes at 33,33 €/h are 11,11 €). Time per project and in the total add up the
+  entries' whole minutes (except entries that end before they start, see below).
+- A running entry (no end time) has 0 minutes and 0 amount; its row is still shown. A project with a rate of 0 is shown
   with `0,00 €`, not hidden.
-- An entry that ends before it starts counts as 0 hours and 0,00 € in the amounts (so no amount is ever negative), and
+- An entry that ends before it starts counts as 0 minutes and 0,00 € in the amounts (so no amount is ever negative), and
   the project hours add up the same 0. Stopping the timer no longer saves such entries; old ones are found and fixed as described in [Time entries](time-entries.md#entries-that-end-before-they-start). The hours
   printed in the entry rows and `totalHours` are not changed and still show the negative value.
 - The currency is always EUR; there is no currency setting. Projects keep the order of their first entry.
@@ -57,14 +60,13 @@ round the hours of each entry in the JSON report, the PDF and the CSV. The rule 
 - An entry longer than 0 never counts less than one step: 14 minutes at a half hour, to the nearest, are 0.50 h. An
   entry of 0 minutes stays 0.
 - It works on whole seconds, so the rounding itself has no float error.
-- **Hours are printed with two decimals**, like every hour of a report, and the amounts are calculated from the printed
-  hours. A multiple of 15 minutes is exact (0.25 h, 0.50 h, 1.00 h). A step of **5 or 10 minutes is not**: 5 minutes is
-  0.0833 h and prints as **0.08 h**, 10 minutes is 0.1667 h and prints as **0.17 h**. So twelve entries of 5 minutes
-  add up to 0.96 h and six of 10 minutes to 1.02 h, not to 1.00 h; the amounts follow the printed hours. This is the
-  same as without rounding (20 minutes print as 0.33 h).
+- **Time is printed as `h:mm h`** on the Reports page and in the PDF, and the amounts are calculated from the same
+  whole minutes, so a step of 5 or 10 minutes is exact: twelve entries of 5 minutes add up to `1:00 h`, six of 10 minutes
+  too. Only the CSV and the JSON report (data, not display) have decimal hours, which cannot hold a minute exactly
+  (5 minutes is 0.0833 h and is written as 0.08).
 - A running entry has no end yet and counts 0 hours until it is stopped. An entry that ends before it starts is not
   rounded and keeps its old behavior (see [Amounts](#amounts)).
-- The amounts use the rounded hours, so printed hours × rate is the printed amount on every row, and the project lines
+- The amounts use the rounded time, so printed time × rate is the printed amount on every row, and the project lines
   and the total add up the rounded values.
 
 The same rounded hours reach the Dashboard and the month summary of the Time tracking page, so their billing figures equal
@@ -74,8 +76,8 @@ API](dashboard.md)) and `GET /api/time-entries/customer/:id` ([Time entries API]
 (timer, entry lists, Entries search, the Dashboard's week and month hours and chart) is never rounded.
 
 `reportController.js` reads the settings once per request (`roundingRuleOf`) and adds `billed_hours` (a string with two
-decimals) to each entry (`withBilledHours`); `reportHours(entry)` in `utils/hours.js` is the hours a report counts for
-an entry: `billed_hours` when there is one, otherwise the exact hours. Without a rule (the default) the entries get no
+decimals) to each entry (`withBilledHours`); `reportMinutes(entry)` in `utils/hours.js` is the time a report counts for
+an entry in whole minutes: `billed_hours` when there is one, otherwise the exact time rounded to a minute. Without a rule (the default) the entries get no
 `billed_hours` and every report is exactly as before.
 
 ## Time zone
@@ -105,7 +107,8 @@ October. Without `tz`, or with an unknown one, the month is taken in UTC.
 
 - Entries are all entries of the customer's projects whose **start time** lies in the month, newest first.
 - Running entries (no `end_time`) are included and count as 0 hours.
-- `totalHours` is a string with two decimals; with a rounding rule it is the sum of the rounded hours.
+- `totalHours` is a string with two decimals: the sum of the entries' whole minutes divided by 60 (with a rounding rule,
+  of the rounded ones). The JSON stays decimal, it is data.
 - With a rounding rule (see [Rounding](#rounding)) each entry also has `billed_hours` (`null` for a running entry or
   one that ends before it starts), and the report has `rounding`: `{ "minutes": 15, "direction": "up" }`. Without a
   rule neither field is there. `rounding` is data about the rule, whatever the setting `showRoundingNote` says; the
@@ -118,7 +121,8 @@ October. Without `tz`, or with an unknown one, the month is taken in UTC.
 
 ## PDF report
 
-- Title, month, customer, a table (date, project, hours, description) and the total hours.
+- Title, month, customer, a table (date, project, hours, description) and the total hours. Every time is `h:mm h`
+  (`3:59 h`), the same in both languages; with amounts the per-project lines use it too.
 - Each row is as tall as its tallest cell: long project names and descriptions wrap inside their column. A row that
   doesn't fit starts a new page, which repeats the column titles.
 - Dates are shown in the `tz` time zone.
@@ -152,8 +156,8 @@ errors are the same: `400` for an invalid `month` or `year`, `404` for an unknow
 
 - **Columns** (`utils/reportRows.js`, the one place that defines them): Date, Start, End, Customer, Project,
   Description, Hours. Dates are `YYYY-MM-DD`, times `HH:mm`, both in the `tz` time zone, so an entry at 00:30 on the 1st
-  shows the date of that month. A running entry has an empty End and 0 hours. Hours are a plain number with two decimals
-  and no unit (`1,50` in German, `1.50` in English). With `amounts=1` two number columns follow the hours: **Rate
+  shows the date of that month. A running entry has an empty End and 0 hours. Hours stay a decimal number for spreadsheets (the entry's whole
+  minutes / 60), a plain number with two decimals and no unit (`1,50` in German, `1.50` in English). With `amounts=1` two number columns follow the hours: **Rate
   (EUR/h)** (*Stundensatz (EUR/h)*) and **Amount (EUR)** (*Betrag (EUR)*), formatted like the hours; there is no total
   row.
 - **Cells are typed**: `reportRows` returns `{ headers, rows }` where a cell is `{ text }` or `{ number }`, so a format

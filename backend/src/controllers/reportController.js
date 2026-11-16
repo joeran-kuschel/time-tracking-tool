@@ -9,7 +9,7 @@ const { reportRows } = require('../utils/reportRows');
 const { toCsv } = require('../utils/csv');
 const { activateLocale } = require('../i18n');
 const { reportAmounts, decimal, CURRENCY } = require('../utils/amounts');
-const { exactHours } = require('../utils/hours');
+const { minutesToHours, reportMinutes } = require('../utils/hours');
 const { roundingRuleOf, ruleOfCustomer, withBilledHours } = require('../utils/rounding');
 
 const INVALID_PERIOD = { error: 'month (1-12) and year are required' };
@@ -125,7 +125,7 @@ function amountFields(entries) {
     projects: projects.map((project) => ({
       projectId: project.projectId,
       name: project.name,
-      hours: decimal(project.hundredths),
+      hours: minutesToHours(project.minutes),
       hourlyRate: decimal(project.rateCents),
       amount: decimal(project.cents),
     })),
@@ -164,11 +164,8 @@ exports.getMonthlyReport = async (req, res) => {
       entries,
       ...(rounding && { rounding }),
       ...(amounts && amountFields(entries)),
-      totalHours: entries.reduce(
-        // The rounded hours when there are any; otherwise the unrounded ones, so a sum of many entries keeps its precision
-        (sum, entry) => (entry.end_time ? sum + Number(entry.billed_hours ?? exactHours(entry.start_time, entry.end_time)) : sum),
-        0
-      ).toFixed(2)
+      // The sum of the entries' whole minutes, so it equals the time the rows add up to
+      totalHours: minutesToHours(entries.reduce((sum, entry) => sum + reportMinutes(entry), 0))
     });
   } catch (err) {
     console.error(err);

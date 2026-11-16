@@ -182,13 +182,13 @@ describe('withBilling', () => {
     }
   });
 
-  test('the sum of the billed hours equals the hours of the report\'s project lines', () => {
+  test('the sum of the billed hours equals the time of the report\'s project lines', () => {
     const entries = [priced(7, '33.33'), priced(22, '33.33'), priced(37, '33.33')];
     const billed = withBilling(entries, nearest15);
 
-    const hours = billed.reduce((sum, e) => sum + Math.round(Number(e.billed_hours) * 100), 0);
+    const minutes = billed.reduce((sum, e) => sum + Math.round(Number(e.billed_hours) * 60), 0);
 
-    expect(hours).toBe(reportAmounts(withBilledHours(entries, nearest15)).projects[0].hundredths);
+    expect(minutes).toBe(reportAmounts(withBilledHours(entries, nearest15)).projects[0].minutes);
   });
 
   test('a running entry and one that ends before it starts have neither billed field set', () => {
@@ -242,15 +242,15 @@ describe('billedHours for the steps of 5 and 10 minutes', () => {
 describe('withBilling for the steps of 5, 10 and 60 minutes', () => {
   const priced = (minutes, rate) => ({ project_id: 1, project_name: 'Web', hourly_rate: rate, ...entry(minutes) });
 
-  test('the amount counts the printed hours: 7 minutes up to 5 minutes is 0.17 h, so 0.17 x 33.33 is 5.67', () => {
+  test('the amount counts the whole minutes: 7 minutes up to 5 minutes is 10 minutes (0.17 h), so 10 min x 33.33 / 60 is 5.56', () => {
     const [result] = withBilling([priced(7, '33.33')], up5);
 
     expect(result.billed_hours).toBe('0.17');
-    expect(result.billed_amount).toBe('5.67');
+    expect(result.billed_amount).toBe('5.56');
   });
 
-  test('10 minutes at 33.33: 0.17 h gives 5.67, and a full hour step gives the rate', () => {
-    expect(withBilling([priced(3, '33.33')], up10)[0]).toMatchObject({ billed_hours: '0.17', billed_amount: '5.67' });
+  test('10 minutes at 33.33: 0.17 h gives 5.56, and a full hour step gives the rate', () => {
+    expect(withBilling([priced(3, '33.33')], up10)[0]).toMatchObject({ billed_hours: '0.17', billed_amount: '5.56' });
     expect(withBilling([priced(3, '33.33')], up60)[0]).toMatchObject({ billed_hours: '1.00', billed_amount: '33.33' });
   });
 
@@ -262,19 +262,21 @@ describe('withBilling for the steps of 5, 10 and 60 minutes', () => {
     for (const rule of [up5, nearest5, up10, nearest10, up60, nearest60]) {
       const billed = withBilling(entries, rule);
       const cents = billed.reduce((sum, e) => sum + Math.round(Number(e.billed_amount) * 100), 0);
-      const hundredths = billed.reduce((sum, e) => sum + Math.round(Number(e.billed_hours) * 100), 0);
+      const minutes = billed.reduce((sum, e) => sum + Math.round(Number(e.billed_hours) * 60), 0);
       const report = reportAmounts(withBilledHours(entries, rule));
 
       expect([rule, decimal(cents)]).toEqual([rule, decimal(report.totalCents)]);
-      expect([rule, hundredths]).toEqual([rule, report.projects[0].hundredths]);
+      expect([rule, minutes]).toEqual([rule, report.projects[0].minutes]);
     }
   });
 
-  test('every printed row equals printed hours x rate to the cent, also with hours like 0.08 and 0.17', () => {
+  test('every printed row equals its whole minutes x rate / 60 to the cent, also with hours like 0.08 and 0.17', () => {
     const entries = [priced(1, '33.33'), priced(6, '33.33'), priced(11, '80.00'), priced(66, '99.99')];
 
     for (const e of withBilling(entries, up5)) {
-      expect(Math.round(Number(e.billed_hours) * Number(e.hourly_rate) * 100)).toBeCloseTo(Number(e.billed_amount) * 100, 5);
+      const minutes = Math.round(Number(e.billed_hours) * 60);
+
+      expect(Math.round((minutes * Math.round(Number(e.hourly_rate) * 100)) / 60)).toBe(Math.round(Number(e.billed_amount) * 100));
     }
   });
 });
@@ -315,7 +317,7 @@ describe('entries of customers with their own rules', () => {
     const result = withBilling([of(1, null, null), of(2, 60, 'up'), of(3, 5, 'nearest'), of(4, 0, 'up')], global);
 
     expect(result.map((e) => e.billed_hours)).toEqual(['1.25', '2.00', '1.08', null]);
-    expect(result.map((e) => e.billed_amount)).toEqual(['100.00', '160.00', '86.40', null]);
+    expect(result.map((e) => e.billed_amount)).toEqual(['100.00', '160.00', '86.67', null]);
     expect(result.map((e) => e.billed_rule)).toEqual([global, { minutes: 60, direction: 'up' }, { minutes: 5, direction: 'nearest' }, null]);
   });
 

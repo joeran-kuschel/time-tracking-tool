@@ -1,5 +1,5 @@
 const { reportAmounts, formatMoney, decimal, rateCentsOf, CURRENCY } = require('../src/utils/amounts');
-const { calculateHours } = require('../src/utils/hours');
+const { reportMinutes, formatDuration } = require('../src/utils/hours');
 const { activateLocale } = require('../src/i18n');
 
 const entry = (minutes, rate, overrides = {}) => ({
@@ -12,21 +12,22 @@ const entry = (minutes, rate, overrides = {}) => ({
 });
 
 describe('reportAmounts with rounded hours (billed_hours)', () => {
-  test('counts the billed hours, not the exact ones: 65 minutes billed as 1.25 h at 80.00 is 100.00', () => {
+  test('counts the billed time, not the exact one: 65 minutes billed as 1:15 h at 80.00 is 100.00', () => {
     const { entryCents, projects, totalCents } = reportAmounts([entry(65, '80.00', { billed_hours: '1.25' })]);
 
     expect(entryCents).toEqual([10000]);
-    expect(projects[0]).toMatchObject({ hundredths: 125, cents: 10000 });
+    expect(projects[0]).toMatchObject({ minutes: 75, cents: 10000 });
     expect(totalCents).toBe(10000);
   });
 
-  test('hours x rate equals the amount on every row and the project and total add up', () => {
+  test('minutes x rate equals the amount on every row and the project and total add up', () => {
     const entries = [entry(65, '33.33', { billed_hours: '1.25' }), entry(20, '33.33', { billed_hours: '0.50' })];
 
     const { entryCents, projects, totalCents } = reportAmounts(entries);
 
-    expect(entryCents).toEqual([Math.round(125 * 3333 / 100), Math.round(50 * 3333 / 100)]);
-    expect(projects[0].hundredths).toBe(175);
+    // 75 min x 33.33 / 60 = 41.6625 and 30 min x 33.33 / 60 = 16.665
+    expect(entryCents).toEqual([4166, 1667]);
+    expect(projects[0].minutes).toBe(105);
     expect(totalCents).toBe(entryCents[0] + entryCents[1]);
     expect(projects[0].cents).toBe(totalCents);
   });
@@ -45,31 +46,48 @@ describe('reportAmounts with rounded hours (billed_hours)', () => {
 });
 
 describe('reportAmounts', () => {
-  test('multiplies the printed hours with the rate', () => {
+  test('multiplies the printed time with the rate', () => {
     const { entryCents, totalCents } = reportAmounts([entry(90, '80.00')]);
 
     expect(entryCents).toEqual([12000]);
     expect(totalCents).toBe(12000);
   });
 
-  test('rounds the hours to hundredths first: 20 minutes at 33.33 per hour is 0.33 h = 11.00', () => {
+  test('multiplies the whole minutes, not hours rounded to hundredths: 20 minutes at 33.33 per hour is 11.11', () => {
     const { entryCents } = reportAmounts([entry(20, '33.33')]);
 
-    expect(calculateHours('2026-03-02T08:00:00Z', entry(20).end_time)).toBe('0.33');
-    expect(entryCents).toEqual([1100]);
+    expect(entryCents).toEqual([1111]);
+  });
+
+  // The frontend's summarize (tests/summary.test.js, "each entry is rounded to cents") uses the same entries and must give the same total
+  test('the Dashboard and the report agree: 65 min at 95.00, 20 at 33.33, and 7 and 13 at 99.99 give 147.36', () => {
+    const { entryCents, totalCents } = reportAmounts([
+      entry(65, '95.00', { project_id: 7 }), entry(20, '33.33', { project_id: 10 }), entry(7, '99.99', { project_id: 11 }), entry(13, '99.99', { project_id: 11 }),
+    ]);
+
+    expect(entryCents).toEqual([10292, 1111, 1167, 2166]);
+    expect(totalCents).toBe(14736);
+  });
+
+  test('the case of the issue: 1:05 h at 95.00 per hour is 102.92, not 102.60', () => {
+    const { entryCents, totalCents, projects } = reportAmounts([entry(65, '95.00')]);
+
+    expect(entryCents).toEqual([10292]);
+    expect(totalCents).toBe(10292);
+    expect(projects[0].minutes).toBe(65);
   });
 
   test('adds up rounded entry amounts, which differs from rounding the sum', () => {
-    // 7 min = 0.12 h and 13 min = 0.22 h at 99.99: 11.9988 -> 12.00 and 21.9978 -> 22.00
+    // 7 min at 99.99 is 11.6655 -> 11.67 and 13 min is 21.6645 -> 21.66
     const rounded = reportAmounts([entry(7, '99.99'), entry(13, '99.99')]);
-    expect(rounded.entryCents).toEqual([1200, 2200]);
-    expect(rounded.totalCents).toBe(3400);
+    expect(rounded.entryCents).toEqual([1167, 2166]);
+    expect(rounded.totalCents).toBe(3333);
 
-    // 0.01 h at 0.50 per hour is half a cent and rounds up to 1 cent each, so two entries give 2 cents, while one entry of 0.02 h gives 1
-    const halves = reportAmounts([entry(0.6, '0.50'), entry(0.6, '0.50')]);
-    expect(halves.entryCents).toEqual([1, 1]);
-    expect(halves.totalCents).toBe(2);
-    expect(reportAmounts([entry(1.2, '0.50')]).totalCents).toBe(1);
+    // 3 min at 0.50 per hour is 2.5 cents and rounds up to 3 cents each, so two entries give 6 cents, while one entry of 6 min gives 5
+    const halves = reportAmounts([entry(3, '0.50'), entry(3, '0.50')]);
+    expect(halves.entryCents).toEqual([3, 3]);
+    expect(halves.totalCents).toBe(6);
+    expect(reportAmounts([entry(6, '0.50')]).totalCents).toBe(5);
   });
 
   test('every project amount is the sum of its entries and the total the sum of the projects', () => {
@@ -77,17 +95,17 @@ describe('reportAmounts', () => {
 
     const { entryCents, projects, totalCents } = reportAmounts(entries);
 
-    expect(projects.map((p) => p.cents)).toEqual([3400, 1100, 0]);
+    expect(projects.map((p) => p.cents)).toEqual([3333, 1111, 0]);
     expect(projects.reduce((sum, p) => sum + p.cents, 0)).toBe(totalCents);
     expect(entryCents.reduce((sum, c) => sum + c, 0)).toBe(totalCents);
   });
 
-  test('keeps the projects in the order of their first entry and sums their rounded hours', () => {
+  test('keeps the projects in the order of their first entry and sums their minutes', () => {
     const entries = [entry(20, '10', { project_id: 2, project_name: 'B' }), entry(60, '10', { project_id: 1, project_name: 'A' }), entry(20, '10', { project_id: 2, project_name: 'B' })];
 
     const { projects } = reportAmounts(entries);
 
-    expect(projects.map((p) => [p.projectId, p.name, p.hundredths, p.rateCents])).toEqual([[2, 'B', 66, 1000], [1, 'A', 100, 1000]]);
+    expect(projects.map((p) => [p.projectId, p.name, p.minutes, p.rateCents])).toEqual([[2, 'B', 40, 1000], [1, 'A', 60, 1000]]);
   });
 
   test('shows a project with rate 0 with an amount of 0', () => {
@@ -98,11 +116,11 @@ describe('reportAmounts', () => {
     expect(totalCents).toBe(0);
   });
 
-  test('counts a running entry as 0 hours and 0 amount but keeps its row', () => {
+  test('counts a running entry as 0 minutes and 0 amount but keeps its row', () => {
     const { entryCents, projects } = reportAmounts([entry(60, '80.00'), entry(0, '80.00', { end_time: null })]);
 
     expect(entryCents).toEqual([8000, 0]);
-    expect(projects[0].hundredths).toBe(100);
+    expect(projects[0].minutes).toBe(60);
   });
 
   test('handles more than 1000 hours without drifting', () => {
@@ -110,7 +128,7 @@ describe('reportAmounts', () => {
 
     const { totalCents, projects } = reportAmounts(entries);
 
-    expect(projects[0].hundredths).toBe(110000);
+    expect(projects[0].minutes).toBe(66000);
     expect(totalCents).toBe(8800000);
   });
 
@@ -158,12 +176,12 @@ describe('reportAmounts edge cases', () => {
   const totalOf = (list) => reportAmounts(list).totalCents;
 
   test.each([
-    // [minutes, rate, cents]: the hours are rounded to hundredths first, then the amount to cents (half up)
-    [0.6, '0.50', 1], // 0.01 h x 0.50 = 0.5 cent
-    [0.6, '0.49', 0], // 0.49 cent
-    [9, '33.33', 500], // 0.15 h x 33.33 = 4.9995 -> 5.00
-    [30, '0.01', 1], // 0.50 h x 0.01 = 0.5 cent
-    [0.3, '99.99', 100], // 0.3 min is 0.005 h, printed as 0.01 (toFixed): 0.01 x 99.99 = 1.00
+    // [minutes, rate, cents]: whole minutes x rate / 60, rounded to cents (half up)
+    [30, '0.01', 1], // exactly half a cent
+    [1, '0.30', 1], // exactly half a cent
+    [1, '0.29', 0], // 0.48 cent
+    [9, '33.33', 500], // 4.9995 -> 5.00
+    [1, '99.99', 167], // 1.6665 -> 1.67
   ])('%p minutes at %p is %p cents', (minutes, rate, cents) => {
     expect(totalOf([entry(minutes, rate)])).toBe(cents);
   });
@@ -172,20 +190,29 @@ describe('reportAmounts edge cases', () => {
     for (let hundredths = 1; hundredths <= 2500; hundredths += 7) {
       for (const rateCents of [1, 5, 50, 333, 3333, 9999, 12345, 100000, 123456789]) {
         const rate = (rateCents / 100).toFixed(2);
-        const exact = Number((BigInt(hundredths) * BigInt(rateCents) * 2n + 100n) / 200n);
+        const exact = Number((BigInt(hundredths) * BigInt(rateCents) * 2n + 60n) / 120n);
 
-        expect(totalOf([entry(hundredths * 0.6, rate)])).toBe(exact);
+        expect(totalOf([entry(hundredths, rate)])).toBe(exact);
       }
     }
   });
 
-  test('the hours of a project are exactly the printed hours of its entries, whatever the seconds', () => {
+  test('the minutes of a project are exactly the printed minutes of its entry, whatever the seconds', () => {
     for (let second = 0; second < 40000; second += 37) {
       const item = seconds(second, '1');
       const [project] = reportAmounts([item]).projects;
 
-      expect(decimal(project.hundredths)).toBe(calculateHours(item.start_time, item.end_time));
+      expect(project.minutes).toBe(reportMinutes(item));
+      expect(project.minutes).toBe(Math.round(second / 60));
+      expect(formatDuration(project.minutes)).toBe(formatDuration(reportMinutes(item)));
     }
+  });
+
+  test('29 seconds count as no minute and 30 seconds as one, in minutes and in the amount', () => {
+    expect(reportAmounts([seconds(29, '60.00')])).toMatchObject({ entryCents: [0], projects: [{ minutes: 0 }] });
+    expect(reportAmounts([seconds(30, '60.00')])).toMatchObject({ entryCents: [100], projects: [{ minutes: 1 }] });
+    expect(reportAmounts([seconds(89, '60.00')]).projects[0].minutes).toBe(1);
+    expect(reportAmounts([seconds(90, '60.00')]).projects[0].minutes).toBe(2);
   });
 
   test('prints cents as exact two-decimal strings', () => {
@@ -214,7 +241,7 @@ describe('reportAmounts edge cases', () => {
       entry(60, '0.00', { project_id: 2, project_name: 'Free' }),
     ]);
 
-    expect(projects.map((p) => [p.hundredths, p.rateCents, p.cents])).toEqual([[0, 8000, 0], [100, 0, 0]]);
+    expect(projects.map((p) => [p.minutes, p.rateCents, p.cents])).toEqual([[0, 8000, 0], [60, 0, 0]]);
     expect(totalCents).toBe(0);
   });
 
@@ -228,10 +255,10 @@ describe('reportAmounts edge cases', () => {
   });
 
   test('handles 9999.99 hours at the highest rate the database allows', () => {
-    const { totalCents } = reportAmounts([entry(9999.99 * 60, '99999999.99')]);
+    const { totalCents } = reportAmounts([entry(599999, '99999999.99')]);
 
-    // 999999 x 9999999999 / 100 cents, exactly (the product is above 2^53; the result is still right here)
-    expect(totalCents).toBe(Number((999999n * 9999999999n * 2n + 100n) / 200n));
+    // 599999 x 9999999999 / 60 cents, exactly
+    expect(totalCents).toBe(Number((599999n * 9999999999n * 2n + 60n) / 120n));
   });
 
   test('prints the German and English money format with a grouping separator', () => {
@@ -249,30 +276,30 @@ describe('reportAmounts edge cases', () => {
     expect(totalCents).toBe(8000);
   });
 
-  test('counts such an entry as 0 hours in its project, next to a normal one', () => {
+  test('counts such an entry as 0 minutes in its project, next to a normal one', () => {
     const { projects, totalCents } = reportAmounts([entry(-60, '80.00'), entry(90, '80.00')]);
 
     expect(projects).toHaveLength(1);
-    expect(projects[0]).toEqual(expect.objectContaining({ hundredths: 150, cents: 12000 }));
+    expect(projects[0]).toEqual(expect.objectContaining({ minutes: 90, cents: 12000 }));
     expect(totalCents).toBe(12000);
   });
 
-  test('a project with only such an entry has 0 hours and 0 amount', () => {
+  test('a project with only such an entry has 0 minutes and 0 amount', () => {
     const { projects, totalCents } = reportAmounts([entry(-60, '80.00')]);
 
-    expect(projects[0]).toEqual(expect.objectContaining({ hundredths: 0, cents: 0 }));
+    expect(projects[0]).toEqual(expect.objectContaining({ minutes: 0, cents: 0 }));
     expect(totalCents).toBe(0);
   });
 
-  test('counts an invalid start or end as 0 hours and 0 amount, never NaN', () => {
+  test('counts an invalid start or end as 0 minutes and 0 amount, never NaN', () => {
     const { entryCents, projects, totalCents } = reportAmounts([entry(60, '80.00', { end_time: 'not a date' }), entry(60, '80.00', { start_time: 'x' })]);
 
     expect(entryCents).toEqual([0, 0]);
-    expect(projects[0].hundredths).toBe(0);
+    expect(projects[0].minutes).toBe(0);
     expect(totalCents).toBe(0);
   });
 
-  test('an entry that ends a few seconds before its start rounds to 0 hours and 0 cents', () => {
+  test('an entry that ends a few seconds before its start rounds to 0 minutes and 0 cents', () => {
     expect(totalOf([seconds(-10, '80.00')])).toBe(0);
   });
 });

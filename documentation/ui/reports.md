@@ -76,11 +76,11 @@ new customer or month.
   `Website · 12,00 h · 80,00 €/h · 960,00 €`.
 - The table has an **Amount** column, and the **Total** row shows the total amount.
 
-The hours are the same in both modes and equal what the PDF prints: each entry's hours are rounded to hundredths, a
-running entry counts as 0 h, and the totals add up those rounded values. All money comes from the backend
+The time is the same in both modes and equals what the PDF prints, as `h:mm h` (`3:59 h`): each entry counts whole
+minutes, a running entry counts as `0:00 h`, and the totals add up those minutes, so the rows add up exactly. All money comes from the backend
 (`amounts=1`, see [Reports API](../backend/reports.md#amounts)); the page never multiplies hours by rates, so the screen,
-the PDF and the CSV show the same numbers. Amounts are in euros. `summary.js` (hours times rate, as floats) is still used
-by the Dashboard but no longer by this page.
+the PDF and the CSV show the same numbers. Amounts are in euros. `summary.js` (rate × whole minutes / 60, rounded to cents per
+entry, like the server) is used by the Dashboard and the month summary, so their amounts equal the report, but no longer by this page.
 
 Project lines count an entry that ends before it starts as 0 hours, like the server does for amounts, so they can add up
 to more than the total, which keeps such an old entry's negative hours (how to find and fix them: [Time entries](../backend/time-entries.md#entries-that-end-before-they-start)). The Dashboard's **Preview PDF** stays hours only.
@@ -97,7 +97,7 @@ The Reports page does not calculate the rounding: the server sends `billed_hours
 
 ## Formats
 
-Dates, hours and amounts follow the language: `2.3.2026`, `1,50 h` and `142,50 €` in German, `3/2/2026`, `1.50 h`
+Dates, hours and amounts follow the language: `2.3.2026`, `1:30 h` and `142,50 €` in German, `3/2/2026`, `1:30 h`
 and `€142.50` in English.
 
 ## Code

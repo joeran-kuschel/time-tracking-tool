@@ -49,6 +49,13 @@ const reportsPage = () => (
 )
 const renderReports = (route = '/reports') => renderWithRouter(reportsPage(), { route })
 const path = () => screen.getByTestId('path').textContent
+// A project line such as "Website · 1:30 h": the duration is its own element, so match the text of the whole list item
+const line = (text) => screen.getByText((_, element) => {
+  if (element.tagName !== 'LI') return false
+  const content = element.textContent.replace(/\s/g, ' ')
+  return text instanceof RegExp ? text.test(content) : content === text
+})
+const findLine = (text) => waitFor(() => line(text))
 
 async function selectCustomer(name) {
   await userEvent.selectOptions(screen.getByLabelText(/Kunde|Customer/), name)
@@ -325,16 +332,16 @@ describe('Reports', () => {
 
     const table = await screen.findByRole('table', { name: 'Abrechnung Muster GmbH – September 2026' })
     const rows = within(table).getAllByRole('row')
-    expect(rows[1]).toHaveTextContent('21.9.2026WebsiteKonzept1,50 h')
+    expect(rows[1]).toHaveTextContent('21.9.2026WebsiteKonzept1:30 h')
     expect(rows[1]).not.toHaveTextContent('€')
-    expect(rows[2]).toHaveTextContent('17.9.2026Wartung—1,00 h')
-    expect(rows[3]).toHaveTextContent('Gesamt2,50 h')
+    expect(rows[2]).toHaveTextContent('17.9.2026Wartung—1:00 h')
+    expect(rows[3]).toHaveTextContent('Gesamt2:30 h')
     expect(rows[3]).not.toHaveTextContent('€')
     expect(within(table).queryByRole('columnheader', { name: 'Betrag' })).not.toBeInTheDocument()
-    expect(screen.getByText('Gesamtstunden').nextElementSibling).toHaveTextContent('2,50 h')
+    expect(screen.getByText('Gesamtstunden').nextElementSibling).toHaveTextContent('2:30 h')
     expect(screen.queryByText('Betrag (netto)')).not.toBeInTheDocument()
-    expect(screen.getByText('Website · 1,50 h')).toBeInTheDocument()
-    expect(screen.getByText('Wartung · 1,00 h')).toBeInTheDocument()
+    expect(line('Website · 1:30 h')).toBeInTheDocument()
+    expect(line('Wartung · 1:00 h')).toBeInTheDocument()
   })
 
   test('shows hourly rates and amounts per entry, per project and in total after ticking the box, in German', async () => {
@@ -347,13 +354,13 @@ describe('Reports', () => {
     const table = await screen.findByRole('table', { name: 'Abrechnung Muster GmbH – September 2026' })
     const rows = within(table).getAllByRole('row')
     expect(within(table).getByRole('columnheader', { name: 'Betrag' })).toBeInTheDocument()
-    expect(rows[1]).toHaveTextContent('21.9.2026WebsiteKonzept1,50 h142,50 €')
-    expect(rows[2]).toHaveTextContent('17.9.2026Wartung—1,00 h80,00 €')
-    expect(rows[3]).toHaveTextContent('Gesamt2,50 h222,50 €')
-    expect(screen.getByText('Gesamtstunden').nextElementSibling).toHaveTextContent('2,50 h')
+    expect(rows[1]).toHaveTextContent('21.9.2026WebsiteKonzept1:30 h142,50 €')
+    expect(rows[2]).toHaveTextContent('17.9.2026Wartung—1:00 h80,00 €')
+    expect(rows[3]).toHaveTextContent('Gesamt2:30 h222,50 €')
+    expect(screen.getByText('Gesamtstunden').nextElementSibling).toHaveTextContent('2:30 h')
     expect(screen.getByText('Betrag (netto)').nextElementSibling).toHaveTextContent('222,50 €')
-    expect(screen.getByText('Website · 1,50 h · 95,00 €/h · 142,50 €')).toBeInTheDocument()
-    expect(screen.getByText('Wartung · 1,00 h · 80,00 €/h · 80,00 €')).toBeInTheDocument()
+    expect(line('Website · 1:30 h · 95,00 €/h · 142,50 €')).toBeInTheDocument()
+    expect(line('Wartung · 1:00 h · 80,00 €/h · 80,00 €')).toBeInTheDocument()
   })
 
   test('shows the report in English with English month names and formats', async () => {
@@ -364,44 +371,44 @@ describe('Reports', () => {
 
     expect(await screen.findByRole('heading', { name: 'Report Muster GmbH – September 2026' })).toBeInTheDocument()
     expect(screen.getByText('9/21/2026')).toBeInTheDocument()
-    expect(screen.getByRole('row', { name: /Total/ })).toHaveTextContent('Total2.50 h€222.50')
-    expect(screen.getByText('Website · 1.50 h · €95.00/h · €142.50')).toBeInTheDocument()
+    expect(screen.getByRole('row', { name: /Total/ })).toHaveTextContent('Total2:30 h€222.50')
+    expect(line('Website · 1:30 h · €95.00/h · €142.50')).toBeInTheDocument()
     expect(screen.getByLabelText('Show hourly rate and amounts')).toBeChecked()
   })
 
-  test('shows the server\'s amounts as they are, without float errors, and hours rounded like the PDF', async () => {
+  test('shows the server\'s amounts as they are, without float errors, and durations in whole minutes', async () => {
     const entry = (id, minutes, rate, amount) => ({
       id, project_id: 9, project_name: 'Support', hourly_rate: rate, description: `E${id}`,
       start_time: '2026-09-21T08:00:00Z', end_time: new Date(Date.UTC(2026, 8, 21, 8, minutes)).toISOString(), amount,
     })
-    // 7 min = 0.12 h and 13 min = 0.22 h when rounded to hundredths, together 0.34 h (unrounded 0.3333 h)
+    // 7 min at 99.99 is 11.67 and 13 min is 21.66; each is rounded to cents, together 33.33 (the sum 20 min is 33.33 too)
     const rounded = {
-      entries: [entry(1, 7, '99.99', '12.00'), entry(2, 13, '99.99', '22.00')],
+      entries: [entry(1, 7, '99.99', '11.67'), entry(2, 13, '99.99', '21.66')],
       currency: 'EUR',
-      totalAmount: '34.00',
-      projects: [{ projectId: 9, name: 'Support', hours: '0.34', hourlyRate: '99.99', amount: '34.00' }],
+      totalAmount: '33.33',
+      projects: [{ projectId: 9, name: 'Support', hours: '0.33', hourlyRate: '99.99', amount: '33.33' }],
     }
     api.getMonthlyReport.mockResolvedValue(rounded)
     settings.values.showAmounts = true
     renderReports('/reports/1')
 
-    expect(await screen.findByText('Support · 0,34 h · 99,99 €/h · 34,00 €')).toBeInTheDocument()
-    expect(screen.getByRole('row', { name: /Gesamt/ })).toHaveTextContent('Gesamt0,34 h34,00 €')
-    expect(screen.getByText('E1').closest('tr')).toHaveTextContent('0,12 h12,00 €')
+    expect(await findLine('Support · 0:20 h · 99,99 €/h · 33,33 €')).toBeInTheDocument()
+    expect(screen.getByRole('row', { name: /Gesamt/ })).toHaveTextContent('Gesamt0:20 h33,33 €')
+    expect(screen.getByText('E1').closest('tr')).toHaveTextContent('0:07 h11,67 €')
   })
 
-  test.each([false, true])('rounds hours like the PDF (toFixed(2)): an entry of exactly +18 s and one of -18 s, option on: %s', async (on) => {
+  test.each([false, true])('rounds seconds like the PDF (half a minute counts as one): an entry of exactly +30 s and one of -30 s, option on: %s', async (on) => {
     const at = (seconds) => new Date(Date.UTC(2026, 8, 21, 8, 0, 0) + seconds * 1000).toISOString()
     const entry = (id, project, seconds, amount) => ({
       id, project_id: project, project_name: `P${project}`, hourly_rate: '80.00', description: `E${id}`,
       start_time: at(0), end_time: at(seconds), amount,
     })
-    const data = { entries: [entry(1, 1, 18, '0.80'), entry(2, 2, -18, '0.00')], totalHours: '0.00' }
+    const data = { entries: [entry(1, 1, 30, '1.33'), entry(2, 2, -30, '0.00')], totalHours: '0.00' }
     if (on) {
       Object.assign(data, {
-        totalAmount: '0.80',
+        totalAmount: '1.33',
         projects: [
-          { projectId: 1, name: 'P1', hours: '0.01', hourlyRate: '80.00', amount: '0.80' },
+          { projectId: 1, name: 'P1', hours: '0.02', hourlyRate: '80.00', amount: '1.33' },
           { projectId: 2, name: 'P2', hours: '0.00', hourlyRate: '80.00', amount: '0.00' },
         ],
       })
@@ -410,11 +417,23 @@ describe('Reports', () => {
     settings.values.showAmounts = on
     renderReports('/reports/1')
 
-    expect((await screen.findByText('E1')).closest('tr')).toHaveTextContent('0,01 h')
-    expect(screen.getByText('E2').closest('tr')).toHaveTextContent('-0,01 h')
-    expect(screen.getByRole('row', { name: /Gesamt/ })).toHaveTextContent('Gesamt0,00 h')
-    expect(screen.getByText(/^P1 · 0,01 h/)).toBeInTheDocument()
-    expect(screen.getByText(/^P2 · 0,00 h/)).toBeInTheDocument()
+    expect((await screen.findByText('E1')).closest('tr')).toHaveTextContent('0:01 h')
+    expect(screen.getByText('E2').closest('tr')).toHaveTextContent('-0:01 h')
+    expect(screen.getByRole('row', { name: /Gesamt/ })).toHaveTextContent('Gesamt0:00 h')
+    expect(line(/^P1 · 0:01 h/)).toBeInTheDocument()
+    expect(line(/^P2 · 0:00 h/)).toBeInTheDocument()
+  })
+
+  test('counts 29 seconds as no minute', async () => {
+    const at = (seconds) => new Date(Date.UTC(2026, 8, 21, 8, 0, 0) + seconds * 1000).toISOString()
+    api.getMonthlyReport.mockResolvedValue({
+      entries: [{ id: 1, project_id: 1, project_name: 'P1', hourly_rate: '80.00', description: 'E1', start_time: at(0), end_time: at(29) }],
+      totalHours: '0.00',
+    })
+    renderReports('/reports/1')
+
+    expect((await screen.findByText('E1')).closest('tr')).toHaveTextContent('0:00 h')
+    expect(line(/^P1 · 0:00 h/)).toBeInTheDocument()
   })
 
   test.each([false, true])('counts an entry that ends before it starts as 0 hours in the project line, option on: %s', async (on) => {
@@ -433,10 +452,10 @@ describe('Reports', () => {
     settings.values.showAmounts = on
     renderReports('/reports/1')
 
-    expect(await screen.findByText(/^Mix · 1,00 h/)).toBeInTheDocument()
-    expect(screen.getByText('E2').closest('tr')).toHaveTextContent('-1,50 h')
-    expect(screen.getByRole('row', { name: /Gesamt/ })).toHaveTextContent('Gesamt-0,50 h')
-    expect(screen.getByText('Gesamtstunden').nextElementSibling).toHaveTextContent('-0,50 h')
+    expect(await findLine(/^Mix · 1:00 h/)).toBeInTheDocument()
+    expect(screen.getByText('E2').closest('tr')).toHaveTextContent('-1:30 h')
+    expect(screen.getByRole('row', { name: /Gesamt/ })).toHaveTextContent('Gesamt-0:30 h')
+    expect(screen.getByText('Gesamtstunden').nextElementSibling).toHaveTextContent('-0:30 h')
   })
 
   test('counts a running entry as 0 hours', async () => {
@@ -444,8 +463,8 @@ describe('Reports', () => {
     api.getMonthlyReport.mockResolvedValue({ entries: [running], totalHours: '0.00' })
     renderReports('/reports/1')
 
-    expect(await screen.findByText('Website · 0,00 h')).toBeInTheDocument()
-    expect(screen.getByText('Gesamtstunden').nextElementSibling).toHaveTextContent('0,00 h')
+    expect(await findLine('Website · 0:00 h')).toBeInTheDocument()
+    expect(screen.getByText('Gesamtstunden').nextElementSibling).toHaveTextContent('0:00 h')
   })
 
   test('has the same total hours with and without amounts', async () => {
@@ -960,12 +979,12 @@ describe('Reports with rounded hours', () => {
     renderReports('/reports/1')
 
     expect(await screen.findByText('Konzept')).toBeInTheDocument()
-    expect(screen.getByText('Konzept').closest('tr')).toHaveTextContent('1,25 h')
-    expect(screen.getByText('—').closest('tr')).toHaveTextContent('0,50 h')
-    expect(screen.getByRole('row', { name: /Gesamt/ })).toHaveTextContent('Gesamt1,75 h')
-    expect(screen.getByText('Gesamtstunden').nextElementSibling).toHaveTextContent('1,75 h')
-    expect(screen.getByText('Website · 1,25 h')).toBeInTheDocument()
-    expect(screen.getByText('Wartung · 0,50 h')).toBeInTheDocument()
+    expect(screen.getByText('Konzept').closest('tr')).toHaveTextContent('1:15 h')
+    expect(screen.getByText('—').closest('tr')).toHaveTextContent('0:30 h')
+    expect(screen.getByRole('row', { name: /Gesamt/ })).toHaveTextContent('Gesamt1:45 h')
+    expect(screen.getByText('Gesamtstunden').nextElementSibling).toHaveTextContent('1:45 h')
+    expect(line('Website · 1:15 h')).toBeInTheDocument()
+    expect(line('Wartung · 0:30 h')).toBeInTheDocument()
     expect(screen.getByText('Stunden auf Viertelstunden aufgerundet.')).toBeInTheDocument()
   })
 
@@ -974,9 +993,9 @@ describe('Reports with rounded hours', () => {
     renderReports('/reports/1')
 
     expect(await screen.findByText('Konzept')).toBeInTheDocument()
-    expect(screen.getByText('Konzept').closest('tr')).toHaveTextContent('1,25 h118,75 €')
-    expect(screen.getByRole('row', { name: /Gesamt/ })).toHaveTextContent('Gesamt1,75 h158,75 €')
-    expect(screen.getByText('Website · 1,25 h · 95,00 €/h · 118,75 €')).toBeInTheDocument()
+    expect(screen.getByText('Konzept').closest('tr')).toHaveTextContent('1:15 h118,75 €')
+    expect(screen.getByRole('row', { name: /Gesamt/ })).toHaveTextContent('Gesamt1:45 h158,75 €')
+    expect(line('Website · 1:15 h · 95,00 €/h · 118,75 €')).toBeInTheDocument()
   })
 
   test.each([
@@ -1008,8 +1027,8 @@ describe('Reports with rounded hours', () => {
 
     expect(screen.queryByText(/gerundet/)).not.toBeInTheDocument()
     expect(screen.queryByText(/aufgerundet/)).not.toBeInTheDocument()
-    expect(screen.getByText('Konzept').closest('tr')).toHaveTextContent('1,25 h')
-    expect(screen.getByRole('row', { name: /Gesamt/ })).toHaveTextContent('Gesamt1,75 h')
+    expect(screen.getByText('Konzept').closest('tr')).toHaveTextContent('1:15 h')
+    expect(screen.getByRole('row', { name: /Gesamt/ })).toHaveTextContent('Gesamt1:45 h')
   })
 
   test('names no rule while the settings could not be loaded', async () => {
@@ -1030,7 +1049,7 @@ describe('Reports with rounded hours', () => {
     await screen.findByText('Konzept')
 
     expect(screen.queryByText(/gerundet/)).not.toBeInTheDocument()
-    expect(screen.getByText('Konzept').closest('tr')).toHaveTextContent('1,50 h')
+    expect(screen.getByText('Konzept').closest('tr')).toHaveTextContent('1:30 h')
   })
 
   test('an entry without billed hours (running, or ending before it starts) counts as before', async () => {
@@ -1040,9 +1059,9 @@ describe('Reports with rounded hours', () => {
     renderReports('/reports/1')
 
     expect(await screen.findByText('läuft')).toBeInTheDocument()
-    expect(screen.getByText('läuft').closest('tr')).toHaveTextContent('0,00 h')
-    expect(screen.getByText('rückwärts').closest('tr')).toHaveTextContent('-1,00 h')
-    expect(screen.getByRole('row', { name: /Gesamt/ })).toHaveTextContent('Gesamt0,25 h')
+    expect(screen.getByText('läuft').closest('tr')).toHaveTextContent('0:00 h')
+    expect(screen.getByText('rückwärts').closest('tr')).toHaveTextContent('-1:00 h')
+    expect(screen.getByRole('row', { name: /Gesamt/ })).toHaveTextContent('Gesamt0:15 h')
   })
 
   test('has no detectable accessibility violations with the rounding sentence, in German and English', async () => {
@@ -1261,7 +1280,7 @@ describe('Reports, the amounts option in edge cases', () => {
     api.getMonthlyReport.mockResolvedValue(report)
     renderReports('/reports/1')
 
-    expect(await screen.findByText('Website · 1,50 h')).toBeInTheDocument()
+    expect(await findLine('Website · 1:30 h')).toBeInTheDocument()
     expect(screen.queryByText('Betrag (netto)')).not.toBeInTheDocument()
   })
 
@@ -1275,11 +1294,11 @@ describe('Reports, the amounts option in edge cases', () => {
     api.getMonthlyReport.mockResolvedValue(big)
     renderReports('/reports/1')
 
-    expect(await screen.findByText('Website · 1,00 h · 1.403,10 €/h · 1.403,10 €')).toBeInTheDocument()
-    expect(screen.getByRole('row', { name: /Gesamt/ })).toHaveTextContent('Gesamt1,00 h1.403,10 €')
+    expect(await findLine('Website · 1:00 h · 1.403,10 €/h · 1.403,10 €')).toBeInTheDocument()
+    expect(screen.getByRole('row', { name: /Gesamt/ })).toHaveTextContent('Gesamt1:00 h1.403,10 €')
 
     switchLocale('en')
-    expect(await screen.findByText('Website · 1.00 h · €1,403.10/h · €1,403.10')).toBeInTheDocument()
+    expect(await findLine('Website · 1:00 h · €1,403.10/h · €1,403.10')).toBeInTheDocument()
   })
 
   test('formats zero and very large amounts from the server', async () => {
@@ -1295,8 +1314,8 @@ describe('Reports, the amounts option in edge cases', () => {
     api.getMonthlyReport.mockResolvedValue(odd)
     renderReports('/reports/1')
 
-    expect(await screen.findByText('Website · 1,00 h · 0,00 €/h · 0,00 €')).toBeInTheDocument()
-    expect(screen.getByText('Groß · 1,00 h · 99.999.999,99 €/h · 99.999.999,99 €')).toBeInTheDocument()
+    expect(await findLine('Website · 1:00 h · 0,00 €/h · 0,00 €')).toBeInTheDocument()
+    expect(line('Groß · 1:00 h · 99.999.999,99 €/h · 99.999.999,99 €')).toBeInTheDocument()
     expect(screen.getByText('Betrag (netto)').nextElementSibling).toHaveTextContent('99.999.999,99 €')
   })
 
@@ -1307,37 +1326,37 @@ describe('Reports, the amounts option in edge cases', () => {
     api.getMonthlyReport.mockResolvedValue(long)
     renderReports('/reports/1')
 
-    expect(await screen.findByText(`${name} · 1,00 h · 95,00 €/h · 95,00 €`)).toBeInTheDocument()
+    expect(await findLine(`${name} · 1:00 h · 95,00 €/h · 95,00 €`)).toBeInTheDocument()
   })
 
   test('sums a negative entry and a running entry the same with and without amounts', async () => {
     const entries = [
       entryOf(1),
-      entryOf(2, { start_time: '2026-09-21T12:00:00Z', end_time: '2026-09-21T11:00:00Z', amount: '-95.00' }),
+      entryOf(2, { start_time: '2026-09-21T12:00:00Z', end_time: '2026-09-21T11:00:00Z', amount: '0.00' }),
       entryOf(3, { start_time: '2026-09-22T08:00:00Z', end_time: null, amount: '0.00' }),
-      entryOf(4, { project_id: 8, project_name: 'Wartung', start_time: '2026-09-23T08:00:00Z', end_time: '2026-09-23T08:07:00Z', amount: '11.00' }),
+      entryOf(4, { project_id: 8, project_name: 'Wartung', start_time: '2026-09-23T08:00:00Z', end_time: '2026-09-23T08:07:00Z', amount: '11.08' }),
     ]
     const bothWays = {
       off: { entries, totalHours: '0.12' },
       on: money(entries, [
         { projectId: 7, name: 'Website', hours: '1.00', hourlyRate: '95.00', amount: '95.00' },
-        { projectId: 8, name: 'Wartung', hours: '0.12', hourlyRate: '95.00', amount: '11.00' },
-      ], '106.00'),
+        { projectId: 8, name: 'Wartung', hours: '0.12', hourlyRate: '95.00', amount: '11.08' },
+      ], '106.08'),
     }
     api.getMonthlyReport.mockImplementation((c, m, y, amounts) => Promise.resolve(amounts ? bothWays.on : bothWays.off))
     renderReports('/reports/1')
     const total = () => screen.getByText('Gesamtstunden').nextElementSibling.textContent
-    await screen.findByText('Website · 1,00 h')
-    expect(screen.getByText('E2').closest('tr')).toHaveTextContent('-1,00 h')
-    expect(screen.getByText('Wartung · 0,12 h')).toBeInTheDocument()
+    await findLine('Website · 1:00 h')
+    expect(screen.getByText('E2').closest('tr')).toHaveTextContent('-1:00 h')
+    expect(line('Wartung · 0:07 h')).toBeInTheDocument()
     const off = total()
 
     await userEvent.click(screen.getByLabelText(optionLabel))
     await screen.findByText('Betrag (netto)')
 
-    expect(off).toBe('0,12 h')
+    expect(off).toBe('0:07 h')
     expect(total()).toBe(off)
-    expect(screen.getByRole('row', { name: /Gesamt/ })).toHaveTextContent('Gesamt0,12 h106,00 €')
+    expect(screen.getByRole('row', { name: /Gesamt/ })).toHaveTextContent('Gesamt0:07 h106,08 €')
   })
 
   test('does not reset the choice when the page is opened for another customer', async () => {
@@ -1380,5 +1399,61 @@ describe('Reports, the amounts option in edge cases', () => {
 
     expect(api.setReportStatus).toHaveBeenCalledWith(1, 9, 2026, 'sent')
     expect(screen.getByLabelText(optionLabel)).toBeChecked()
+  })
+})
+
+describe('Reports in whole minutes', () => {
+  const entryOf = (id, minutes, extra = {}) => ({
+    id, project_id: 7, project_name: 'Website', hourly_rate: '95.00', description: `E${id}`,
+    start_time: '2026-09-21T08:00:00Z', end_time: new Date(Date.UTC(2026, 8, 21, 8, minutes)).toISOString(), ...extra,
+  })
+
+  test.each([
+    ['six entries rounded to 10 minutes', 6, '0.17'],
+    ['twelve entries rounded to 5 minutes', 12, '0.08'],
+  ])('%s add up to 1:00 h in the rows, the project line and the total, in both languages', async (_, count, billed) => {
+    const entries = Array.from({ length: count }, (__, i) => entryOf(i + 1, 7, { billed_hours: billed }))
+    api.getMonthlyReport.mockResolvedValue({ entries, totalHours: '1.00', rounding: { minutes: count === 6 ? 10 : 5, direction: 'up' } })
+    renderReports('/reports/1')
+
+    await findLine('Website · 1:00 h')
+    expect(screen.getByRole('row', { name: /Gesamt/ })).toHaveTextContent('Gesamt1:00 h')
+    expect(screen.getByText('Gesamtstunden').nextElementSibling).toHaveTextContent('1:00 h')
+    expect(screen.getByText('E1').closest('tr')).toHaveTextContent(count === 6 ? '0:10 h' : '0:05 h')
+
+    switchLocale('en')
+
+    await findLine('Website · 1:00 h')
+    expect(screen.getByRole('row', { name: /Total/ })).toHaveTextContent('Total1:00 h')
+  })
+
+  test('shows 1:05 h at 95.00 per hour with the amount 102,92 €', async () => {
+    api.getMonthlyReport.mockResolvedValue({
+      entries: [{ ...entryOf(1, 65), amount: '102.92' }],
+      currency: 'EUR',
+      totalAmount: '102.92',
+      projects: [{ projectId: 7, name: 'Website', hours: '1.08', hourlyRate: '95.00', amount: '102.92' }],
+    })
+    settings.values.showAmounts = true
+    renderReports('/reports/1')
+
+    expect((await screen.findByText('E1')).closest('tr')).toHaveTextContent('1:05 h102,92 €')
+    expect(line('Website · 1:05 h · 95,00 €/h · 102,92 €')).toBeInTheDocument()
+    expect(screen.getByRole('row', { name: /Gesamt/ })).toHaveTextContent('Gesamt1:05 h102,92 €')
+  })
+
+  test('shows more than 99 hours in full', async () => {
+    api.getMonthlyReport.mockResolvedValue({ entries: [entryOf(1, 6045)], totalHours: '100.75' })
+    renderReports('/reports/1')
+
+    expect(await findLine('Website · 100:45 h')).toBeInTheDocument()
+  })
+
+  test('has no detectable accessibility violations with the durations', async () => {
+    api.getMonthlyReport.mockResolvedValue({ entries: [entryOf(1, 65), entryOf(2, -30)], totalHours: '0.58' })
+    const { container } = renderReports('/reports/1')
+    await screen.findByText('E1')
+
+    expect(await axe(container)).toHaveNoViolations()
   })
 })

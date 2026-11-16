@@ -2,8 +2,8 @@
 // 30 or 60 minutes, up or to the nearest step (a halfway case rounds up). An entry longer than 0 never counts less than one
 // step. The stored entries are never changed; the rounded hours are added as billed_hours where a report needs them.
 // The rule is applied to whole seconds, so there are no float errors in the rounding itself. The billed hours are
-// printed with two decimals like all hours of a report: a multiple of 15 minutes is exact (0.25 h), a step of 5 or 10
-// minutes is not (5 minutes is 0.08 h, 10 minutes is 0.17 h), so blocks of those add up to slightly more or less.
+// a string with two decimals, a carrier for the whole minutes: reportMinutes (utils/hours.js) recovers them exactly (the
+// two decimals are off by at most 0.3 minutes), and the reports print and add up those minutes.
 
 const { reportAmounts, decimal } = require('./amounts');
 

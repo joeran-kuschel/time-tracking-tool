@@ -3,11 +3,8 @@ const PDFDocument = require('pdfkit');
 const { i18n } = require('@lingui/core');
 const { activateLocale } = require('../i18n');
 
-const { reportHours } = require('./hours');
-const { formatDecimal } = require('./reportRows');
+const { formatDuration, reportMinutes } = require('./hours');
 const { reportAmounts, formatMoney } = require('./amounts');
-
-const formatHours = (hours) => `${formatDecimal(hours)} h`;
 
 function reportFileName(customerName, month, year, locale, extension = 'pdf') {
   activateLocale(locale);
@@ -147,7 +144,7 @@ function drawRow(doc, cells, y, columns) {
 }
 
 // The total hours and, with amounts, the total amount below; the numbers end at the same edge
-function drawTotal(doc, { hours, cents }, y, showAmounts) {
+function drawTotal(doc, { minutes, cents }, y, showAmounts) {
   const height = showAmounts ? TOTAL_HEIGHT_WITH_AMOUNT : TOTAL_HEIGHT;
   let top = y;
   if (top + height > pageBottom(doc)) {
@@ -161,7 +158,7 @@ function drawTotal(doc, { hours, cents }, y, showAmounts) {
   // With amounts the values share the right edge of the amount column
   const valueWidth = showAmounts ? amountColumn.x + amountColumn.width - column.x : column.width;
   doc.text(i18n._({ id: 'report.total', message: 'TOTAL HOURS:' }), TABLE_LEFT, top + 8, { width: column.x - TABLE_LEFT });
-  doc.text(formatHours(hours), column.x, top + 8, { width: valueWidth, align: 'right' });
+  doc.text(formatDuration(minutes), column.x, top + 8, { width: valueWidth, align: 'right' });
   if (showAmounts) {
     doc.text(i18n._({ id: 'report.totalAmount', message: 'TOTAL AMOUNT:' }), TABLE_LEFT, top + 24, { width: column.x - TABLE_LEFT });
     doc.text(formatMoney(cents), column.x, top + 24, { width: valueWidth, align: 'right' });
@@ -181,7 +178,7 @@ function drawProjects(doc, projects, y) {
   for (const project of projects) {
     top = drawRow(doc, {
       project: project.name,
-      hours: formatHours(project.hundredths / 100),
+      hours: formatDuration(project.minutes),
       rate: `${formatMoney(project.rateCents)}/h`,
       amount: formatMoney(project.cents),
     }, top, PROJECT_COLUMNS);
@@ -194,7 +191,7 @@ function entryCells(entry, timeZone, cents) {
     ...(cents === undefined ? {} : { amount: formatMoney(cents) }),
     date: i18n.date(entry.start_time, { year: 'numeric', month: 'numeric', day: 'numeric', timeZone }),
     project: entry.project_name,
-    hours: formatHours(reportHours(entry)),
+    hours: formatDuration(reportMinutes(entry)),
     description: entry.description || '',
   };
 }
@@ -220,8 +217,8 @@ function generateReportPDF(entries, { customerName, month, year, locale, timeZon
         y = drawRow(doc, entryCells(entry, timeZone, money?.entryCents[index]), y, columns);
       });
       if (money) y = drawProjects(doc, money.projects, y);
-      const totalHours = entries.reduce((sum, entry) => sum + Number(reportHours(entry)), 0);
-      drawTotal(doc, { hours: totalHours, cents: money?.totalCents }, y, amounts);
+      const totalMinutes = entries.reduce((sum, entry) => sum + reportMinutes(entry), 0);
+      drawTotal(doc, { minutes: totalMinutes, cents: money?.totalCents }, y, amounts);
 
       doc.end();
     } catch (err) {

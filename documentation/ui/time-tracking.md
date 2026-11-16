@@ -53,7 +53,7 @@ screens the sidebar sits above the main area (see [Design](design.md)).
 
 Next to the timer, a card sums up the selected customer's current month (e.g. *September 2026*):
 
-- **Hours this month**, **Billable amount** (hours × hourly rate of each entry's project) and the number of
+- **Hours this month**, **Billable amount** (time × hourly rate of each entry's project, rounded to cents per entry like the report) and the number of
   **Entries**. Only finished entries count; a running timer is added once it stops.
 - One bar per project with its hours, in the order of the projects. Projects without hours this month are left out.
   The bar is decorative; screen readers read each project's share of the month's hours after the hours (*70 % of total*).

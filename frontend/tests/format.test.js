@@ -1,22 +1,10 @@
 import { describe, expect, test } from 'vitest'
 import { i18n } from '@/i18n'
-import { formatAmount, formatClock, formatDay, formatHours, formatRate, formatShare, hoursBetween, formatDuration, isoDuration, minutesBetween, minutesOfHours, roundMinutes } from '@/format'
-
-describe('hoursBetween', () => {
-  test('returns the hours between start and end', () => {
-    expect(hoursBetween('2026-09-21T08:00:00Z', '2026-09-21T09:30:00Z')).toBe(1.5)
-  })
-
-  test('returns 0 for running entries', () => {
-    expect(hoursBetween('2026-09-21T08:00:00Z', null)).toBe(0)
-  })
-})
+import { formatAmount, formatClock, formatDay, formatRate, formatShare, entryMinutes, formatDuration, isoDuration, minutesBetween, minutesOfHours, roundMinutes } from '@/format'
 
 describe('formats follow the language', () => {
   test('German', () => {
     i18n.activate('de')
-    expect(formatHours(i18n, 1.5)).toBe('1,50 h')
-    expect(formatHours(i18n, '12.25')).toBe('12,25 h')
     expect(formatRate(i18n, '80.00')).toBe('80,00 €/h')
     expect(formatAmount(i18n, 1197.5)).toBe('1.197,50 €')
     expect(formatDay(i18n, new Date(2026, 8, 21, 9, 5))).toBe('Mo., 21. Sept.')
@@ -25,7 +13,6 @@ describe('formats follow the language', () => {
 
   test('English', () => {
     i18n.activate('en')
-    expect(formatHours(i18n, 1.5)).toBe('1.50 h')
     expect(formatRate(i18n, '80.00')).toBe('€80.00/h')
     expect(formatAmount(i18n, 1197.5)).toBe('€1,197.50')
     expect(formatDay(i18n, new Date(2026, 8, 21, 9, 5))).toBe('Mon, Sep 21')
@@ -114,5 +101,37 @@ describe('isoDuration', () => {
 
   test('has none for a negative duration', () => {
     expect(isoDuration(-90)).toBeNull()
+  })
+})
+
+describe('entryMinutes', () => {
+  const entry = (overrides) => ({ start_time: '2026-09-21T08:00:00Z', end_time: '2026-09-21T09:30:00Z', ...overrides })
+  const after = (seconds) => entry({ end_time: new Date(Date.UTC(2026, 8, 21, 8, 0, seconds)).toISOString() })
+
+  test('counts the whole minutes between start and end', () => {
+    expect(entryMinutes(entry())).toBe(90)
+  })
+
+  test('29 seconds are no minute, 30 seconds are one', () => {
+    expect(entryMinutes(after(29))).toBe(0)
+    expect(entryMinutes(after(30))).toBe(1)
+  })
+
+  test('counts a running entry as 0', () => {
+    expect(entryMinutes(entry({ end_time: null }))).toBe(0)
+  })
+
+  test('keeps the negative minutes of an entry that ends before it starts', () => {
+    expect(entryMinutes(entry({ end_time: '2026-09-21T07:00:00Z' }))).toBe(-60)
+  })
+
+  test('uses the billed hours of a rounding rule instead of the times', () => {
+    expect(entryMinutes(entry({ billed_hours: '1.25' }))).toBe(75)
+    expect(entryMinutes(entry({ billed_hours: '0.17' }))).toBe(10)
+    expect(entryMinutes(entry({ billed_hours: '0.00' }))).toBe(0)
+  })
+
+  test('ignores billed hours that are null', () => {
+    expect(entryMinutes(entry({ billed_hours: null }))).toBe(90)
   })
 })

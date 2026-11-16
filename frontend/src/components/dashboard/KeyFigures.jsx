@@ -7,7 +7,7 @@ import { ui } from '../../ui'
 
 // Four figures: hours this week, hours this month (with the average per working day so far),
 // the billable amount of the month, and how many of last month's reports were sent.
-// The hours are the tracked time, exact; the billable amount counts the rounded hours when there is a rounding rule.
+// The hours are the tracked time, exact; the billable amount counts the rounded time when there is a rounding rule.
 // lastMonthReports: { month, year, reports: [{ customer_id, customer_name, status }] }
 // rounding: { minutes, direction } of the rule, or null/undefined
 function KeyFigures({ entries, lastMonthReports, now, rounding }) {

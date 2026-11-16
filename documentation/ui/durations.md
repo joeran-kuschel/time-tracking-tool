@@ -5,8 +5,9 @@ Every duration on the Dashboard, the Time tracking page and the Entries page is 
 English. A duration that is negative (an old entry that ends before it starts) has a minus sign: `-1:30 h`. The unit
 `h` tells a duration from the clock times next to it (`09:00 – 10:05`).
 
-The Reports page, the PDF and the CSV still show decimal hours (`3,98 h`); they follow in a second step of issue #90.
-The timer (`HH:MM:SS`), clock times, hourly rates and the time fields of the entry form are not durations in this
+The Reports page and the PDF show `h:mm h` too, and their amounts are calculated from the same whole minutes (rate ×
+minutes / 60, rounded to cents per entry, so time × rate equals the amount). Only the CSV keeps its Hours column as a
+decimal number, so a spreadsheet can add it up. The timer (`HH:MM:SS`), clock times, hourly rates and the time fields of the entry form are not durations in this
 sense and stay as they are.
 
 ## Whole minutes
@@ -15,7 +16,7 @@ An entry's duration is rounded to whole minutes before it is shown (30 seconds a
 up these shown minutes, never the exact seconds, so the rows of a list always add up exactly to their total: per
 project, per customer, per day. With a rounding rule ([Settings](settings.md)) the billed time is first rounded by the
 rule and then shown, so six entries rounded to 10 minutes show `1:00 h` together, twelve entries of 5 minutes too
-(the Reports page still prints `0,17 h` per entry until the second step). The tracked time stays exact, in the sense
+(the Reports page and the PDF too). The tracked time stays exact, in the sense
 that nothing is rounded by a rule.
 
 ## Where
@@ -25,6 +26,7 @@ that nothing is rounded by a rule.
 | Dashboard | *This week*, *This month* and the average per working day, the chart (value of a bar, month total, data table), *By customer*, *Billing*, recent entries, the message after stopping the timer (*Saved 1:05 h to …*) |
 | Time tracking | month summary (hours, hours per project), the hours of each entry, the total in each project's heading |
 | Entries | the hours of each result and the number of hours found |
+| Reports | the total, the project lines and the hours of each entry; the PDF the same |
 
 The chart's bar heights and scale are still in hours; only its texts use `h:mm`.
 

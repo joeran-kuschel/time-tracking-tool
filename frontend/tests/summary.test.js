@@ -58,7 +58,8 @@ describe('summarize with rounded hours (billed_hours and billed_amount from the 
     const summary = summarize([...rounded, backwards], projects)
 
     expect(summary.projects.map((p) => [p.project.name, p.minutes])).toEqual([['Website', 15], ['Wartung', 30]])
-    expect(summary.amount).toBeCloseTo(118.75 - 95 + 40, 10)
+    // an entry that ends before it starts counts 0 amount, like in the report, but keeps its negative minutes
+    expect(summary.amount).toBeCloseTo(118.75 + 40, 10)
   })
 
   test('leaves a running entry out, whatever it carries', () => {
@@ -85,7 +86,8 @@ describe('summarize with rounded hours (billed_hours and billed_amount from the 
 
     // 65 min and 20 min at their project's rate, exact
     expect(summary.minutes).toBe(65 + 20)
-    expect(summary.amount).toBeCloseTo((65 / 60) * 95 + (20 / 60) * 80, 10)
+    // 65 min x 95.00 / 60 = 102.92 and 20 min x 80.00 / 60 = 26.67, each rounded to cents
+    expect(summary.amount).toBeCloseTo(102.92 + 26.67, 10)
   })
 })
 
@@ -132,7 +134,7 @@ describe('summarize with projects missing a rate', () => {
 })
 
 describe('summarize with a customer with mixed entries', () => {
-  test('adds rounded and exact entries of one project: billed amounts plus exact hours x rate', () => {
+  test('adds rounded and exact entries of one project: billed amounts plus exact minutes x rate / 60', () => {
     const mixed = [
       { id: 1, project_id: 7, start_time: '2026-09-21T09:00:00', end_time: '2026-09-21T10:05:00', billed_hours: '1.25', billed_amount: '118.75' },
       { id: 2, project_id: 7, start_time: '2026-09-22T09:00:00', end_time: '2026-09-22T10:00:00', billed_hours: null, billed_amount: null },
@@ -171,5 +173,51 @@ describe('summarize in whole minutes', () => {
     const short = { id: 1, project_id: 7, start_time: '2026-09-21T09:00:00', end_time: '2026-09-21T09:00:20' }
 
     expect(summarize([short], project)).toMatchObject({ minutes: 0, projects: [] })
+  })
+})
+
+describe('summarize amounts without a rounding rule', () => {
+  const at = (id, projectId, minutes) => ({
+    id, project_id: projectId, start_time: '2026-09-21T09:00:00', end_time: new Date(new Date(2026, 8, 21, 9, 0).getTime() + minutes * 60000).toISOString(),
+  })
+  const priced = [{ id: 7, name: 'Website', hourly_rate: '95.00' }, { id: 10, name: 'App', hourly_rate: '33.33' }, { id: 11, name: 'Pflege', hourly_rate: '99.99' }]
+
+  test('the case of the issue: 1:05 h at 95.00 per hour is 102.92, not 102.60', () => {
+    const summary = summarize([at(1, 7, 65)], priced)
+
+    expect(summary.minutes).toBe(65)
+    expect(summary.amount).toBeCloseTo(102.92, 10)
+  })
+
+  test('each entry is rounded to cents, then added: 7 and 13 minutes at 99.99 are 11.67 + 21.66, not 33.33 of the sum', () => {
+    // the backend test "the Dashboard and the report agree" (tests/amounts.test.js) uses the same entries: 10292 + 1111 + 1167 + 2166 cents
+    const summary = summarize([at(1, 7, 65), at(2, 10, 20), at(3, 11, 7), at(4, 11, 13)], priced)
+
+    expect(summary.amount).toBeCloseTo(147.36, 10)
+    expect(summary.projects.map((p) => [p.project.name, p.amount.toFixed(2)])).toEqual([['Website', '102.92'], ['App', '11.11'], ['Pflege', '33.33']])
+  })
+
+  test('half a cent rounds up per entry: three minutes at 0.50 per hour are 3 cents each, 6 for two entries', () => {
+    const cheap = [{ id: 7, name: 'Billig', hourly_rate: '0.50' }]
+
+    expect(summarize([at(1, 7, 3), at(2, 7, 3)], cheap).amount).toBeCloseTo(0.06, 10)
+  })
+
+  test('an entry that ends before it starts has no amount but keeps its negative minutes', () => {
+    const summary = summarize([at(1, 7, 90), at(2, 7, -60)], priced)
+
+    expect(summary.amount).toBeCloseTo(142.5, 10)
+    expect(summary.minutes).toBe(30)
+  })
+
+  test('an entry of 29 seconds has no amount and no minutes, one of 30 seconds counts a minute', () => {
+    const second = (end) => ({ id: 1, project_id: 7, start_time: '2026-09-21T09:00:00', end_time: end })
+
+    expect(summarize([second('2026-09-21T09:00:29')], priced).projects).toEqual([])
+    expect(summarize([second('2026-09-21T09:00:30')], priced).amount).toBeCloseTo(1.58, 10)
+  })
+
+  test('a project without a rate counts 0', () => {
+    expect(summarize([at(1, 7, 60)], [{ id: 7, name: 'Gratis', hourly_rate: null }]).amount).toBe(0)
   })
 })
