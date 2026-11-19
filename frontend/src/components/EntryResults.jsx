@@ -3,6 +3,7 @@ import { Link } from 'react-router'
 import { Plural, Trans, useLingui } from '@lingui/react/macro'
 import { formatClock, formatDay, minutesBetween, minutesOfHours } from '../format'
 import Duration from './Duration'
+import ResumeButton, { ResumeHints } from './ResumeButton'
 import { trackingPath } from '../routes'
 import { ui } from '../ui'
 
@@ -13,7 +14,8 @@ const cell = 'px-3 py-1.5 border-b border-line-soft max-sm:block max-sm:border-b
 // The result of a search: a status line, the entries (a table, cards on narrow screens) and Show more.
 // results: { entries, total, hours } or null before the first answer. The status line is the only live region and
 // shows the loaded results, so it changes once per answer and not while loading.
-function EntryResults({ results, busy, loadingMore, onShowMore }) {
+// resume: see ResumeButton; the button sits before Open.
+function EntryResults({ results, busy, loadingMore, onShowMore, resume }) {
   const { t, i18n } = useLingui()
   const headingId = useId()
   const list = useRef(null)
@@ -86,13 +88,16 @@ function EntryResults({ results, busy, loadingMore, onShowMore }) {
                       {entry.description || <span className="text-muted"><Trans>No description</Trans></span>}
                     </td>
                     <td className={`${cell} max-sm:pt-2 sm:text-right`}>
-                      <Link
-                        to={trackingPath(entry.customer_id, entry.project_id)}
-                        className={`${ui.buttonSecondary} min-h-[2.75rem] min-w-[5rem] whitespace-nowrap`}
-                      >
-                        <Trans>Open</Trans>{' '}
-                        <span className="sr-only"><Trans>in Time tracking</Trans>: {customerName}, {day}</span>
-                      </Link>
+                      <div className="flex items-center gap-1 sm:justify-end">
+                        <ResumeButton entry={entry} projectName={entry.project_name} resume={resume} />
+                        <Link
+                          to={trackingPath(entry.customer_id, entry.project_id)}
+                          className={`${ui.buttonSecondary} min-h-[2.75rem] min-w-[5rem] whitespace-nowrap`}
+                        >
+                          <Trans>Open</Trans>{' '}
+                          <span className="sr-only"><Trans>in Time tracking</Trans>: {customerName}, {day}</span>
+                        </Link>
+                      </div>
                     </td>
                   </tr>
                 )
@@ -101,6 +106,8 @@ function EntryResults({ results, busy, loadingMore, onShowMore }) {
           </table>
         </div>
       )}
+
+      {resume && <ResumeHints />}
 
       {results && hasMore && (
         <div className="flex flex-wrap items-center gap-4">

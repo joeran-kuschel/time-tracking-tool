@@ -1,3 +1,4 @@
+import { createRef } from 'react'
 import { describe, expect, test, vi } from 'vitest'
 import { render, screen } from '../support/render'
 import userEvent from '@testing-library/user-event'
@@ -7,6 +8,13 @@ import RunningTimer from '@/components/RunningTimer'
 const running = { id: 42, project_name: 'Website', customer_name: 'Muster GmbH', start_time: new Date().toISOString() }
 
 describe('RunningTimer', () => {
+  test('gives the Stop button to the ref it is passed', () => {
+    const stopRef = createRef()
+    render(<RunningTimer entry={running} onStop={vi.fn()} stopRef={stopRef} />)
+
+    expect(stopRef.current).toBe(screen.getByRole('button', { name: 'Stop Timer' }))
+  })
+
   test('shows the project, the customer and the elapsed time', () => {
     render(<RunningTimer entry={running} onStop={vi.fn()} />)
 

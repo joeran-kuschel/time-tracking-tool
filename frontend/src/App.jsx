@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { Link, Route, Routes, useLocation } from 'react-router'
 import { ClockIcon } from '@heroicons/react/24/outline'
 import { msg } from '@lingui/core/macro'
@@ -59,14 +59,30 @@ function App({ onLogout, logoutError, focusOnStart }) {
     if (await timer.stop()) main.current?.focus()
   }
 
+  // Resume from a list on another page (Dashboard, Entries): the entry's own project and customer are the running timer's.
+  // Focus moves to the header's Stop button once it is shown: the button that was clicked is disabled by then.
+  const focusStop = useRef(false)
+  const headerStop = useCallback((button) => {
+    if (button && focusStop.current) {
+      focusStop.current = false
+      button.focus()
+    }
+  }, [])
+  const resumeFromList = async (entry) => {
+    focusStop.current = true
+    const project = { id: entry.project_id, name: entry.project_name }
+    const customer = { id: entry.customer_id, name: entry.customer_name }
+    if (!(await timer.resume(entry, project, customer))) focusStop.current = false
+  }
+
   const announcedProject = timer.announcement?.projectName
   const announcementText = !timer.announcement ? ''
     : timer.announcement.kind === 'started' ? t`Timer started for ${announcedProject}` : t`Timer stopped`
 
   const elements = {
-    dashboard: <Dashboard timer={timer} />,
+    dashboard: <Dashboard timer={timer} onResume={resumeFromList} />,
     'time-tracking': <TimeTracking customers={customers} onCustomersChange={loadCustomers} timer={timer} settings={settings} />,
-    entries: <Entries customers={customers} />,
+    entries: <Entries customers={customers} timer={timer} onResume={resumeFromList} />,
     reports: <Reports customers={customers} settings={settings} />,
     settings: <Settings settings={settings} />,
   }
@@ -98,7 +114,7 @@ function App({ onLogout, logoutError, focusOnStart }) {
             ))}
           </nav>
           <div className="ml-auto flex min-w-0 flex-wrap items-center gap-3">
-            {timer.activeEntry && <RunningTimer entry={timer.activeEntry} onStop={stopFromHeader} busy={timer.busy} />}
+            {timer.activeEntry && <RunningTimer entry={timer.activeEntry} onStop={stopFromHeader} busy={timer.busy} stopRef={headerStop} />}
             <ThemeSwitcher />
             <LanguageSwitcher />
             <button onClick={onLogout} className={ui.buttonSecondary}><Trans>Log out</Trans></button>

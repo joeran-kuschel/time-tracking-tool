@@ -5,7 +5,8 @@ import { useElapsedTime } from '../hooks/useElapsedTime'
 // The running timer in the header, on every page: project, customer, elapsed time and a Stop button.
 // The button reads "Stop" and is named "Stop timer", to tell it apart from the Stop button of the timer panel.
 // busy: the stop is being sent; the button is marked disabled (useActiveEntry ignores further clicks).
-function RunningTimer({ entry, onStop, busy = false }) {
+// stopRef: a ref (or callback ref) for the Stop button, so App can move focus to it after a Resume.
+function RunningTimer({ entry, onStop, busy = false, stopRef }) {
   const { t } = useLingui()
   const elapsedTime = useElapsedTime(entry.start_time)
 
@@ -22,6 +23,7 @@ function RunningTimer({ entry, onStop, busy = false }) {
       <span className="font-mono text-sm font-medium">{elapsedTime}</span>
       <button
         type="button"
+        ref={stopRef}
         onClick={onStop}
         aria-disabled={busy}
         className="aria-disabled:opacity-70 inline-flex min-h-[2rem] shrink-0 items-center gap-1.5 rounded-full bg-danger px-3.5 text-sm font-semibold text-on-fill hover:bg-danger-dark"

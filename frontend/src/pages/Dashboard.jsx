@@ -20,7 +20,8 @@ import { ui } from '../ui'
 // The start page: track time, the month's figures, chart and billing, and the latest entries.
 // Everything comes from one request (GET /api/dashboard); the sums are calculated here (dashboard.js).
 // Its links open the Time tracking page for a customer and project and the Reports page.
-function Dashboard({ timer }) {
+// onResume(entry): runs a recent entry on again (App); the buttons are disabled while a timer runs.
+function Dashboard({ timer, onResume }) {
   const [data, setData] = useState(null)
   const [run, error] = useAction()
   const { i18n } = useLingui()
@@ -97,7 +98,7 @@ function Dashboard({ timer }) {
               lastMonthReports={data.lastMonthReports}
               rounding={rounding}
             />
-            <RecentEntries entries={data.recent} />
+            <RecentEntries entries={data.recent} resume={{ onResume, timerRunning: Boolean(timer.activeEntry), busy: timer.busy }} />
           </div>
         </>
       )}
