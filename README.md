@@ -99,10 +99,10 @@ kubectl apply -f k8s/network-policy-backend.yaml
 
 Once per cluster, install the ingress controller first and add `time-tracking.local` to `/etc/hosts`, see `k8s/README.md`. `setup-tls.sh` needs `mkcert` (`brew install mkcert`) and creates the certificate for HTTPS.
 
-After building new images:
+After building new images, import them, restart the deployments and remove the old copies from the node in one step (details and the free space of the node: `k8s/README.md`):
 
 ```bash
-kubectl -n time-tracking rollout restart deployment/backend deployment/frontend
+./k8s/update-images.sh
 ```
 
 **Warning:** Docker Desktop opens ports 80 and 443 on all network interfaces. Anyone on the same network can reach the login page; the API answers `401` without a login. Details and firewall: `k8s/README.md`.
