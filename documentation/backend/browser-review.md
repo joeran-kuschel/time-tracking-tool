@@ -51,6 +51,7 @@ address). The cluster's backend can't be used for this: it only allows requests 
 
 5. Start the frontend: `frontend-dev` in `.claude/launch.json` (`preview_start`). `.claude/launch.json` is not in git,
    so a backend entry for step 4 can be added to it locally.
+   The dev server listens on `localhost` only (`server.host` in `frontend/vite.config.js`), so other devices on the network cannot open it, and `http://127.0.0.1:5173` does not work either. To reach it from elsewhere on purpose, for example from a container, start Vite with `--host 0.0.0.0`.
 6. Log in with the test user and check the change, including the keyboard, the language switch and the dark theme.
 
 ## Screenshots for the documentation
