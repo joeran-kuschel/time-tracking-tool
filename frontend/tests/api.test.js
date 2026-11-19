@@ -67,6 +67,7 @@ describe('api', () => {
     ['updateTimeEntry', [5, { endTime: 'e', startTime: 's' }], '/time-entries/5', 'PATCH', { endTime: 'e', startTime: 's' }],
     ['deleteTimeEntry', [5], '/time-entries/5', 'DELETE', undefined],
     ['createTimeEntry', [7, 's', 'Konzept', 'e'], '/time-entries', 'POST', { projectId: 7, startTime: 's', description: 'Konzept', endTime: 'e' }],
+    ['resumeTimeEntry', [5], '/time-entries/5/resume', 'POST', undefined],
     ['setReportStatus', [1, 8, 2026, 'sent'], '/reports/customer/1/status', 'PUT', { month: 8, year: 2026, status: 'sent' }],
     ['getSettings', [], '/settings', 'GET', undefined],
     ['updateSettings', [{}], '/settings', 'PUT', {}],

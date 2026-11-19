@@ -5,7 +5,7 @@ import { api, ApiError } from '@/api'
 
 vi.mock('@/api', async (importOriginal) => ({
   ...(await importOriginal()),
-  api: { getActiveEntry: vi.fn(), createTimeEntry: vi.fn(), stopTimeEntry: vi.fn() },
+  api: { getActiveEntry: vi.fn(), createTimeEntry: vi.fn(), resumeTimeEntry: vi.fn(), stopTimeEntry: vi.fn() },
 }))
 
 const project = { id: 7, name: 'Website' }
@@ -95,6 +95,60 @@ describe('useActiveEntry', () => {
     expect(result.current.announcement).toBeNull()
     expect(result.current.error).toBe('Timer konnte nicht gestartet werden. Es läuft bereits ein Timer.')
     expect(result.current.activeEntry).toEqual(running)
+  })
+
+  describe('resume', () => {
+    const finished = { id: 5, project_id: 7, description: 'Konzept', start_time: '2026-09-21T08:00:00Z', end_time: '2026-09-21T09:00:00Z' }
+    const customer = { id: 1, name: 'Muster GmbH' }
+
+    test('runs the finished entry on, without creating a new one, and announces the start', async () => {
+      api.getActiveEntry.mockResolvedValue(null)
+      api.resumeTimeEntry.mockResolvedValue({ ...finished, end_time: null })
+      const { result } = await renderLoaded()
+
+      await act(() => result.current.resume(finished, project, customer))
+
+      expect(api.resumeTimeEntry).toHaveBeenCalledWith(5)
+      expect(api.createTimeEntry).not.toHaveBeenCalled()
+      expect(result.current.activeEntry).toMatchObject({ id: 5, end_time: null, project_name: 'Website', customer_name: 'Muster GmbH' })
+      expect(result.current.announcement).toEqual({ kind: 'started', projectName: 'Website' })
+    })
+
+    test('sends only one request for a double click', async () => {
+      api.getActiveEntry.mockResolvedValue(null)
+      let answer
+      api.resumeTimeEntry.mockReturnValue(new Promise((resolve) => { answer = resolve }))
+      const { result } = await renderLoaded()
+
+      let first, second
+      act(() => { first = result.current.resume(finished, project, customer); second = result.current.resume(finished, project, customer) })
+      answer({ ...finished, end_time: null })
+      await act(async () => { await Promise.all([first, second]) })
+
+      expect(api.resumeTimeEntry).toHaveBeenCalledTimes(1)
+    })
+
+    test('shows the error and keeps no timer when it fails', async () => {
+      api.getActiveEntry.mockResolvedValue(null)
+      api.resumeTimeEntry.mockRejectedValue(new ApiError(500, 'boom'))
+      const { result } = await renderLoaded()
+
+      await act(() => result.current.resume(finished, project, customer))
+
+      expect(result.current.error).toBe('Timer konnte nicht fortgesetzt werden. Bitte versuche es erneut.')
+      expect(result.current.activeEntry).toBeNull()
+    })
+
+    test('shows the other running timer when the backend answers 409', async () => {
+      api.getActiveEntry.mockResolvedValueOnce(null).mockResolvedValue(running)
+      api.resumeTimeEntry.mockRejectedValue(new ApiError(409, 'A timer is already running'))
+      const { result } = await renderLoaded()
+
+      await act(() => result.current.resume(finished, project, customer))
+
+      expect(result.current.error).toBe('Timer konnte nicht fortgesetzt werden. Es läuft bereits ein Timer.')
+      expect(result.current.activeEntry).toEqual(running)
+    })
   })
 
   test('stop ends the active entry', async () => {

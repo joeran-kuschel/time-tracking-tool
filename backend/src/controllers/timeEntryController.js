@@ -102,6 +102,36 @@ exports.update = async (req, res) => {
   }
 };
 
+// Starts a finished entry again (no body): the same entry runs on and its end time is cleared, so the time since its
+// end counts as work time. 409 while a timer runs (this one included).
+exports.resume = async (req, res) => {
+  try {
+    const entry = await TimeEntry.getById(req.params.id);
+    if (!entry) {
+      return res.status(404).json({ error: 'Time entry not found' });
+    }
+    if (entry.end_time === null) {
+      return res.status(409).json({ error: 'This timer is already running' });
+    }
+    if (await TimeEntry.getActive()) {
+      return res.status(409).json(TIMER_RUNNING);
+    }
+
+    const resumed = await TimeEntry.resume(req.params.id);
+    if (!resumed) {
+      return res.status(409).json({ error: 'This timer is already running' });
+    }
+    res.json(resumed);
+  } catch (err) {
+    // Another start won the race: the database refuses the second running timer
+    if (err.code === UNIQUE_VIOLATION) {
+      return res.status(409).json(TIMER_RUNNING);
+    }
+    console.error(err);
+    res.status(500).json({ error: 'Failed to resume time entry' });
+  }
+};
+
 exports.getActive = async (req, res) => {
   try {
     const entry = await TimeEntry.getActive();

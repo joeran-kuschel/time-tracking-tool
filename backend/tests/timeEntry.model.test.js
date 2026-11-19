@@ -452,3 +452,37 @@ describe('the one_running_timer index', () => {
     await expect(TimeEntry.create(projectId, '2026-09-21T10:00:00Z', null, 'neu')).resolves.toMatchObject({ description: 'neu' });
   });
 });
+
+describe('TimeEntry.resume', () => {
+  let projectId;
+
+  beforeEach(async () => {
+    mockPool = createTestPool();
+    projectId = await createProject();
+  });
+
+  test('clears the end time and keeps the start, project and description', async () => {
+    const entry = await TimeEntry.create(projectId, '2026-09-21T08:00:00Z', '2026-09-21T09:00:00Z', 'Konzept');
+
+    const resumed = await TimeEntry.resume(entry.id);
+
+    expect(resumed).toMatchObject({ id: entry.id, project_id: projectId, description: 'Konzept', end_time: null });
+    expect(new Date(resumed.start_time).toISOString()).toBe('2026-09-21T08:00:00.000Z');
+    expect((await TimeEntry.getActive()).id).toBe(entry.id);
+  });
+
+  test('answers undefined for an unknown entry and for one that already runs', async () => {
+    const running = await TimeEntry.create(projectId, '2026-09-21T08:00:00Z', null, 'läuft');
+
+    expect(await TimeEntry.resume(running.id)).toBeUndefined();
+    expect(await TimeEntry.resume(999)).toBeUndefined();
+  });
+
+  test('is refused by the database while another timer runs, and changes nothing', async () => {
+    const finished = await TimeEntry.create(projectId, '2026-09-20T08:00:00Z', '2026-09-20T09:00:00Z', 'fertig');
+    await TimeEntry.create(projectId, '2026-09-21T08:00:00Z', null, 'läuft');
+
+    await expect(TimeEntry.resume(finished.id)).rejects.toMatchObject({ code: '23505' });
+    expect((await TimeEntry.getById(finished.id)).end_time).not.toBeNull();
+  });
+});

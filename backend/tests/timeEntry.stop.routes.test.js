@@ -217,3 +217,35 @@ describe('times with a UTC offset', () => {
     expect(response.status).toBe(400);
   });
 });
+
+describe('POST /api/time-entries/:id/resume', () => {
+  const resume = (id = entryId) => fetch(`${baseUrl}/api/time-entries/${id}/resume`, { method: 'POST', headers: LOGGED_IN });
+
+  test('reopens a finished entry, and the timer shows it as the running one', async () => {
+    await mockPool.query("UPDATE time_entries SET end_time = '2026-09-21 09:00:00', description = 'Konzept' WHERE id = $1", [entryId]);
+
+    const response = await resume();
+    const active = await (await fetch(`${baseUrl}/api/time-entries/active`, { headers: LOGGED_IN })).json();
+
+    expect(response.status).toBe(200);
+    expect(await response.json()).toMatchObject({ id: entryId, end_time: null, description: 'Konzept' });
+    expect(active).toMatchObject({ id: entryId, project_name: 'Website', customer_name: 'Muster GmbH' });
+  });
+
+  test('answers 409 while a timer runs and 404 for an unknown entry', async () => {
+    const finished = (await mockPool.query(
+      "INSERT INTO time_entries (project_id, start_time, end_time) VALUES ($1, '2026-09-20 08:00:00', '2026-09-20 09:00:00') RETURNING id",
+      [projectId]
+    )).rows[0].id;
+
+    expect((await resume(finished)).status).toBe(409);
+    expect((await resume(entryId)).status).toBe(409);
+    expect((await resume(999)).status).toBe(404);
+  });
+
+  test('needs a login', async () => {
+    const response = await fetch(`${baseUrl}/api/time-entries/${entryId}/resume`, { method: 'POST' });
+
+    expect(response.status).toBe(401);
+  });
+});

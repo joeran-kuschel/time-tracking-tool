@@ -113,6 +113,11 @@ See [Timer](timer.md).
   soon as the timer starts, also when it is started or stopped from the header. It can't be edited or deleted; stop
   the timer first.
 
+### Resuming an entry
+
+**Resume** (*Fortsetzen*), the play button before **Edit** on a finished entry, runs that entry on again as the
+running timer. The time since its end counts as work time. It is disabled while a timer runs. Details: [Timer](timer.md#resuming-an-activity).
+
 ### Adding time manually
 
 **Add time** (*Zeit nachtragen*) opens a dialog: project, date, start, end and an optional description. The date starts

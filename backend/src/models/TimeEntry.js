@@ -56,6 +56,18 @@ class TimeEntry {
     return result.rows[0];
   }
 
+  // Reopens a finished entry: it runs again, with its start and description unchanged, so the time since its end
+  // counts as work time. Answers the entry, or undefined when it is unknown or already running. The one_running_timer
+  // index refuses it (code 23505) while another timer runs.
+  static async resume(id) {
+    const result = await pool.query(
+      `UPDATE time_entries SET end_time = NULL, updated_at = CURRENT_TIMESTAMP
+       WHERE id = $1 AND end_time IS NOT NULL RETURNING *`,
+      [id]
+    );
+    return result.rows[0];
+  }
+
   static async getById(id) {
     const result = await pool.query('SELECT * FROM time_entries WHERE id = $1', [id]);
     return result.rows[0];

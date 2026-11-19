@@ -5,7 +5,7 @@ import { useAction } from './useAction'
 
 // The running timer, loaded from the backend so it survives reloads and page switches.
 // announcement tells screen readers what the last start or stop did, wherever it was triggered:
-// { kind: 'started', projectName } or { kind: 'stopped' }.
+// { kind: 'started', projectName } (also for a resumed entry) or { kind: 'stopped' }.
 // busy is true while a start or stop is being sent; clicks in that time do nothing, so a double click
 // can't start two timers.
 export function useActiveEntry() {
@@ -38,13 +38,10 @@ export function useActiveEntry() {
     }
   }
 
+  // Runs a call that starts a timer (a new entry or a resumed one) and shows the running entry.
   // customer: the project's customer, shown next to the running timer
-  const start = (project, description, customer) => exclusive(async () => {
-    const entry = await run(
-      () => api.createTimeEntry(project.id, new Date().toISOString(), description),
-      msg`Timer could not be started.`,
-      { 409: msg`A timer is already running.` }
-    )
+  const begin = (call, failed, project, customer) => exclusive(async () => {
+    const entry = await run(call, failed, { 409: msg`A timer is already running.` })
     if (entry) {
       setActiveEntry({ ...entry, project_name: project.name, customer_id: customer?.id, customer_name: customer?.name })
       setAnnouncement({ kind: 'started', projectName: project.name })
@@ -55,6 +52,16 @@ export function useActiveEntry() {
     if (running) setActiveEntry(running)
     return undefined
   })
+
+  const start = (project, description, customer) => begin(
+    () => api.createTimeEntry(project.id, new Date().toISOString(), description),
+    msg`Timer could not be started.`, project, customer
+  )
+
+  // Runs a finished entry on again (its own entry, not a new one)
+  const resume = (entry, project, customer) => begin(
+    () => api.resumeTimeEntry(entry.id), msg`Timer could not be resumed.`, project, customer
+  )
 
   const stop = () => exclusive(async () => {
     const stopped = await run(
@@ -68,5 +75,5 @@ export function useActiveEntry() {
     return stopped
   })
 
-  return { activeEntry, announcement, busy, start, stop, error }
+  return { activeEntry, announcement, busy, start, resume, stop, error }
 }

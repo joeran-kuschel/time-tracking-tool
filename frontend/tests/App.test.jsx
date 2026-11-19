@@ -20,6 +20,7 @@ vi.mock('@/api', async (importOriginal) => ({
     deleteProject: vi.fn(),
     stopTimeEntry: vi.fn(),
     createTimeEntry: vi.fn(),
+    resumeTimeEntry: vi.fn(),
     updateCustomer: vi.fn(),
     deleteCustomer: vi.fn(),
     getDashboard: vi.fn(),
@@ -193,6 +194,57 @@ describe('App', () => {
     expect(screen.getByRole('status')).toHaveTextContent('Timer gestartet für Website')
     expect(screen.getByRole('button', { name: /^Muster GmbH\s*, Timer läuft$/, pressed: true })).toBeInTheDocument()
     await waitFor(() => expect(api.getCustomerTimeEntries).toHaveBeenCalledTimes(2))
+  })
+
+  describe('Resume on an entry', () => {
+    const past = { id: 5, project_id: 7, project_name: 'Website', description: 'Login reparieren', start_time: '2026-09-21T08:00:00Z', end_time: '2026-09-21T09:30:00Z' }
+
+    async function openEntries() {
+      api.getCustomers.mockResolvedValue([{ id: 1, name: 'Muster GmbH' }])
+      api.getCustomerTimeEntries.mockResolvedValue([past])
+      await renderTimeTracking()
+      await userEvent.click(await screen.findByRole('button', { name: 'Muster GmbH' }))
+      return screen.findByRole('button', { name: 'Fortsetzen: Website, Login reparieren' })
+    }
+
+    test('runs the same entry on, announces it and moves focus to Stop', async () => {
+      api.resumeTimeEntry.mockResolvedValue({ ...past, end_time: null })
+      await userEvent.click(await openEntries())
+
+      expect(api.resumeTimeEntry).toHaveBeenCalledWith(5)
+      expect(api.createTimeEntry).not.toHaveBeenCalled()
+      expect(await runningTimer()).toHaveTextContent('Website · Muster GmbH')
+      expect(screen.getByRole('status')).toHaveTextContent('Timer gestartet für Website')
+      await waitFor(() => expect(screen.getByRole('button', { name: 'Stop' })).toHaveFocus())
+      expect(await screen.findByRole('button', { name: 'Fortsetzen: Website, Login reparieren' })).toHaveAttribute('aria-disabled', 'true')
+    })
+
+    test('reloads the entries, so the resumed entry shows as running without buttons', async () => {
+      api.resumeTimeEntry.mockResolvedValue({ ...past, end_time: null })
+      const button = await openEntries()
+      api.getCustomerTimeEntries.mockResolvedValue([{ ...past, end_time: null }])
+      await userEvent.click(button)
+
+      await runningTimer()
+      await waitFor(() => expect(screen.queryByRole('button', { name: 'Fortsetzen: Website, Login reparieren' })).not.toBeInTheDocument())
+      expect(screen.queryByRole('button', { name: /^Eintrag vom .* löschen$/ })).not.toBeInTheDocument()
+    })
+
+    test('shows an error and starts nothing when the start fails', async () => {
+      api.resumeTimeEntry.mockRejectedValue(new ApiError(500, 'boom'))
+      await userEvent.click(await openEntries())
+
+      expect(await screen.findByRole('alert')).toHaveTextContent('Timer konnte nicht fortgesetzt werden.')
+      expect(screen.queryByRole('region', { name: 'Laufender Timer' })).not.toBeInTheDocument()
+    })
+
+    test('a double click sends one request', async () => {
+      api.resumeTimeEntry.mockResolvedValue({ ...past, end_time: null })
+      await userEvent.dblClick(await openEntries())
+
+      await runningTimer()
+      expect(api.resumeTimeEntry).toHaveBeenCalledTimes(1)
+    })
   })
 
   test('the month summary counts the rounded hours and names the rule, while the entry list stays exact', async () => {
