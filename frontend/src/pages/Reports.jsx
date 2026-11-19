@@ -13,6 +13,7 @@ import Duration from '../components/Duration'
 import { forgetStoredShowAmounts } from '../reportOptions'
 import { idFromParam, periodFromParam, reportPath } from '../routes'
 import { roundingNote } from '../rounding'
+import { languageName } from '../reportLanguage'
 import NotFound from './NotFound'
 import { ui } from '../ui'
 
@@ -75,6 +76,7 @@ function Reports({ customers, settings }) {
   const customerFieldId = useId()
   const statusFieldId = useId()
   const amountsFieldId = useId()
+  const languageNoteId = useId()
   const monthLabelId = useId()
   const reportHeadingId = useId()
 
@@ -142,6 +144,12 @@ function Reports({ customers, settings }) {
   const minutesByProject = new Map(report ? projectHours(report.entries).map((p) => [p.id, p.minutes]) : [])
   // The sentence that names the rounding rule: only when the hours of this report are rounded and the setting says so
   const roundingSentence = settings.values?.showRoundingNote ? roundingNote(report?.rounding) : null
+  // Which language the PDF and the CSV will use: the customer's own report language, else the one of the app. The screen
+  // always follows the app.
+  const ownLanguage = customer?.report_language
+  const languageNote = ownLanguage
+    ? t`The PDF and CSV are in ${languageName(i18n, ownLanguage)} (the report language of this customer).`
+    : t`The PDF and CSV are in the language of the app (${languageName(i18n, i18n.locale)}).`
 
   return (
     <div className="mx-auto flex w-full max-w-5xl flex-col gap-6 p-4 sm:px-8 sm:py-9">
@@ -204,17 +212,19 @@ function Reports({ customers, settings }) {
 
         {hasEntries && (
           <div className="ml-auto flex flex-wrap gap-3">
-            <button type="button" onClick={handleDownloadCSV} aria-disabled={downloading} className={`${ui.buttonSecondary} min-h-[2.75rem] aria-disabled:opacity-70`}>
+            <button type="button" onClick={handleDownloadCSV} aria-disabled={downloading} aria-describedby={languageNoteId} className={`${ui.buttonSecondary} min-h-[2.75rem] aria-disabled:opacity-70`}>
               <ArrowDownTrayIcon aria-hidden="true" className="h-5 w-5" />
               <Trans>Download CSV</Trans>
             </button>
-            <button type="button" onClick={handleDownloadPDF} aria-disabled={downloading} className={`${ui.buttonPrimary} min-h-[2.75rem] aria-disabled:opacity-70`}>
+            <button type="button" onClick={handleDownloadPDF} aria-disabled={downloading} aria-describedby={languageNoteId} className={`${ui.buttonPrimary} min-h-[2.75rem] aria-disabled:opacity-70`}>
               <ArrowDownTrayIcon aria-hidden="true" className="h-5 w-5" />
               <Trans>Download PDF</Trans>
             </button>
           </div>
         )}
       </div>
+
+      {hasEntries && <p id={languageNoteId} className="-mt-3 text-sm text-muted sm:text-right">{languageNote}</p>}
 
       {!settings.values && (settings.error || retryingSettings) && (
         <div className="flex flex-wrap items-center gap-4">

@@ -11,7 +11,7 @@ All paths are under `/api/customers`.
 | `GET` | `/` | All customers, sorted by name |
 | `GET` | `/:id` | One customer, or `404` |
 | `POST` | `/` | Create a customer |
-| `PUT` | `/:id` | Replace name and email; set, change or remove the rounding rule if the body names it |
+| `PUT` | `/:id` | Replace name and email; set, change or remove the rounding rule and the report language if the body names them |
 | `DELETE` | `/:id` | Delete a customer |
 
 ## Fields
@@ -22,7 +22,19 @@ All paths are under `/api/customers`.
 | `name` | text, max. 255 | Required (`400` otherwise) |
 | `email` | text, max. 255 | Optional; missing or empty is stored as `null` |
 | `rounding_minutes`, `rounding_direction` | smallint, text | The customer's own [rounding rule](reports.md#rounding), see below; both `null` means the global setting (every customer until a rule is set) |
+| `report_language` | text | The language of the customer's PDF and CSV reports (`de` or `en`), see [Report language](#report-language); `null` means the language of the app (every customer until one is set) |
 | `created_at`, `updated_at` | timestamp | Set by the database; `updated_at` changes on `PUT` |
+
+## Report language
+
+`POST` and `PUT` take `reportLanguage`: `"de"` or `"en"` makes the customer's PDF and CSV files always come out in that
+language, `null` means the language of the app, which the download request names with `lang` (the default for every
+existing customer, so nothing changes with the migration). A body that does not mention `reportLanguage` keeps the
+stored value on `PUT` (and means `null` on `POST`); any other value answers `400` (`reportLanguage must be null … or one
+of: en, de`) and nothing is saved. The valid languages are `LOCALES` in `src/i18n.js`. Migration
+`011_customer_report_language.sql` adds the column with the named check `customers_report_language_check`
+(`NULL` or one of the languages); a migration that adds a language replaces it, and a test fails when the check and
+`LOCALES` disagree. How reports use it: [Reports API](reports.md#report-language).
 
 ## Rounding rule
 

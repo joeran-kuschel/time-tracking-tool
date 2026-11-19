@@ -5,7 +5,7 @@ import userEvent from '@testing-library/user-event'
 import { axe } from '../support/axe'
 import Reports from '@/pages/Reports'
 import { api, ApiError } from '@/api'
-import { switchLocale } from '@/i18n'
+import { activateLocale, switchLocale } from '@/i18n'
 import { useSettings } from '@/hooks/useSettings'
 
 vi.mock('@/api', async (importOriginal) => ({
@@ -41,13 +41,13 @@ function LocationDisplay() {
 }
 // The settings of App (useSettings); a test changes settings.values.showAmounts to set where the checkbox starts
 let settings
-const reportsPage = () => (
+const reportsPage = (customerList = customers) => (
   <>
-    <Routes><Route path="/reports/:customerId?/:yearMonth?" element={<Reports customers={customers} settings={settings} />} /></Routes>
+    <Routes><Route path="/reports/:customerId?/:yearMonth?" element={<Reports customers={customerList} settings={settings} />} /></Routes>
     <LocationDisplay />
   </>
 )
-const renderReports = (route = '/reports') => renderWithRouter(reportsPage(), { route })
+const renderReports = (route = '/reports', customerList = customers) => renderWithRouter(reportsPage(customerList), { route })
 const path = () => screen.getByTestId('path').textContent
 // A project line such as "Website · 1:30 h": the duration is its own element, so match the text of the whole list item
 const line = (text) => screen.getByText((_, element) => {
@@ -1453,6 +1453,103 @@ describe('Reports in whole minutes', () => {
     api.getMonthlyReport.mockResolvedValue({ entries: [entryOf(1, 65), entryOf(2, -30)], totalHours: '0.58' })
     const { container } = renderReports('/reports/1')
     await screen.findByText('E1')
+
+    expect(await axe(container)).toHaveNoViolations()
+  })
+})
+
+describe('Reports: the language of the downloads', () => {
+  const withLanguage = (language) => [{ id: 1, name: 'Muster GmbH', report_language: language }]
+  const note = (text) => screen.findByText(text)
+
+  afterEach(() => activateLocale('de'))
+
+  test('says which own report language the PDF and CSV of the customer have', async () => {
+    api.getMonthlyReport.mockResolvedValue(report)
+    renderReports('/reports/1', withLanguage('en'))
+
+    expect(await note('PDF und CSV sind auf Englisch (Berichtssprache dieses Kunden).')).toBeInTheDocument()
+  })
+
+  test('names German for a German customer', async () => {
+    api.getMonthlyReport.mockResolvedValue(report)
+    renderReports('/reports/1', withLanguage('de'))
+
+    expect(await note('PDF und CSV sind auf Deutsch (Berichtssprache dieses Kunden).')).toBeInTheDocument()
+  })
+
+  test('says that a customer without a language uses the language of the app, in the active language', async () => {
+    api.getMonthlyReport.mockResolvedValue(report)
+    renderReports('/reports/1', withLanguage(null))
+
+    expect(await note('PDF und CSV sind in der Sprache der App (Deutsch).')).toBeInTheDocument()
+
+    switchLocale('en')
+    expect(await note('The PDF and CSV are in the language of the app (English).')).toBeInTheDocument()
+  })
+
+  test('the note follows a language switch for a customer with an own language', async () => {
+    api.getMonthlyReport.mockResolvedValue(report)
+    renderReports('/reports/1', withLanguage('de'))
+    await note('PDF und CSV sind auf Deutsch (Berichtssprache dieses Kunden).')
+
+    switchLocale('en')
+
+    expect(await note('The PDF and CSV are in German (the report language of this customer).')).toBeInTheDocument()
+  })
+
+  test('a customer record without the field (undefined) uses the language of the app', async () => {
+    api.getMonthlyReport.mockResolvedValue(report)
+    renderReports('/reports/1', [{ id: 1, name: 'Muster GmbH' }])
+
+    expect(await note('PDF und CSV sind in der Sprache der App (Deutsch).')).toBeInTheDocument()
+  })
+
+  test('the note follows the customer chosen in the page', async () => {
+    api.getMonthlyReport.mockResolvedValue(report)
+    renderReports('/reports/1/2026-09', [{ id: 1, name: 'Muster GmbH', report_language: 'en' }, { id: 2, name: 'Neu AG', report_language: null }])
+    await note('PDF und CSV sind auf Englisch (Berichtssprache dieses Kunden).')
+
+    await userEvent.selectOptions(screen.getByLabelText('Kunde'), '2')
+
+    expect(await note('PDF und CSV sind in der Sprache der App (Deutsch).')).toBeInTheDocument()
+    expect(screen.queryByText(/Berichtssprache dieses Kunden/)).not.toBeInTheDocument()
+  })
+
+  test('describes both download buttons', async () => {
+    api.getMonthlyReport.mockResolvedValue(report)
+    renderReports('/reports/1', withLanguage('en'))
+    await note('PDF und CSV sind auf Englisch (Berichtssprache dieses Kunden).')
+
+    for (const name of ['PDF herunterladen', 'CSV herunterladen']) {
+      expect(screen.getByRole('button', { name })).toHaveAccessibleDescription('PDF und CSV sind auf Englisch (Berichtssprache dieses Kunden).')
+    }
+  })
+
+  test('the screen and its download request still follow the app language, the server applies the report language', async () => {
+    api.getMonthlyReport.mockResolvedValue(report)
+    api.downloadPDF.mockResolvedValue()
+    renderReports('/reports/1', withLanguage('en'))
+
+    await userEvent.click(await screen.findByRole('button', { name: 'PDF herunterladen' }))
+
+    expect(api.downloadPDF).toHaveBeenCalledWith(1, 9, 2026, 'de', false)
+    expect(await screen.findByRole('heading', { name: 'Abrechnung Muster GmbH – September 2026' })).toBeInTheDocument()
+  })
+
+  test('shows no note while there is nothing to download', async () => {
+    api.getMonthlyReport.mockResolvedValue({ entries: [], totalHours: '0.00' })
+    renderReports('/reports/1', withLanguage('en'))
+
+    await screen.findByRole('heading', { name: 'Abrechnung Muster GmbH – September 2026' })
+
+    expect(screen.queryByText(/PDF und CSV sind/)).not.toBeInTheDocument()
+  })
+
+  test('has no detectable accessibility violations', async () => {
+    api.getMonthlyReport.mockResolvedValue(report)
+    const { container } = renderReports('/reports/1', withLanguage('en'))
+    await note('PDF und CSV sind auf Englisch (Berichtssprache dieses Kunden).')
 
     expect(await axe(container)).toHaveNoViolations()
   })
