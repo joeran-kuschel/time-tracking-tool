@@ -67,7 +67,9 @@ async function loadReport(req, res) {
     return null;
   }
   // The report is about one customer, so it has one rule: the customer's own, else the global one
-  return { customer, entries: withBilledHours(stored, rounding), period, amounts, rounding: ruleOfCustomer(customer, rounding), showRoundingNote };
+  // The files come out in the customer's own report language, else in the language of the app (lang of the query)
+  const lang = customer.report_language ?? req.query.lang;
+  return { customer, entries: withBilledHours(stored, rounding), period, amounts, rounding: ruleOfCustomer(customer, rounding), showRoundingNote, lang };
 }
 
 // Sends a report file. contentDisposition escapes quotes and adds a UTF-8 file name for names like "Łódź".
@@ -80,11 +82,11 @@ function sendFile(res, { body, contentType, customer, period, lang, extension, t
 
 exports.generatePDF = async (req, res) => {
   try {
-    const { lang, inline } = req.query;
+    const { inline } = req.query;
     const report = await loadReport(req, res);
     if (!report) return;
 
-    const { customer, entries, period, amounts, rounding, showRoundingNote } = report;
+    const { customer, entries, period, amounts, rounding, showRoundingNote, lang } = report;
     const { month, year, timeZone } = period;
     // The rounded hours are always in the PDF; the sentence that names the rule only when the setting says so
     const pdfBuffer = await generateReportPDF(entries, { customerName: customer.name, month, year, locale: lang, timeZone, rounding: showRoundingNote ? rounding : null, ...(amounts && { amounts }) });
@@ -100,11 +102,10 @@ exports.generatePDF = async (req, res) => {
 // The same entries as the PDF, as a CSV file for spreadsheets
 exports.exportCsv = async (req, res) => {
   try {
-    const { lang } = req.query;
     const report = await loadReport(req, res);
     if (!report) return;
 
-    const { customer, entries, period, amounts } = report;
+    const { customer, entries, period, amounts, lang } = report;
     const table = reportRows(entries, { customerName: customer.name, locale: lang, timeZone: period.timeZone, ...(amounts && { amounts }) });
 
     sendFile(res, { body: toCsv(table, activateLocale(lang)), contentType: 'text/csv; charset=utf-8', customer, period, lang, extension: 'csv' });

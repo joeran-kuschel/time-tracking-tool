@@ -12,27 +12,33 @@ class Customer {
   }
 
   // rounding: the customer's own rounding rule { minutes, direction }, or null/undefined to use the global setting
-  static async create(name, email, rounding) {
+  // reportLanguage: 'de' or 'en' for reports always in that language, or null/undefined for the language of the app
+  static async create(name, email, rounding, reportLanguage) {
     const result = await pool.query(
-      'INSERT INTO customers (name, email, rounding_minutes, rounding_direction) VALUES ($1, $2, $3, $4) RETURNING *',
-      [name, email, rounding?.minutes ?? null, rounding?.direction ?? null]
+      `INSERT INTO customers (name, email, rounding_minutes, rounding_direction, report_language)
+       VALUES ($1, $2, $3, $4, $5) RETURNING *`,
+      [name, email, rounding?.minutes ?? null, rounding?.direction ?? null, reportLanguage ?? null]
     );
     return result.rows[0];
   }
 
   // rounding: undefined keeps the stored rule, null sets "use the global setting", { minutes, direction } sets an own rule
-  static async update(id, name, email, rounding) {
-    if (rounding === undefined) {
-      const result = await pool.query(
-        'UPDATE customers SET name = $1, email = $2, updated_at = CURRENT_TIMESTAMP WHERE id = $3 RETURNING *',
-        [name, email, id]
-      );
-      return result.rows[0];
+  // reportLanguage: undefined keeps the stored language, null sets "the language of the app", 'de' or 'en' sets it
+  static async update(id, name, email, rounding, reportLanguage) {
+    // Only what is given is changed. The column names are fixed here; the values are parameters.
+    const assignments = ['name = $1', 'email = $2'];
+    const values = [name, email];
+    if (rounding !== undefined) {
+      assignments.push(`rounding_minutes = $${values.length + 1}`, `rounding_direction = $${values.length + 2}`);
+      values.push(rounding?.minutes ?? null, rounding?.direction ?? null);
+    }
+    if (reportLanguage !== undefined) {
+      assignments.push(`report_language = $${values.length + 1}`);
+      values.push(reportLanguage);
     }
     const result = await pool.query(
-      `UPDATE customers SET name = $1, email = $2, rounding_minutes = $3, rounding_direction = $4, updated_at = CURRENT_TIMESTAMP
-       WHERE id = $5 RETURNING *`,
-      [name, email, rounding?.minutes ?? null, rounding?.direction ?? null, id]
+      `UPDATE customers SET ${assignments.join(', ')}, updated_at = CURRENT_TIMESTAMP WHERE id = $${values.length + 1} RETURNING *`,
+      [...values, id]
     );
     return result.rows[0];
   }

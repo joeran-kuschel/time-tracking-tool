@@ -139,6 +139,8 @@ October. Without `tz`, or with an unknown one, the month is taken in UTC.
   before translation. See [Translation](translation.md).
 - The file name follows the language too: `time-report-<customer>-<year>-<month>.pdf` or
   `abrechnung-<customer>-<year>-<month>.pdf`.
+- The language is the customer's own report language when it has one, see [Report language](#report-language); `lang`
+  is the fallback.
 - The `Content-Disposition` header is built with the `content-disposition` package: quotes are escaped, and names
   outside Latin-1 (`Łódź`, `€`) get an additional UTF-8 file name (`filename*=UTF-8''…`).
 - `404` if the customer doesn't exist or has no entries in the month.
@@ -208,3 +210,13 @@ row is a `draft`. The status is deleted with its customer.
 `tests/reportStatus.model.test.js`, `tests/pdfGenerator.test.js`, `tests/period.test.js`, `tests/timeEntry.model.test.js`,
 `tests/pdfGenerator.real.test.js`, `tests/reportController.test.js`, `tests/csv.test.js`, `tests/reportRows.test.js`,
 `tests/report.export.routes.test.js`, `tests/amounts.test.js`, `tests/rounding.test.js`.
+
+## Report language
+
+The PDF and the CSV of a customer come out in its **report language** (`customers.report_language`, `de` or `en`, see
+[Customers API](customers.md#report-language)) when it has one, whatever `lang` says: texts, column titles, month names,
+number and date formats, delimiter and the file name. A customer without one (`null`) uses `lang`, as before. The
+controller resolves it once in `loadReport` (`customer.report_language ?? req.query.lang`) and passes it to both
+formats, which still call `activateLocale` and translate synchronously, so two requests in different languages cannot
+mix. The JSON report (`GET /customer/:customerId?month=…`) has no language and is not affected. On screen the Reports
+page keeps following the app language and says which language the files will use, see [Reports page](../ui/reports.md).

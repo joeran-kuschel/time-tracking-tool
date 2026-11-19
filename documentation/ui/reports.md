@@ -25,8 +25,8 @@ The **Reports** page (German: **Berichte**) shows a customer's time entries of o
    - The choice the browser used to remember (`localStorage`, key `reportAmounts`) has no effect any more and is removed
      when the page opens.
    - What the screen shows: see [The report](#the-report).
-4. **Download PDF** downloads the same report as a PDF, in the language the UI currently uses, with or without amounts,
-   as the checkbox says. It is only shown when the month has entries.
+4. **Download PDF** downloads the same report as a PDF, in the customer's report language, or in the language the UI
+   currently uses if the customer has none (see below), with or without amounts, as the checkbox says. It is only shown when the month has entries.
    - The PDF is loaded in the background first: if that fails, the page stays and shows *PDF could not be downloaded.*
      (`role="alert"`) instead of replacing the app with the server's error.
    - The file keeps the name the backend gives it (`Content-Disposition`), e.g. `abrechnung-Muster GmbH-2026-9.pdf`.
@@ -34,7 +34,7 @@ The **Reports** page (German: **Berichte**) shows a customer's time entries of o
 5. **Download CSV** (German: **CSV herunterladen**), next to it, downloads the same entries as a CSV file for
    spreadsheets: date, start, end, customer, project, description and hours per entry, plus the hourly rate and the
    amount when the checkbox is ticked.
-   - The file follows the language: German uses `;` between the columns and a decimal comma (`1,50`), English uses `,`
+   - The file follows the report language (below): German uses `;` between the columns and a decimal comma (`1,50`), English uses `,`
      and a decimal point (`1.50`), so it opens correctly in Excel set to that language.
    - If a download fails, the page shows *CSV could not be downloaded.* (`role="alert"`). While a download runs, both
      buttons are marked disabled (`aria-disabled`) and ignore clicks, so only one download runs at a time.
@@ -96,6 +96,16 @@ API](../backend/reports.md#rounding). With **No rounding** (the default) the rep
 The Reports page does not calculate the rounding: the server sends `billed_hours` for each entry and the rule.
 
 ## Formats
+
+### Language of the downloads
+
+The customer's **Report language** ([Time tracking](time-tracking.md#customers)) decides the language of the PDF and the
+CSV. A line under the download buttons says which one a download will use, so the result is no surprise: *The PDF and CSV
+are in English (the report language of this customer).* (German: *PDF und CSV sind auf Englisch (Berichtssprache dieses
+Kunden).*), or, for a customer that follows the app, *The PDF and CSV are in the language of the app (German).* Both
+buttons are described by it (`aria-describedby`), and it follows a language switch. It is only shown when the month has
+entries, like the buttons. The page itself, the report on screen and the request still follow the app language; the
+server applies the report language ([Reports API](../backend/reports.md#report-language)).
 
 Dates, hours and amounts follow the language: `2.3.2026`, `1:30 h` and `142,50 €` in German, `3/2/2026`, `1:30 h`
 and `€142.50` in English.

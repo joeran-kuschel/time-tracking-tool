@@ -98,13 +98,15 @@ export const api = {
   // Customers
   getCustomers: () => request('/customers'),
 
-  // rounding: { roundingMinutes, roundingDirection } of the customer's own rounding rule (both null: the global
-  // setting, see customerRounding.js); without it the stored rule is kept (or, for a new customer, the global one is used)
-  createCustomer: (name, email, rounding) =>
-    request('/customers', { method: 'POST', body: { name, email, ...rounding } }),
+  // options: the optional fields of a customer, sent as they are. { roundingMinutes, roundingDirection } is the customer's
+  // own rounding rule (both null: the global setting, see customerRounding.js); { reportLanguage } is the language of its
+  // reports (null: the language of the app, see reportLanguage.js). A field that is left out keeps the stored value (for a
+  // new customer: the global rule, the language of the app).
+  createCustomer: (name, email, options) =>
+    request('/customers', { method: 'POST', body: { name, email, ...options } }),
 
-  updateCustomer: (id, name, email, rounding) =>
-    request(`/customers/${id}`, { method: 'PUT', body: { name, email, ...rounding } }),
+  updateCustomer: (id, name, email, options) =>
+    request(`/customers/${id}`, { method: 'PUT', body: { name, email, ...options } }),
 
   deleteCustomer: (id) => request(`/customers/${id}`, { method: 'DELETE' }),
 
