@@ -182,6 +182,23 @@ describe('settings', () => {
     expect(Settings.update).not.toHaveBeenCalled();
   });
 
+  test.each([[{ defaultHourlyRate: 80 }], [{ defaultHourlyRate: 0 }], [{ defaultHourlyRate: null }]])('PUT saves the default rate %j', async (change) => {
+    Settings.update.mockResolvedValue(change);
+
+    const response = await send('PUT', change);
+
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual(change);
+    expect(Settings.update).toHaveBeenCalledWith(change);
+  });
+
+  test.each([[-1], ['80'], [80.555], [1e8]])('PUT with the default rate %j answers 400 and saves nothing', async (value) => {
+    const response = await send('PUT', { defaultHourlyRate: value });
+
+    expect(response.status).toBe(400);
+    expect(Settings.update).not.toHaveBeenCalled();
+  });
+
   test('PUT with a valid and an unknown setting saves neither', async () => {
     const response = await send('PUT', { showAmounts: true, rounding: 15 });
 

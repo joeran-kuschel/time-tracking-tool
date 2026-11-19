@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest'
 import { i18n } from '@/i18n'
-import { formatAmount, formatClock, formatDay, formatRate, formatShare, entryMinutes, formatDuration, isoDuration, minutesBetween, minutesOfHours, roundMinutes } from '@/format'
+import { formatAmount, formatClock, formatDecimal, parseDecimal, formatDay, formatRate, formatShare, entryMinutes, formatDuration, isoDuration, minutesBetween, minutesOfHours, roundMinutes } from '@/format'
 
 describe('formats follow the language', () => {
   test('German', () => {
@@ -133,5 +133,46 @@ describe('entryMinutes', () => {
 
   test('ignores billed hours that are null', () => {
     expect(entryMinutes(entry({ billed_hours: null }))).toBe(90)
+  })
+})
+
+describe('formatDecimal and parseDecimal', () => {
+  test('show and read an amount in the format of the active language', () => {
+    i18n.activate('de')
+    expect(formatDecimal(i18n, 80)).toBe('80,00')
+    expect(formatDecimal(i18n, '95.5')).toBe('95,50')
+    expect(parseDecimal(i18n, '80,5')).toBe(80.5)
+    expect(parseDecimal(i18n, ' 80,25 ')).toBe(80.25)
+
+    i18n.activate('en')
+    expect(formatDecimal(i18n, 80)).toBe('80.00')
+    expect(formatDecimal(i18n, 1234.5)).toBe('1,234.50')
+    expect(parseDecimal(i18n, '80.5')).toBe(80.5)
+    expect(parseDecimal(i18n, '80')).toBe(80)
+  })
+
+  test('an empty text is null, 0 is a number', () => {
+    i18n.activate('en')
+    expect(parseDecimal(i18n, '')).toBeNull()
+    expect(parseDecimal(i18n, '   ')).toBeNull()
+    expect(parseDecimal(i18n, '0')).toBe(0)
+    expect(parseDecimal(i18n, '0.00')).toBe(0)
+  })
+
+  test.each([['abc'], ['-5'], ['+5'], ['8 0'], ['80.123'], ['1,234.50'], ['80,5'], ['.5'], ['5.'], ['1e3'], ['123456789'], ['80.']])(
+    'English does not read %j', (text) => {
+      i18n.activate('en')
+      expect(parseDecimal(i18n, text)).toBeUndefined()
+    }
+  )
+
+  test.each([['80.5'], ['1.234,50'], ['-5'], ['80,123'], [',5']])('German does not read %j', (text) => {
+    i18n.activate('de')
+    expect(parseDecimal(i18n, text)).toBeUndefined()
+  })
+
+  test('reads the largest rate the database holds', () => {
+    i18n.activate('en')
+    expect(parseDecimal(i18n, '99999999.99')).toBe(99999999.99)
   })
 })

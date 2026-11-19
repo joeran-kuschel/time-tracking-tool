@@ -11,6 +11,7 @@ header.
 | **Time and billing** (*Zeit und Abrechnung*) | **Show hourly rate and amounts in reports** (*Stundensatz und Beträge in Berichten anzeigen*) | off | The checkbox on the [Reports page](reports.md) starts from it; ticking it there changes only that visit. |
 | | **Round time entries** (*Zeiteinträge runden*) | no rounding | **No rounding**, **5 minutes**, **10 minutes**, **Quarter hour (15 minutes)**, **Half hour (30 minutes)** or **Hour (60 minutes)** (German: *5 Minuten*, *10 Minuten*, *Viertelstunde*, *Halbe Stunde*, *Stunde*): the hours of each entry are rounded in reports ([Reports](reports.md#rounded-hours)). |
 | | **Direction** (*Richtung*) | up | **Up** (*Aufrunden*) or **To the nearest** (*Auf- oder abrunden (nächstgelegene Stufe)*). Disabled while the step is *No rounding*, with a hint that says why. |
+| | **Default hourly rate for new projects (€)** (*Standard-Stundensatz für neue Projekte (€)*) | empty (no default) | The form for a new project on the [Time tracking](time-tracking.md) page starts with this rate, which stays editable there. Existing projects and the amounts of existing reports never change with it. |
 | | **Name the rounding rule in reports** (*Rundungsregel in Berichten nennen*) | off | Adds a sentence such as *Hours rounded up to quarter hours.* to the Reports page and the PDF. Disabled while the step is *No rounding*, with a hint that says why. |
 
 A customer can have its own rule (or none) in its form, which then wins over this setting
@@ -21,7 +22,7 @@ The group has a note: the rounding also applies to the reports of past months; P
 downloaded do not change. Stored entries are never changed, and the timer, the entry lists and the Entries search keep
 showing the exact times.
 
-Planned: a default rate and your details, each with its own issue. With no group at all the page says
+Planned: your details, with their own issue. With no group at all the page says
 *There are no options yet.*
 
 ## Groups and saving
@@ -33,8 +34,15 @@ Planned: a default rate and your details, each with its own issue. With no group
   `disabledWhen(values)` (from the current form values, so before saving) and a `disabledHint` that replaces its hint
   while it is disabled: a disabled select is described by the reason (`aria-describedby`).
 - **Fields:** `components/SettingField.jsx` renders an option with a visible label and an optional hint under it, which the
-  field is described by (`aria-describedby`). The types are `checkbox` and `select` (the value of a choice can be a string or a number); a new type (for example a number
-  field) is added there together with the first option that needs it.
+  field is described by (`aria-describedby`). The types are `checkbox`, `select` (the value of a choice can be a string or a number) and `decimal`; a new type is
+  added there together with the first option that needs it.
+- **Amount field (`decimal`):** a text field with the decimal keyboard (`inputmode="decimal"`), not `type="number"`, so
+  the number is shown and read in the format of the active language: `80,00` in German, `80.00` in English
+  (`formatDecimal` and `parseDecimal` in `src/format.js`). It accepts digits with one decimal separator of the language
+  and at most two decimals, no sign and no thousands separator; empty means no value (`null`). The page keeps the typed
+  text until **Save**. If it is not an amount, the field shows an error below it (*Enter an amount from 0 with up to two
+  decimals, for example 80,00.*), is marked `aria-invalid` and described by the error, receives the focus, and nothing is
+  saved, not even the other changes; typing in the field removes its error.
 - **One Save button:** the page has one **Save** button for all groups, and no autosave. Pressing it sends one
   `PUT /api/settings` with only the options that changed ([Settings API](../backend/settings.md)). A field changed and
   changed back is not a change.

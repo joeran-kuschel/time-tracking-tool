@@ -40,6 +40,23 @@ export function formatAmount(i18n, amount) {
   return i18n.number(Number(amount), { style: 'currency', currency: 'EUR' })
 }
 
+// A number with two decimals and no currency, as typed into a field: "80,00" / "80.00"
+export function formatDecimal(i18n, value) {
+  return i18n.number(Number(value), { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+}
+
+// Reads what formatDecimal shows: digits with at most one decimal separator of the active language and at most two
+// decimals (no sign, no thousands separator). '' is null (nothing entered), a valid text is its number, anything else is
+// undefined. The largest value is what the database holds for a rate (DECIMAL(10, 2)).
+export function parseDecimal(i18n, text) {
+  const trimmed = text.trim()
+  if (trimmed === '') return null
+  const separator = i18n.number(1.1, { minimumFractionDigits: 1 }).replace(/\d/g, '')[0]
+  const pattern = new RegExp(`^\\d{1,8}(?:\\${separator}\\d{1,2})?$`)
+  if (!pattern.test(trimmed)) return undefined
+  return Number(trimmed.replace(separator, '.'))
+}
+
 export function formatRate(i18n, rate) {
   return `${formatAmount(i18n, rate)}/h`
 }

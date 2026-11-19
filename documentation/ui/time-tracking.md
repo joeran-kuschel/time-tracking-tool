@@ -46,7 +46,9 @@ screens the sidebar sits above the main area (see [Design](design.md)).
   project still exists.
 - **Edit** (name, hourly rate) and **Delete** (with its time entries) appear at the end of the row for the selected
   project and work like for customers. After deleting, focus moves to the project row.
-- **New project** (dashed button at the end of the row) opens a dialog with name and hourly rate. The new project is
+- **New project** (dashed button at the end of the row) opens a dialog with name and hourly rate. The rate starts with the
+  **Default hourly rate for new projects** of the [Settings](settings.md) if there is one (empty otherwise) and stays
+  editable; the default is read each time the dialog opens and is not stored on the project until it is saved. The new project is
   added but not selected.
 
 ## Month summary

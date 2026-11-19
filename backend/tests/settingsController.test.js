@@ -127,6 +127,25 @@ describe('settingsController', () => {
     expect(Settings.update).not.toHaveBeenCalled();
   });
 
+  test.each([[0], [80], [95.5], [null]])('update saves defaultHourlyRate: %j', async (value) => {
+    Settings.update.mockResolvedValue({});
+    const res = mockResponse();
+
+    await controller.update({ body: { defaultHourlyRate: value } }, res);
+
+    expect(Settings.update).toHaveBeenCalledWith({ defaultHourlyRate: value });
+  });
+
+  test.each([[-1], [80.555], ['80'], [''], [true], [NaN], [1e9]])('update rejects %j as defaultHourlyRate', async (value) => {
+    const res = mockResponse();
+
+    await controller.update({ body: { defaultHourlyRate: value } }, res);
+
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(res.json).toHaveBeenCalledWith({ error: 'Invalid value for defaultHourlyRate' });
+    expect(Settings.update).not.toHaveBeenCalled();
+  });
+
   test('update saves nothing when one of several values is invalid', async () => {
     const res = mockResponse();
 

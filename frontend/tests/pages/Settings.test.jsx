@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, test, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 import userEvent from '@testing-library/user-event'
 import { msg } from '@lingui/core/macro'
 import { act, render, screen, within } from '../support/render'
@@ -76,6 +76,203 @@ describe('Settings', () => {
       const box = within(group).getByRole('checkbox', { name: 'Stundensatz und Beträge in Berichten anzeigen' })
       expect(box).not.toBeChecked()
       expect(box).toHaveAccessibleDescription('Die Berichte-Seite startet mit dieser Einstellung. Für einen einzelnen Bericht kannst du sie dort ändern.')
+    })
+
+    describe('default hourly rate', () => {
+      const saved = { showAmounts: false, roundingMinutes: 0, roundingDirection: 'up', showRoundingNote: false, defaultHourlyRate: 80 }
+      const rate = () => screen.getByRole('textbox', { name: 'Standard-Stundensatz für neue Projekte (€)' })
+
+      beforeEach(() => {
+        api.getSettings.mockResolvedValue(saved)
+        api.updateSettings.mockImplementation(async (changes) => ({ ...saved, ...changes }))
+      })
+
+      afterEach(() => activateLocale('de'))
+
+      test('shows the saved rate in the language, with a hint that nothing existing changes', async () => {
+        render(<Harness list={settingsGroups} />)
+
+        await screen.findByRole('group', { name: 'Zeit und Abrechnung' })
+        expect(rate()).toHaveValue('80,00')
+        expect(rate()).toHaveAccessibleDescription(/Bestehende Projekte und Berichte ändern sich nicht\./)
+      })
+
+      test('is empty when there is no default', async () => {
+        api.getSettings.mockResolvedValue({ ...saved, defaultHourlyRate: null })
+        render(<Harness list={settingsGroups} />)
+
+        await screen.findByRole('group', { name: 'Zeit und Abrechnung' })
+
+        expect(rate()).toHaveValue('')
+      })
+
+      test('saves a typed rate as a number', async () => {
+        render(<Harness list={settingsGroups} />)
+        await screen.findByRole('group', { name: 'Zeit und Abrechnung' })
+
+        await userEvent.clear(rate())
+        await userEvent.type(rate(), '95,5')
+        await userEvent.click(screen.getByRole('button', { name: 'Speichern' }))
+
+        expect(api.updateSettings).toHaveBeenCalledWith({ defaultHourlyRate: 95.5 })
+        expect(await screen.findByText('Einstellungen gespeichert.')).toBeInTheDocument()
+        expect(rate()).toHaveValue('95,50')
+      })
+
+      test('saves an emptied field as null: no default', async () => {
+        render(<Harness list={settingsGroups} />)
+        await screen.findByRole('group', { name: 'Zeit und Abrechnung' })
+
+        await userEvent.clear(rate())
+        await userEvent.click(screen.getByRole('button', { name: 'Speichern' }))
+
+        expect(api.updateSettings).toHaveBeenCalledWith({ defaultHourlyRate: null })
+      })
+
+      test('saves 0 as a rate', async () => {
+        render(<Harness list={settingsGroups} />)
+        await screen.findByRole('group', { name: 'Zeit und Abrechnung' })
+
+        await userEvent.clear(rate())
+        await userEvent.type(rate(), '0')
+        await userEvent.click(screen.getByRole('button', { name: 'Speichern' }))
+
+        expect(api.updateSettings).toHaveBeenCalledWith({ defaultHourlyRate: 0 })
+      })
+
+      test.each([['abc'], ['-5'], ['80.5'], ['80,555'], ['1.000,00']])('shows an error next to the field and saves nothing for %j', async (text) => {
+        render(<Harness list={settingsGroups} />)
+        await screen.findByRole('group', { name: 'Zeit und Abrechnung' })
+
+        await userEvent.clear(rate())
+        await userEvent.type(rate(), text)
+        await userEvent.click(screen.getByRole('button', { name: 'Speichern' }))
+
+        expect(api.updateSettings).not.toHaveBeenCalled()
+        expect(rate()).toHaveAttribute('aria-invalid', 'true')
+        expect(rate()).toHaveFocus()
+        expect(rate()).toHaveAccessibleDescription(/Geben Sie einen Betrag ab 0 mit bis zu zwei Nachkommastellen ein, zum Beispiel 80,00\./)
+        expect(screen.queryByText('Einstellungen gespeichert.')).not.toBeInTheDocument()
+      })
+
+      test('does not save other changes made together with an invalid rate, and keeps what was typed', async () => {
+        render(<Harness list={settingsGroups} />)
+        await screen.findByRole('group', { name: 'Zeit und Abrechnung' })
+
+        await userEvent.click(screen.getByRole('checkbox', { name: 'Stundensatz und Beträge in Berichten anzeigen' }))
+        await userEvent.clear(rate())
+        await userEvent.type(rate(), 'abc')
+        await userEvent.click(screen.getByRole('button', { name: 'Speichern' }))
+
+        expect(api.updateSettings).not.toHaveBeenCalled()
+        expect(rate()).toHaveValue('abc')
+        expect(screen.getByRole('checkbox', { name: 'Stundensatz und Beträge in Berichten anzeigen' })).toBeChecked()
+      })
+
+      test('the error goes away when the text is edited, and the corrected rate can be saved', async () => {
+        render(<Harness list={settingsGroups} />)
+        await screen.findByRole('group', { name: 'Zeit und Abrechnung' })
+        await userEvent.clear(rate())
+        await userEvent.type(rate(), 'abc')
+        await userEvent.click(screen.getByRole('button', { name: 'Speichern' }))
+        expect(rate()).toHaveAttribute('aria-invalid', 'true')
+
+        await userEvent.clear(rate())
+        expect(rate()).not.toHaveAttribute('aria-invalid')
+        await userEvent.type(rate(), '70')
+        await userEvent.click(screen.getByRole('button', { name: 'Speichern' }))
+
+        expect(api.updateSettings).toHaveBeenCalledWith({ defaultHourlyRate: 70 })
+      })
+
+      test('saves a valid rate together with another change in one request', async () => {
+        render(<Harness list={settingsGroups} />)
+        await screen.findByRole('group', { name: 'Zeit und Abrechnung' })
+
+        await userEvent.click(screen.getByRole('checkbox', { name: 'Stundensatz und Beträge in Berichten anzeigen' }))
+        await userEvent.clear(rate())
+        await userEvent.type(rate(), '70')
+        await userEvent.click(screen.getByRole('button', { name: 'Speichern' }))
+
+        expect(api.updateSettings).toHaveBeenCalledTimes(1)
+        expect(api.updateSettings).toHaveBeenCalledWith({ showAmounts: true, defaultHourlyRate: 70 })
+      })
+
+      test('sends only the other change when the rate was typed back to the saved value', async () => {
+        render(<Harness list={settingsGroups} />)
+        await screen.findByRole('group', { name: 'Zeit und Abrechnung' })
+
+        await userEvent.click(screen.getByRole('checkbox', { name: 'Stundensatz und Beträge in Berichten anzeigen' }))
+        await userEvent.clear(rate())
+        await userEvent.type(rate(), '80,00')
+        await userEvent.click(screen.getByRole('button', { name: 'Speichern' }))
+
+        expect(api.updateSettings).toHaveBeenCalledWith({ showAmounts: true })
+      })
+
+      test('keeps the typed rate when the save fails, and saves it with the next try', async () => {
+        api.updateSettings.mockRejectedValueOnce(new Error('down'))
+        render(<Harness list={settingsGroups} />)
+        await screen.findByRole('group', { name: 'Zeit und Abrechnung' })
+        await userEvent.clear(rate())
+        await userEvent.type(rate(), '65,5')
+
+        await userEvent.click(screen.getByRole('button', { name: 'Speichern' }))
+        await screen.findByRole('alert')
+        expect(rate()).toHaveValue('65,5')
+
+        await userEvent.click(screen.getByRole('button', { name: 'Speichern' }))
+        expect(api.updateSettings).toHaveBeenLastCalledWith({ defaultHourlyRate: 65.5 })
+      })
+
+      test('moves the focus back to the field when Save is pressed again with the same invalid text', async () => {
+        render(<Harness list={settingsGroups} />)
+        await screen.findByRole('group', { name: 'Zeit und Abrechnung' })
+        await userEvent.clear(rate())
+        await userEvent.type(rate(), 'abc')
+        await userEvent.click(screen.getByRole('button', { name: 'Speichern' }))
+        expect(rate()).toHaveFocus()
+
+        await userEvent.click(screen.getByRole('button', { name: 'Speichern' }))
+
+        expect(rate()).toHaveFocus()
+        expect(api.updateSettings).not.toHaveBeenCalled()
+      })
+
+      test('typing the saved rate again counts as no change', async () => {
+        render(<Harness list={settingsGroups} />)
+        await screen.findByRole('group', { name: 'Zeit und Abrechnung' })
+
+        await userEvent.clear(rate())
+        await userEvent.type(rate(), '80')
+        await userEvent.click(screen.getByRole('button', { name: 'Speichern' }))
+
+        expect(api.updateSettings).not.toHaveBeenCalled()
+        expect(await screen.findByText('Nichts geändert.')).toBeInTheDocument()
+      })
+
+      test('reads and shows the rate in English format when the language is English', async () => {
+        activateLocale('en')
+        render(<Harness list={settingsGroups} />)
+        const field = await screen.findByRole('textbox', { name: 'Default hourly rate for new projects (€)' })
+        expect(field).toHaveValue('80.00')
+
+        await userEvent.clear(field)
+        await userEvent.type(field, '95.25')
+        await userEvent.click(screen.getByRole('button', { name: 'Save' }))
+
+        expect(api.updateSettings).toHaveBeenCalledWith({ defaultHourlyRate: 95.25 })
+      })
+
+      test('has no detectable accessibility violations, also with an error', async () => {
+        const { container } = render(<Harness list={settingsGroups} />)
+        await screen.findByRole('group', { name: 'Zeit und Abrechnung' })
+        await userEvent.clear(rate())
+        await userEvent.type(rate(), 'abc')
+        await userEvent.click(screen.getByRole('button', { name: 'Speichern' }))
+
+        expect(await axe(container)).toHaveNoViolations()
+      })
     })
 
     describe('rounding', () => {
@@ -319,7 +516,7 @@ describe('Settings', () => {
       expect(new Set(options.map((option) => option.name)).size).toBe(options.length)
       expect(new Set(settingsGroups.map((group) => group.id)).size).toBe(settingsGroups.length)
       for (const option of options) {
-        expect(['checkbox', 'select']).toContain(option.type)
+        expect(['checkbox', 'select', 'decimal']).toContain(option.type)
         expect(option.label).toBeTruthy()
       }
     })

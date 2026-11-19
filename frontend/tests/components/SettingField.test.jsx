@@ -88,4 +88,61 @@ describe('SettingField', () => {
 
     expect(await axe(container)).toHaveNoViolations()
   })
+
+  describe('a decimal field', () => {
+    const decimal = { name: 'rate', type: 'decimal', label: msg`Test amount`, hint: msg`Applies to new projects.` }
+
+    test('shows the saved number with two decimals in the language, and an empty field for null', () => {
+      const { rerender } = render(<SettingField option={decimal} value={80} onChange={() => {}} />)
+      expect(screen.getByRole('textbox', { name: 'Test amount' })).toHaveValue('80,00')
+
+      rerender(<SettingField option={decimal} value={null} onChange={() => {}} />)
+      expect(screen.getByRole('textbox', { name: 'Test amount' })).toHaveValue('')
+    })
+
+    test('shows 0 as 0,00, not as empty', () => {
+      render(<SettingField option={decimal} value={0} onChange={() => {}} />)
+
+      expect(screen.getByRole('textbox', { name: 'Test amount' })).toHaveValue('0,00')
+    })
+
+    test('gives the typed text back, and shows a text value as typed', async () => {
+      const onChange = vi.fn()
+      render(<SettingField option={decimal} value="" onChange={onChange} />)
+
+      await userEvent.type(screen.getByRole('textbox', { name: 'Test amount' }), '9')
+
+      expect(onChange).toHaveBeenCalledWith('9')
+    })
+
+    test('asks for the decimal keyboard and is described by its hint', () => {
+      render(<SettingField option={decimal} value={null} onChange={() => {}} />)
+
+      const input = screen.getByRole('textbox', { name: 'Test amount' })
+      expect(input).toHaveAttribute('inputmode', 'decimal')
+      expect(input).toHaveAccessibleDescription('Applies to new projects.')
+      expect(input).not.toHaveAttribute('aria-invalid')
+    })
+
+    test('an error marks the field invalid and is part of its description', () => {
+      render(<SettingField option={decimal} value="abc" onChange={() => {}} error="Not an amount." />)
+
+      const input = screen.getByRole('textbox', { name: 'Test amount' })
+      expect(input).toHaveAttribute('aria-invalid', 'true')
+      expect(input).toHaveAccessibleDescription('Applies to new projects. Not an amount.')
+      expect(screen.getByRole('alert')).toHaveTextContent('Not an amount.')
+    })
+
+    test('can be disabled', () => {
+      render(<SettingField option={decimal} value={1} onChange={() => {}} disabled />)
+
+      expect(screen.getByRole('textbox', { name: 'Test amount' })).toBeDisabled()
+    })
+
+    test('has no detectable accessibility violations, also with an error', async () => {
+      const { container } = render(<SettingField option={decimal} value="x" onChange={() => {}} error="Not an amount." />)
+
+      expect(await axe(container)).toHaveNoViolations()
+    })
+  })
 })

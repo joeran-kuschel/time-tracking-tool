@@ -776,6 +776,67 @@ describe('App', () => {
     expect(screen.queryByRole('button', { name: 'Zeit nachtragen' })).not.toBeInTheDocument()
   })
 
+  test('the form for a new project starts with the default hourly rate of the settings, which stays editable', async () => {
+    api.getSettings.mockResolvedValue({ defaultHourlyRate: 85 })
+    api.getCustomers.mockResolvedValue([{ id: 1, name: 'Muster GmbH' }])
+    api.getProjects.mockResolvedValue([{ id: 7, name: 'Website', hourly_rate: '80.00' }])
+    api.createProject = vi.fn().mockResolvedValue({ id: 8 })
+    await renderTimeTracking()
+    await userEvent.click(await screen.findByRole('button', { name: 'Muster GmbH' }))
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Neues Projekt' }))
+    const dialog = screen.getByRole('dialog', { name: 'Neues Projekt' })
+    expect(within(dialog).getByLabelText('Stundensatz (€)')).toHaveValue(85)
+    await userEvent.type(within(dialog).getByLabelText('Name'), 'App')
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Speichern' }))
+    expect(api.createProject).toHaveBeenLastCalledWith(1, 'App', 85)
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Neues Projekt' }))
+    const again = screen.getByRole('dialog', { name: 'Neues Projekt' })
+    await userEvent.clear(within(again).getByLabelText('Stundensatz (€)'))
+    await userEvent.type(within(again).getByLabelText('Stundensatz (€)'), '99.5')
+    await userEvent.type(within(again).getByLabelText('Name'), 'Other')
+    await userEvent.click(within(again).getByRole('button', { name: 'Speichern' }))
+    expect(api.createProject).toHaveBeenLastCalledWith(1, 'Other', 99.5)
+  })
+
+  test('the form for a new project starts without a rate when there is no default, as before', async () => {
+    api.getSettings.mockResolvedValue({ defaultHourlyRate: null })
+    api.getCustomers.mockResolvedValue([{ id: 1, name: 'Muster GmbH' }])
+    api.getProjects.mockResolvedValue([])
+    await renderTimeTracking()
+    await userEvent.click(await screen.findByRole('button', { name: 'Muster GmbH' }))
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Neues Projekt' }))
+
+    expect(within(screen.getByRole('dialog', { name: 'Neues Projekt' })).getByLabelText('Stundensatz (€)')).toHaveValue(null)
+  })
+
+  test('a default rate of 0 fills the form with 0', async () => {
+    api.getSettings.mockResolvedValue({ defaultHourlyRate: 0 })
+    api.getCustomers.mockResolvedValue([{ id: 1, name: 'Muster GmbH' }])
+    api.getProjects.mockResolvedValue([])
+    await renderTimeTracking()
+    await userEvent.click(await screen.findByRole('button', { name: 'Muster GmbH' }))
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Neues Projekt' }))
+
+    expect(within(screen.getByRole('dialog', { name: 'Neues Projekt' })).getByLabelText('Stundensatz (€)')).toHaveValue(0)
+  })
+
+  test('the default rate does not change the form of an existing project', async () => {
+    api.getSettings.mockResolvedValue({ defaultHourlyRate: 85 })
+    api.getCustomers.mockResolvedValue([{ id: 1, name: 'Muster GmbH' }])
+    api.getProjects.mockResolvedValue([{ id: 7, name: 'Website', hourly_rate: '80.00' }])
+    await renderTimeTracking()
+    await userEvent.click(await screen.findByRole('button', { name: 'Muster GmbH' }))
+    await userEvent.click(await screen.findByRole('button', { name: /Website/, pressed: false }))
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Website bearbeiten' }))
+
+    expect(screen.getByLabelText('Stundensatz (€)')).toHaveValue(80)
+  })
+
   test('adds a project in a dialog and keeps the selected project', async () => {
     api.getCustomers.mockResolvedValue([{ id: 1, name: 'Muster GmbH' }])
     api.getProjects

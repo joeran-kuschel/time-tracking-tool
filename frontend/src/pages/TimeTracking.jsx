@@ -30,7 +30,7 @@ const chipClass = (selected) => `inline-flex min-h-[2.5rem] items-center gap-2 r
 
 // The selected customer and project are in the address (/time-tracking/:customerId/:projectId), so a reload, a
 // bookmark or a link from another page opens them. Only ids are kept, so a renamed record shows its new name right away.
-function TimeTracking({ customers, onCustomersChange, timer }) {
+function TimeTracking({ customers, onCustomersChange, timer, settings }) {
   const params = useParams()
   const navigate = useNavigate()
   const { pathname } = useLocation()
@@ -180,6 +180,8 @@ function TimeTracking({ customers, onCustomersChange, timer }) {
   ]
   const projectForm = { legend: t`Edit project`, fields: projectFields, toValues: (p) => ({ name: p.name, hourlyRate: String(Number(p.hourly_rate)) }) }
   const toRate = (value) => (value === '' ? 0 : Number(value))
+  // What the form for a new project starts with (Settings: default hourly rate); empty without a default or before the settings are loaded
+  const defaultRate = settings?.values?.defaultHourlyRate
 
   const addProject = async ({ name, hourlyRate }) => {
     const created = await runAdd(
@@ -409,7 +411,7 @@ function TimeTracking({ customers, onCustomersChange, timer }) {
           onSubmit={addCustomer} onCancel={closeDialog} error={addError} />
       </Modal>
       <Modal title={t`New project`} open={dialog === 'project'} onClose={closeDialog}>
-        <RecordForm fields={projectFields} initialValues={{ name: '', hourlyRate: '' }} submitLabel={t`Save`}
+        <RecordForm fields={projectFields} initialValues={{ name: '', hourlyRate: defaultRate == null ? '' : String(defaultRate) }} submitLabel={t`Save`}
           onSubmit={addProject} onCancel={closeDialog} error={addError} />
       </Modal>
       <Modal title={t`Add time`} open={dialog === 'entry'} onClose={closeDialog}>
