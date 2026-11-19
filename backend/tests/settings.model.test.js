@@ -10,8 +10,8 @@ jest.mock('../src/config/database', () => ({
 const Settings = require('../src/models/Settings');
 const OPTIONS = require('../src/config/settingsOptions');
 
-// What a fresh install has: no amounts, no rounding (direction up once a step is chosen), no sentence about it
-const DEFAULTS = { showAmounts: false, roundingMinutes: 0, roundingDirection: 'up', showRoundingNote: false };
+// What a fresh install has: no amounts, no rounding (direction up once a step is chosen), no sentence about it, no default rate
+const DEFAULTS = { showAmounts: false, roundingMinutes: 0, roundingDirection: 'up', showRoundingNote: false, defaultHourlyRate: null };
 
 const rows = async () => (await mockPool.query('SELECT * FROM settings')).rows;
 
@@ -205,5 +205,68 @@ describe('Settings', () => {
       expect(typeof isValid).toBe('function');
       expect(name).toMatch(/^[a-z][A-Za-z]*$/);
     }
+  });
+  describe('default hourly rate', () => {
+    test('is not set on a fresh install', async () => {
+      expect((await Settings.get()).defaultHourlyRate).toBeNull();
+    });
+
+    test('is saved and read back as a number, not as the string of the DECIMAL column', async () => {
+      expect((await Settings.update({ defaultHourlyRate: 80 })).defaultHourlyRate).toBe(80);
+      expect((await Settings.update({ defaultHourlyRate: 95.5 })).defaultHourlyRate).toBe(95.5);
+      expect((await rows())[0].default_hourly_rate).not.toBeNull();
+      expect((await Settings.get()).defaultHourlyRate).toBe(95.5);
+    });
+
+    test('can be removed again with null', async () => {
+      await Settings.update({ defaultHourlyRate: 80 });
+
+      expect((await Settings.update({ defaultHourlyRate: null })).defaultHourlyRate).toBeNull();
+    });
+
+    test('saving another option keeps it', async () => {
+      await Settings.update({ defaultHourlyRate: 80 });
+
+      expect(await Settings.update({ showAmounts: true })).toEqual({ ...DEFAULTS, showAmounts: true, defaultHourlyRate: 80 });
+    });
+
+    test('0 is a rate, different from no default', async () => {
+      expect((await Settings.update({ defaultHourlyRate: 0 })).defaultHourlyRate).toBe(0);
+    });
+
+    test('the database refuses a negative rate', async () => {
+      await Settings.get();
+
+      await expect(mockPool.query('UPDATE settings SET default_hourly_rate = -1')).rejects.toThrow();
+    });
+
+    test('migration 010 can run twice and keeps the saved rate', async () => {
+      await Settings.update({ defaultHourlyRate: 80 });
+      const sql = fs.readFileSync(path.join(__dirname, '..', 'migrations', '010_settings_default_hourly_rate.sql'), 'utf8');
+
+      await mockPool.query(sql);
+
+      expect((await Settings.get()).defaultHourlyRate).toBe(80);
+    });
+
+    // Sums and products that are not exact in binary floating point are still amounts with two decimals
+    test.each([[0.1 + 0.2], [1.01],[8.2], [19.99], [4.35], [1.15], [0.07], [99999999.99]])('accepts %j despite float error', (value) => {
+      expect(OPTIONS.defaultHourlyRate.isValid(value)).toBe(true);
+    });
+
+    test.each([[1.005], [0.001], [80.001], [0.004], [99999999.999], [1e-7 + 80.5]])('refuses %j: more than two decimals', (value) => {
+      expect(OPTIONS.defaultHourlyRate.isValid(value)).toBe(false);
+    });
+
+    test('refuses 80.000000001: more than two decimals', () => {
+      expect(OPTIONS.defaultHourlyRate.isValid(80.000000001)).toBe(false);
+    });
+
+    test.each([[null, true], [0, true], [80, true], [80.5, true], [80.55, true], [99999999.99, true],
+      [-0.01, false], [80.555, false], [100000000, false], [NaN, false], [Infinity, false], ['80', false], ['', false], [true, false], [undefined, false], [[80], false]])(
+      'validates %j: %s', (value, valid) => {
+        expect(OPTIONS.defaultHourlyRate.isValid(value)).toBe(valid);
+      }
+    );
   });
 });

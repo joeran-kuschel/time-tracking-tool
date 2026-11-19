@@ -9,7 +9,9 @@ class Settings {
     await pool.query('INSERT INTO settings (id) VALUES (1) ON CONFLICT (id) DO NOTHING');
     const result = await pool.query('SELECT * FROM settings WHERE id = 1');
     const row = result.rows[0];
-    return Object.fromEntries(Object.entries(OPTIONS).map(([name, { column }]) => [name, row[column]]));
+    return Object.fromEntries(
+      Object.entries(OPTIONS).map(([name, { column, fromColumn }]) => [name, fromColumn ? fromColumn(row[column]) : row[column]])
+    );
   }
 
   // Saves the given options ({ name: value }, already validated by the controller) in one statement and returns all

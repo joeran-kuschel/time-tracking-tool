@@ -10,6 +10,8 @@
 // (shown under the field) are msg descriptors, and `type` is one of:
 //   'checkbox'  a boolean
 //   'select'    one of `choices`: [{ value, label }] (value a string or a number, label a msg descriptor)
+//   'decimal'   an amount with up to two decimals, typed in the format of the active language ("80,00" / "80.00");
+//               its value is a number, or null when empty. The page shows an error for anything else and does not save it
 // `disabledWhen(values)` (optional) tells from the current values of the form whether the field is disabled, and
 // `disabledHint` (a msg descriptor) says why; it replaces the hint while the field is disabled.
 import { msg } from '@lingui/core/macro'
@@ -25,6 +27,12 @@ export const settingsGroups = [
         type: 'checkbox',
         label: msg`Show hourly rate and amounts in reports`,
         hint: msg`The Reports page starts with this. You can still change it for a single report.`,
+      },
+      {
+        name: 'defaultHourlyRate',
+        type: 'decimal',
+        label: msg`Default hourly rate for new projects (€)`,
+        hint: msg`New projects start with this rate, which you can change for each project. Leave it empty for no default. Existing projects and reports do not change.`,
       },
       {
         name: 'roundingMinutes',

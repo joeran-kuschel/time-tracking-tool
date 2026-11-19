@@ -17,7 +17,7 @@ msgstr ""
 msgid ", {share} of total"
 msgstr ", {share} of total"
 
-#: src/pages/TimeTracking.jsx:307
+#: src/pages/TimeTracking.jsx:309
 msgid ", timer running"
 msgstr ", timer running"
 
@@ -59,11 +59,11 @@ msgstr "{total} total"
 msgid "{weekStart} to {today}"
 msgstr "{weekStart} to {today}"
 
-#: src/settingsGroups.js:37
+#: src/settingsGroups.js:45
 msgid "10 minutes"
 msgstr "10 minutes"
 
-#: src/settingsGroups.js:36
+#: src/settingsGroups.js:44
 msgid "5 minutes"
 msgstr "5 minutes"
 
@@ -88,12 +88,12 @@ msgstr "Add"
 msgid "Add a customer and a project on the Time tracking page first."
 msgstr "Add a customer and a project on the Time tracking page first."
 
-#: src/pages/TimeTracking.jsx:403
-#: src/pages/TimeTracking.jsx:421
+#: src/pages/TimeTracking.jsx:405
+#: src/pages/TimeTracking.jsx:423
 msgid "Add time"
 msgstr "Add time"
 
-#: src/settingsGroups.js:58
+#: src/settingsGroups.js:66
 msgid "Adds a sentence such as \"Hours rounded up to quarter hours.\" to the Reports page and the PDF."
 msgstr "Adds a sentence such as \"Hours rounded up to quarter hours.\" to the Reports page and the PDF."
 
@@ -102,7 +102,7 @@ msgid "All customers"
 msgstr "All customers"
 
 #: src/components/EntryFilters.jsx:158
-#: src/pages/TimeTracking.jsx:249
+#: src/pages/TimeTracking.jsx:251
 msgid "All projects"
 msgstr "All projects"
 
@@ -123,7 +123,7 @@ msgstr "Any time"
 msgid "Back to Reports"
 msgstr "Back to Reports"
 
-#: src/pages/TimeTracking.jsx:374
+#: src/pages/TimeTracking.jsx:376
 msgid "Back to Time tracking"
 msgstr "Back to Time tracking"
 
@@ -160,11 +160,11 @@ msgstr "Chart view"
 msgid "Check email and password."
 msgstr "Check email and password."
 
-#: src/settingsGroups.js:60
+#: src/settingsGroups.js:68
 msgid "Choose a step in \"Round time entries\" first."
 msgstr "Choose a step in \"Round time entries\" first."
 
-#: src/settingsGroups.js:52
+#: src/settingsGroups.js:60
 msgid "Choose a step in \"Round time entries\" to set the direction."
 msgstr "Choose a step in \"Round time entries\" to set the direction."
 
@@ -203,8 +203,8 @@ msgstr "Customer could not be saved."
 msgid "Customer: {customerName}"
 msgstr "Customer: {customerName}"
 
-#: src/pages/TimeTracking.jsx:285
-#: src/pages/TimeTracking.jsx:290
+#: src/pages/TimeTracking.jsx:287
+#: src/pages/TimeTracking.jsx:292
 msgid "Customers"
 msgstr "Customers"
 
@@ -240,11 +240,15 @@ msgstr "Day"
 msgid "Days"
 msgstr "Days"
 
+#: src/settingsGroups.js:34
+msgid "Default hourly rate for new projects (€)"
+msgstr "Default hourly rate for new projects (€)"
+
 #: src/components/ConfirmDelete.jsx:27
 msgid "Delete"
 msgstr "Delete"
 
-#: src/pages/TimeTracking.jsx:326
+#: src/pages/TimeTracking.jsx:328
 msgid "Delete {customerName} and all its projects and time entries?"
 msgstr "Delete {customerName} and all its projects and time entries?"
 
@@ -252,7 +256,7 @@ msgstr "Delete {customerName} and all its projects and time entries?"
 msgid "Delete {name}"
 msgstr "Delete {name}"
 
-#: src/pages/TimeTracking.jsx:349
+#: src/pages/TimeTracking.jsx:351
 msgid "Delete {projectName} and all its time entries?"
 msgstr "Delete {projectName} and all its time entries?"
 
@@ -275,7 +279,7 @@ msgstr "Description"
 msgid "Description (optional)"
 msgstr "Description (optional)"
 
-#: src/settingsGroups.js:46
+#: src/settingsGroups.js:54
 msgid "Direction"
 msgstr "Direction"
 
@@ -295,7 +299,7 @@ msgstr "draft"
 msgid "Draft"
 msgstr "Draft"
 
-#: src/settingsGroups.js:33
+#: src/settingsGroups.js:41
 msgid "Each entry is rounded on its own in reports. The stored times never change. A customer can have its own rule."
 msgstr "Each entry is rounded on its own in reports. The stored times never change. A customer can have its own rule."
 
@@ -339,6 +343,11 @@ msgstr "End must be after start."
 msgid "English"
 msgstr "English"
 
+#. placeholder {0}: formatDecimal(i18n, 80)
+#: src/pages/Settings.jsx:62
+msgid "Enter an amount from 0 with up to two decimals, for example {0}."
+msgstr "Enter an amount from 0 with up to two decimals, for example {0}."
+
 #: src/components/MonthSummary.jsx:24
 #: src/pages/Entries.jsx:83
 #: src/routes.js:11
@@ -350,7 +359,7 @@ msgstr "Entries"
 msgid "Entries could not be loaded."
 msgstr "Entries could not be loaded."
 
-#: src/pages/TimeTracking.jsx:399
+#: src/pages/TimeTracking.jsx:401
 msgid "Entries for {entriesOf}"
 msgstr "Entries for {entriesOf}"
 
@@ -374,11 +383,11 @@ msgstr "German"
 msgid "Go to the Dashboard"
 msgstr "Go to the Dashboard"
 
-#: src/settingsGroups.js:39
+#: src/settingsGroups.js:47
 msgid "Half hour (30 minutes)"
 msgstr "Half hour (30 minutes)"
 
-#: src/settingsGroups.js:40
+#: src/settingsGroups.js:48
 msgid "Hour (60 minutes)"
 msgstr "Hour (60 minutes)"
 
@@ -490,8 +499,8 @@ msgstr "Like the system"
 #: src/components/AuthGate.jsx:70
 #: src/pages/Dashboard.jsx:76
 #: src/pages/Reports.jsx:253
-#: src/pages/Settings.jsx:58
-#: src/pages/Settings.jsx:64
+#: src/pages/Settings.jsx:96
+#: src/pages/Settings.jsx:102
 msgid "Loading..."
 msgstr "Loading..."
 
@@ -538,19 +547,23 @@ msgstr "Monthly reports"
 msgid "Name"
 msgstr "Name"
 
-#: src/settingsGroups.js:57
+#: src/settingsGroups.js:65
 msgid "Name the rounding rule in reports"
 msgstr "Name the rounding rule in reports"
 
-#: src/pages/TimeTracking.jsx:286
-#: src/pages/TimeTracking.jsx:413
+#: src/pages/TimeTracking.jsx:288
+#: src/pages/TimeTracking.jsx:415
 msgid "New customer"
 msgstr "New customer"
 
-#: src/pages/TimeTracking.jsx:271
-#: src/pages/TimeTracking.jsx:417
+#: src/pages/TimeTracking.jsx:273
+#: src/pages/TimeTracking.jsx:419
 msgid "New project"
 msgstr "New project"
+
+#: src/settingsGroups.js:35
+msgid "New projects start with this rate, which you can change for each project. Leave it empty for no default. Existing projects and reports do not change."
+msgstr "New projects start with this rate, which you can change for each project. Leave it empty for no default. Existing projects and reports do not change."
 
 #: src/components/EntryFilters.jsx:20
 msgid "Newest first"
@@ -590,7 +603,7 @@ msgid "No filters active"
 msgstr "No filters active"
 
 #: src/customerRounding.js:24
-#: src/settingsGroups.js:35
+#: src/settingsGroups.js:43
 msgid "No rounding"
 msgstr "No rounding"
 
@@ -600,7 +613,7 @@ msgstr "No rounding"
 msgid "No time recorded this month yet."
 msgstr "No time recorded this month yet."
 
-#: src/pages/Settings.jsx:89
+#: src/pages/Settings.jsx:128
 msgid "Nothing has changed."
 msgstr "Nothing has changed."
 
@@ -665,7 +678,7 @@ msgstr "Previous month"
 msgid "Project"
 msgstr "Project"
 
-#: src/pages/TimeTracking.jsx:193
+#: src/pages/TimeTracking.jsx:195
 msgid "Project could not be created."
 msgstr "Project could not be created."
 
@@ -683,7 +696,7 @@ msgstr "Project: {projectName}"
 
 #: src/components/dashboard/BillingTable.jsx:50
 #: src/pages/Reports.jsx:279
-#: src/pages/TimeTracking.jsx:246
+#: src/pages/TimeTracking.jsx:248
 msgid "Projects"
 msgstr "Projects"
 
@@ -692,7 +705,7 @@ msgstr "Projects"
 msgid "Projects could not be loaded."
 msgstr "Projects could not be loaded."
 
-#: src/settingsGroups.js:38
+#: src/settingsGroups.js:46
 msgid "Quarter hour (15 minutes)"
 msgstr "Quarter hour (15 minutes)"
 
@@ -753,7 +766,7 @@ msgstr "Reset filters"
 msgid "Results"
 msgstr "Results"
 
-#: src/settingsGroups.js:32
+#: src/settingsGroups.js:40
 msgid "Round time entries"
 msgstr "Round time entries"
 
@@ -765,7 +778,7 @@ msgstr "Rounded hours × hourly rate of each project"
 msgid "Rounding"
 msgstr "Rounding"
 
-#: src/settingsGroups.js:21
+#: src/settingsGroups.js:23
 msgid "Rounding also applies to the reports of past months. PDF and CSV files you have already downloaded do not change."
 msgstr "Rounding also applies to the reports of past months. PDF and CSV files you have already downloaded do not change."
 
@@ -773,7 +786,7 @@ msgstr "Rounding also applies to the reports of past months. PDF and CSV files y
 msgid "Rounding differs by customer."
 msgstr "Rounding differs by customer."
 
-#: src/pages/TimeTracking.jsx:335
+#: src/pages/TimeTracking.jsx:337
 msgid "Rounding: {customerRounding}"
 msgstr "Rounding: {customerRounding}"
 
@@ -800,10 +813,10 @@ msgstr "Same as the app"
 
 #: src/components/EditableRecord.jsx:21
 #: src/components/EntriesList.jsx:33
-#: src/pages/Settings.jsx:86
-#: src/pages/TimeTracking.jsx:414
-#: src/pages/TimeTracking.jsx:418
-#: src/pages/TimeTracking.jsx:422
+#: src/pages/Settings.jsx:125
+#: src/pages/TimeTracking.jsx:416
+#: src/pages/TimeTracking.jsx:420
+#: src/pages/TimeTracking.jsx:424
 msgid "Save"
 msgstr "Save"
 
@@ -820,7 +833,7 @@ msgid "Search: {query}"
 msgstr "Search: {query}"
 
 #: src/pages/Reports.jsx:167
-#: src/pages/TimeTracking.jsx:377
+#: src/pages/TimeTracking.jsx:379
 msgid "Select a customer"
 msgstr "Select a customer"
 
@@ -836,7 +849,7 @@ msgstr "Select a project to start the timer."
 msgid "Sent"
 msgstr "Sent"
 
-#: src/pages/Settings.jsx:99
+#: src/pages/Settings.jsx:138
 #: src/routes.js:13
 msgid "Settings"
 msgstr "Settings"
@@ -849,11 +862,11 @@ msgstr "Settings could not be loaded."
 msgid "Settings could not be saved."
 msgstr "Settings could not be saved."
 
-#: src/pages/Settings.jsx:88
+#: src/pages/Settings.jsx:127
 msgid "Settings saved."
 msgstr "Settings saved."
 
-#: src/pages/TimeTracking.jsx:362
+#: src/pages/TimeTracking.jsx:364
 msgid "Show all projects"
 msgstr "Show all projects"
 
@@ -861,7 +874,7 @@ msgstr "Show all projects"
 msgid "Show hourly rate and amounts"
 msgstr "Show hourly rate and amounts"
 
-#: src/settingsGroups.js:26
+#: src/settingsGroups.js:28
 msgid "Show hourly rate and amounts in reports"
 msgstr "Show hourly rate and amounts in reports"
 
@@ -921,7 +934,7 @@ msgstr "The PDF and CSV are in {0} (the report language of this customer)."
 msgid "The PDF and CSV are in the language of the app ({0})."
 msgstr "The PDF and CSV are in the language of the app ({0})."
 
-#: src/settingsGroups.js:27
+#: src/settingsGroups.js:29
 msgid "The Reports page starts with this. You can still change it for a single report."
 msgstr "The Reports page starts with this. You can still change it for a single report."
 
@@ -937,7 +950,7 @@ msgstr "The timer is running for {trackedProject}. Stop it to start {selectedPro
 msgid "Theme"
 msgstr "Theme"
 
-#: src/pages/Settings.jsx:53
+#: src/pages/Settings.jsx:91
 msgid "There are no options yet."
 msgstr "There are no options yet."
 
@@ -946,7 +959,7 @@ msgid "There is no page at this address."
 msgstr "There is no page at this address."
 
 #: src/pages/Reports.jsx:247
-#: src/pages/TimeTracking.jsx:372
+#: src/pages/TimeTracking.jsx:374
 msgid "This customer does not exist (any more)."
 msgstr "This customer does not exist (any more)."
 
@@ -955,7 +968,7 @@ msgstr "This customer does not exist (any more)."
 msgid "This month"
 msgstr "This month"
 
-#: src/pages/TimeTracking.jsx:360
+#: src/pages/TimeTracking.jsx:362
 msgid "This project does not exist (any more)."
 msgstr "This project does not exist (any more)."
 
@@ -974,7 +987,7 @@ msgstr "This year"
 msgid "Time"
 msgstr "Time"
 
-#: src/settingsGroups.js:20
+#: src/settingsGroups.js:22
 msgid "Time and billing"
 msgstr "Time and billing"
 
@@ -984,11 +997,11 @@ msgstr "Time entry could not be deleted."
 
 #: src/components/dashboard/TrackTimeCard.jsx:45
 #: src/components/EntriesList.jsx:16
-#: src/pages/TimeTracking.jsx:231
+#: src/pages/TimeTracking.jsx:233
 msgid "Time entry could not be saved."
 msgstr "Time entry could not be saved."
 
-#: src/pages/TimeTracking.jsx:369
+#: src/pages/TimeTracking.jsx:371
 #: src/routes.js:10
 msgid "Time tracking"
 msgstr "Time tracking"
@@ -1019,7 +1032,7 @@ msgid "To"
 msgstr "To"
 
 #: src/customerRounding.js:14
-#: src/settingsGroups.js:49
+#: src/settingsGroups.js:57
 msgid "To the nearest"
 msgstr "To the nearest"
 
@@ -1050,12 +1063,12 @@ msgstr "Track time"
 #: src/components/AuthGate.jsx:66
 #: src/pages/Dashboard.jsx:73
 #: src/pages/Reports.jsx:238
-#: src/pages/Settings.jsx:60
+#: src/pages/Settings.jsx:98
 msgid "Try again"
 msgstr "Try again"
 
 #: src/customerRounding.js:13
-#: src/settingsGroups.js:48
+#: src/settingsGroups.js:56
 msgid "Up"
 msgstr "Up"
 
