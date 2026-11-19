@@ -1,4 +1,5 @@
 import { useId, useRef } from 'react'
+import { PlayIcon } from '@heroicons/react/24/outline'
 import { msg } from '@lingui/core/macro'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { formatClock, formatDay, formatDuration, minutesBetween } from '../format'
@@ -7,6 +8,7 @@ import { useEditable } from '../hooks/useEditable'
 import EntryForm from './EntryForm'
 import ConfirmDelete from './ConfirmDelete'
 import RecordActions from './RecordActions'
+import { ui } from '../ui'
 
 const dateTime = { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }
 const cell = 'px-3 py-1.5 border-b border-line-soft'
@@ -18,12 +20,17 @@ const messages = {
   stopTimerFirst: msg`Stop the running timer first.`,
 }
 
-// One entry; finished entries can be edited in place or deleted, running ones only stopped with the timer
-function EntryRow({ entry, projects, onUpdate, onDelete, onDeleted }) {
+// One entry; finished entries can be resumed, edited in place or deleted, running ones only stopped with the timer.
+// resume: { onResume, blocked, running, runningHintId, breakHintId } (see EntriesList)
+function EntryRow({ entry, projects, onUpdate, onDelete, onDeleted, resume }) {
   const { t, i18n } = useLingui()
   const editable = useEditable({ onUpdate: (changes) => onUpdate(entry, changes), onDelete: () => onDelete(entry), onDeleted, messages })
   const isRunning = !entry.end_time
   const start = i18n.date(entry.start_time, dateTime)
+  // The name of the Resume button (finished entries only): the entry's project and, when it has one, its description
+  const projectName = projects.find((p) => p.id === entry.project_id)?.name ?? ''
+  const { description } = entry
+  const resumeLabel = isRunning ? null : description ? t`Resume: ${projectName}, ${description}` : t`Resume: ${projectName}`
 
   if (editable.mode !== 'view') {
     return (
@@ -55,6 +62,13 @@ function EntryRow({ entry, projects, onUpdate, onDelete, onDeleted }) {
       <td className={cell}>
         {!isRunning && (
           <div className="flex justify-end gap-1">
+            {resume && (
+              <button type="button" onClick={() => !resume.blocked && resume.onResume(entry)} title={resumeLabel}
+                aria-disabled={resume.blocked} aria-describedby={resume.running ? resume.runningHintId : resume.breakHintId}
+                className={`${ui.iconButton} aria-disabled:cursor-not-allowed aria-disabled:opacity-50`}>
+                <PlayIcon aria-hidden="true" className="h-5 w-5" />
+              </button>
+            )}
             <RecordActions
               editLabel={t`Edit the entry from ${start}`}
               deleteLabel={t`Delete the entry from ${start}`}
@@ -71,7 +85,7 @@ function EntryRow({ entry, projects, onUpdate, onDelete, onDeleted }) {
 }
 
 // One project's entries under a heading with its total time
-function ProjectGroup({ project, entries, projects, onUpdate, onDelete, onDeleted }) {
+function ProjectGroup({ project, entries, projects, onUpdate, onDelete, onDeleted, resume }) {
   const { t, i18n } = useLingui()
   const headingId = useId()
   const total = formatDuration(i18n, entries.reduce((sum, e) => sum + minutesBetween(e.start_time, e.end_time), 0))
@@ -93,7 +107,7 @@ function ProjectGroup({ project, entries, projects, onUpdate, onDelete, onDelete
         </thead>
         <tbody>
           {entries.map((entry) => (
-            <EntryRow key={entry.id} entry={entry} projects={projects} onUpdate={onUpdate} onDelete={onDelete} onDeleted={onDeleted} />
+            <EntryRow key={entry.id} entry={entry} projects={projects} onUpdate={onUpdate} onDelete={onDelete} onDeleted={onDeleted} resume={resume} />
           ))}
         </tbody>
       </table>
@@ -104,8 +118,13 @@ function ProjectGroup({ project, entries, projects, onUpdate, onDelete, onDelete
 // Entries grouped by project, in the order of projects; projects without entries are left out.
 // projects: the customer's projects, also the ones an entry can be moved to.
 // After deleting, focus moves to the list, which stays even when the last entry is gone.
-function EntriesList({ entries, projects, onUpdate, onDelete }) {
+// resume: { onResume(entry), timerRunning, busy } for the Resume buttons (without it, no buttons): onResume runs a
+// finished entry on again; timerRunning: a timer runs, so Resume is disabled; busy: a start or stop is being sent.
+function EntriesList({ entries, projects, onUpdate, onDelete, resume: resumeOf }) {
   const list = useRef(null)
+  const runningHintId = useId()
+  const breakHintId = useId()
+  const resume = resumeOf && { onResume: resumeOf.onResume, blocked: resumeOf.timerRunning || resumeOf.busy, running: resumeOf.timerRunning, runningHintId, breakHintId }
   const groups = projects
     .map((project) => ({ project, entries: entries.filter((e) => e.project_id === project.id) }))
     .filter((group) => group.entries.length > 0)
@@ -117,8 +136,14 @@ function EntriesList({ entries, projects, onUpdate, onDelete }) {
       ) : (
         groups.map((group) => (
           <ProjectGroup key={group.project.id} project={group.project} entries={group.entries} projects={projects}
-            onUpdate={onUpdate} onDelete={onDelete} onDeleted={() => list.current?.focus()} />
+            onUpdate={onUpdate} onDelete={onDelete} onDeleted={() => list.current?.focus()} resume={resume} />
         ))
+      )}
+      {resume && (
+        <>
+          <p id={runningHintId} className="sr-only"><Trans>Stop the running timer first.</Trans></p>
+          <p id={breakHintId} className="sr-only"><Trans>The entry runs on: the time since its end counts as work time.</Trans></p>
+        </>
       )}
     </div>
   )

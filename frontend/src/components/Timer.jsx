@@ -1,4 +1,4 @@
-import { useId, useState } from 'react'
+import { useEffect, useId, useRef, useState } from 'react'
 import { PlayIcon, StopIcon } from '@heroicons/react/24/solid'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { useElapsedTime } from '../hooks/useElapsedTime'
@@ -11,13 +11,19 @@ import ErrorMessage from './ErrorMessage'
 // so focus survives starting and stopping. The app announces both (useActiveEntry).
 // bare: without card and "Timer" heading, for a place that already names it (the dashboard's Timer tab).
 // busy: a start or stop is being sent; the button stays focusable but is marked disabled.
-function Timer({ project, activeEntry, onStart, onStop, error, busy = false, bare = false }) {
+// focusStopRequest: a counter that a page raises after it started the timer from elsewhere (Resume on an entry): the
+// Stop button takes focus once the timer runs, since the button that was clicked is gone or disabled.
+function Timer({ project, activeEntry, onStart, onStop, error, busy = false, bare = false, focusStopRequest = 0 }) {
   const [description, setDescription] = useState('')
   const { t, i18n } = useLingui()
   const headingId = useId()
   const elapsedTime = useElapsedTime(activeEntry?.start_time)
+  const stopButton = useRef(null)
 
   const isRunning = Boolean(activeEntry)
+  useEffect(() => {
+    if (focusStopRequest && isRunning) stopButton.current?.focus()
+  }, [focusStopRequest, isRunning])
   const otherProjectSelected = isRunning && project && project.id !== activeEntry.project_id
   const canStart = Boolean(project)
 
@@ -91,7 +97,7 @@ function Timer({ project, activeEntry, onStart, onStop, error, busy = false, bar
             <Trans>Start</Trans>
           </button>
         ) : (
-          <button onClick={onStop} aria-disabled={busy} className={`${ui.buttonDanger} flex-1 min-h-[3.25rem] text-base aria-disabled:opacity-70`}>
+          <button ref={stopButton} onClick={onStop} aria-disabled={busy} className={`${ui.buttonDanger} flex-1 min-h-[3.25rem] text-base aria-disabled:opacity-70`}>
             <StopIcon aria-hidden="true" className="h-4 w-4" />
             <Trans>Stop</Trans>
           </button>

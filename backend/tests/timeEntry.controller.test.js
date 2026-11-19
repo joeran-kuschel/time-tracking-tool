@@ -425,3 +425,71 @@ describe('timeEntryController.getByCustomerId', () => {
     console.error.mockRestore();
   });
 });
+
+describe('timeEntryController.resume', () => {
+  const finished = { id: 1, project_id: 3, start_time: new Date('2026-09-21T08:00:00Z'), end_time: new Date('2026-09-21T09:00:00Z') }
+  const call = async () => {
+    const res = mockResponse();
+    await controller.resume({ params: { id: '1' } }, res);
+    return res;
+  };
+
+  beforeEach(() => {
+    jest.resetAllMocks();
+    jest.spyOn(console, 'error').mockImplementation(() => {});
+    TimeEntry.getById.mockResolvedValue(finished);
+    TimeEntry.getActive.mockResolvedValue(undefined);
+    TimeEntry.resume.mockResolvedValue({ ...finished, end_time: null });
+  });
+
+  test('reopens a finished entry', async () => {
+    const res = await call();
+
+    expect(TimeEntry.resume).toHaveBeenCalledWith('1');
+    expect(res.json).toHaveBeenCalledWith({ ...finished, end_time: null });
+  });
+
+  test('answers 404 for an unknown entry', async () => {
+    TimeEntry.getById.mockResolvedValue(undefined);
+
+    expect((await call()).status).toHaveBeenCalledWith(404);
+    expect(TimeEntry.resume).not.toHaveBeenCalled();
+  });
+
+  test('answers 409 for an entry that already runs', async () => {
+    TimeEntry.getById.mockResolvedValue({ ...finished, end_time: null });
+
+    const res = await call();
+
+    expect(res.status).toHaveBeenCalledWith(409);
+    expect(TimeEntry.resume).not.toHaveBeenCalled();
+  });
+
+  test('answers 409 while another timer runs', async () => {
+    TimeEntry.getActive.mockResolvedValue({ id: 9 });
+
+    const res = await call();
+
+    expect(res.status).toHaveBeenCalledWith(409);
+    expect(res.json).toHaveBeenCalledWith({ error: 'A timer is already running' });
+    expect(TimeEntry.resume).not.toHaveBeenCalled();
+  });
+
+  test('answers 409 when another start wins the race', async () => {
+    TimeEntry.resume.mockRejectedValue(Object.assign(new Error('duplicate key'), { code: '23505' }));
+
+    expect((await call()).status).toHaveBeenCalledWith(409);
+  });
+
+  test('answers 409 when the entry was reopened in the meantime', async () => {
+    TimeEntry.resume.mockResolvedValue(undefined);
+
+    expect((await call()).status).toHaveBeenCalledWith(409);
+  });
+
+  test('answers 500 on an unexpected error', async () => {
+    TimeEntry.resume.mockRejectedValue(new Error('boom'));
+
+    expect((await call()).status).toHaveBeenCalledWith(500);
+  });
+});

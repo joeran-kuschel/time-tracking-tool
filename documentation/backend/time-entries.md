@@ -15,6 +15,7 @@ All paths are under `/api/time-entries`.
 | `GET` | `/:id` | One entry, or `404` |
 | `POST` | `/` | Create an entry (start a timer, or add a finished entry) |
 | `PATCH` | `/:id` | Stop a running entry, or edit a finished one |
+| `POST` | `/:id/resume` | Run a finished entry on again (see [Resuming an entry](#resuming-an-entry)) |
 | `DELETE` | `/:id` | Delete a finished entry |
 
 `/active` and `/search` are registered before `/:id`, so they are never read as an id. A test checks the order.
@@ -54,6 +55,19 @@ Body: `{ endTime, startTime?, projectId?, description? }`. `endTime` is required
 - `404` for an unknown entry.
 
 This is a single `UPDATE` (`backend/src/models/TimeEntry.js`, `update(id, { startTime, endTime, projectId, description })`).
+
+## Resuming an entry
+
+`POST /api/time-entries/:id/resume` (no body) reopens a finished entry: its `end_time` is cleared, so it is the running
+timer again, with the start, project and description it had. It is the same entry, not a new one, so **the time
+between its old end and the resume counts as work time**. It is one conditional `UPDATE`
+(`TimeEntry.resume(id)`, only where `end_time IS NOT NULL`) and answers with the entry.
+
+- `404` for an unknown entry.
+- `409` (*This timer is already running*) for an entry that already runs, and `409` (*A timer is already running*)
+  while another timer runs. Besides the check in the controller, the `one_running_timer` index refuses a second
+  running entry, so two requests at once can't start two timers.
+- `PATCH` keeps requiring an `endTime`; reopening has its own route, so that no field value can reopen an entry by accident.
 
 ## Rounding columns on entries
 

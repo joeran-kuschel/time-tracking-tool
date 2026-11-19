@@ -8,6 +8,7 @@ router.get('/project/:projectId', timeEntryController.getByProjectId);
 router.get('/customer/:customerId', timeEntryController.getByCustomerId);
 router.get('/:id', timeEntryController.getById);
 router.post('/', timeEntryController.create);
+router.post('/:id/resume', timeEntryController.resume);
 router.patch('/:id', timeEntryController.update);
 router.delete('/:id', timeEntryController.delete);
 

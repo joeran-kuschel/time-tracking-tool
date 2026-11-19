@@ -52,6 +52,8 @@ function TimeTracking({ customers, onCustomersChange, timer, settings }) {
   const projectGroup = useRef(null)
   // The project filter is rendered anew once the selected project is gone, so focus it after that render
   const [projectFocusRequest, setProjectFocusRequest] = useState(0)
+  // Raised after a Resume, so the timer panel moves focus to Stop
+  const [stopFocusRequest, setStopFocusRequest] = useState(0)
   const customersHeadingId = useId()
   const entriesHeadingId = useId()
 
@@ -227,6 +229,13 @@ function TimeTracking({ customers, onCustomersChange, timer, settings }) {
     return deleted
   }
 
+  // Resume: the finished entry runs on; focus moves to Stop once it runs
+  const resumeEntry = async (entry) => {
+    const project = projects.find((p) => p.id === entry.project_id)
+    if (!project) return
+    if (await timer.resume(entry, project, selectedCustomer)) setStopFocusRequest((n) => n + 1)
+  }
+
   const addEntry = async ({ projectId, startTime, endTime, description }) => {
     const created = await runAdd(
       () => api.createTimeEntry(projectId, startTime, description, endTime),
@@ -388,6 +397,7 @@ function TimeTracking({ customers, onCustomersChange, timer, settings }) {
             onStop={timer.stop}
             error={timer.error}
             busy={timer.busy}
+            focusStopRequest={stopFocusRequest}
           />
           {selectedCustomer && (
             <MonthSummary entries={entries} projects={projects} customerId={selectedCustomer.id} rounding={roundingOfEntries(entries)} />
@@ -407,7 +417,8 @@ function TimeTracking({ customers, onCustomersChange, timer, settings }) {
               )}
             </div>
             <ErrorMessage message={entriesError} />
-            <EntriesList entries={visibleEntries} projects={projects} onUpdate={updateEntry} onDelete={deleteEntry} />
+            <EntriesList entries={visibleEntries} projects={projects} onUpdate={updateEntry} onDelete={deleteEntry}
+              resume={{ onResume: resumeEntry, timerRunning: Boolean(timer.activeEntry), busy: timer.busy }} />
           </section>
         )}
       </div>

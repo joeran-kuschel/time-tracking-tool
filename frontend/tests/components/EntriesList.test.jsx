@@ -91,4 +91,73 @@ describe('EntriesList', () => {
 
     expect(onDelete).toHaveBeenCalledWith(entries[0])
   })
+
+  describe('Resume', () => {
+    const finished = [entries[0]]
+
+    test('has a button with the project and description in its name, only on finished entries', () => {
+      render(<EntriesList entries={entries} projects={projects} resume={{ onResume: vi.fn() }} />)
+
+      expect(screen.getAllByRole('button', { name: /Fortsetzen/ })).toHaveLength(1)
+      expect(screen.getByRole('button', { name: 'Fortsetzen: Website, Konzept' })).toBeInTheDocument()
+    })
+
+    test('names only the project for an entry without description', () => {
+      const bare = [{ ...entries[0], description: null }]
+      render(<EntriesList entries={bare} projects={projects} resume={{ onResume: vi.fn() }} />)
+
+      expect(screen.getByRole('button', { name: 'Fortsetzen: Website' })).toBeInTheDocument()
+    })
+
+    test('has no buttons without onResume', () => {
+      render(<EntriesList entries={finished} projects={projects} />)
+
+      expect(screen.queryByRole('button', { name: /Fortsetzen/ })).not.toBeInTheDocument()
+    })
+
+    test('calls onResume with the entry, also by keyboard', async () => {
+      const onResume = vi.fn()
+      render(<EntriesList entries={finished} projects={projects} resume={{ onResume }} />)
+
+      screen.getByRole('button', { name: /Fortsetzen/ }).focus()
+      await userEvent.keyboard('{Enter}')
+
+      expect(onResume).toHaveBeenCalledWith(finished[0])
+    })
+
+    test('says that the time since the end of the entry counts as work time', () => {
+      render(<EntriesList entries={finished} projects={projects} resume={{ onResume: vi.fn() }} />)
+
+      expect(screen.getByRole('button', { name: /Fortsetzen/ })).toHaveAccessibleDescription(
+        'Der Eintrag läuft weiter: die Zeit seit seinem Ende zählt als Arbeitszeit.'
+      )
+    })
+
+    test('with a running timer, does nothing and says why', async () => {
+      const onResume = vi.fn()
+      render(<EntriesList entries={finished} projects={projects} resume={{ onResume, timerRunning: true }} />)
+
+      const button = screen.getByRole('button', { name: /Fortsetzen/ })
+      await userEvent.click(button)
+
+      expect(button).toHaveAttribute('aria-disabled', 'true')
+      expect(button).toHaveAccessibleDescription('Stoppe zuerst den laufenden Timer.')
+      expect(onResume).not.toHaveBeenCalled()
+    })
+
+    test('while a start is being sent, does nothing', async () => {
+      const onResume = vi.fn()
+      render(<EntriesList entries={finished} projects={projects} resume={{ onResume, busy: true }} />)
+
+      await userEvent.click(screen.getByRole('button', { name: /Fortsetzen/ }))
+
+      expect(onResume).not.toHaveBeenCalled()
+    })
+
+    test('has no accessibility violations', async () => {
+      const { container } = render(<EntriesList entries={entries} projects={projects} resume={{ onResume: vi.fn(), timerRunning: true }} />)
+
+      expect(await axe(container)).toHaveNoViolations()
+    })
+  })
 })

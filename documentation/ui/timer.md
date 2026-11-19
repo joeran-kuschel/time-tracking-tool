@@ -28,6 +28,25 @@ description and can't be edited.
 - The timer panel shows *Läuft seit 10:02* (*Running since 10:02*) while the timer runs.
 - After a reload, the Time tracking page selects the customer and project of the running timer.
 
+## Resuming an activity
+
+**Resume** (*Fortsetzen*) on a finished entry on the Time tracking page runs **that entry** on again: its end time is
+cleared (`POST /api/time-entries/:id/resume`), so it is the running timer with its project, description and original
+start. No new entry is created. **The time between the end of the entry and the resume counts as work time**, so
+resume right away, or edit the entry's start/end afterwards, or start a new entry (**Start**) after a longer break.
+It is a normal start for the rest (`useActiveEntry.resume`): the header shows the timer, the start is announced once
+(*Timer gestartet für …*), a failed resume shows an error (*Timer konnte nicht fortgesetzt werden.*) and no timer runs,
+and a double click sends one request.
+
+- The button is a play icon in the actions of an entry row, before **Edit**. Its name is *Fortsetzen: Website, Login
+  reparieren* (*Resume: Website, Fix login*), or only the project for an entry without description; its description
+  says *Der Eintrag läuft weiter: die Zeit seit seinem Ende zählt als Arbeitszeit.* A running entry has no button.
+- While a timer runs or a start is being sent, the button uses `aria-disabled` and does nothing. Its description says
+  *Stoppe zuerst den laufenden Timer.* (*Stop the running timer first.*). The backend answers `409` for a second timer.
+- After a successful resume, focus moves to the panel's **Stop** button, because the row's button is then disabled and
+  the list reloads.
+- Not yet on the Dashboard's recent entries and the Entries search.
+
 ## Only one timer at a time
 
 - While a timer runs, you can still select other customers and projects and look at their entries. The timer panel
@@ -57,6 +76,7 @@ description and can't be edited.
 
 - `frontend/src/hooks/useActiveEntry.js`: loads, starts and stops the running timer and keeps what to announce; used
   once in `App`
+- `frontend/src/components/EntriesList.jsx`: the Resume button of an entry row; `pages/TimeTracking.jsx` (`resumeEntry`) starts the timer
 - `frontend/src/hooks/useElapsedTime.js`: elapsed time as `HH:MM:SS`, shared by the header and the timer panel
 - `frontend/src/components/Timer.jsx`: the timer panel, display only, no API calls
 - `frontend/src/components/RunningTimer.jsx`: the running timer in the header

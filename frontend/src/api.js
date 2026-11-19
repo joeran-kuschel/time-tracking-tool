@@ -131,6 +131,9 @@ export const api = {
 
   deleteTimeEntry: (id) => request(`/time-entries/${id}`, { method: 'DELETE' }),
 
+  // Starts a finished entry again: the same entry runs on, so the time since its end counts as work time
+  resumeTimeEntry: (id) => request(`/time-entries/${id}/resume`, { method: 'POST' }),
+
   stopTimeEntry: (id, endTime) =>
     request(`/time-entries/${id}`, { method: 'PATCH', body: { endTime } }),
 
