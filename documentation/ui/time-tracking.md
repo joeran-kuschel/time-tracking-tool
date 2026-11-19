@@ -15,10 +15,10 @@ screens the sidebar sits above the main area (see [Design](design.md)).
 - The sidebar lists all customers, sorted by name. Selecting one opens it in the main area; the selected one is marked
   with `aria-pressed`. The customer of the running timer has a red dot, and its button name ends in *, Timer läuft*
   (*, timer running*).
-- **+** (*New customer*) next to the heading opens a dialog with name, optional email and **Rounding** (see below). The
+- **+** (*New customer*) next to the heading opens a dialog with name, optional email and **Rounding** and **Report language** (see below). The
   new customer is added to the list but not selected.
 - The main area shows the customer's name as the page heading (`<h1>`) and its email. Next to it:
-  - The pencil icon (**Edit**) replaces the heading with a form (*Edit customer*: name, email, **Rounding**); **Save**,
+  - The pencil icon (**Edit**) replaces the heading with a form (*Edit customer*: name, email, **Rounding**, **Report language**); **Save**,
     **Cancel** or Escape close it.
   - The trash icon (**Delete**) asks in place first (*Delete Muster GmbH and all its projects and time entries?*). This
     can't be undone. While the running timer belongs to the customer, deleting fails with *Stop the running timer
@@ -30,6 +30,11 @@ screens the sidebar sits above the main area (see [Design](design.md)).
   its own rule shows it under the name (*Rounding: Quarter hour (15 minutes), Up*); a customer on the global setting
   shows nothing. The rule applies to the customer's reports, the Dashboard and the month summary; the entries below stay
   exact. Details: [Customers API](../backend/customers.md#rounding-rule).
+- **Report language** (German: *Berichtssprache*) is a second select in the customer form: **Same as the app** (default;
+  German: *Wie die App*), **German** or **English**. It sets the language of the customer's PDF and CSV files, so a
+  freelancer with German and English customers does not have to switch the app before each download; the app and the
+  report on screen do not change. The [Reports page](reports.md#language-of-the-downloads) says which language a download
+  will use. Details: [Customers API](../backend/customers.md#report-language).
 - Without a selected customer, the main area says *Select a customer* and only shows the timer.
 - Switching to another customer clears the previous customer's projects and entries at once, and answers that arrive
   late for a customer that is no longer selected are ignored. So clicking quickly through customers never shows one

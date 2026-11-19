@@ -959,3 +959,123 @@ describe('reportController with whole minutes', () => {
     expect(en.send.mock.calls[0][0].split('\r\n')[1]).toMatch(/,0\.08$/);
   });
 });
+
+describe('reportController with the report language of a customer', () => {
+  const entry = { id: 1, start_time: '2026-03-02T08:00:00Z', end_time: '2026-03-02T09:30:00Z', project_name: 'Web', description: 'x', hourly_rate: '80.00' };
+  const request = (query = {}) => ({ params: { customerId: '1' }, query: { month: '3', year: '2026', ...query } });
+
+  const customer = (reportLanguage) => {
+    Customer.getById.mockReset().mockResolvedValue({ id: 1, name: 'Muster', report_language: reportLanguage });
+    TimeEntry.getByCustomerIdInRange.mockReset().mockResolvedValue([entry]);
+  };
+
+  beforeEach(() => {
+    generateReportPDF.mockClear();
+  });
+
+  test.each([
+    ['de', 'en', 'abrechnung-Muster-2026-3'],
+    ['en', 'de', 'time-report-Muster-2026-3'],
+    ['en', undefined, 'time-report-Muster-2026-3'],
+    ['de', 'fr', 'abrechnung-Muster-2026-3'],
+  ])('the PDF of a customer with the language %s ignores the app language %s', async (own, app, fileName) => {
+    customer(own);
+    const res = mockResponse();
+
+    await controller.generatePDF(request({ lang: app }), res);
+
+    expect(generateReportPDF).toHaveBeenCalledWith(expect.any(Array), expect.objectContaining({ locale: own }));
+    expect(res.headers['Content-Disposition']).toBe(`attachment; filename=${fileName}.pdf`);
+  });
+
+  test.each([['en'], ['de'], [undefined]])('the PDF of a customer without a language follows the app language %s', async (app) => {
+    customer(null);
+    const res = mockResponse();
+
+    await controller.generatePDF(request({ lang: app }), res);
+
+    expect(generateReportPDF).toHaveBeenCalledWith(expect.any(Array), expect.objectContaining({ locale: app }));
+  });
+
+  test.each([['en'], ['de']])('a customer record without the field (undefined) follows the app language %s in PDF and CSV', async (app) => {
+    customer(undefined);
+    const res = mockResponse();
+    const csv = mockResponse();
+
+    await controller.generatePDF(request({ lang: app }), res);
+    await controller.exportCsv(request({ lang: app }), csv);
+
+    expect(generateReportPDF).toHaveBeenCalledWith(expect.any(Array), expect.objectContaining({ locale: app }));
+    expect(csv.send.mock.calls[0][0]).toContain(app === 'en' ? 'Date,Start,End' : 'Datum;Beginn;Ende');
+  });
+
+  test('the preview of the PDF uses the customer language too', async () => {
+    customer('en');
+    const res = mockResponse();
+
+    await controller.generatePDF(request({ lang: 'de', inline: '1' }), res);
+
+    expect(generateReportPDF).toHaveBeenCalledWith(expect.any(Array), expect.objectContaining({ locale: 'en' }));
+    expect(res.headers['Content-Disposition']).toBe('inline; filename=time-report-Muster-2026-3.pdf');
+  });
+
+  test('the CSV of an English customer has English titles, decimal points and file name although the app is German', async () => {
+    customer('en');
+    const res = mockResponse();
+
+    await controller.exportCsv(request({ lang: 'de' }), res);
+
+    expect(res.headers['Content-Disposition']).toBe('attachment; filename=time-report-Muster-2026-3.csv');
+    expect(res.send.mock.calls[0][0]).toBe(
+      '\uFEFFDate,Start,End,Customer,Project,Description,Hours\r\n2026-03-02,08:00,09:30,Muster,Web,x,1.50\r\n'
+    );
+  });
+
+  test('the CSV of a German customer has German titles and decimal commas although the app is English', async () => {
+    customer('de');
+    const res = mockResponse();
+
+    await controller.exportCsv(request({ lang: 'en' }), res);
+
+    expect(res.headers['Content-Disposition']).toBe('attachment; filename=abrechnung-Muster-2026-3.csv');
+    expect(res.send.mock.calls[0][0]).toBe(
+      '\uFEFFDatum;Beginn;Ende;Kunde;Projekt;Beschreibung;Stunden\r\n2026-03-02;08:00;09:30;Muster;Web;x;1,50\r\n'
+    );
+  });
+
+  test('the CSV of a customer without a language follows the app language', async () => {
+    customer(null);
+    const english = mockResponse();
+    const german = mockResponse();
+
+    await controller.exportCsv(request({ lang: 'en' }), english);
+    await controller.exportCsv(request({ lang: 'de' }), german);
+
+    expect(english.send.mock.calls[0][0]).toContain('Date,Start,End');
+    expect(german.send.mock.calls[0][0]).toContain('Datum;Beginn;Ende');
+  });
+
+  test('two reports in a row in different languages do not mix them', async () => {
+    const englishRes = mockResponse();
+    const germanRes = mockResponse();
+
+    customer('en');
+    await controller.exportCsv(request({ lang: 'de' }), englishRes);
+    customer('de');
+    await controller.exportCsv(request({ lang: 'en' }), germanRes);
+
+    expect(englishRes.send.mock.calls[0][0]).toContain('Date,Start,End');
+    expect(germanRes.send.mock.calls[0][0]).toContain('Datum;Beginn;Ende');
+  });
+
+  test('the report data of the JSON report does not depend on the language', async () => {
+    customer('en');
+    ReportStatus.get.mockResolvedValue('draft');
+    const res = mockResponse();
+
+    await controller.getMonthlyReport(request({ lang: 'de' }), res);
+
+    expect(res.status).not.toHaveBeenCalledWith(500);
+    expect(res.json.mock.calls[0][0]).not.toHaveProperty('lang');
+  });
+});

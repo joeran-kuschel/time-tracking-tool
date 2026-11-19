@@ -1,6 +1,20 @@
 const Customer = require('../models/Customer');
 const TimeEntry = require('../models/TimeEntry');
 const OPTIONS = require('../config/settingsOptions');
+const { LOCALES } = require('../i18n');
+
+const INVALID_REPORT_LANGUAGE = {
+  error: `reportLanguage must be null (the language of the app) or one of: ${LOCALES.join(', ')}`,
+};
+
+// The report language of the customer from the body: { reportLanguage: undefined } when the body does not mention it
+// (the stored language is kept), null for "the language of the app", a language of LOCALES, or { invalid: true }.
+function parseReportLanguage(body) {
+  if (!('reportLanguage' in body)) return { reportLanguage: undefined };
+  const { reportLanguage } = body;
+  if (reportLanguage === null || LOCALES.includes(reportLanguage)) return { reportLanguage };
+  return { invalid: true };
+}
 
 const INVALID_ROUNDING = {
   error: 'roundingMinutes and roundingDirection must both be null (use the global setting) or a valid step and direction',
@@ -18,6 +32,16 @@ function parseRounding(body) {
     return { rounding: { minutes, direction } };
   }
   return { invalid: true };
+}
+
+// The optional fields of a customer in the body: { rounding, reportLanguage } (each undefined when not mentioned), or
+// { error } with the answer for a 400
+function parseOptions(body) {
+  const { rounding, invalid } = parseRounding(body);
+  if (invalid) return { error: INVALID_ROUNDING };
+  const { reportLanguage, invalid: invalidLanguage } = parseReportLanguage(body);
+  if (invalidLanguage) return { error: INVALID_REPORT_LANGUAGE };
+  return { rounding, reportLanguage };
 }
 
 exports.getAll = async (req, res) => {
@@ -50,12 +74,12 @@ exports.create = async (req, res) => {
     if (!name) {
       return res.status(400).json({ error: 'Name is required' });
     }
-    const { rounding, invalid } = parseRounding(req.body);
-    if (invalid) {
-      return res.status(400).json(INVALID_ROUNDING);
+    const { rounding, reportLanguage, error } = parseOptions(req.body);
+    if (error) {
+      return res.status(400).json(error);
     }
 
-    const customer = await Customer.create(name, email || null, rounding);
+    const customer = await Customer.create(name, email || null, rounding, reportLanguage);
     res.status(201).json(customer);
   } catch (err) {
     console.error(err);
@@ -70,12 +94,12 @@ exports.update = async (req, res) => {
     if (!name) {
       return res.status(400).json({ error: 'Name is required' });
     }
-    const { rounding, invalid } = parseRounding(req.body);
-    if (invalid) {
-      return res.status(400).json(INVALID_ROUNDING);
+    const { rounding, reportLanguage, error } = parseOptions(req.body);
+    if (error) {
+      return res.status(400).json(error);
     }
 
-    const customer = await Customer.update(req.params.id, name, email || null, rounding);
+    const customer = await Customer.update(req.params.id, name, email || null, rounding, reportLanguage);
     if (!customer) {
       return res.status(404).json({ error: 'Customer not found' });
     }

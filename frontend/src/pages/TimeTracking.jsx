@@ -11,6 +11,7 @@ import Timer from '../components/Timer'
 import MonthSummary from '../components/MonthSummary'
 import { roundingOfEntries } from '../rounding'
 import { GLOBAL_ROUNDING, ownRoundingLabel, roundingFieldsOf, roundingOptions, roundingValueOf } from '../customerRounding'
+import { APP_LANGUAGE, reportLanguageFieldOf, reportLanguageOptions, reportLanguageValueOf } from '../reportLanguage'
 import EntriesList from '../components/EntriesList'
 import EditableRecord from '../components/EditableRecord'
 import RecordForm from '../components/RecordForm'
@@ -142,15 +143,19 @@ function TimeTracking({ customers, onCustomersChange, timer, settings }) {
     { name: 'name', label: t`Name`, required: true },
     { name: 'email', label: t`Email (optional)`, type: 'email' },
     { name: 'rounding', label: t`Rounding`, type: 'select', options: roundingOptions(i18n) },
+    { name: 'reportLanguage', label: t`Report language`, type: 'select', options: reportLanguageOptions(i18n) },
   ]
   const customerForm = {
     legend: t`Edit customer`,
     fields: customerFields,
-    toValues: (c) => ({ name: c.name, email: c.email ?? '', rounding: roundingValueOf(c) }),
+    toValues: (c) => ({ name: c.name, email: c.email ?? '', rounding: roundingValueOf(c), reportLanguage: reportLanguageValueOf(c) }),
   }
 
-  const addCustomer = async ({ name, email, rounding }) => {
-    const created = await runAdd(() => api.createCustomer(name.trim(), email.trim(), roundingFieldsOf(rounding)), msg`Customer could not be created.`)
+  // The optional fields of a customer form as the API takes them
+  const optionsOf = ({ rounding, reportLanguage }) => ({ ...roundingFieldsOf(rounding), reportLanguage: reportLanguageFieldOf(reportLanguage) })
+
+  const addCustomer = async ({ name, email, ...options }) => {
+    const created = await runAdd(() => api.createCustomer(name.trim(), email.trim(), optionsOf(options)), msg`Customer could not be created.`)
     if (created) {
       closeDialog()
       onCustomersChange()
@@ -158,8 +163,9 @@ function TimeTracking({ customers, onCustomersChange, timer, settings }) {
     return created
   }
 
-  const updateCustomer = async (customer, { name, email, rounding }) => {
-    const saved = await api.updateCustomer(customer.id, name.trim(), email.trim(), roundingFieldsOf(rounding))
+  const updateCustomer = async (customer, { name, email, ...options }) => {
+    const { rounding } = options
+    const saved = await api.updateCustomer(customer.id, name.trim(), email.trim(), optionsOf(options))
     await onCustomersChange()
     // The server rounds the entries by the customer's rule, so a changed rule needs the entries (and the month summary) again
     if (rounding !== roundingValueOf(customer)) await refreshEntries()
@@ -407,7 +413,7 @@ function TimeTracking({ customers, onCustomersChange, timer, settings }) {
       </div>
 
       <Modal title={t`New customer`} open={dialog === 'customer'} onClose={closeDialog}>
-        <RecordForm fields={customerFields} initialValues={{ name: '', email: '', rounding: GLOBAL_ROUNDING }} submitLabel={t`Save`}
+        <RecordForm fields={customerFields} initialValues={{ name: '', email: '', rounding: GLOBAL_ROUNDING, reportLanguage: APP_LANGUAGE }} submitLabel={t`Save`}
           onSubmit={addCustomer} onCancel={closeDialog} error={addError} />
       </Modal>
       <Modal title={t`New project`} open={dialog === 'project'} onClose={closeDialog}>
