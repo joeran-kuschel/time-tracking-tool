@@ -24,6 +24,10 @@ spec:
             name: time-tracking-config
         - secretRef:
             name: time-tracking-db
+        # Local overrides (e.g. CORS_ORIGIN) from the gitignored k8s/.env.local, see k8s/README.md
+        - configMapRef:
+            name: time-tracking-local
+            optional: true
         livenessProbe:
           httpGet:
             path: /health

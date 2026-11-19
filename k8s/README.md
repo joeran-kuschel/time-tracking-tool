@@ -202,6 +202,22 @@ kubectl apply -f k8s/configmap.yaml
 kubectl rollout restart deployment/backend -n time-tracking
 ```
 
+### Local Overrides
+
+To use other origins on your own machine (for example `https://time-tracking.local:8443`) without changing `configmap.yaml`, put them in `k8s/.env.local`. The file is gitignored, and the backend reads it through the optional ConfigMap `time-tracking-local`, which wins over `time-tracking-config`:
+
+```bash
+# k8s/.env.local
+CORS_ORIGIN=https://time-tracking.local,https://time-tracking.local:8443
+```
+
+```bash
+kubectl -n time-tracking create configmap time-tracking-local --from-env-file=k8s/.env.local --dry-run=client -o yaml | kubectl apply -f -
+kubectl rollout restart deployment/backend -n time-tracking
+```
+
+To drop the overrides: `kubectl -n time-tracking delete configmap time-tracking-local`, then restart the backend.
+
 ## Upgrading an Existing Install to HTTPS
 
 An install from before TLS needs three steps: create the Secret, then apply the changed manifests and restart the backend, because `CORS_ORIGIN` is now `https://time-tracking.local`:
