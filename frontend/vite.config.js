@@ -15,7 +15,8 @@ export default defineConfig({
   },
   server: {
     port: 5173,
-    host: '0.0.0.0'
+    // Only this machine can open the dev server. Inside a container, start it with --host 0.0.0.0 on purpose.
+    host: 'localhost'
   },
   build: {
     outDir: 'dist',
