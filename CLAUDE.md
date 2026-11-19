@@ -90,8 +90,9 @@ kubectl config use-context docker-desktop
 kubectl apply -f k8s/namespace.yaml && ./k8s/setup-tls.sh
 for f in configmap postgres-init-scripts postgres backend frontend ingress network-policy-postgres network-policy-backend; do kubectl apply -f k8s/$f.yaml; done
 
-# Pick up new images
-kubectl -n time-tracking rollout restart deployment/backend deployment/frontend
+# Pick up new images: after building them, this imports them into the node, restarts both deployments, waits for the
+# rollout and removes the previous copies of the two images from the node (details, free space: k8s/README.md)
+./k8s/update-images.sh
 ```
 
 The database volume lives inside the kind node: a Docker Desktop update or cluster reset deletes it, and so does `kubectl delete namespace time-tracking`. Back up first with `k8s/backup-db.sh`; an hourly launchd job does this automatically (details, restore: `documentation/backend/database-backups.md`).

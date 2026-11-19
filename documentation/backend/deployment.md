@@ -123,7 +123,16 @@ The exact commands are in `CLAUDE.md` and `k8s/README.md`. In short:
 3. Install the ingress controller once per cluster, then apply the manifests in this order: `namespace`, `configmap`,
    `postgres-init-scripts`, `postgres`, `backend`, `frontend`, `ingress`, `network-policy-postgres`,
    `network-policy-backend`.
-4. After a new image, restart the deployment: `kubectl -n time-tracking rollout restart deployment/<name>`.
+4. After a new build, run `./k8s/update-images.sh` instead of importing by hand (the loop in step 2 is for the first
+   install, before the deployments exist). It imports both images, restarts `backend` and `frontend`, waits for the
+   rollouts and then removes the previous copies of the two images from the node. Importing under the same tag
+   moves the tag but leaves the old image behind as a bare `sha256:…` reference with all its layers (about 290 MB per
+   rebuild), and the node's disk is shared with other apps: when it is full, Postgres cannot start. The script
+   removes only the digests that the two tags had before the import, never anything else, and only after the
+   rollout (a pod that restarts during it can still need the old image). A failed rollout stops it and keeps the old
+   images for a rollback; a failed removal only prints a warning. How to check the free space and what to do when
+   the node is nearly full: "Updating the Images and the Disk of the Node" in `k8s/README.md`. A single deployment is
+   restarted with `kubectl -n time-tracking rollout restart deployment/<name>`.
 
 ## Configuration
 

@@ -110,11 +110,32 @@ The API is at the same address: https://time-tracking.local/api, health check at
 
 **Warning:** Docker Desktop opens ports 80 and 443 of the ingress controller on all network interfaces, not only on `localhost`. Anyone on the same network can reach the login page and the API; without a login session, the API answers `401`. The macOS firewall is off by default. Turned on (System Settings → Network → Firewall, then "Options…" → "Block all incoming connections"), it should keep other devices out; this is untested.
 
-After building new images:
+## Updating the Images and the Disk of the Node
+
+After building new images, one script imports them, restarts both deployments, waits for the rollout and then removes the previous copies of the two images from the node:
 
 ```bash
-kubectl -n time-tracking rollout restart deployment/backend deployment/frontend
+docker build -t time-tracking-backend:latest ./backend
+docker build -t time-tracking-frontend:latest ./frontend
+./k8s/update-images.sh
 ```
+
+Why the cleanup: importing a build under the same tag moves the tag, and the old image stays on the node as a bare `sha256:…` reference that keeps all its layers (about 290 MB per rebuild). The script remembers which digests the two tags had before the import and removes only those, and only after the rollout, because a pod that restarts during it can still need the old image. Images of other apps on the node are never touched. If a rollout fails, the script stops and keeps the old images for a rollback; if removing a copy fails, it only prints a warning. Running it twice is safe. `NODE_CONTAINER`, `KUBE_CONTEXT`, `NAMESPACE` and `ROLLOUT_TIMEOUT` (default `180s`) can be overridden by environment variables. The first install still uses the import loop in step 2, because the deployments do not exist yet.
+
+### Free space on the node
+
+The node is shared by every app in the cluster, and its disk is the one of Docker Desktop's VM. When it is full, Postgres cannot start. Check it:
+
+```bash
+docker exec desktop-control-plane df -h /var
+```
+
+The script prints the free space at the end. When it is nearly full:
+
+1. Remove the images that no container uses: `docker exec desktop-control-plane crictl rmi --prune`. This also removes unused images of the other apps on the node (they are rebuilt or re-imported on their next deploy). With many large images it prints `DeadlineExceeded` errors; the removal still finishes in the background, so check the free space again after a minute.
+2. Clear the build cache on the host, which any project can rebuild: `docker builder prune`.
+
+**Warning:** never use Docker Desktop's *Clean / Purge data*: it deletes the database volumes. Make a backup first if you are unsure (`k8s/backup-db.sh`).
 
 ## Network Policy
 
