@@ -30,7 +30,8 @@ function deferred() {
   return { promise, resolve, reject }
 }
 
-const renderPage = (props = {}) => render(<Entries customers={customers} {...props} />)
+const stoppedTimer = () => ({ activeEntry: null, busy: false })
+const renderPage = (props = {}) => render(<Entries customers={customers} timer={stoppedTimer()} onResume={vi.fn()} {...props} />)
 
 beforeEach(() => {
   vi.resetAllMocks()
@@ -613,6 +614,61 @@ describe('Entries', () => {
       await userEvent.click(await screen.findByRole('button', { name: 'Mehr anzeigen' }))
 
       await waitFor(() => expect(status()).toHaveTextContent('3 Einträge, 4:15 h'))
+    })
+  })
+
+  describe('Resume', () => {
+    test('has a button on each finished result, named with its project and description, none on the running one', async () => {
+      api.searchTimeEntries.mockResolvedValue(answer([entry(1), entry(2, { end_time: null })]))
+      renderPage()
+      await screen.findByText('Eintrag 1')
+
+      expect(screen.getAllByRole('button', { name: /^Fortsetzen/ })).toHaveLength(1)
+      expect(screen.getByRole('button', { name: 'Fortsetzen: Website, Eintrag 1' })).toBeInTheDocument()
+    })
+
+    test('calls onResume with the result, next to the link that opens it in Time tracking', async () => {
+      const onResume = vi.fn()
+      renderPage({ onResume })
+      await screen.findByText('Eintrag 1')
+
+      await userEvent.click(screen.getByRole('button', { name: 'Fortsetzen: Website, Eintrag 2' }))
+
+      expect(onResume).toHaveBeenCalledWith(expect.objectContaining({ id: 2, project_id: 7, customer_id: 1 }))
+      expect(screen.getAllByRole('link', { name: /Öffnen/ })).toHaveLength(2)
+    })
+
+    test('with a running timer, does nothing and says why', async () => {
+      const onResume = vi.fn()
+      renderPage({ onResume, timer: { activeEntry: { id: 99 }, busy: false } })
+      await screen.findByText('Eintrag 1')
+
+      const button = screen.getByRole('button', { name: 'Fortsetzen: Website, Eintrag 1' })
+      await userEvent.click(button)
+
+      expect(button).toHaveAttribute('aria-disabled', 'true')
+      expect(button).toHaveAccessibleDescription('Stoppe zuerst den laufenden Timer.')
+      expect(onResume).not.toHaveBeenCalled()
+    })
+
+    test('loads the first page again when the running timer changes, so a resumed entry shows as running', async () => {
+      const { rerender } = renderPage()
+      await screen.findByText('Eintrag 1')
+      expect(api.searchTimeEntries).toHaveBeenCalledTimes(1)
+      api.searchTimeEntries.mockResolvedValue(answer([entry(1, { end_time: null }), entry(2)]))
+
+      rerender(<Entries customers={customers} timer={{ activeEntry: { id: 1 }, busy: false }} onResume={vi.fn()} />)
+
+      await waitFor(() => expect(api.searchTimeEntries).toHaveBeenCalledTimes(2))
+      await waitFor(() => expect(screen.getAllByRole('button', { name: /^Fortsetzen/ })).toHaveLength(1))
+      expect(lastPaging()).toMatchObject({ offset: 0 })
+    })
+
+    test('has no accessibility violations', async () => {
+      const { container } = renderPage()
+      await screen.findByText('Eintrag 1')
+
+      expect(await axe(container)).toHaveNoViolations()
     })
   })
 })

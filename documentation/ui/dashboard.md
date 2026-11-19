@@ -92,6 +92,11 @@ The status is set on the Reports page; see [Reports](reports.md).
 The last five finished entries of all customers: day, description, customer · project, hours. Selecting one opens its
 customer and project on the Time tracking page; **View all** opens the customer of the newest entry.
 
+**Resume** (*Fortsetzen*), the play button beside each entry (not inside its link), runs that entry on again as the
+running timer, as on the Time tracking page; the time since its end counts as work time (see
+[Timer](timer.md#resuming-an-activity)). The Dashboard stays open and reloads, and the button is disabled while a
+timer runs.
+
 ## Data
 
 One request, `GET /api/dashboard` (see [Dashboard API](../backend/dashboard.md)), loads the entries of the month and

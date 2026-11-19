@@ -42,11 +42,11 @@ const data = {
   },
 }
 
-const stoppedTimer = () => ({ activeEntry: null, start: vi.fn(), stop: vi.fn(), error: null })
+const stoppedTimer = () => ({ activeEntry: null, start: vi.fn(), stop: vi.fn(), error: null, busy: false })
 
-function renderDashboard(timer = stoppedTimer()) {
-  const result = render(<Dashboard timer={timer} />)
-  return { ...result, timer }
+function renderDashboard(timer = stoppedTimer(), onResume = vi.fn()) {
+  const result = render(<Dashboard timer={timer} onResume={onResume} />)
+  return { ...result, timer, onResume }
 }
 
 const loaded = () => screen.findByRole('heading', { name: 'Zeit erfassen' })
@@ -161,6 +161,41 @@ describe('Dashboard', () => {
     expect(section.getByRole('link', { name: /Updates.*Berger · Pflege.*4:00 h/ })).toBeInTheDocument()
     expect(section.getByRole('link', { name: /Ohne Beschreibung.*Muster GmbH · Shop/ })).toHaveAttribute('href', '/time-tracking/1/8')
     expect(section.getByRole('link', { name: 'Alle ansehen' })).toHaveAttribute('href', '/time-tracking/2')
+  })
+
+  describe('Resume on a recent entry', () => {
+    const recentSection = async () => within(await screen.findByRole('region', { name: 'Letzte Einträge' }))
+
+    test('has a button beside the link of each recent entry, named with its project and description', async () => {
+      renderDashboard()
+      const section = await recentSection()
+
+      expect(section.getByRole('button', { name: 'Fortsetzen: Pflege, Updates' })).toBeInTheDocument()
+      expect(section.getByRole('button', { name: 'Fortsetzen: Shop' })).toBeInTheDocument()
+      expect(section.getByRole('link', { name: /Updates.*Berger · Pflege/ })).toBeInTheDocument()
+    })
+
+    test('calls onResume with the entry', async () => {
+      const { onResume } = renderDashboard()
+      const section = await recentSection()
+
+      await userEvent.click(section.getByRole('button', { name: 'Fortsetzen: Pflege, Updates' }))
+
+      expect(onResume).toHaveBeenCalledWith(expect.objectContaining({ project_name: 'Pflege', customer_name: 'Berger' }))
+    })
+
+    test('with a running timer, does nothing and says why', async () => {
+      const timer = { ...stoppedTimer(), activeEntry: { id: 99, project_name: 'Shop' } }
+      const { onResume } = renderDashboard(timer)
+      const section = await recentSection()
+
+      const button = section.getByRole('button', { name: 'Fortsetzen: Pflege, Updates' })
+      await userEvent.click(button)
+
+      expect(button).toHaveAttribute('aria-disabled', 'true')
+      expect(button).toHaveAccessibleDescription('Stoppe zuerst den laufenden Timer.')
+      expect(onResume).not.toHaveBeenCalled()
+    })
   })
 
   test('Monthly reports opens the Reports page', async () => {

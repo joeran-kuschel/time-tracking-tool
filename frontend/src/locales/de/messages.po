@@ -22,7 +22,7 @@ msgid ", timer running"
 msgstr ", Timer läuft"
 
 #. placeholder {0}: results.total
-#: src/components/EntryResults.jsx:49
+#: src/components/EntryResults.jsx:51
 msgid "{0, plural, one {# entry} other {# entries}}"
 msgstr "{0, plural, one {# Eintrag} other {# Einträge}}"
 
@@ -51,7 +51,7 @@ msgstr "{sent} von {total}"
 msgid "{total} this month"
 msgstr "{total} in diesem Monat"
 
-#: src/components/EntriesList.jsx:96
+#: src/components/EntriesList.jsx:86
 msgid "{total} total"
 msgstr "{total} gesamt"
 
@@ -71,8 +71,8 @@ msgstr "5 Minuten"
 msgid "A timer is already running."
 msgstr "Es läuft bereits ein Timer."
 
-#: src/components/EntriesList.jsx:105
-#: src/components/EntryResults.jsx:63
+#: src/components/EntriesList.jsx:95
+#: src/components/EntryResults.jsx:65
 msgid "Actions"
 msgstr "Aktionen"
 
@@ -80,11 +80,11 @@ msgstr "Aktionen"
 msgid "Active filters"
 msgstr "Aktive Filter"
 
-#: src/components/dashboard/TrackTimeCard.jsx:83
+#: src/components/dashboard/TrackTimeCard.jsx:84
 msgid "Add"
 msgstr "Hinzufügen"
 
-#: src/components/dashboard/TrackTimeCard.jsx:93
+#: src/components/dashboard/TrackTimeCard.jsx:94
 msgid "Add a customer and a project on the Time tracking page first."
 msgstr "Lege zuerst auf der Seite Zeiterfassung einen Kunden und ein Projekt an."
 
@@ -178,12 +178,12 @@ msgstr "Benutzerdefiniert"
 
 #: src/components/dashboard/BillingTable.jsx:49
 #: src/components/EntryFilters.jsx:137
-#: src/components/EntryResults.jsx:41
+#: src/components/EntryResults.jsx:43
 #: src/pages/Reports.jsx:160
 msgid "Customer"
 msgstr "Kunde"
 
-#: src/components/dashboard/TrackTimeCard.jsx:58
+#: src/components/dashboard/TrackTimeCard.jsx:59
 msgid "Customer and project"
 msgstr "Kunde und Projekt"
 
@@ -216,18 +216,18 @@ msgstr "Kunden konnten nicht geladen werden."
 msgid "Dark"
 msgstr "Dunkel"
 
-#: src/pages/Dashboard.jsx:62
+#: src/pages/Dashboard.jsx:63
 #: src/routes.js:9
 msgid "Dashboard"
 msgstr "Dashboard"
 
-#: src/pages/Dashboard.jsx:33
+#: src/pages/Dashboard.jsx:34
 msgid "Dashboard could not be loaded."
 msgstr "Dashboard konnte nicht geladen werden."
 
-#: src/components/EntriesList.jsx:101
+#: src/components/EntriesList.jsx:91
 #: src/components/EntryForm.jsx:37
-#: src/components/EntryResults.jsx:41
+#: src/components/EntryResults.jsx:43
 #: src/pages/Reports.jsx:300
 msgid "Date"
 msgstr "Datum"
@@ -260,16 +260,16 @@ msgstr "{name} löschen"
 msgid "Delete {projectName} and all its time entries?"
 msgstr "{projectName} und alle Zeiteinträge löschen?"
 
-#: src/components/EntriesList.jsx:74
+#: src/components/EntriesList.jsx:64
 msgid "Delete the entry from {start}"
 msgstr "Eintrag vom {start} löschen"
 
-#: src/components/EntriesList.jsx:43
+#: src/components/EntriesList.jsx:39
 msgid "Delete the entry from {start}?"
 msgstr "Eintrag vom {start} löschen?"
 
-#: src/components/EntriesList.jsx:104
-#: src/components/EntryResults.jsx:41
+#: src/components/EntriesList.jsx:94
+#: src/components/EntryResults.jsx:43
 #: src/pages/Reports.jsx:302
 msgid "Description"
 msgstr "Beschreibung"
@@ -315,7 +315,7 @@ msgstr "Kunde bearbeiten"
 msgid "Edit project"
 msgstr "Projekt bearbeiten"
 
-#: src/components/EntriesList.jsx:73
+#: src/components/EntriesList.jsx:63
 msgid "Edit the entry from {start}"
 msgstr "Eintrag vom {start} bearbeiten"
 
@@ -349,12 +349,12 @@ msgid "Enter an amount from 0 with up to two decimals, for example {0}."
 msgstr "Geben Sie einen Betrag ab 0 mit bis zu zwei Nachkommastellen ein, zum Beispiel {0}."
 
 #: src/components/MonthSummary.jsx:24
-#: src/pages/Entries.jsx:83
+#: src/pages/Entries.jsx:93
 #: src/routes.js:11
 msgid "Entries"
 msgstr "Einträge"
 
-#: src/pages/Entries.jsx:40
+#: src/pages/Entries.jsx:41
 #: src/pages/TimeTracking.jsx:131
 msgid "Entries could not be loaded."
 msgstr "Einträge konnten nicht geladen werden."
@@ -397,8 +397,8 @@ msgstr "Stundensatz (€)"
 
 #: src/components/dashboard/BillingTable.jsx:51
 #: src/components/dashboard/HoursChart.jsx:151
-#: src/components/EntriesList.jsx:103
-#: src/components/EntryResults.jsx:41
+#: src/components/EntriesList.jsx:93
+#: src/components/EntryResults.jsx:43
 #: src/pages/Reports.jsx:303
 msgid "Hours"
 msgstr "Stunden"
@@ -467,7 +467,7 @@ msgstr "Stunden auf Schritte von 5 Minuten aufgerundet."
 msgid "Hours this month"
 msgstr "Stunden diesen Monat"
 
-#: src/components/EntryResults.jsx:94
+#: src/components/EntryResults.jsx:98
 msgid "in Time tracking"
 msgstr "in Zeiterfassung"
 
@@ -495,9 +495,9 @@ msgstr "Hell"
 msgid "Like the system"
 msgstr "Wie das System"
 
-#: src/App.jsx:75
+#: src/App.jsx:91
 #: src/components/AuthGate.jsx:70
-#: src/pages/Dashboard.jsx:76
+#: src/pages/Dashboard.jsx:77
 #: src/pages/Reports.jsx:253
 #: src/pages/Settings.jsx:96
 #: src/pages/Settings.jsx:102
@@ -510,7 +510,7 @@ msgstr "Laden..."
 msgid "Log in"
 msgstr "Anmelden"
 
-#: src/App.jsx:104
+#: src/App.jsx:120
 msgid "Log out"
 msgstr "Abmelden"
 
@@ -522,11 +522,11 @@ msgstr "Abmelden fehlgeschlagen."
 msgid "Login failed."
 msgstr "Anmeldung fehlgeschlagen."
 
-#: src/App.jsx:86
+#: src/App.jsx:102
 msgid "Main"
 msgstr "Hauptnavigation"
 
-#: src/components/dashboard/TrackTimeCard.jsx:99
+#: src/components/dashboard/TrackTimeCard.jsx:100
 msgid "Manual entry"
 msgstr "Nachtragen"
 
@@ -538,7 +538,7 @@ msgstr "Monat"
 msgid "Monthly report"
 msgstr "Monatsabrechnung"
 
-#: src/pages/Dashboard.jsx:66
+#: src/pages/Dashboard.jsx:67
 msgid "Monthly reports"
 msgstr "Monatsabrechnungen"
 
@@ -573,8 +573,8 @@ msgstr "Neueste zuerst"
 msgid "Next month"
 msgstr "Nächster Monat"
 
-#: src/components/dashboard/RecentEntries.jsx:41
-#: src/components/EntryResults.jsx:86
+#: src/components/dashboard/RecentEntries.jsx:43
+#: src/components/EntryResults.jsx:88
 msgid "No description"
 msgstr "Ohne Beschreibung"
 
@@ -582,7 +582,7 @@ msgstr "Ohne Beschreibung"
 msgid "No entries for this period"
 msgstr "Keine Einträge für diesen Zeitraum"
 
-#: src/components/EntryResults.jsx:48
+#: src/components/EntryResults.jsx:50
 msgid "No entries found"
 msgstr "Keine Einträge gefunden"
 
@@ -590,11 +590,11 @@ msgstr "Keine Einträge gefunden"
 msgid "No entries in {lastMonthName}"
 msgstr "Keine Einträge im {lastMonthName}"
 
-#: src/components/EntriesList.jsx:135
+#: src/components/EntriesList.jsx:121
 msgid "No entries yet"
 msgstr "Noch keine Einträge"
 
-#: src/components/dashboard/RecentEntries.jsx:30
+#: src/components/dashboard/RecentEntries.jsx:32
 msgid "No entries yet."
 msgstr "Noch keine Einträge."
 
@@ -621,7 +621,7 @@ msgstr "Nichts geändert."
 msgid "Oldest first"
 msgstr "Älteste zuerst"
 
-#: src/components/EntryResults.jsx:93
+#: src/components/EntryResults.jsx:97
 msgid "Open"
 msgstr "Öffnen"
 
@@ -673,7 +673,7 @@ msgstr "Vorheriger Monat"
 
 #: src/components/EntryFilters.jsx:150
 #: src/components/EntryForm.jsx:36
-#: src/components/EntryResults.jsx:41
+#: src/components/EntryResults.jsx:43
 #: src/pages/Reports.jsx:301
 msgid "Project"
 msgstr "Projekt"
@@ -700,7 +700,7 @@ msgstr "Projekt: {projectName}"
 msgid "Projects"
 msgstr "Projekte"
 
-#: src/pages/Entries.jsx:64
+#: src/pages/Entries.jsx:74
 #: src/pages/TimeTracking.jsx:112
 msgid "Projects could not be loaded."
 msgstr "Projekte konnten nicht geladen werden."
@@ -721,7 +721,7 @@ msgstr "bereit zum Versand"
 msgid "Ready to send"
 msgstr "Bereit zum Versand"
 
-#: src/components/dashboard/RecentEntries.jsx:19
+#: src/components/dashboard/RecentEntries.jsx:21
 msgid "Recent entries"
 msgstr "Letzte Einträge"
 
@@ -762,15 +762,15 @@ msgstr "Abrechnungen für {lastMonthName} verschickt"
 msgid "Reset filters"
 msgstr "Filter zurücksetzen"
 
-#: src/components/EntryResults.jsx:45
+#: src/components/EntryResults.jsx:47
 msgid "Results"
 msgstr "Ergebnisse"
 
-#: src/components/EntriesList.jsx:33
+#: src/components/ResumeButton.jsx:28
 msgid "Resume: {projectName}"
 msgstr "Fortsetzen: {projectName}"
 
-#: src/components/EntriesList.jsx:33
+#: src/components/ResumeButton.jsx:28
 msgid "Resume: {projectName}, {description}"
 msgstr "Fortsetzen: {projectName}, {description}"
 
@@ -798,8 +798,8 @@ msgstr "Die Rundung unterscheidet sich je Kunde."
 msgid "Rounding: {customerRounding}"
 msgstr "Rundung: {customerRounding}"
 
-#: src/components/EntriesList.jsx:57
-#: src/components/EntryResults.jsx:79
+#: src/components/EntriesList.jsx:53
+#: src/components/EntryResults.jsx:81
 msgid "running"
 msgstr "läuft"
 
@@ -807,7 +807,7 @@ msgstr "läuft"
 msgid "Running since {since}"
 msgstr "Läuft seit {since}"
 
-#: src/components/RunningTimer.jsx:14
+#: src/components/RunningTimer.jsx:15
 msgid "Running timer"
 msgstr "Laufender Timer"
 
@@ -820,7 +820,7 @@ msgid "Same as the app"
 msgstr "Wie die App"
 
 #: src/components/EditableRecord.jsx:21
-#: src/components/EntriesList.jsx:40
+#: src/components/EntriesList.jsx:36
 #: src/pages/Settings.jsx:125
 #: src/pages/TimeTracking.jsx:427
 #: src/pages/TimeTracking.jsx:431
@@ -828,7 +828,7 @@ msgstr "Wie die App"
 msgid "Save"
 msgstr "Speichern"
 
-#: src/components/dashboard/TrackTimeCard.jsx:74
+#: src/components/dashboard/TrackTimeCard.jsx:75
 msgid "Saved {savedDuration} to {savedProject}."
 msgstr "{savedDuration} für {savedProject} gespeichert."
 
@@ -886,11 +886,11 @@ msgstr "Stundensatz und Beträge anzeigen"
 msgid "Show hourly rate and amounts in reports"
 msgstr "Stundensatz und Beträge in Berichten anzeigen"
 
-#: src/components/EntryResults.jsx:108
+#: src/components/EntryResults.jsx:115
 msgid "Show more"
 msgstr "Mehr anzeigen"
 
-#: src/components/EntryResults.jsx:110
+#: src/components/EntryResults.jsx:117
 msgid "Showing {shown} of {total}"
 msgstr "{shown} von {total} angezeigt"
 
@@ -915,12 +915,12 @@ msgstr "Status"
 msgid "Stop"
 msgstr "Stop"
 
-#: src/components/RunningTimer.jsx:30
+#: src/components/RunningTimer.jsx:32
 msgid "Stop <0>timer</0>"
 msgstr "Stop <0>Timer</0>"
 
-#: src/components/EntriesList.jsx:20
-#: src/components/EntriesList.jsx:144
+#: src/components/EntriesList.jsx:19
+#: src/components/ResumeButton.jsx:13
 #: src/pages/TimeTracking.jsx:24
 msgid "Stop the running timer first."
 msgstr "Stoppe zuerst den laufenden Timer."
@@ -929,7 +929,7 @@ msgstr "Stoppe zuerst den laufenden Timer."
 msgid "The end date must not be before the start date"
 msgstr "Das Enddatum darf nicht vor dem Startdatum liegen."
 
-#: src/components/EntriesList.jsx:145
+#: src/components/ResumeButton.jsx:14
 msgid "The entry runs on: the time since its end counts as work time."
 msgstr "Der Eintrag läuft weiter: die Zeit seit seinem Ende zählt als Arbeitszeit."
 
@@ -995,8 +995,8 @@ msgstr "Diese Woche"
 msgid "This year"
 msgstr "Dieses Jahr"
 
-#: src/components/EntriesList.jsx:102
-#: src/components/EntryResults.jsx:41
+#: src/components/EntriesList.jsx:92
+#: src/components/EntryResults.jsx:43
 msgid "Time"
 msgstr "Zeit"
 
@@ -1004,12 +1004,12 @@ msgstr "Zeit"
 msgid "Time and billing"
 msgstr "Zeit und Abrechnung"
 
-#: src/components/EntriesList.jsx:19
+#: src/components/EntriesList.jsx:18
 msgid "Time entry could not be deleted."
 msgstr "Zeiteintrag konnte nicht gelöscht werden."
 
-#: src/components/dashboard/TrackTimeCard.jsx:45
-#: src/components/EntriesList.jsx:18
+#: src/components/dashboard/TrackTimeCard.jsx:46
+#: src/components/EntriesList.jsx:17
 #: src/pages/TimeTracking.jsx:242
 msgid "Time entry could not be saved."
 msgstr "Zeiteintrag konnte nicht gespeichert werden."
@@ -1019,7 +1019,7 @@ msgstr "Zeiteintrag konnte nicht gespeichert werden."
 msgid "Time tracking"
 msgstr "Zeiterfassung"
 
-#: src/components/dashboard/TrackTimeCard.jsx:98
+#: src/components/dashboard/TrackTimeCard.jsx:99
 #: src/components/Timer.jsx:48
 msgid "Timer"
 msgstr "Timer"
@@ -1036,11 +1036,11 @@ msgstr "Timer konnte nicht gestartet werden."
 msgid "Timer could not be stopped."
 msgstr "Timer konnte nicht gestoppt werden."
 
-#: src/App.jsx:64
+#: src/App.jsx:80
 msgid "Timer started for {announcedProject}"
 msgstr "Timer gestartet für {announcedProject}"
 
-#: src/App.jsx:64
+#: src/App.jsx:80
 msgid "Timer stopped"
 msgstr "Timer gestoppt"
 
@@ -1071,14 +1071,14 @@ msgstr "Gesamt"
 msgid "Total hours"
 msgstr "Gesamtstunden"
 
-#: src/components/dashboard/TrackTimeCard.jsx:91
-#: src/components/dashboard/TrackTimeCard.jsx:96
+#: src/components/dashboard/TrackTimeCard.jsx:92
+#: src/components/dashboard/TrackTimeCard.jsx:97
 msgid "Track time"
 msgstr "Zeit erfassen"
 
-#: src/App.jsx:115
+#: src/App.jsx:131
 #: src/components/AuthGate.jsx:66
-#: src/pages/Dashboard.jsx:73
+#: src/pages/Dashboard.jsx:74
 #: src/pages/Reports.jsx:238
 #: src/pages/Settings.jsx:98
 msgid "Try again"
@@ -1097,7 +1097,7 @@ msgstr "noch offen"
 msgid "Use the global setting"
 msgstr "Globale Einstellung verwenden"
 
-#: src/components/dashboard/RecentEntries.jsx:25
+#: src/components/dashboard/RecentEntries.jsx:27
 msgid "View all"
 msgstr "Alle ansehen"
 

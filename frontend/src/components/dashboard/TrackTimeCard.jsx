@@ -6,6 +6,7 @@ import { useAction } from '../../hooks/useAction'
 import { formatDuration, minutesBetween } from '../../format'
 import { ui } from '../../ui'
 import EntryForm from '../EntryForm'
+import ErrorMessage from '../ErrorMessage'
 import Tabs from '../Tabs'
 import Timer from '../Timer'
 
@@ -69,7 +70,7 @@ function TrackTimeCard({ projects, defaultProjectId, timer, onSaved }) {
       {timer.activeEntry?.customer_name && (
         <p className="text-sm text-muted">{timer.activeEntry.customer_name}</p>
       )}
-      <Timer project={project} activeEntry={timer.activeEntry} onStart={start} onStop={stop} error={timer.error} busy={timer.busy} bare />
+      <Timer project={project} activeEntry={timer.activeEntry} onStart={start} onStop={stop} busy={timer.busy} bare />
       {saved && !timer.activeEntry && (
         <p className="text-sm text-muted"><Trans>Saved {savedDuration} to {savedProject}.</Trans></p>
       )}
@@ -100,6 +101,8 @@ function TrackTimeCard({ projects, defaultProjectId, timer, onSaved }) {
           ]}
         />
       )}
+      {/* Outside the tabs, so the error of a start, stop or Resume (from the recent entries) shows on either tab */}
+      <ErrorMessage message={timer.error} />
     </section>
   )
 }

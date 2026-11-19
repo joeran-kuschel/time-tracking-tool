@@ -3,12 +3,14 @@ import { Link } from 'react-router'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { formatDay, minutesBetween } from '../../format'
 import Duration from '../Duration'
+import ResumeButton, { ResumeHints } from '../ResumeButton'
 import { trackingPath } from '../../routes'
 import { ui } from '../../ui'
 
 // The latest finished entries of all customers. Selecting one opens its customer and project on the
-// Time tracking page; View all opens the customer of the newest entry.
-function RecentEntries({ entries }) {
+// Time tracking page; View all opens the customer of the newest entry. resume: see ResumeButton; the button sits beside
+// the link, since a button can't be inside one.
+function RecentEntries({ entries, resume }) {
   const { i18n } = useLingui()
   const headingId = useId()
   const newest = entries[0]
@@ -31,10 +33,10 @@ function RecentEntries({ entries }) {
       ) : (
         <ul className="flex flex-col">
           {entries.map((entry) => (
-            <li key={entry.id} className="border-b border-line-soft last:border-b-0">
+            <li key={entry.id} className="flex items-center gap-1 border-b border-line-soft last:border-b-0">
               <Link
                 to={trackingPath(entry.customer_id, entry.project_id)}
-                className="flex min-h-[2.75rem] w-full items-start gap-3 rounded-lg px-2 py-2.5 text-left hover:bg-paper"
+                className="flex min-h-[2.75rem] min-w-0 flex-1 items-start gap-3 rounded-lg px-2 py-2.5 text-left hover:bg-paper"
               >
                 <span className="w-24 shrink-0 text-sm text-muted">{formatDay(i18n, entry.start_time)}</span>
                 <span className="flex min-w-0 flex-1 flex-col">
@@ -43,10 +45,12 @@ function RecentEntries({ entries }) {
                 </span>
                 <span className="shrink-0 font-mono text-sm"><Duration minutes={minutesBetween(entry.start_time, entry.end_time)} /></span>
               </Link>
+              <ResumeButton entry={entry} projectName={entry.project_name} resume={resume} />
             </li>
           ))}
         </ul>
       )}
+      {resume && <ResumeHints />}
     </section>
   )
 }

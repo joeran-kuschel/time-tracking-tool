@@ -48,6 +48,10 @@ month again. There is no URL state.
   horizontal scrolling.
 - **Open** (*Öffnen*) is a link to the entry's customer and project on the Time tracking
   page (`/time-tracking/3/7`). Entries cannot be edited or deleted here. The link shows only *Open* so rows stay low, but its accessible name continues *Open in Time tracking: customer, day* (German *Öffnen in Zeiterfassung: …*), which contains the visible label (WCAG 2.5.3).
+- **Resume** (*Fortsetzen*), a play button before **Open** on each finished result (a running entry has none), runs that
+  entry on again as the running timer; the time since its end counts as work time (see
+  [Timer](timer.md#resuming-an-activity)). It is disabled while a timer runs. The results then load again from the first
+  page, so the entry shows as running. This also happens whenever the timer starts or stops, also from the header, and it replaces the results with the first page, so pages added with **Show more** are gone.
 - 50 entries load at first. **Show more** (*Mehr anzeigen*) appends the next 50; *Showing 50 of 120* tells how many
   are shown. When everything is loaded, the button goes away and focus moves to the list.
 - While a search runs, the old results stay (marked `aria-busy`), so the list does not jump. If a search fails, an error

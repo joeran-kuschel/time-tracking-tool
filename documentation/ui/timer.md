@@ -43,9 +43,13 @@ and a double click sends one request.
   says *Der Eintrag läuft weiter: die Zeit seit seinem Ende zählt als Arbeitszeit.* A running entry has no button.
 - While a timer runs or a start is being sent, the button uses `aria-disabled` and does nothing. Its description says
   *Stoppe zuerst den laufenden Timer.* (*Stop the running timer first.*). The backend answers `409` for a second timer.
-- After a successful resume, focus moves to the panel's **Stop** button, because the row's button is then disabled and
-  the list reloads.
-- Not yet on the Dashboard's recent entries and the Entries search.
+- After a successful resume on the Time tracking page, focus moves to the panel's **Stop** button, because the row's
+  button is then disabled and the list reloads.
+- The same button is on the Dashboard's recent entries and on the results of the Entries search
+  ([Dashboard](dashboard.md#recent-entries), [Entries](entries.md#results)). There, focus moves to the **Stop timer**
+  button in the header, the one timer control that is shown on every page (the Dashboard's timer card can be on another
+  tab). The running timer takes the entry's own project and customer. A failed resume shows the timer's error where
+  the page shows it (the Dashboard's timer card, or above the Entries page).
 
 ## Only one timer at a time
 
@@ -76,7 +80,7 @@ and a double click sends one request.
 
 - `frontend/src/hooks/useActiveEntry.js`: loads, starts and stops the running timer and keeps what to announce; used
   once in `App`
-- `frontend/src/components/EntriesList.jsx`: the Resume button of an entry row; `pages/TimeTracking.jsx` (`resumeEntry`) starts the timer
+- `frontend/src/components/ResumeButton.jsx`: the Resume button and its two descriptions, shared by `EntriesList`, the Dashboard's `RecentEntries` and `EntryResults`; `pages/TimeTracking.jsx` (`resumeEntry`) and `App.jsx` (`resumeFromList`, for the other two pages) start the timer
 - `frontend/src/hooks/useElapsedTime.js`: elapsed time as `HH:MM:SS`, shared by the header and the timer panel
 - `frontend/src/components/Timer.jsx`: the timer panel, display only, no API calls
 - `frontend/src/components/RunningTimer.jsx`: the running timer in the header

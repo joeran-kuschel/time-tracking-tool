@@ -247,6 +247,121 @@ describe('App', () => {
     })
   })
 
+  describe('Resume from the Dashboard and the Entries page', () => {
+    const past = { id: 5, project_id: 7, project_name: 'Website', customer_id: 1, customer_name: 'Muster GmbH', description: 'Login reparieren', start_time: '2026-09-21T08:00:00Z', end_time: '2026-09-21T09:30:00Z' }
+    const resumed = { ...past, end_time: null }
+    const resumeButton = () => screen.findByRole('button', { name: 'Fortsetzen: Website, Login reparieren' })
+
+    beforeEach(() => {
+      api.getCustomers.mockResolvedValue([{ id: 1, name: 'Muster GmbH' }])
+      api.getDashboard.mockResolvedValue({ ...emptyDashboard, recent: [past], projects: [{ id: 7, name: 'Website', customer_id: 1, customer_name: 'Muster GmbH', hourly_rate: '80.00' }] })
+      api.searchTimeEntries.mockResolvedValue({ entries: [past], total: 1, hours: 1.5, limit: 50, offset: 0 })
+    })
+
+    test('on the Dashboard, runs the entry on, shows it in the header, announces it and moves focus to Stop timer', async () => {
+      api.resumeTimeEntry.mockResolvedValue(resumed)
+      render(<App />)
+
+      await userEvent.click(await resumeButton())
+
+      expect(api.resumeTimeEntry).toHaveBeenCalledWith(5)
+      expect(api.createTimeEntry).not.toHaveBeenCalled()
+      expect(await runningTimer()).toHaveTextContent('Website · Muster GmbH')
+      expect(screen.getByRole('status')).toHaveTextContent('Timer gestartet für Website')
+      await waitFor(() => expect(screen.getByRole('button', { name: 'Stop Timer' })).toHaveFocus())
+    })
+
+    test('on the Entries page, does the same and loads the results again', async () => {
+      api.resumeTimeEntry.mockResolvedValue(resumed)
+      api.searchTimeEntries.mockResolvedValueOnce({ entries: [past], total: 1, hours: 1.5, limit: 50, offset: 0 })
+      render(<App />)
+      await userEvent.click(await screen.findByRole('link', { name: 'Einträge' }))
+      api.searchTimeEntries.mockResolvedValue({ entries: [resumed], total: 1, hours: 1.5, limit: 50, offset: 0 })
+
+      await userEvent.click(await resumeButton())
+
+      expect(await runningTimer()).toHaveTextContent('Website · Muster GmbH')
+      await waitFor(() => expect(screen.getByRole('button', { name: 'Stop Timer' })).toHaveFocus())
+      await waitFor(() => expect(screen.queryByRole('button', { name: /^Fortsetzen/ })).not.toBeInTheDocument())
+      expect(api.searchTimeEntries).toHaveBeenCalledTimes(2)
+    })
+
+    test('after a failed resume, shows the error and leaves focus alone', async () => {
+      api.resumeTimeEntry.mockRejectedValue(new ApiError(500, 'boom'))
+      render(<App />)
+      await userEvent.click(await screen.findByRole('link', { name: 'Einträge' }))
+
+      const button = await resumeButton()
+      await userEvent.click(button)
+
+      expect(await screen.findByRole('alert')).toHaveTextContent('Timer konnte nicht fortgesetzt werden.')
+      expect(screen.queryByRole('region', { name: 'Laufender Timer' })).not.toBeInTheDocument()
+      expect(screen.queryByRole('button', { name: 'Stop Timer' })).not.toBeInTheDocument()
+    })
+
+    test('with another timer running, the Resume button on the Entries page does not call the backend and does not move focus', async () => {
+      api.getActiveEntry.mockResolvedValue(running)
+      api.resumeTimeEntry.mockRejectedValue(new ApiError(409, 'running'))
+      render(<App />)
+      await runningTimer()
+      await userEvent.click(await screen.findByRole('link', { name: 'Einträge' }))
+
+      const button = await resumeButton()
+      await userEvent.click(button)
+
+      expect(api.resumeTimeEntry).not.toHaveBeenCalled()
+      expect(screen.getByRole('button', { name: 'Stop Timer' })).not.toHaveFocus()
+      expect(button).toHaveAccessibleDescription('Stoppe zuerst den laufenden Timer.')
+    })
+
+    test('on the Dashboard, a failed resume shows the error and no timer', async () => {
+      api.resumeTimeEntry.mockRejectedValue(new ApiError(409, 'running'))
+      render(<App />)
+
+      await userEvent.click(await resumeButton())
+
+      expect(await screen.findByRole('alert')).toHaveTextContent('Es läuft bereits ein Timer.')
+      expect(screen.queryByRole('region', { name: 'Laufender Timer' })).not.toBeInTheDocument()
+      expect(screen.queryByRole('button', { name: 'Stop Timer' })).not.toBeInTheDocument()
+    })
+
+    test('on the Dashboard, shows the error of a failed resume also while the Manual entry tab is open', async () => {
+      api.resumeTimeEntry.mockRejectedValue(new ApiError(500, 'boom'))
+      render(<App />)
+      await userEvent.click(await screen.findByRole('tab', { name: 'Nachtragen' }))
+
+      await userEvent.click(await resumeButton())
+
+      expect(await screen.findByRole('alert')).toHaveTextContent('Timer konnte nicht fortgesetzt werden.')
+    })
+
+    test('when another tab already runs a timer (409), shows that timer but leaves focus alone', async () => {
+      const other = { id: 77, project_id: 7, project_name: 'Website', customer_id: 1, customer_name: 'Muster GmbH', description: null, start_time: new Date().toISOString() }
+      api.resumeTimeEntry.mockRejectedValue(new ApiError(409, 'A timer is already running'))
+      api.getActiveEntry.mockResolvedValueOnce(null).mockResolvedValue(other)
+      render(<App />)
+
+      const button = await resumeButton()
+      await userEvent.click(button)
+
+      expect(await runningTimer()).toHaveTextContent('Website · Muster GmbH')
+      expect(screen.getByRole('button', { name: 'Stop Timer' })).not.toHaveFocus()
+    })
+
+    test('a later start from another place does not take focus to the header', async () => {
+      api.resumeTimeEntry.mockRejectedValue(new ApiError(500, 'boom'))
+      api.createTimeEntry.mockResolvedValue({ id: 60, project_id: 7, start_time: new Date().toISOString() })
+      render(<App />)
+      await userEvent.click(await resumeButton())
+      await screen.findByRole('alert')
+
+      await userEvent.click(await screen.findByRole('button', { name: 'Start' }))
+
+      await runningTimer()
+      expect(screen.getByRole('button', { name: 'Stop Timer' })).not.toHaveFocus()
+    })
+  })
+
   test('the month summary counts the rounded hours and names the rule, while the entry list stays exact', async () => {
     const now = new Date()
     const at = (hour, minute) => new Date(now.getFullYear(), now.getMonth(), 2, hour, minute).toISOString()

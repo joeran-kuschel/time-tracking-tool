@@ -16,7 +16,8 @@ const appendNew = (shown, page) => [...shown, ...page.filter((entry) => !shown.s
 // Search and filter the entries of all customers. Opens with the current month; the filters live in this page's
 // state, so they are gone when another page opens. The search text applies after a short pause or on Enter,
 // everything else at once. Results come from the backend, PAGE_SIZE at a time.
-function Entries({ customers }) {
+// timer and onResume(entry) (App): the Resume buttons of the results; the results reload when the running timer changes.
+function Entries({ customers, timer, onResume }) {
   const [filters, setFilters] = useState(() => openingFilters(new Date()))
   const [searchText, applySearchText] = useDebouncedValue(filters.q)
   const [projects, setProjects] = useState([])
@@ -56,6 +57,15 @@ function Entries({ customers }) {
     }
     return () => { latest.current++ }
   }, [queryKey, reversed])
+
+  // A timer started or stopped (Resume, the header) changes the entries shown, so the first page is loaded again
+  const activeId = timer.activeEntry?.id
+  const previousActiveId = useRef(activeId)
+  useEffect(() => {
+    if (previousActiveId.current === activeId) return
+    previousActiveId.current = activeId
+    if (!reversed) load(0)
+  }, [activeId])
 
   useEffect(() => {
     setProjects([])
@@ -98,6 +108,7 @@ function Entries({ customers }) {
         busy={loading || loadingMore}
         loadingMore={loadingMore}
         onShowMore={() => load(results.entries.length)}
+        resume={{ onResume, timerRunning: Boolean(timer.activeEntry), busy: timer.busy }}
       />
     </div>
   )
