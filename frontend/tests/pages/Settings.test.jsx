@@ -386,7 +386,7 @@ describe('Settings', () => {
         if (message) {
           expect(await screen.findByText(message)).toBeInTheDocument()
           expect(pattern()).toHaveAttribute('aria-invalid', 'true')
-          expect(pattern()).toHaveAccessibleDescription(new RegExp(message.replace(/[{}.]/g, '\\$&')))
+          expect(pattern()).toHaveAccessibleDescription(expect.stringContaining(message))
           expect(pattern()).toHaveFocus()
           expect(api.updateSettings).not.toHaveBeenCalled()
         } else {
