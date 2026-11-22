@@ -13,6 +13,8 @@
 //   'text'      one line of text; 'textarea' several lines; 'email' an email address (format checked when saving).
 //               The value is a text, or null when empty; the page trims it. Options can set `maxLength` (what the field
 //               accepts), `maxLines` (textarea) and `autoComplete` (the token that says what the field is)
+//   'logo'      the logo for the PDF report: a preview, a file field and a Remove button; it stores the image at once
+//               (not with Save) and has no value in /api/settings, so it needs no backend option
 //   'decimal'   an amount with up to two decimals, typed in the format of the active language ("80,00" / "80.00");
 //               its value is a number, or null when empty. The page shows an error for anything else and does not save it
 // `disabledWhen(values)` (optional) tells from the current values of the form whether the field is disabled, and
@@ -94,8 +96,14 @@ export const settingsGroups = [
   {
     id: 'details',
     label: msg`Your details`,
-    note: msg`Printed at the top right of the PDF report. Leave them empty for a report without a sender block. The CSV does not change.`,
+    note: msg`Printed at the top right of the PDF report, next to the logo. Leave them empty for a report without a sender block. The CSV does not change.`,
     options: [
+      {
+        name: 'logo',
+        type: 'logo',
+        label: msg`Logo`,
+        hint: msg`PNG or JPEG, up to 1 MB and 2000 × 2000 pixels. Printed at the top left of the PDF report. It is saved as soon as you choose it.`,
+      },
       {
         name: 'senderName',
         type: 'text',

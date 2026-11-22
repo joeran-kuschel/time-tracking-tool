@@ -1,6 +1,9 @@
 jest.mock('../src/models/Settings');
+jest.mock('../src/models/Logo');
 
 const Settings = require('../src/models/Settings');
+const Logo = require('../src/models/Logo');
+const { png, jpeg, upload } = require('./helpers/images');
 const controller = require('../src/controllers/settingsController');
 const router = require('../src/routes/settings');
 
@@ -226,8 +229,89 @@ describe('settingsController', () => {
     expect(res.json).toHaveBeenCalledWith({ error: 'Failed to save the settings' });
   });
 
-  test('the routes are GET and PUT on the root', () => {
+  test('the routes are GET and PUT on the root, and the three of the logo', () => {
     const routes = router.stack.map((layer) => [Object.keys(layer.route.methods)[0], layer.route.path]);
-    expect(routes).toEqual([['get', '/'], ['put', '/']]);
+    expect(routes).toEqual([['get', '/'], ['put', '/'], ['get', '/logo'], ['put', '/logo'], ['delete', '/logo']]);
+  });
+
+  describe('the logo', () => {
+    function logoResponse() {
+      const res = mockResponse();
+      res.set = jest.fn(() => res);
+      res.type = jest.fn(() => res);
+      res.send = jest.fn(() => res);
+      res.end = jest.fn(() => res);
+      return res;
+    }
+
+    test('getLogo sends the image with its type and no caching', async () => {
+      const image = png();
+      Logo.get.mockResolvedValue({ contentType: 'image/png', data: image });
+      const res = logoResponse();
+
+      await controller.getLogo({}, res);
+
+      expect(res.type).toHaveBeenCalledWith('image/png');
+      expect(res.send).toHaveBeenCalledWith(image);
+      expect(res.set).toHaveBeenCalledWith('Cache-Control', 'no-store');
+    });
+
+    test('getLogo answers 404 without a logo', async () => {
+      Logo.get.mockResolvedValue(null);
+      const res = logoResponse();
+
+      await controller.getLogo({}, res);
+
+      expect(res.status).toHaveBeenCalledWith(404);
+      expect(res.send).not.toHaveBeenCalled();
+    });
+
+    test('putLogo checks and stores the image, and answers with its type and size', async () => {
+      const image = png(40, 20);
+      const res = logoResponse();
+
+      await controller.putLogo({ body: upload('image/png', image) }, res);
+
+      expect(Logo.set).toHaveBeenCalledWith('image/png', image);
+      expect(res.json).toHaveBeenCalledWith({ contentType: 'image/png', bytes: image.length });
+    });
+
+    test.each([
+      ['not an image', { contentType: 'image/png', data: Buffer.from('hello world!').toString('base64') }, 'LOGO_INVALID'],
+      ['SVG', { contentType: 'image/svg+xml', data: Buffer.from('<svg/>').toString('base64') }, 'LOGO_INVALID'],
+      ['a missing body', undefined, 'LOGO_INVALID'],
+      ['too many pixels', upload('image/jpeg', jpeg(3000, 10)), 'LOGO_DIMENSIONS'],
+      ['more than 1 MB', upload('image/png', Buffer.concat([png(), Buffer.alloc(1024 * 1024)])), 'LOGO_TOO_LARGE'],
+    ])('putLogo refuses %s with 400 and a code, and stores nothing', async (_name, body, code) => {
+      const res = logoResponse();
+
+      await controller.putLogo({ body }, res);
+
+      expect(res.status).toHaveBeenCalledWith(400);
+      expect(res.json).toHaveBeenCalledWith({ error: expect.any(String), code });
+      expect(Logo.set).not.toHaveBeenCalled();
+    });
+
+    test('deleteLogo removes it and answers 204', async () => {
+      const res = logoResponse();
+
+      await controller.deleteLogo({}, res);
+
+      expect(Logo.remove).toHaveBeenCalled();
+      expect(res.status).toHaveBeenCalledWith(204);
+    });
+
+    test.each([['getLogo', 'get', 'Failed to load the logo', {}], ['putLogo', 'set', 'Failed to save the logo', { body: upload('image/png', png()) }], ['deleteLogo', 'remove', 'Failed to remove the logo', {}]])(
+      '%s answers 500 when the database fails', async (name, method, message, req) => {
+        Logo[method].mockRejectedValue(new Error('db down'));
+        const res = logoResponse();
+
+        await controller[name](req, res);
+
+        expect(res.status).toHaveBeenCalledWith(500);
+        expect(res.json).toHaveBeenCalledWith({ error: message });
+      }
+    );
+
   });
 });

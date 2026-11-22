@@ -71,6 +71,8 @@ describe('api', () => {
     ['setReportStatus', [1, 8, 2026, 'sent'], '/reports/customer/1/status', 'PUT', { month: 8, year: 2026, status: 'sent' }],
     ['getSettings', [], '/settings', 'GET', undefined],
     ['updateSettings', [{}], '/settings', 'PUT', {}],
+    ['putLogo', [{ contentType: 'image/png', data: 'AQID' }], '/settings/logo', 'PUT', { contentType: 'image/png', data: 'AQID' }],
+    ['deleteLogo', [], '/settings/logo', 'DELETE', undefined],
   ])('%s calls %s', async (name, args, path, method, body) => {
     const fetch = mockFetch(200, { id: 1 })
     await api[name](...args)
@@ -79,6 +81,22 @@ describe('api', () => {
     expect(url.endsWith(path)).toBe(true)
     expect(options.method).toBe(method)
     expect(options.body && JSON.parse(options.body)).toEqual(body)
+  })
+
+  test('getLogo loads the image as a Blob with the login cookie', async () => {
+    const blob = new Blob(['png'], { type: 'image/png' })
+    const fetch = vi.fn().mockResolvedValue({ ok: true, status: 200, blob: async () => blob })
+    vi.stubGlobal('fetch', fetch)
+
+    expect(await api.getLogo()).toBe(blob)
+    expect(fetch.mock.calls[0][0].endsWith('/settings/logo')).toBe(true)
+    expect(fetch.mock.calls[0][1]).toEqual(expect.objectContaining({ method: 'GET', credentials: 'include' }))
+  })
+
+  test('getLogo throws an ApiError with the status 404 when there is no logo', async () => {
+    mockFetch(404, { error: 'No logo stored' })
+
+    await expect(api.getLogo()).rejects.toMatchObject({ status: 404, message: 'No logo stored' })
   })
 
   test('loads the PDF in the given language and saves it under the backend\'s file name', async () => {
@@ -269,6 +287,8 @@ describe('login', () => {
     ['deleteProject', [3]],
     ['getDashboard', ['f', 't', 9, 2026]],
     ['getSettings', []],
+    ['putLogo', [{ contentType: 'image/png', data: 'AQID' }]],
+    ['deleteLogo', []],
     ['downloadPDF', [1, 9, 2026, 'de']],
     ['downloadCSV', [1, 9, 2026, 'de']],
   ])('%s sends the login cookie', async (name, args) => {

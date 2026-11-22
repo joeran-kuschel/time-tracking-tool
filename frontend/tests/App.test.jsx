@@ -26,6 +26,7 @@ vi.mock('@/api', async (importOriginal) => ({
     getDashboard: vi.fn(),
     getSettings: vi.fn(),
     updateSettings: vi.fn(),
+    getLogo: vi.fn(),
     searchTimeEntries: vi.fn(),
   },
 }))
@@ -59,6 +60,7 @@ beforeEach(() => {
   vi.spyOn(console, 'error').mockImplementation(() => {})
   api.getActiveEntry.mockResolvedValue(null)
   api.getSettings.mockResolvedValue({})
+  api.getLogo.mockRejectedValue(new ApiError(404, 'No logo stored'))
   api.getProjects.mockResolvedValue([{ id: 7, name: 'Website', hourly_rate: '80.00' }])
   api.getCustomerTimeEntries.mockResolvedValue([])
 })

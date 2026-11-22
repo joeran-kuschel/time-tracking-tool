@@ -13,7 +13,8 @@ header.
 | | **Direction** (*Richtung*) | up | **Up** (*Aufrunden*) or **To the nearest** (*Auf- oder abrunden (nächstgelegene Stufe)*). Disabled while the step is *No rounding*, with a hint that says why. |
 | | **Default hourly rate for new projects (€)** (*Standard-Stundensatz für neue Projekte (€)*) | empty (no default) | The form for a new project on the [Time tracking](time-tracking.md) page starts with this rate, which stays editable there. Existing projects and the amounts of existing reports never change with it. |
 | | **Name the rounding rule in reports** (*Rundungsregel in Berichten nennen*) | off | Adds a sentence such as *Hours rounded up to quarter hours.* to the Reports page and the PDF. Disabled while the step is *No rounding*, with a hint that says why. |
-| **Your details** (*Deine Angaben*) | **Your name or business name** (*Dein Name oder Firmenname*) | empty | Printed in bold at the top right of the PDF report ([Reports](reports.md)). One line, up to 100 characters. |
+| **Your details** (*Deine Angaben*) | **Logo** (*Logo*) | none | A PNG or JPEG of up to 1 MB and 2000 × 2000 pixels, printed at the top left of the PDF report. It is stored **as soon as you choose it** (not with Save), with a polite message *Logo saved.*; the preview has the text alternative *Your logo*, and **Remove logo** removes it at once (*Logo removed.*). |
+| | **Your name or business name** (*Dein Name oder Firmenname*) | empty | Printed in bold at the top right of the PDF report ([Reports](reports.md)). One line, up to 100 characters. |
 | | **Address** (*Adresse*) | empty | Printed under the name, one line per line you type. Up to 6 lines and 300 characters. |
 | | **Email address** (*E-Mail-Adresse*) | empty | Printed under the address. Only the format is checked (`name@example.com`), not whether the address exists. |
 | **Calendar** (*Kalender*) | **First day of the week** (*Erster Tag der Woche*) | Monday | **Monday** (*Montag*) or **Sunday** (*Sonntag*): the day the weeks of the [Dashboard](dashboard.md#first-day-of-the-week) and the period choices *This week* and *Last week* on the [Entries page](entries.md) start on. Months and reports stay calendar months. |
@@ -27,7 +28,7 @@ downloaded do not change. Stored entries are never changed, and the timer, the e
 showing the exact times.
 
 Your details are optional: leave them all empty and the report has no sender block, as before. The group has a note that
-says where they are printed and that the CSV does not change. A logo follows with its own change (#79 is built in two steps).
+says where they are printed and that the CSV does not change. Without a logo and details the report has no sender block.
 With no group at all the page says
 *There are no options yet.*
 
@@ -42,6 +43,15 @@ With no group at all the page says
 - **Fields:** `components/SettingField.jsx` renders an option with a visible label and an optional hint under it, which the
   field is described by (`aria-describedby`). The types are `checkbox`, `select` (the value of a choice can be a string or a number) and `decimal`; a new type is
   added there together with the first option that needs it.
+- **Logo (`logo`):** `components/LogoField.jsx`. A visible label, a file field (`accept="image/png,image/jpeg"`) described by
+  its hint and error, the preview (loaded as a file and shown from memory, so a changed logo is never a cached one) and
+  **Remove logo**. Unlike the other options it does not use the Save button: choosing a file stores it at once, as base64
+  in a JSON body (`PUT /api/settings/logo`, see [Settings API](../backend/settings.md#logo)). The browser checks the type
+  and size first, so the error names the limit without a request (*Choose a PNG or JPEG image. Other types, such as SVG,
+  are not accepted.* / *The logo is larger than 1 MB. Choose a smaller file.*); an answer of `400` or `413` adds the
+  limits as a hint, and the old logo stays. Errors use `role="alert"`, successes a polite `role="status"`. After
+  **Remove logo** the focus moves to the file field, since the button is gone, and a second click while it runs sends one
+  request. The image of a removed or replaced logo is released (`URL.revokeObjectURL`).
 - **Text fields (`text`, `textarea`, `email`):** a text field, a multi-line one, and one with the email keyboard, each
   with a visible label, an optional hint, `maxLength` and an `autocomplete` token (`name`, `street-address`, `email`) so
   browsers and assistive tools know what the field is (WCAG 1.3.5). The page keeps the typed text until **Save**, then

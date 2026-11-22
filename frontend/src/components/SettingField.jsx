@@ -4,6 +4,7 @@ import { ui } from '../ui'
 import { formatDecimal } from '../format'
 import { textTypes } from '../settingsGroups'
 import ErrorMessage from './ErrorMessage'
+import LogoField from './LogoField'
 
 // One option of the Settings page (see settingsGroups.js), with a visible label and an optional hint under it.
 // value and onChange(value) work with the option's own type: a boolean for a checkbox, the choice's value (a string or
@@ -11,6 +12,7 @@ import ErrorMessage from './ErrorMessage'
 // which says why; the field is described by it.
 // A 'decimal' option is a text field with a number of the active language ("80,00"): its value is that number (or null
 // for empty) until it is edited, and the typed text (a string) after that, which the Settings page reads when saving.
+// A 'logo' option is the logo control (LogoField), which stores the image by itself and is not part of the Save button.
 // A 'text', 'email' or 'textarea' option is a text field (a multi-line one for 'textarea', 'email' with the email keyboard)
 // whose value is the typed text, or null when nothing is set; the page trims it and turns an empty text into null when
 // saving. The option can set `maxLength` and `autoComplete` (the token that tells the browser what the field is).
@@ -20,6 +22,8 @@ const typedTypes = ['decimal', ...textTypes]
 function SettingField({ option, value, onChange, disabled = false, error = null }) {
   const { i18n } = useLingui()
   const id = useId()
+  if (option.type === 'logo') return <LogoField option={option} />
+
   const hintText = disabled && option.disabledHint ? option.disabledHint : option.hint
   const hintId = hintText ? `${id}-hint` : undefined
   const hint = hintText && <p id={hintId} className="mt-1 text-sm text-muted">{i18n._(hintText)}</p>

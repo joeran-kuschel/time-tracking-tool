@@ -17,6 +17,13 @@ if (typeof HTMLDialogElement !== 'undefined' && !HTMLDialogElement.prototype.sho
   }
 }
 
+// jsdom has no object URLs (the logo preview and downloads use them); each gets its own address
+if (typeof URL !== 'undefined' && !URL.createObjectURL) {
+  let count = 0
+  URL.createObjectURL = () => `blob:test/${++count}`
+  URL.revokeObjectURL = () => {}
+}
+
 // Tests run in German unless they switch, which also checks the German catalog
 beforeEach(() => {
   if (typeof window === 'undefined') return // tests in the node environment

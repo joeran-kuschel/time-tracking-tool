@@ -32,7 +32,9 @@ no route to the backend: the frontend's nginx (`frontend/nginx.conf`) proxies `/
 (`^~` so the static-file rule can't catch them; the name is resolved once, when nginx starts). Every other unknown
 path falls back to `index.html`, so a reload on a page address works; `index.html` is sent with `Cache-Control:
 no-cache`, the hashed files under `/assets/` are cached for 30 days (see [Navigation and
-addresses](../ui/navigation.md)). See
+addresses](../ui/navigation.md)). The one route that takes a large body is `/api/settings/logo` (the logo upload, about
+1.4 MB): it has its own `location` with `client_max_body_size 2m`, and the ingress has `proxy-body-size: "2m"`; see
+[Settings API](settings.md#logo). See
 [Network exposure](#network-exposure).
 
 - It needs an ingress controller with the class `nginx`, installed once per cluster (ingress-nginx via Helm, command in

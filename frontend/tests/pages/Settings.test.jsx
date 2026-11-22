@@ -11,7 +11,7 @@ import { activateLocale } from '@/i18n'
 
 vi.mock('@/api', async (importOriginal) => ({
   ...(await importOriginal()),
-  api: { getSettings: vi.fn(), updateSettings: vi.fn() },
+  api: { getSettings: vi.fn(), updateSettings: vi.fn(), getLogo: vi.fn(), putLogo: vi.fn(), deleteLogo: vi.fn() },
 }))
 
 // Test groups: there is no real option yet. The texts are English because the catalogs only hold texts of src/
@@ -44,6 +44,7 @@ beforeEach(() => {
   vi.resetAllMocks()
   vi.spyOn(console, 'error').mockImplementation(() => {})
   api.getSettings.mockResolvedValue(initial)
+  api.getLogo.mockRejectedValue(new ApiError(404, 'No logo stored'))
   api.updateSettings.mockImplementation(async (changes) => ({ ...initial, ...changes }))
 })
 
@@ -732,7 +733,7 @@ describe('Settings', () => {
       expect(new Set(options.map((option) => option.name)).size).toBe(options.length)
       expect(new Set(settingsGroups.map((group) => group.id)).size).toBe(settingsGroups.length)
       for (const option of options) {
-        expect(['checkbox', 'select', 'decimal', 'text', 'textarea', 'email']).toContain(option.type)
+        expect(['checkbox', 'select', 'decimal', 'text', 'textarea', 'email', 'logo']).toContain(option.type)
         expect(option.label).toBeTruthy()
       }
     })

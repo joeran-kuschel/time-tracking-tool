@@ -11,6 +11,10 @@ const authRoutes = require('./routes/auth');
 const requireAuth = require('./middleware/requireAuth');
 const allowedOrigin = require('./middleware/allowedOrigin');
 const createLoginLimiter = require('./middleware/loginLimiter');
+const { BODY_LIMIT: LOGO_BODY_LIMIT } = require('./utils/logoImage');
+
+// The logo is the one request with a large body (an image as base64); its body parser comes after the login check
+const LOGO_PATH = '/api/settings/logo';
 
 // The origins from CORS_ORIGIN, e.g. "http://localhost,http://localhost:5173"
 function parseOrigins(value) {
@@ -18,7 +22,7 @@ function parseOrigins(value) {
 }
 
 // The API. Only browsers on the given origins may call it, with their login cookie; Content-Disposition is
-// readable for them, so a downloaded PDF keeps the backend's file name. Bodies are JSON only: plain HTML forms
+// readable for them, so a downloaded PDF keeps the backend's file name. Bodies are JSON only (and small, except the logo): plain HTML forms
 // from other sites send form data without asking the browser's CORS check first. Everything but the login and
 // /health needs a session.
 function createApp({ corsOrigins }) {
@@ -30,7 +34,9 @@ function createApp({ corsOrigins }) {
     next();
   });
   app.use(allowedOrigin(corsOrigins));
-  app.use(express.json());
+  // Every other body is small: the default limit of 100 kB
+  const json = express.json();
+  app.use((req, res, next) => (req.path === LOGO_PATH ? next() : json(req, res, next)));
   // Express 5 leaves req.body undefined without a parsed body; the controllers expect an object
   app.use((req, res, next) => {
     req.body ??= {};
@@ -40,6 +46,7 @@ function createApp({ corsOrigins }) {
   app.use('/api/auth/login', createLoginLimiter());
   app.use('/api/auth', authRoutes);
   app.use('/api', requireAuth);
+  app.use(LOGO_PATH, express.json({ limit: LOGO_BODY_LIMIT }));
 
   app.use('/api/customers', customerRoutes);
   app.use('/api/projects', projectRoutes);

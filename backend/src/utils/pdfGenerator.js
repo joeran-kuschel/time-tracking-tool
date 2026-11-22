@@ -97,22 +97,44 @@ function roundingNote({ minutes, direction }) {
     : i18n._({ id: 'report.rounding.upMinutes', message: 'Hours rounded up to steps of {minutes} minutes.' }, { minutes });
 }
 
-// Your own details at the top right: the name in bold, then the address and the email. Nothing is drawn (and nothing
-// moves) when no detail is set, so a report without details looks as it always did. Long lines wrap inside the page, and
-// an empty line inside the address is left out.
-// sender: { name, address, email }, each a text or null
+// The logo takes at most this much room at the top left; a smaller image keeps its size (a pixel is a point)
+const LOGO_MAX = { width: 150, height: 70 };
+const LOGO_GAP = 20;
+
+// Draws the logo at the top left and returns the y of its bottom edge, or null when the library cannot draw it
+// (a logo that cannot be drawn is left out, it never breaks the report)
+function drawLogo(doc, logo) {
+  try {
+    const image = doc.openImage(logo);
+    const scale = Math.min(1, LOGO_MAX.width / image.width, LOGO_MAX.height / image.height);
+    const { left, top } = { left: doc.page.margins.left, top: doc.page.margins.top };
+    doc.image(image, left, top, { width: image.width * scale, height: image.height * scale });
+    return top + image.height * scale;
+  } catch {
+    return null;
+  }
+}
+
+// Your own details at the top: the logo on the left, and on the right the name in bold, then the address and the email.
+// Nothing is drawn (and nothing moves) when there is no detail and no logo, so a report without them looks as it always
+// did. Long lines wrap inside their column, and an empty line inside the address is left out.
+// sender: { name, address, email, logo }, each a text (logo: the image as a Buffer) or null
 function drawSender(doc, sender) {
   const lines = [sender?.name && { text: sender.name, bold: true }, ...(sender?.address?.split('\n') ?? []).filter((line) => line.trim() !== '').map((text) => ({ text })), sender?.email && { text: sender.email }]
     .filter(Boolean);
-  if (lines.length === 0) return;
-  const x = doc.page.margins.left;
-  const width = doc.page.width - doc.page.margins.left - doc.page.margins.right;
+  const top = doc.page.margins.top;
+  const logoBottom = sender?.logo ? drawLogo(doc, sender.logo) : null;
+  if (lines.length === 0 && logoBottom === null) return;
+  const left = doc.page.margins.left;
+  const taken = logoBottom === null ? 0 : LOGO_MAX.width + LOGO_GAP;
+  const width = doc.page.width - left - doc.page.margins.right - taken;
   doc.fontSize(10);
   lines.forEach(({ text, bold }, index) => {
     doc.font(bold ? FONTS.bold.name : FONTS.regular.name);
-    if (index === 0) doc.text(text, x, doc.page.margins.top, { width, align: 'right' });
-    else doc.text(text, x, undefined, { width, align: 'right' });
+    if (index === 0) doc.text(text, left + taken, top, { width, align: 'right' });
+    else doc.text(text, left + taken, undefined, { width, align: 'right' });
   });
+  doc.y = Math.max(lines.length > 0 ? doc.y : top, logoBottom ?? top);
   doc.moveDown(2);
 }
 
@@ -218,7 +240,8 @@ function entryCells(entry, timeZone, cents) {
 // All texts are translated synchronously after activateLocale, see src/i18n.js.
 // timeZone: the browser's, so dates show as on the Reports page.
 // rounding: { minutes, direction } when the hours of the entries are rounded (billed_hours); the title names the rule.
-// sender: { name, address, email } (your own details, each a text or null) for the block at the top, see drawSender.
+// sender: { name, address, email, logo } (your own details, each a text or null; the logo is an image Buffer) for the block
+// at the top, see drawSender.
 function generateReportPDF(entries, { customerName, month, year, locale, timeZone = 'UTC', amounts = false, rounding = null, sender = null }) {
   return new Promise((resolve, reject) => {
     try {

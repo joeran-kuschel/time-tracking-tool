@@ -66,7 +66,7 @@ describe('frontend/nginx.conf', () => {
     return conf.slice(start, conf.indexOf('}', start));
   };
 
-  test.each(['location ^~ /api/ {', 'location = /health {'])('%s proxies to the backend service', (header) => {
+  test.each(['location ^~ /api/ {', 'location = /api/settings/logo {', 'location = /health {'])('%s proxies to the backend service', (header) => {
     const text = block(header);
     expect(text).toContain(`proxy_pass ${upstream};`);
     expect(text).toContain('proxy_set_header Host $host;');
@@ -74,7 +74,14 @@ describe('frontend/nginx.conf', () => {
 
   test('the proxy_pass has no path, so the request URI is passed unchanged', () => {
     const targets = [...conf.matchAll(/proxy_pass\s+(\S+);/g)].map((m) => m[1]);
-    expect(targets).toEqual([upstream, upstream]);
+    expect(targets).toEqual([upstream, upstream, upstream]);
+  });
+
+  // A logo of 1 MB is about 1.4 MB as base64 in a JSON body; nginx refuses more than 1 MB by default
+  test('only the logo route takes bodies above the default of 1 MB, up to 2 MB', () => {
+    expect([...conf.matchAll(/client_max_body_size\s+(\S+);/g)].map((m) => m[1])).toEqual(['2m']);
+    expect(block('location = /api/settings/logo {')).toContain('client_max_body_size 2m;');
+    expect(block('location ^~ /api/ {')).not.toContain('client_max_body_size');
   });
 
   test('keeps the single-page fallback and the static-file rule', () => {

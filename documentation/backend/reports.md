@@ -123,7 +123,10 @@ October. Without `tz`, or with an unknown one, the month is taken in UTC.
 
 - **Sender block:** when you stored your details in the settings (`senderName`, `senderAddress`, `senderEmail`,
   [Settings API](settings.md)), the PDF starts with them at the top right, right-aligned: the name in bold, one line per
-  line of the address, the email. `reportController` reads them with the rounding settings (one `Settings.get()`) and
+  line of the address, the email. With a [logo](settings.md#logo), it is drawn at the top left, scaled to fit 150 × 70
+  points (a smaller image keeps its size), and the text moves to the right of it, in the remaining width. A logo alone
+  is fine; a logo that the library cannot draw is left out and never breaks the report. Only the PDF loads the logo
+  (`Logo.get()` in `generatePDF`). `reportController` reads them with the rounding settings (one `Settings.get()`) and
   passes them to `generateReportPDF` as `sender`; `drawSender` in `utils/pdfGenerator.js` draws nothing when all three are
   `null`, so a report without details is unchanged. They are never in the JSON report or the CSV. The limits of the
   settings (100 characters, 6 lines of 300 characters) keep the block short, and long lines wrap.
