@@ -36,6 +36,34 @@ test('embeds IBM Plex Sans with the letters of "Łódź", which Helvetica lacks'
   expect(text).toMatch(/<017a>/i);
 });
 
+describe('a real PDF with your own details', () => {
+  const entries = [{ start_time: '2026-03-02T08:00:00Z', end_time: '2026-03-02T09:30:00Z', project_name: 'Website', description: 'Konzept' }];
+  const longSender = {
+    name: 'Ein sehr langer Firmenname Gesellschaft mit beschränkter Haftung & Co. Kommanditgesellschaft Łódź'.slice(0, 100),
+    address: Array.from({ length: 6 }, (_, i) => `Sehr lange Adresszeile Nummer ${i + 1} ${'ÄÖÜ'.repeat(20)}`).join('\n').slice(0, 300),
+    email: `${'a'.repeat(60)}@${'sehr-lange-domain'.repeat(5)}.example`,
+  };
+
+  test('is a PDF that carries the details, and an unchanged report is not longer for it', async () => {
+    const plain = await generateReportPDF(entries, { customerName: 'Muster GmbH', month: 3, year: 2026, locale: 'de' });
+    const withDetails = await generateReportPDF(entries, {
+      customerName: 'Muster GmbH', month: 3, year: 2026, locale: 'de',
+      sender: { name: 'Jana Beispiel', address: 'Musterweg 1\n12345 Beispielstadt', email: 'jana@example.test' },
+    });
+
+    expect(withDetails.subarray(0, 5).toString()).toBe('%PDF-');
+    expect(withDetails.length).toBeGreaterThan(plain.length);
+    expect((pdfText(withDetails).match(/\/Type \/Page\b/g) ?? []).length).toBe((pdfText(plain).match(/\/Type \/Page\b/g) ?? []).length);
+  });
+
+  test('long values wrap and the report stays on one page', async () => {
+    const pdf = await generateReportPDF(entries, { customerName: 'Muster GmbH', month: 3, year: 2026, locale: 'en', sender: longSender });
+
+    expect(pdf.subarray(0, 5).toString()).toBe('%PDF-');
+    expect((pdfText(pdf).match(/\/Type \/Page\b/g) ?? []).length).toBe(1);
+  });
+});
+
 describe('a real PDF with amounts', () => {
   const rows = Array.from({ length: 70 }, (_, i) => ({
     project_id: i % 3,

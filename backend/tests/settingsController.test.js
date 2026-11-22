@@ -127,6 +127,30 @@ describe('settingsController', () => {
     expect(Settings.update).not.toHaveBeenCalled();
   });
 
+  test.each([
+    [{ senderName: 'Jana Beispiel' }], [{ senderAddress: 'Musterweg 1\n12345 Beispielstadt' }], [{ senderEmail: 'jana@example.test' }],
+    [{ senderName: null, senderAddress: null, senderEmail: null }],
+  ])('update saves your details %j', async (body) => {
+    Settings.update.mockResolvedValue({});
+
+    await controller.update({ body }, mockResponse());
+
+    expect(Settings.update).toHaveBeenCalledWith(body);
+  });
+
+  test.each([
+    ['senderName', ''], ['senderName', ' x'], ['senderName', 'a\nb'], ['senderName', 'x'.repeat(101)],
+    ['senderAddress', 'a\nb\nc\nd\ne\nf\ng'], ['senderAddress', 'x'.repeat(301)], ['senderEmail', 'not-an-email'], ['senderEmail', 5],
+  ])('update rejects %s %j', async (name, value) => {
+    const res = mockResponse();
+
+    await controller.update({ body: { [name]: value } }, res);
+
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(res.json).toHaveBeenCalledWith({ error: `Invalid value for ${name}` });
+    expect(Settings.update).not.toHaveBeenCalled();
+  });
+
   test.each([['monday'], ['sunday']])('update saves weekStart: %j', async (value) => {
     Settings.update.mockResolvedValue({});
 

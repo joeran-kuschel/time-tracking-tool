@@ -97,6 +97,25 @@ function roundingNote({ minutes, direction }) {
     : i18n._({ id: 'report.rounding.upMinutes', message: 'Hours rounded up to steps of {minutes} minutes.' }, { minutes });
 }
 
+// Your own details at the top right: the name in bold, then the address and the email. Nothing is drawn (and nothing
+// moves) when no detail is set, so a report without details looks as it always did. Long lines wrap inside the page, and
+// an empty line inside the address is left out.
+// sender: { name, address, email }, each a text or null
+function drawSender(doc, sender) {
+  const lines = [sender?.name && { text: sender.name, bold: true }, ...(sender?.address?.split('\n') ?? []).filter((line) => line.trim() !== '').map((text) => ({ text })), sender?.email && { text: sender.email }]
+    .filter(Boolean);
+  if (lines.length === 0) return;
+  const x = doc.page.margins.left;
+  const width = doc.page.width - doc.page.margins.left - doc.page.margins.right;
+  doc.fontSize(10);
+  lines.forEach(({ text, bold }, index) => {
+    doc.font(bold ? FONTS.bold.name : FONTS.regular.name);
+    if (index === 0) doc.text(text, x, doc.page.margins.top, { width, align: 'right' });
+    else doc.text(text, x, undefined, { width, align: 'right' });
+  });
+  doc.moveDown(2);
+}
+
 function drawTitle(doc, { customerName, month, year, rounding }) {
   doc.fontSize(20).font(FONTS.bold.name);
   doc.text(i18n._({ id: 'report.title', message: 'TIME REPORT' }), { align: 'center' });
@@ -199,7 +218,8 @@ function entryCells(entry, timeZone, cents) {
 // All texts are translated synchronously after activateLocale, see src/i18n.js.
 // timeZone: the browser's, so dates show as on the Reports page.
 // rounding: { minutes, direction } when the hours of the entries are rounded (billed_hours); the title names the rule.
-function generateReportPDF(entries, { customerName, month, year, locale, timeZone = 'UTC', amounts = false, rounding = null }) {
+// sender: { name, address, email } (your own details, each a text or null) for the block at the top, see drawSender.
+function generateReportPDF(entries, { customerName, month, year, locale, timeZone = 'UTC', amounts = false, rounding = null, sender = null }) {
   return new Promise((resolve, reject) => {
     try {
       activateLocale(locale);
@@ -209,6 +229,7 @@ function generateReportPDF(entries, { customerName, month, year, locale, timeZon
       doc.on('data', (chunk) => chunks.push(chunk));
       doc.on('end', () => resolve(Buffer.concat(chunks)));
 
+      drawSender(doc, sender);
       drawTitle(doc, { customerName, month, year, rounding });
       const columns = columnsFor(amounts);
       const money = amounts ? reportAmounts(entries) : null;

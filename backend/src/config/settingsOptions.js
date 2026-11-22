@@ -14,6 +14,18 @@ const MAX_RATE = 99999999.99;
 // (the value must be within 1e-9 of its rounding to cents: float sums like 0.1 + 0.2 pass, 80.000000001 does not)
 const isRate = (value) => Number.isFinite(value) && value >= 0 && value <= MAX_RATE && Math.abs(value - Math.round(value * 100) / 100) < 1e-9;
 
+// Your own details for the sender block of the PDF report: null (not set) or a text that is already trimmed. The name is
+// one line; the address can have a few lines (separated by \n, no other control characters).
+const MAX_NAME = 100;
+const MAX_ADDRESS = 300;
+const MAX_ADDRESS_LINES = 6;
+const MAX_EMAIL = 254;
+const hasControl = (text, allowed = '') => [...text].some((char) => char < ' ' && !allowed.includes(char));
+const isTrimmedText = (value, max, allowed) =>
+  typeof value === 'string' && value !== '' && value === value.trim() && value.length <= max && !hasControl(value, allowed);
+// The format only (something@something.tld), not whether the address exists
+const isEmail = (value) => isTrimmedText(value, MAX_EMAIL) && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+
 const OPTIONS = {
   // Whether reports start with hourly rates and amounts
   showAmounts: { column: 'show_amounts', isValid: (value) => typeof value === 'boolean' },
@@ -25,6 +37,13 @@ const OPTIONS = {
   showRoundingNote: { column: 'show_rounding_note', isValid: (value) => typeof value === 'boolean' },
   // The day the weeks of the Dashboard and the Entries filters start on; months and reports stay calendar months
   weekStart: { column: 'week_start', isValid: (value) => WEEK_STARTS.includes(value) },
+  // Your own details, printed in the sender block of the PDF report; null is not set
+  senderName: { column: 'sender_name', isValid: (value) => value === null || isTrimmedText(value, MAX_NAME) },
+  senderAddress: {
+    column: 'sender_address',
+    isValid: (value) => value === null || (isTrimmedText(value, MAX_ADDRESS, '\n') && value.split('\n').length <= MAX_ADDRESS_LINES),
+  },
+  senderEmail: { column: 'sender_email', isValid: (value) => value === null || isEmail(value) },
   // The hourly rate (euros) the form for a new project starts with; null is no default
   defaultHourlyRate: {
     column: 'default_hourly_rate',

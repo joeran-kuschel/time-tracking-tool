@@ -34,7 +34,12 @@ function reportPeriod(query) {
 // whether the report names the rule in a sentence (the PDF does; the Reports page reads the setting itself)
 async function roundingSettings() {
   const settings = await Settings.get();
-  return { rounding: roundingRuleOf(settings), showRoundingNote: settings.showRoundingNote === true };
+  return {
+    rounding: roundingRuleOf(settings),
+    showRoundingNote: settings.showRoundingNote === true,
+    // Your own details for the sender block of the PDF (utils/pdfGenerator.js)
+    sender: { name: settings.senderName, address: settings.senderAddress, email: settings.senderEmail },
+  };
 }
 
 // The customer and the entries of a report's month, shared by the PDF and the CSV. Answers 400 or 404 itself and
@@ -58,7 +63,7 @@ async function loadReport(req, res) {
     return null;
   }
 
-  const [stored, { rounding, showRoundingNote }] = await Promise.all([
+  const [stored, { rounding, showRoundingNote, sender }] = await Promise.all([
     TimeEntry.getByCustomerIdInRange(customerId, period.range),
     roundingSettings(),
   ]);
@@ -69,7 +74,7 @@ async function loadReport(req, res) {
   // The report is about one customer, so it has one rule: the customer's own, else the global one
   // The files come out in the customer's own report language, else in the language of the app (lang of the query)
   const lang = customer.report_language ?? req.query.lang;
-  return { customer, entries: withBilledHours(stored, rounding), period, amounts, rounding: ruleOfCustomer(customer, rounding), showRoundingNote, lang };
+  return { customer, entries: withBilledHours(stored, rounding), period, amounts, rounding: ruleOfCustomer(customer, rounding), showRoundingNote, sender, lang };
 }
 
 // Sends a report file. contentDisposition escapes quotes and adds a UTF-8 file name for names like "Łódź".
@@ -86,10 +91,10 @@ exports.generatePDF = async (req, res) => {
     const report = await loadReport(req, res);
     if (!report) return;
 
-    const { customer, entries, period, amounts, rounding, showRoundingNote, lang } = report;
+    const { customer, entries, period, amounts, rounding, showRoundingNote, sender, lang } = report;
     const { month, year, timeZone } = period;
     // The rounded hours are always in the PDF; the sentence that names the rule only when the setting says so
-    const pdfBuffer = await generateReportPDF(entries, { customerName: customer.name, month, year, locale: lang, timeZone, rounding: showRoundingNote ? rounding : null, ...(amounts && { amounts }) });
+    const pdfBuffer = await generateReportPDF(entries, { customerName: customer.name, month, year, locale: lang, timeZone, rounding: showRoundingNote ? rounding : null, sender, ...(amounts && { amounts }) });
 
     // As a download, or with inline=1 to open in the browser (preview)
     sendFile(res, { body: pdfBuffer, contentType: 'application/pdf', customer, period, lang, extension: 'pdf', type: inline === '1' ? 'inline' : 'attachment' });

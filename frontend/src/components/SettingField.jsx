@@ -2,6 +2,7 @@ import { useId } from 'react'
 import { useLingui } from '@lingui/react/macro'
 import { ui } from '../ui'
 import { formatDecimal } from '../format'
+import { textTypes } from '../settingsGroups'
 import ErrorMessage from './ErrorMessage'
 
 // One option of the Settings page (see settingsGroups.js), with a visible label and an optional hint under it.
@@ -10,7 +11,12 @@ import ErrorMessage from './ErrorMessage'
 // which says why; the field is described by it.
 // A 'decimal' option is a text field with a number of the active language ("80,00"): its value is that number (or null
 // for empty) until it is edited, and the typed text (a string) after that, which the Settings page reads when saving.
+// A 'text', 'email' or 'textarea' option is a text field (a multi-line one for 'textarea', 'email' with the email keyboard)
+// whose value is the typed text, or null when nothing is set; the page trims it and turns an empty text into null when
+// saving. The option can set `maxLength` and `autoComplete` (the token that tells the browser what the field is).
 // `error` (a text) is shown under the field and marks it invalid.
+const typedTypes = ['decimal', ...textTypes]
+
 function SettingField({ option, value, onChange, disabled = false, error = null }) {
   const { i18n } = useLingui()
   const id = useId()
@@ -18,24 +24,26 @@ function SettingField({ option, value, onChange, disabled = false, error = null 
   const hintId = hintText ? `${id}-hint` : undefined
   const hint = hintText && <p id={hintId} className="mt-1 text-sm text-muted">{i18n._(hintText)}</p>
 
-  if (option.type === 'decimal') {
-    const text = typeof value === 'string' ? value : value == null ? '' : formatDecimal(i18n, value)
+  if (typedTypes.includes(option.type)) {
+    const text = option.type === 'decimal' && typeof value !== 'string' ? (value == null ? '' : formatDecimal(i18n, value)) : (value ?? '')
     const errorId = error ? `${id}-error` : undefined
+    const props = {
+      id,
+      value: text,
+      disabled,
+      maxLength: option.maxLength,
+      autoComplete: option.autoComplete ?? 'off',
+      onChange: (e) => onChange(e.target.value),
+      'aria-invalid': error ? true : undefined,
+      'aria-describedby': [hintId, errorId].filter(Boolean).join(' ') || undefined,
+      className: `${ui.input} disabled:cursor-not-allowed disabled:opacity-60`,
+    }
     return (
       <div>
         <label htmlFor={id} className={ui.label}>{i18n._(option.label)}</label>
-        <input
-          id={id}
-          type="text"
-          inputMode="decimal"
-          autoComplete="off"
-          value={text}
-          disabled={disabled}
-          onChange={(e) => onChange(e.target.value)}
-          aria-invalid={error ? true : undefined}
-          aria-describedby={[hintId, errorId].filter(Boolean).join(' ') || undefined}
-          className={`${ui.input} disabled:cursor-not-allowed disabled:opacity-60`}
-        />
+        {option.type === 'textarea'
+          ? <textarea rows={4} {...props} className={`${props.className} py-2`} />
+          : <input type={option.type === 'email' ? 'email' : 'text'} inputMode={option.type === 'decimal' ? 'decimal' : undefined} {...props} />}
         {hint}
         <ErrorMessage id={errorId} message={error} />
       </div>

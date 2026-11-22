@@ -78,6 +78,184 @@ describe('Settings', () => {
       expect(box).toHaveAccessibleDescription('Die Berichte-Seite startet mit dieser Einstellung. Für einen einzelnen Bericht kannst du sie dort ändern.')
     })
 
+    describe('your details', () => {
+      const saved = { showAmounts: false, roundingMinutes: 0, roundingDirection: 'up', showRoundingNote: false, defaultHourlyRate: null, weekStart: 'monday', senderName: null, senderAddress: null, senderEmail: null }
+      const name = () => screen.getByRole('textbox', { name: 'Dein Name oder Firmenname' })
+      const address = () => screen.getByRole('textbox', { name: 'Adresse' })
+      const email = () => screen.getByRole('textbox', { name: 'E-Mail-Adresse' })
+      const save = () => userEvent.click(screen.getByRole('button', { name: 'Speichern' }))
+
+      beforeEach(() => {
+        api.getSettings.mockResolvedValue(saved)
+        api.updateSettings.mockImplementation(async (changes) => ({ ...saved, ...changes }))
+      })
+
+      afterEach(() => activateLocale('de'))
+
+      test('is a group with a name field, a multi-line address and an email field, empty when nothing is set', async () => {
+        render(<Harness list={settingsGroups} />)
+
+        const group = await screen.findByRole('group', { name: 'Deine Angaben' })
+        expect(within(group).getByRole('textbox', { name: 'Dein Name oder Firmenname' })).toHaveValue('')
+        expect(address().tagName).toBe('TEXTAREA')
+        expect(address()).toHaveValue('')
+        expect(email()).toHaveAttribute('type', 'email')
+        expect(email()).toHaveValue('')
+      })
+
+      test('names what the browser can fill in (autocomplete) and limits the length of every field', async () => {
+        render(<Harness list={settingsGroups} />)
+        await screen.findByRole('group', { name: 'Deine Angaben' })
+
+        expect([name(), address(), email()].map((field) => field.getAttribute('autocomplete'))).toEqual(['name', 'street-address', 'email'])
+        expect([name(), address(), email()].map((field) => field.getAttribute('maxlength'))).toEqual(['100', '300', '254'])
+      })
+
+      test('explains where they are printed and describes the address by its hint', async () => {
+        render(<Harness list={settingsGroups} />)
+
+        const group = await screen.findByRole('group', { name: 'Deine Angaben' })
+        expect(within(group).getByText(/Wird oben rechts im PDF-Bericht gedruckt/)).toBeInTheDocument()
+        expect(address()).toHaveAccessibleDescription('Bis zu 6 Zeilen, zum Beispiel Straße und Ort.')
+      })
+
+      test('shows the saved details, with the lines of the address', async () => {
+        api.getSettings.mockResolvedValue({ ...saved, senderName: 'Jana Beispiel', senderAddress: 'Musterweg 1\n12345 Beispielstadt', senderEmail: 'jana@example.test' })
+        render(<Harness list={settingsGroups} />)
+
+        await screen.findByRole('group', { name: 'Deine Angaben' })
+        expect(name()).toHaveValue('Jana Beispiel')
+        expect(address()).toHaveValue('Musterweg 1\n12345 Beispielstadt')
+        expect(email()).toHaveValue('jana@example.test')
+      })
+
+      test('saves the typed details, trimmed, in one request with the other changes', async () => {
+        render(<Harness list={settingsGroups} />)
+        await screen.findByRole('group', { name: 'Deine Angaben' })
+
+        await userEvent.type(name(), '  Jana Beispiel ')
+        await userEvent.type(address(), 'Musterweg 1{Enter}12345 Beispielstadt')
+        await userEvent.type(email(), 'jana@example.test')
+        await save()
+
+        expect(api.updateSettings).toHaveBeenCalledTimes(1)
+        expect(api.updateSettings).toHaveBeenCalledWith({ senderName: 'Jana Beispiel', senderAddress: 'Musterweg 1\n12345 Beispielstadt', senderEmail: 'jana@example.test' })
+        expect(await screen.findByText('Einstellungen gespeichert.')).toBeInTheDocument()
+      })
+
+      test('removing a detail saves null, and spaces only count as empty', async () => {
+        api.getSettings.mockResolvedValue({ ...saved, senderName: 'Jana Beispiel', senderEmail: 'jana@example.test' })
+        render(<Harness list={settingsGroups} />)
+        await screen.findByRole('group', { name: 'Deine Angaben' })
+
+        await userEvent.clear(name())
+        await userEvent.type(address(), '   ')
+        await save()
+
+        expect(api.updateSettings).toHaveBeenCalledWith({ senderName: null })
+      })
+
+      test('spaces in an empty field are no change', async () => {
+        render(<Harness list={settingsGroups} />)
+        await screen.findByRole('group', { name: 'Deine Angaben' })
+
+        await userEvent.type(name(), '   ')
+        await save()
+
+        expect(api.updateSettings).not.toHaveBeenCalled()
+        expect(await screen.findByText('Nichts geändert.')).toBeInTheDocument()
+      })
+
+      test.each([['jana'], ['jana@example'], ['jana example@x.de'], ['@x.de']])('refuses the email %j with an error next to the field, the focus on it, and saves nothing', async (value) => {
+        render(<Harness list={settingsGroups} />)
+        await screen.findByRole('group', { name: 'Deine Angaben' })
+
+        await userEvent.type(name(), 'Jana')
+        await userEvent.type(email(), value)
+        await save()
+
+        expect(await screen.findByText('Gib eine E-Mail-Adresse wie name@beispiel.de ein.')).toBeInTheDocument()
+        expect(email()).toHaveAttribute('aria-invalid', 'true')
+        expect(email()).toHaveAccessibleDescription(/Gib eine E-Mail-Adresse wie name@beispiel\.de ein\./)
+        expect(email()).toHaveFocus()
+        expect(api.updateSettings).not.toHaveBeenCalled()
+      })
+
+      test('the error goes away when the email is typed again, and the corrected details save', async () => {
+        render(<Harness list={settingsGroups} />)
+        await screen.findByRole('group', { name: 'Deine Angaben' })
+        await userEvent.type(email(), 'jana')
+        await save()
+        await screen.findByText('Gib eine E-Mail-Adresse wie name@beispiel.de ein.')
+
+        await userEvent.type(email(), '@example.test')
+        expect(screen.queryByText('Gib eine E-Mail-Adresse wie name@beispiel.de ein.')).not.toBeInTheDocument()
+        await save()
+
+        expect(api.updateSettings).toHaveBeenCalledWith({ senderEmail: 'jana@example.test' })
+      })
+
+      test('refuses an address with more than 6 lines', async () => {
+        render(<Harness list={settingsGroups} />)
+        await screen.findByRole('group', { name: 'Deine Angaben' })
+
+        await userEvent.type(address(), 'a{Enter}b{Enter}c{Enter}d{Enter}e{Enter}f{Enter}g')
+        await save()
+
+        expect(await screen.findByText('Verwende höchstens 6 Zeilen.')).toBeInTheDocument()
+        expect(address()).toHaveFocus()
+        expect(api.updateSettings).not.toHaveBeenCalled()
+      })
+
+      test('turns a pasted tab into a space, so the name is not refused, and keeps the line breaks of the address', async () => {
+        render(<Harness list={settingsGroups} />)
+        await screen.findByRole('group', { name: 'Deine Angaben' })
+
+        await userEvent.click(name())
+        await userEvent.paste('Jana\tBeispiel')
+        await userEvent.click(address())
+        await userEvent.paste('Weg\t1\n12345 Stadt')
+        await save()
+
+        expect(api.updateSettings).toHaveBeenCalledWith({ senderName: 'Jana Beispiel', senderAddress: 'Weg 1\n12345 Stadt' })
+      })
+
+      test('accepts an address of 6 lines', async () => {
+        render(<Harness list={settingsGroups} />)
+        await screen.findByRole('group', { name: 'Deine Angaben' })
+
+        await userEvent.type(address(), 'a{Enter}b{Enter}c{Enter}d{Enter}e{Enter}f')
+        await save()
+
+        expect(api.updateSettings).toHaveBeenCalledWith({ senderAddress: 'a\nb\nc\nd\ne\nf' })
+      })
+
+      test('shows the labels and the error in English', async () => {
+        render(<Harness list={settingsGroups} />)
+        await screen.findByRole('group', { name: 'Deine Angaben' })
+        act(() => activateLocale('en'))
+
+        expect(screen.getByRole('group', { name: 'Your details' })).toBeInTheDocument()
+        await userEvent.type(screen.getByRole('textbox', { name: 'Email address' }), 'jana')
+        await userEvent.click(screen.getByRole('button', { name: 'Save' }))
+        expect(await screen.findByText('Enter an email address like name@example.com.')).toBeInTheDocument()
+      })
+
+      test('has no accessibility violations, also with an error, in German and English', async () => {
+        const { container } = render(<Harness list={settingsGroups} />)
+        await screen.findByRole('group', { name: 'Deine Angaben' })
+        expect(await axe(container)).toHaveNoViolations()
+
+        await userEvent.type(email(), 'jana')
+        await save()
+        await screen.findByText('Gib eine E-Mail-Adresse wie name@beispiel.de ein.')
+        expect(await axe(container)).toHaveNoViolations()
+
+        act(() => activateLocale('en'))
+        expect(await axe(container)).toHaveNoViolations()
+      })
+    })
+
     describe('first day of the week', () => {
       const saved = { showAmounts: false, roundingMinutes: 0, roundingDirection: 'up', showRoundingNote: false, defaultHourlyRate: null, weekStart: 'monday' }
       const day = () => screen.getByRole('combobox', { name: 'Erster Tag der Woche' })
@@ -554,7 +732,7 @@ describe('Settings', () => {
       expect(new Set(options.map((option) => option.name)).size).toBe(options.length)
       expect(new Set(settingsGroups.map((group) => group.id)).size).toBe(settingsGroups.length)
       for (const option of options) {
-        expect(['checkbox', 'select', 'decimal']).toContain(option.type)
+        expect(['checkbox', 'select', 'decimal', 'text', 'textarea', 'email']).toContain(option.type)
         expect(option.label).toBeTruthy()
       }
     })

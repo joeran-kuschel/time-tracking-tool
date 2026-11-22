@@ -6,7 +6,7 @@ jest.mock('pdfkit', () => {
     constructor() {
       super();
       this.y = 100;
-      this.page = { height: 842, margins: { top: 50, bottom: 50 } };
+      this.page = { width: 595, height: 842, margins: { top: 50, bottom: 50, left: 50, right: 50 } };
       this.pageNumber = 1;
       FakeDocument.last = this;
       this.texts = [];
@@ -16,10 +16,10 @@ jest.mock('pdfkit', () => {
     }
     registerFont(name, file) { this.registered[name] = file; return this; }
     fontSize() { return this; }
-    font(name) { this.fontsUsed.add(name); return this; }
-    text(value, x, y) {
+    font(name) { this.fontsUsed.add(name); this.currentFont = name; return this; }
+    text(value, x, y, options) {
       this.texts.push(String(value));
-      this.calls.push({ value: String(value), y, page: this.pageNumber });
+      this.calls.push({ value: String(value), x, y, options, page: this.pageNumber, font: this.currentFont });
       return this;
     }
     heightOfString(value, { width }) { return Math.max(1, Math.ceil((String(value).length * 5) / width)) * 10; }
@@ -44,6 +44,50 @@ async function texts(locale) {
   await generateReportPDF(entries, { customerName: 'Muster GmbH', month: 3, year: 2026, locale });
   return PDFDocument.last.texts;
 }
+
+describe('the sender block', () => {
+  const sender = { name: 'Jana Beispiel', address: 'Musterweg 1\n12345 Beispielstadt', email: 'jana@example.test' }
+  const run = async (options) => {
+    await generateReportPDF(entries, { customerName: 'Muster GmbH', month: 3, year: 2026, locale: 'en', ...options })
+    return PDFDocument.last
+  }
+
+  test('writes the name, the lines of the address and the email at the top right, before the title', async () => {
+    const doc = await run({ sender })
+
+    expect(doc.texts.slice(0, 5)).toEqual(['Jana Beispiel', 'Musterweg 1', '12345 Beispielstadt', 'jana@example.test', 'TIME REPORT'])
+    const block = doc.calls.slice(0, 4)
+    expect(block.every((call) => call.options.align === 'right' && call.options.width === 495 && call.x === 50)).toBe(true)
+    expect(block[0].y).toBe(50) // the top margin
+    expect(block[0].font).toBe('Plex-SemiBold') // the name in bold
+    expect(block.slice(1).every((call) => call.font === 'Plex')).toBe(true)
+  })
+
+  test('writes only the details that are set', async () => {
+    expect((await run({ sender: { name: null, address: null, email: 'jana@example.test' } })).texts.slice(0, 2)).toEqual(['jana@example.test', 'TIME REPORT'])
+    expect((await run({ sender: { name: 'Jana Beispiel', address: null, email: null } })).texts.slice(0, 2)).toEqual(['Jana Beispiel', 'TIME REPORT'])
+  })
+
+  test.each([[undefined], [null], [{ name: null, address: null, email: null }], [{}]])('draws nothing without details (%j): the report is as it was', async (value) => {
+    const without = await run({})
+    const doc = await run({ sender: value })
+
+    expect(doc.calls).toEqual(without.calls)
+    expect(doc.texts[0]).toBe('TIME REPORT')
+  })
+
+  test('leaves out an empty line inside the address', async () => {
+    const doc = await run({ sender: { name: null, address: 'Musterweg 1\n\n   \n12345 Beispielstadt', email: null } })
+
+    expect(doc.texts.slice(0, 3)).toEqual(['Musterweg 1', '12345 Beispielstadt', 'TIME REPORT'])
+  })
+
+  test('is the same in German', async () => {
+    const doc = await run({ sender, locale: 'de' })
+
+    expect(doc.texts.slice(0, 5)).toEqual(['Jana Beispiel', 'Musterweg 1', '12345 Beispielstadt', 'jana@example.test', 'ZEITABRECHNUNG'])
+  })
+})
 
 describe('generateReportPDF', () => {
   test('writes the report in English', async () => {

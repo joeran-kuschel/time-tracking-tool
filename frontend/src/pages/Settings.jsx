@@ -3,24 +3,53 @@ import { Trans, useLingui } from '@lingui/react/macro'
 import { useRetry } from '../hooks/useRetry'
 import ErrorMessage from '../components/ErrorMessage'
 import SettingField from '../components/SettingField'
-import { settingsGroups } from '../settingsGroups'
+import { msg } from '@lingui/core/macro'
+import { settingsGroups, textTypes } from '../settingsGroups'
 import { formatDecimal, parseDecimal } from '../format'
 import { ui } from '../ui'
+
 
 // App-wide options in groups, saved with one Save button. settings is useSettings() of App; groups is the list of
 // settingsGroups.js (a prop for the tests). A group without options is not shown.
 // Turns the changes of the form into the values to save: the typed text of a decimal option becomes its number.
-// Returns { values: { name: value }, invalid: [name] }, where invalid lists the options whose text is not an amount.
+// A text option loses control characters (a pasted tab becomes a space; only a textarea keeps its line breaks), is trimmed,
+// and an empty one becomes null (not set); an email must have the format something@something.tld (the same check as the
+// backend's settingsOptions.js), and a multi-line text can have at most `maxLines` lines.
+// Returns { values: { name: value }, invalid: { name: kind } }, where kind says what is wrong: 'amount', 'email' or 'lines'.
+const emailFormat = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 function readChanges(changes, options, i18n) {
-  const decimals = options.filter((option) => option.type === 'decimal').map((option) => option.name)
+  const byName = Object.fromEntries(options.map((option) => [option.name, option]))
   const values = {}
-  const invalid = []
+  const invalid = {}
   for (const [name, value] of Object.entries(changes)) {
-    const parsed = decimals.includes(name) && typeof value === 'string' ? parseDecimal(i18n, value) : value
-    if (parsed === undefined) invalid.push(name)
-    else values[name] = parsed
+    const option = byName[name]
+    if (option?.type === 'decimal' && typeof value === 'string') {
+      const parsed = parseDecimal(i18n, value)
+      if (parsed === undefined) invalid[name] = 'amount'
+      else values[name] = parsed
+    } else if (textTypes.includes(option?.type)) {
+      // eslint-disable-next-line no-control-regex
+      const text = (value ?? '').replace(option.type === 'textarea' ? /[\u0000-\u0009\u000b-\u001f\u007f]/g : /[\u0000-\u001f\u007f]/g, ' ').trim()
+      if (option.type === 'email' && text && !emailFormat.test(text)) invalid[name] = 'email'
+      else if (option.maxLines && text.split('\n').length > option.maxLines) invalid[name] = 'lines'
+      else values[name] = text === '' ? null : text
+    } else {
+      values[name] = value
+    }
   }
   return { values, invalid }
+}
+
+// The text under a field whose text cannot be saved: what is wrong (`kind`, see readChanges) and what to type instead
+function errorText(kind, option, i18n) {
+  const example = formatDecimal(i18n, 80)
+  const maxLines = option.maxLines
+  const messages = {
+    amount: msg`Enter an amount from 0 with up to two decimals, for example ${example}.`,
+    email: msg`Enter an email address like name@example.com.`,
+    lines: msg`Use at most ${maxLines} lines.`,
+  }
+  return i18n._(messages[kind])
 }
 
 // The page keeps only what was changed (`changes`) and shows it over the saved values; a failed save keeps it.
@@ -57,12 +86,12 @@ function Settings({ settings, groups = settingsGroups }) {
 
   const save = async (e) => {
     e.preventDefault()
-    const { values, invalid } = readChanges(changes, shown.flatMap((group) => group.options), i18n)
-    if (invalid.length > 0) {
-      const message = t`Enter an amount from 0 with up to two decimals, for example ${formatDecimal(i18n, 80)}.`
+    const options = shown.flatMap((group) => group.options)
+    const { values, invalid } = readChanges(changes, options, i18n)
+    if (Object.keys(invalid).length > 0) {
       setSaved(null)
       focusInvalid.current = true
-      setFieldErrors(Object.fromEntries(invalid.map((name) => [name, message])))
+      setFieldErrors(Object.fromEntries(Object.entries(invalid).map(([name, kind]) => [name, errorText(kind, options.find((option) => option.name === name), i18n)])))
       return
     }
     setFieldErrors({})

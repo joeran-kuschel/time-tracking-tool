@@ -11,7 +11,7 @@ const Settings = require('../src/models/Settings');
 const OPTIONS = require('../src/config/settingsOptions');
 
 // What a fresh install has: no amounts, no rounding (direction up once a step is chosen), no sentence about it, no default rate
-const DEFAULTS = { showAmounts: false, roundingMinutes: 0, roundingDirection: 'up', showRoundingNote: false, defaultHourlyRate: null, weekStart: 'monday' };
+const DEFAULTS = { showAmounts: false, roundingMinutes: 0, roundingDirection: 'up', showRoundingNote: false, defaultHourlyRate: null, weekStart: 'monday', senderName: null, senderAddress: null, senderEmail: null };
 
 const rows = async () => (await mockPool.query('SELECT * FROM settings')).rows;
 
@@ -206,6 +206,56 @@ describe('Settings', () => {
       expect(name).toMatch(/^[a-z][A-Za-z]*$/);
     }
   });
+  describe('your own details', () => {
+    const details = { senderName: 'Jana Beispiel', senderAddress: 'Musterweg 1\n12345 Beispielstadt', senderEmail: 'jana@example.test' };
+
+    test('are not set on a fresh install', async () => {
+      const settings = await Settings.get();
+
+      expect([settings.senderName, settings.senderAddress, settings.senderEmail]).toEqual([null, null, null]);
+    });
+
+    test('are saved and read back, with the lines of the address', async () => {
+      expect(await Settings.update(details)).toEqual({ ...DEFAULTS, ...details });
+      expect((await rows())[0]).toEqual(expect.objectContaining({ sender_name: 'Jana Beispiel', sender_address: 'Musterweg 1\n12345 Beispielstadt', sender_email: 'jana@example.test' }));
+    });
+
+    test('can be removed again with null, one at a time', async () => {
+      await Settings.update(details);
+
+      expect(await Settings.update({ senderAddress: null })).toEqual({ ...DEFAULTS, ...details, senderAddress: null });
+    });
+
+    test('saving another option keeps them', async () => {
+      await Settings.update(details);
+
+      expect(await Settings.update({ showAmounts: true })).toEqual({ ...DEFAULTS, ...details, showAmounts: true });
+    });
+
+    test('migration 013 can run twice and keeps the saved details', async () => {
+      await Settings.update(details);
+      const sql = fs.readFileSync(path.join(__dirname, '..', 'migrations', '013_settings_sender_details.sql'), 'utf8');
+
+      await mockPool.query(sql);
+
+      expect(await Settings.get()).toEqual({ ...DEFAULTS, ...details });
+    });
+
+    test.each([
+      ['senderName', 'Jana Beispiel', true], ['senderName', 'Ł'.repeat(100), true], ['senderName', 'x'.repeat(101), false],
+      ['senderName', '', false], ['senderName', ' Jana', false], ['senderName', 'Jana ', false], ['senderName', 'Jana\nBeispiel', false],
+      ['senderName', 'Jana\tB', false], ['senderName', null, true], ['senderName', 5, false], ['senderName', undefined, false],
+      ['senderAddress', 'Musterweg 1\n12345 Beispielstadt', true], ['senderAddress', 'x'.repeat(300), true], ['senderAddress', 'x'.repeat(301), false],
+      ['senderAddress', 'a\nb\nc\nd\ne\nf', true], ['senderAddress', 'a\nb\nc\nd\ne\nf\ng', false],
+      ['senderAddress', 'a\r\nb', false], ['senderAddress', 'a\tb', false], ['senderAddress', '\nMusterweg', false], ['senderAddress', null, true],
+      ['senderEmail', 'jana@example.test', true], ['senderEmail', 'a@b.co', true], ['senderEmail', 'jana@example', false],
+      ['senderEmail', 'jana example@x.de', false], ['senderEmail', '@x.de', false], ['senderEmail', 'jana@@x.de', false],
+      ['senderEmail', `${'a'.repeat(250)}@x.de`, false], ['senderEmail', '', false], ['senderEmail', null, true], ['senderEmail', 7, false],
+    ])('%s accepts %j: %j', (name, value, valid) => {
+      expect(OPTIONS[name].isValid(value)).toBe(valid);
+    });
+  });
+
   describe('first day of the week', () => {
     test('is Monday on a fresh install', async () => {
       expect((await Settings.get()).weekStart).toBe('monday');
