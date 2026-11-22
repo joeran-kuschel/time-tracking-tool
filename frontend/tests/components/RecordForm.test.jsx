@@ -15,6 +15,22 @@ function renderForm(props) {
 }
 
 describe('RecordForm', () => {
+  test('a field can limit its length, and a textarea can set its rows', () => {
+    render(<RecordForm fields={[
+      { name: 'taxId', label: 'Steuernummer', maxLength: 30 },
+      { name: 'address', label: 'Adresse', type: 'textarea', rows: 4, maxLength: 300 },
+      { name: 'note', label: 'Notiz', type: 'textarea' },
+    ]} initialValues={{ taxId: '', address: '', note: '' }} submitLabel="Speichern" onSubmit={vi.fn()} />)
+
+    expect(screen.getByLabelText('Steuernummer')).toHaveAttribute('maxlength', '30')
+    expect(screen.getByLabelText('Adresse')).toHaveAttribute('maxlength', '300')
+    expect(screen.getByLabelText('Adresse')).toHaveAttribute('rows', '4')
+    expect(screen.getByLabelText('Adresse')).not.toHaveClass('h-20')
+    // Without rows a textarea keeps its fixed height, and without maxLength it has no limit
+    expect(screen.getByLabelText('Notiz')).toHaveClass('h-20')
+    expect(screen.getByLabelText('Notiz')).not.toHaveAttribute('maxlength')
+  })
+
   test('has visible labels in a named group and submits the values', async () => {
     const onSubmit = vi.fn().mockResolvedValue({ id: 1 })
     renderForm({ onSubmit })

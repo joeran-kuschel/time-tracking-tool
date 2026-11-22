@@ -34,14 +34,35 @@ function parseRounding(body) {
   return { invalid: true };
 }
 
-// The optional fields of a customer in the body: { rounding, reportLanguage } (each undefined when not mentioned), or
-// { error } with the answer for a 400
+const INVALID_ADDRESS = { error: 'address must be null or a text of up to 300 characters with at most 6 lines' };
+const INVALID_TAX_ID = { error: 'taxId must be null or a text of up to 30 characters in one line' };
+
+// The details for invoices from the body: { invoiceDetails: { address, taxId } } (each undefined when the body does not
+// mention it, so the stored value is kept; null removes it), or { error }. The checks are those of your own details
+// in the settings (config/settingsOptions.js).
+function parseInvoiceDetails(body) {
+  const details = {};
+  if ('address' in body) {
+    if (!OPTIONS.senderAddress.isValid(body.address)) return { error: INVALID_ADDRESS };
+    details.address = body.address;
+  }
+  if ('taxId' in body) {
+    if (!OPTIONS.senderTaxId.isValid(body.taxId)) return { error: INVALID_TAX_ID };
+    details.taxId = body.taxId;
+  }
+  return { invoiceDetails: details };
+}
+
+// The optional fields of a customer in the body: { rounding, reportLanguage, invoiceDetails } (each undefined when not
+// mentioned), or { error } with the answer for a 400
 function parseOptions(body) {
   const { rounding, invalid } = parseRounding(body);
   if (invalid) return { error: INVALID_ROUNDING };
   const { reportLanguage, invalid: invalidLanguage } = parseReportLanguage(body);
   if (invalidLanguage) return { error: INVALID_REPORT_LANGUAGE };
-  return { rounding, reportLanguage };
+  const { invoiceDetails, error: invalidDetails } = parseInvoiceDetails(body);
+  if (invalidDetails) return { error: invalidDetails };
+  return { rounding, reportLanguage, invoiceDetails };
 }
 
 exports.getAll = async (req, res) => {
@@ -74,12 +95,12 @@ exports.create = async (req, res) => {
     if (!name) {
       return res.status(400).json({ error: 'Name is required' });
     }
-    const { rounding, reportLanguage, error } = parseOptions(req.body);
+    const { rounding, reportLanguage, invoiceDetails, error } = parseOptions(req.body);
     if (error) {
       return res.status(400).json(error);
     }
 
-    const customer = await Customer.create(name, email || null, rounding, reportLanguage);
+    const customer = await Customer.create(name, email || null, rounding, reportLanguage, invoiceDetails);
     res.status(201).json(customer);
   } catch (err) {
     console.error(err);
@@ -94,12 +115,12 @@ exports.update = async (req, res) => {
     if (!name) {
       return res.status(400).json({ error: 'Name is required' });
     }
-    const { rounding, reportLanguage, error } = parseOptions(req.body);
+    const { rounding, reportLanguage, invoiceDetails, error } = parseOptions(req.body);
     if (error) {
       return res.status(400).json(error);
     }
 
-    const customer = await Customer.update(req.params.id, name, email || null, rounding, reportLanguage);
+    const customer = await Customer.update(req.params.id, name, email || null, rounding, reportLanguage, invoiceDetails);
     if (!customer) {
       return res.status(404).json({ error: 'Customer not found' });
     }

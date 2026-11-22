@@ -29,6 +29,7 @@ saved then. `500` when the database fails.
 | `senderAddress` | `sender_address` | `null` or a text of 1 to 300 characters with at most 6 lines (separated by `\n`), trimmed | `null` | Your address for the sender block; one printed line per line |
 | `senderEmail` | `sender_email` | `null` or an email address of at most 254 characters, in the format `something@something.tld` only | `null` | Your email address for the sender block |
 | `senderTaxId` | `sender_tax_id` | `null` or a text of 1 to 30 characters, one line, trimmed | `null` | Your Steuernummer or USt-IdNr, kept for invoices (reports do not print it) |
+| `senderBankDetails` | `sender_bank_details` | `null` or a text of 1 to 300 characters with at most 4 lines (separated by `\n`), trimmed | `null` | Your bank details (IBAN, BIC, bank) for the invoice. Nothing prints them yet |
 | `vatMode` | `vat_mode` | `"regular"` or `"small_business"` | `"regular"` | VAT for invoices: with VAT, or none under §19 UStG. Nothing reads it yet |
 | `vatRate` | `vat_rate` | `0`, `7` or `19` (a number) | `19` | The VAT rate in percent for `"regular"` |
 | `invoiceNumberPattern` | `invoice_number_pattern` | a [pattern](#invoice-numbers) of up to 40 characters | `"{YYYY}-{NNNN}"` | The format of invoice numbers |
@@ -91,7 +92,7 @@ dependency), which keeps other websites from using the session with a plain HTML
 
 ## Storage
 
-`backend/migrations/005_settings.sql` creates the table `settings` (`006_settings_show_amounts.sql`, `007_settings_rounding.sql`, `008_settings_rounding_steps.sql` and `010_settings_default_hourly_rate.sql`, `012_settings_week_start.sql`, `013_settings_sender_details.sql` and `015_settings_invoicing.sql` add the columns and the steps): a single row (`id` is always 1, enforced by a
+`backend/migrations/005_settings.sql` creates the table `settings` (`006_settings_show_amounts.sql`, `007_settings_rounding.sql`, `008_settings_rounding_steps.sql` and `010_settings_default_hourly_rate.sql`, `012_settings_week_start.sql`, `013_settings_sender_details.sql`, `015_settings_invoicing.sql` and `016_invoice_details.sql` add the columns and the steps): a single row (`id` is always 1, enforced by a
 `CHECK`) with one typed column per option, each with its default. The row is created on the first read, so a fresh
 install behaves as before and every option has its default until something is saved. `models/Settings.js` creates the row
 on first use and updates it.

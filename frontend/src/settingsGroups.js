@@ -190,6 +190,14 @@ export const settingsGroups = [
         preview: previewInvoiceNumber,
         previewLabel: msg`The next invoice would get the number`,
       },
+      {
+        name: 'senderBankDetails',
+        type: 'textarea',
+        label: msg`Bank details`,
+        hint: msg`For example your IBAN, BIC and the bank. Up to 4 lines.`,
+        maxLength: 300,
+        maxLines: 4,
+      },
     ],
   },
 ]

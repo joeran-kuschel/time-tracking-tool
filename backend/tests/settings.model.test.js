@@ -11,7 +11,7 @@ const Settings = require('../src/models/Settings');
 const OPTIONS = require('../src/config/settingsOptions');
 
 // What a fresh install has: no amounts, no rounding (direction up once a step is chosen), no sentence about it, no default rate
-const DEFAULTS = { showAmounts: false, roundingMinutes: 0, roundingDirection: 'up', showRoundingNote: false, defaultHourlyRate: null, weekStart: 'monday', senderName: null, senderAddress: null, senderEmail: null, senderTaxId: null, vatMode: 'regular', vatRate: 19, invoiceNumberPattern: '{YYYY}-{NNNN}', invoiceNextNumber: 1 };
+const DEFAULTS = { showAmounts: false, roundingMinutes: 0, roundingDirection: 'up', showRoundingNote: false, defaultHourlyRate: null, weekStart: 'monday', senderName: null, senderAddress: null, senderEmail: null, senderTaxId: null, senderBankDetails: null, vatMode: 'regular', vatRate: 19, invoiceNumberPattern: '{YYYY}-{NNNN}', invoiceNextNumber: 1 };
 
 const rows = async () => (await mockPool.query('SELECT * FROM settings')).rows;
 
@@ -353,6 +353,40 @@ describe('Settings', () => {
         expect(OPTIONS.defaultHourlyRate.isValid(value)).toBe(valid);
       }
     );
+  });
+
+  describe('the bank details', () => {
+    test('are not set on a fresh install, are saved with their lines, and can be removed again', async () => {
+      expect((await Settings.get()).senderBankDetails).toBeNull();
+
+      const saved = await Settings.update({ senderBankDetails: 'DE89 3704 0044 0532 0130 00\nBIC COBADEFFXXX' });
+      expect(saved.senderBankDetails).toBe('DE89 3704 0044 0532 0130 00\nBIC COBADEFFXXX');
+      expect((await rows())[0].sender_bank_details).toBe('DE89 3704 0044 0532 0130 00\nBIC COBADEFFXXX');
+
+      expect((await Settings.update({ senderBankDetails: null })).senderBankDetails).toBeNull();
+    });
+
+    test('saving another option keeps them', async () => {
+      await Settings.update({ senderBankDetails: 'IBAN 1' });
+
+      expect((await Settings.update({ showAmounts: true })).senderBankDetails).toBe('IBAN 1');
+    });
+
+    test.each([
+      [null, true], ['IBAN', true], ['1\n2\n3\n4', true], ['x'.repeat(300), true],
+      ['', false], ['1\n2\n3\n4\n5', false], ['x'.repeat(301), false], [' IBAN', false], ['IBAN ', false], ['a\tb', false], [5, false], [undefined, false],
+    ])('accepts or refuses %j: %s', (value, valid) => {
+      expect(OPTIONS.senderBankDetails.isValid(value)).toBe(valid);
+    });
+
+    test('migration 016 can run twice and keeps the saved details', async () => {
+      await Settings.update({ senderBankDetails: 'IBAN 1' });
+      const sql = fs.readFileSync(path.join(__dirname, '..', 'migrations', '016_invoice_details.sql'), 'utf8');
+
+      await mockPool.query(sql);
+
+      expect((await Settings.get()).senderBankDetails).toBe('IBAN 1');
+    });
   });
 
   describe('invoicing', () => {

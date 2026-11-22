@@ -23,7 +23,19 @@ All paths are under `/api/customers`.
 | `email` | text, max. 255 | Optional; missing or empty is stored as `null` |
 | `rounding_minutes`, `rounding_direction` | smallint, text | The customer's own [rounding rule](reports.md#rounding), see below; both `null` means the global setting (every customer until a rule is set) |
 | `report_language` | text | The language of the customer's PDF and CSV reports (`de` or `en`), see [Report language](#report-language); `null` means the language of the app (every customer until one is set) |
+| `address`, `tax_id` | text, max. 300 (at most 6 lines) / max. 30 (one line) | The customer's address and tax ID for invoices, see [Details for invoices](#details-for-invoices); `null` when not set |
 | `created_at`, `updated_at` | timestamp | Set by the database; `updated_at` changes on `PUT` |
+
+## Details for invoices
+
+`POST` and `PUT` take `address` (a text of 1 to 300 characters with at most 6 lines, separated by `\n`, trimmed) and `taxId`
+(1 to 30 characters, one line, trimmed): the customer's address and Steuernummer or USt-IdNr for the invoice
+([#114](https://github.com/joeran-kuschel/time-tracking-tool/issues/114)). `null` means not set (every customer until one is
+saved). A body that does not mention a field keeps the stored value on `PUT`, so older clients that send only name and
+email change nothing. The checks are those of your own address and tax ID in the settings
+(`config/settingsOptions.js`); an invalid value answers `400` (`address must be … ` / `taxId must be …`) and nothing is
+saved. The answers show them as `address` and `tax_id`. Migration `016_invoice_details.sql` adds the columns.
+Nothing prints them yet: the invoice does.
 
 ## Report language
 

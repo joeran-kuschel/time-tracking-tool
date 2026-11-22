@@ -5,7 +5,7 @@ import { ui } from '../ui'
 
 
 // A form with visible labels for creating and editing records.
-// fields: [{ name, label, type ('text', 'email', 'password', 'number', 'date', 'time', 'textarea' or 'select'), required, options, min, step, autoComplete }]
+// fields: [{ name, label, type ('text', 'email', 'password', 'number', 'date', 'time', 'textarea' or 'select'), required, options, min, step, autoComplete, maxLength, rows (textarea) }]
 // onSubmit(values) resolves truthy on success; a form without onCancel then resets for the next record.
 // With onCancel, the form has a Cancel button and Escape cancels.
 // validate(values) returns { field, message } to block submitting, or null.
@@ -46,7 +46,9 @@ function RecordForm({ legend, fields, initialValues, submitLabel, onSubmit, onCa
       'aria-describedby': invalid?.field === field.name ? errorId : undefined,
       className: ui.input,
     }
-    if (field.type === 'textarea') return <textarea {...props} className={`${ui.input} resize-none h-20 py-2`} />
+    if (field.type === 'textarea') {
+      return <textarea {...props} rows={field.rows} maxLength={field.maxLength} className={`${ui.input} resize-none ${field.rows ? '' : 'h-20'} py-2`} />
+    }
     if (field.type === 'select') {
       return (
         <select {...props} className={ui.select}>
@@ -54,7 +56,7 @@ function RecordForm({ legend, fields, initialValues, submitLabel, onSubmit, onCa
         </select>
       )
     }
-    return <input {...props} type={field.type ?? 'text'} min={field.min} step={field.step} autoComplete={field.autoComplete} />
+    return <input {...props} type={field.type ?? 'text'} min={field.min} step={field.step} maxLength={field.maxLength} autoComplete={field.autoComplete} />
   }
 
   return (

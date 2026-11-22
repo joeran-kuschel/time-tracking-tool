@@ -15,10 +15,10 @@ screens the sidebar sits above the main area (see [Design](design.md)).
 - The sidebar lists all customers, sorted by name. Selecting one opens it in the main area; the selected one is marked
   with `aria-pressed`. The customer of the running timer has a red dot, and its button name ends in *, Timer läuft*
   (*, timer running*).
-- **+** (*New customer*) next to the heading opens a dialog with name, optional email and **Rounding** and **Report language** (see below). The
+- **+** (*New customer*) next to the heading opens a dialog with name, optional email, **Rounding**, **Report language** and the optional **Address for invoices** and **Tax ID** (see below). The
   new customer is added to the list but not selected.
 - The main area shows the customer's name as the page heading (`<h1>`) and its email. Next to it:
-  - The pencil icon (**Edit**) replaces the heading with a form (*Edit customer*: name, email, **Rounding**, **Report language**); **Save**,
+  - The pencil icon (**Edit**) replaces the heading with a form (*Edit customer*: name, email, **Rounding**, **Report language**, **Address for invoices**, **Tax ID**); **Save**,
     **Cancel** or Escape close it.
   - The trash icon (**Delete**) asks in place first (*Delete Muster GmbH and all its projects and time entries?*). This
     can't be undone. While the running timer belongs to the customer, deleting fails with *Stop the running timer
@@ -35,6 +35,12 @@ screens the sidebar sits above the main area (see [Design](design.md)).
   freelancer with German and English customers does not have to switch the app before each download; the app and the
   report on screen do not change. The [Reports page](reports.md#language-of-the-downloads) says which language a download
   will use. Details: [Customers API](../backend/customers.md#report-language).
+- **Address for invoices (optional)** (German: *Adresse für Rechnungen (optional)*) and **Tax ID (optional)** (*Steuernummer
+  (optional)*) are the last two fields of the customer form: the address has up to 4 visible rows, 300 characters and at
+  most 6 lines (*Use at most 6 lines.* next to the field otherwise, nothing is saved), the tax ID one line of up to 30
+  characters. Typed text is trimmed, and empty or spaces only is saved as *not set*. A customer that has them shows the address (with its
+  lines) and *Tax ID: …* under the email. They are stored for the invoice, which comes later; reports do not print them.
+  Details: [Customers API](../backend/customers.md#details-for-invoices).
 - Without a selected customer, the main area says *Select a customer* and only shows the timer.
 - Switching to another customer clears the previous customer's projects and entries at once, and answers that arrive
   late for a customer that is no longer selected are ignored. So clicking quickly through customers never shows one

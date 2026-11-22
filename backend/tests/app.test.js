@@ -73,7 +73,7 @@ describe('request bodies', () => {
     });
 
     expect(response.status).toBe(201);
-    expect(Customer.create).toHaveBeenCalledWith('Muster', null, undefined, undefined);
+    expect(Customer.create).toHaveBeenCalledWith('Muster', null, undefined, undefined, {});
   });
 
   test('ignores form data, which other sites can send without a CORS check', async () => {
@@ -340,5 +340,64 @@ describe('the logo', () => {
 
     expect(response.status).toBe(400);
     expect(Logo.set).not.toHaveBeenCalled();
+  });
+});
+
+describe('the address and tax ID of a customer, through the routes', () => {
+  const send = (method, path, body) => fetch(`${baseUrl}/api/customers${path}`, {
+    method,
+    headers: { 'Content-Type': 'application/json', ...LOGGED_IN },
+    body: JSON.stringify(body),
+  });
+
+  test('POST passes them on to the model', async () => {
+    const response = await send('POST', '', { name: 'Muster', address: 'Musterweg 1\n12345 Beispielstadt', taxId: 'DE123456789' });
+
+    expect(response.status).toBe(201);
+    expect(Customer.create).toHaveBeenCalledWith('Muster', null, undefined, undefined, { address: 'Musterweg 1\n12345 Beispielstadt', taxId: 'DE123456789' });
+  });
+
+  test('PUT with only a name leaves them out, so the stored ones stay', async () => {
+    Customer.update.mockResolvedValue({ id: 1, name: 'Neu' });
+
+    const response = await send('PUT', '/1', { name: 'Neu' });
+
+    expect(response.status).toBe(200);
+    expect(Customer.update).toHaveBeenCalledWith('1', 'Neu', null, undefined, undefined, {});
+  });
+
+  test('PUT with null removes them', async () => {
+    Customer.update.mockResolvedValue({ id: 1, name: 'Neu' });
+
+    await send('PUT', '/1', { name: 'Neu', address: null, taxId: null });
+
+    expect(Customer.update).toHaveBeenCalledWith('1', 'Neu', null, undefined, undefined, { address: null, taxId: null });
+  });
+
+  test.each([
+    ['an address of 7 lines', { address: '1\n2\n3\n4\n5\n6\n7' }],
+    ['an address with a tab', { address: 'a\tb' }],
+    ['an address that is too long', { address: 'x'.repeat(301) }],
+    ['a tax ID of two lines', { taxId: 'a\nb' }],
+    ['a tax ID with spaces at the ends', { taxId: ' DE1 ' }],
+  ])('refuses %s with 400 and saves nothing', async (_, extra) => {
+    const post = await send('POST', '', { name: 'Muster', ...extra });
+    const put = await send('PUT', '/1', { name: 'Muster', ...extra });
+
+    expect(post.status).toBe(400);
+    expect(put.status).toBe(400);
+    expect(Customer.create).not.toHaveBeenCalled();
+    expect(Customer.update).not.toHaveBeenCalled();
+  });
+
+  test('without a login nothing is saved', async () => {
+    const response = await fetch(`${baseUrl}/api/customers`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: 'Muster', address: 'x' }),
+    });
+
+    expect(response.status).toBe(401);
+    expect(Customer.create).not.toHaveBeenCalled();
   });
 });

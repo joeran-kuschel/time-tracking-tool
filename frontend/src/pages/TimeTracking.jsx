@@ -20,6 +20,12 @@ import Modal from '../components/Modal'
 import { formatRate } from '../format'
 import { idFromParam, trackingPath } from '../routes'
 import { ui } from '../ui'
+import { cleanText, lineCount } from '../text'
+
+// The limits of a customer's address and tax ID (the backend's config/settingsOptions.js has the same)
+const MAX_ADDRESS = 300
+const MAX_ADDRESS_LINES = 6
+const MAX_TAX_ID = 30
 
 const stopTimerFirst = msg`Stop the running timer first.`
 const customerMessages = { saveFailed: msg`Customer could not be saved.`, deleteFailed: msg`Customer could not be deleted.`, stopTimerFirst }
@@ -65,6 +71,7 @@ function TimeTracking({ customers, onCustomersChange, timer, settings }) {
   const selectedCustomerId = selectedCustomer?.id ?? null
   // The customer's own rounding rule as text, or null when it uses the global setting
   const customerRounding = selectedCustomer ? ownRoundingLabel(i18n, selectedCustomer) : null
+  const customerTaxId = selectedCustomer?.tax_id
   const selectedProject = projects.find((p) => p.id === requestedProjectId) ?? null
   const selectedProjectId = selectedProject?.id ?? null
   // An address for a record that does not exist (any more)
@@ -146,15 +153,28 @@ function TimeTracking({ customers, onCustomersChange, timer, settings }) {
     { name: 'email', label: t`Email (optional)`, type: 'email' },
     { name: 'rounding', label: t`Rounding`, type: 'select', options: roundingOptions(i18n) },
     { name: 'reportLanguage', label: t`Report language`, type: 'select', options: reportLanguageOptions(i18n) },
+    { name: 'address', label: t`Address for invoices (optional)`, type: 'textarea', rows: 4, maxLength: MAX_ADDRESS },
+    { name: 'taxId', label: t`Tax ID (optional)`, maxLength: MAX_TAX_ID },
   ]
+  // An address has at most 6 lines (the backend refuses more)
+  const validateCustomer = ({ address }) => {
+    const maxLines = MAX_ADDRESS_LINES
+    return lineCount(cleanText(address, { multiline: true })) > maxLines ? { field: 'address', message: t`Use at most ${maxLines} lines.` } : null
+  }
   const customerForm = {
     legend: t`Edit customer`,
     fields: customerFields,
-    toValues: (c) => ({ name: c.name, email: c.email ?? '', rounding: roundingValueOf(c), reportLanguage: reportLanguageValueOf(c) }),
+    toValues: (c) => ({ name: c.name, email: c.email ?? '', rounding: roundingValueOf(c), reportLanguage: reportLanguageValueOf(c), address: c.address ?? '', taxId: c.tax_id ?? '' }),
+    validate: validateCustomer,
   }
 
-  // The optional fields of a customer form as the API takes them
-  const optionsOf = ({ rounding, reportLanguage }) => ({ ...roundingFieldsOf(rounding), reportLanguage: reportLanguageFieldOf(reportLanguage) })
+  // The optional fields of a customer form as the API takes them; an empty address or tax ID is null (removes it)
+  const optionsOf = ({ rounding, reportLanguage, address, taxId }) => ({
+    ...roundingFieldsOf(rounding),
+    reportLanguage: reportLanguageFieldOf(reportLanguage),
+    address: cleanText(address, { multiline: true }),
+    taxId: cleanText(taxId),
+  })
 
   const addCustomer = async ({ name, email, ...options }) => {
     const created = await runAdd(() => api.createCustomer(name.trim(), email.trim(), optionsOf(options)), msg`Customer could not be created.`)
@@ -343,6 +363,8 @@ function TimeTracking({ customers, onCustomersChange, timer, settings }) {
                   <div className="min-w-0 flex-1">
                     <h1 className="font-serif text-4xl font-semibold leading-tight">{selectedCustomer.name}</h1>
                     {selectedCustomer.email && <p className="text-sm text-muted">{selectedCustomer.email}</p>}
+                    {selectedCustomer.address && <p className="whitespace-pre-line text-sm text-muted">{selectedCustomer.address}</p>}
+                    {customerTaxId && <p className="text-sm text-muted">{t`Tax ID: ${customerTaxId}`}</p>}
                     {customerRounding && <p className="text-sm text-muted">{t`Rounding: ${customerRounding}`}</p>}
                   </div>
                   <div className="flex gap-1">{actions}</div>
@@ -424,7 +446,7 @@ function TimeTracking({ customers, onCustomersChange, timer, settings }) {
       </div>
 
       <Modal title={t`New customer`} open={dialog === 'customer'} onClose={closeDialog}>
-        <RecordForm fields={customerFields} initialValues={{ name: '', email: '', rounding: GLOBAL_ROUNDING, reportLanguage: APP_LANGUAGE }} submitLabel={t`Save`}
+        <RecordForm fields={customerFields} initialValues={{ name: '', email: '', rounding: GLOBAL_ROUNDING, reportLanguage: APP_LANGUAGE, address: '', taxId: '' }} validate={validateCustomer} submitLabel={t`Save`}
           onSubmit={addCustomer} onCancel={closeDialog} error={addError} />
       </Modal>
       <Modal title={t`New project`} open={dialog === 'project'} onClose={closeDialog}>

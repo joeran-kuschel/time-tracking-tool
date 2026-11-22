@@ -26,6 +26,7 @@ const isRate = (value) => Number.isFinite(value) && value >= 0 && value <= MAX_R
 // one line; the address can have a few lines (separated by \n, no other control characters).
 const MAX_NAME = 100;
 const MAX_TAX_ID = 30;
+const MAX_BANK_LINES = 4;
 const MAX_ADDRESS = 300;
 const MAX_ADDRESS_LINES = 6;
 const MAX_EMAIL = 254;
@@ -55,6 +56,11 @@ const OPTIONS = {
   senderEmail: { column: 'sender_email', isValid: (value) => value === null || isEmail(value) },
   // Your tax ID (Steuernummer or USt-IdNr), one line; null is not set
   senderTaxId: { column: 'sender_tax_id', isValid: (value) => value === null || isTrimmedText(value, MAX_TAX_ID) },
+  // Your bank details for the invoice (IBAN, BIC, bank): up to 4 lines; null is not set
+  senderBankDetails: {
+    column: 'sender_bank_details',
+    isValid: (value) => value === null || (isTrimmedText(value, MAX_ADDRESS, '\n') && value.split('\n').length <= MAX_BANK_LINES),
+  },
   // VAT for invoices: the mode and, for 'regular', the rate in percent
   vatMode: { column: 'vat_mode', isValid: (value) => VAT_MODES.includes(value) },
   vatRate: { column: 'vat_rate', isValid: (value) => VAT_RATES.includes(value) },
