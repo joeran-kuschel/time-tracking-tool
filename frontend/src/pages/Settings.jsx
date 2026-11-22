@@ -7,6 +7,7 @@ import { msg } from '@lingui/core/macro'
 import { settingsGroups, textTypes } from '../settingsGroups'
 import { formatDecimal, parseDecimal } from '../format'
 import { MAX_PATTERN, parseInvoiceNumber } from '../invoiceNumber'
+import { cleanText, lineCount } from '../text'
 import { ui } from '../ui'
 
 
@@ -35,13 +36,12 @@ function readChanges(changes, options, i18n) {
       if (parsed === undefined) invalid[name] = 'integer'
       else values[name] = parsed
     } else if (textTypes.includes(option?.type)) {
-      // eslint-disable-next-line no-control-regex
-      const text = (value ?? '').replace(option.type === 'textarea' ? /[\u0000-\u0009\u000b-\u001f\u007f]/g : /[\u0000-\u001f\u007f]/g, ' ').trim()
-      const problem = option.check?.(text)
+      const text = cleanText(value, { multiline: option.type === 'textarea' })
+      const problem = option.check?.(text ?? '')
       if (problem) invalid[name] = `pattern-${problem}`
       else if (option.type === 'email' && text && !emailFormat.test(text)) invalid[name] = 'email'
-      else if (option.maxLines && text.split('\n').length > option.maxLines) invalid[name] = 'lines'
-      else values[name] = text === '' ? null : text
+      else if (option.maxLines && lineCount(text) > option.maxLines) invalid[name] = 'lines'
+      else values[name] = text
     } else {
       values[name] = value
     }

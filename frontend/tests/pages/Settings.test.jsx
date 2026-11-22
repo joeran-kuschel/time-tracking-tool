@@ -257,6 +257,66 @@ describe('Settings', () => {
       })
     })
 
+    describe('the bank details', () => {
+      const bank = () => screen.getByRole('textbox', { name: 'Bankverbindung' })
+      const save = () => userEvent.click(screen.getByRole('button', { name: 'Speichern' }))
+      const saved = { showAmounts: false, roundingMinutes: 0, roundingDirection: 'up', showRoundingNote: false, defaultHourlyRate: null, weekStart: 'monday', senderName: null, senderAddress: null, senderEmail: null, senderTaxId: null, senderBankDetails: null, vatMode: 'regular', vatRate: 19, invoiceNumberPattern: '{YYYY}-{NNNN}', invoiceNextNumber: 1 }
+
+      beforeEach(() => {
+        api.getSettings.mockResolvedValue(saved)
+        api.updateSettings.mockImplementation(async (changes) => ({ ...saved, ...changes }))
+      })
+
+      test('are a multi-line field in the Invoicing group, described by a hint, limited to 300 characters', async () => {
+        render(<Harness list={settingsGroups} />)
+
+        const group = await screen.findByRole('group', { name: 'Rechnungen' })
+        expect(within(group).getByRole('textbox', { name: 'Bankverbindung' }).tagName).toBe('TEXTAREA')
+        expect(bank()).toHaveAttribute('maxlength', '300')
+        expect(bank()).toHaveAccessibleDescription('Zum Beispiel deine IBAN, BIC und die Bank. Bis zu 4 Zeilen.')
+      })
+
+      test('are saved with their lines, trimmed, and removed with null', async () => {
+        render(<Harness list={settingsGroups} />)
+        await screen.findByRole('group', { name: 'Rechnungen' })
+
+        await userEvent.type(bank(), ' DE89 3704 0044 0532 0130 00{Enter}BIC COBADEFFXXX ')
+        await save()
+        expect(api.updateSettings).toHaveBeenLastCalledWith({ senderBankDetails: 'DE89 3704 0044 0532 0130 00\nBIC COBADEFFXXX' })
+
+        await userEvent.clear(bank())
+        await save()
+        expect(api.updateSettings).toHaveBeenLastCalledWith({ senderBankDetails: null })
+      })
+
+      test('a pasted tab becomes a space and a text of only spaces is removed (null)', async () => {
+        render(<Harness list={settingsGroups} />)
+        await screen.findByRole('group', { name: 'Rechnungen' })
+
+        await userEvent.click(bank())
+        await userEvent.paste('IBAN\t1\nBIC 2')
+        await save()
+        expect(api.updateSettings).toHaveBeenLastCalledWith({ senderBankDetails: 'IBAN 1\nBIC 2' })
+
+        await userEvent.clear(bank())
+        await userEvent.type(bank(), '   ')
+        await save()
+        expect(api.updateSettings).toHaveBeenLastCalledWith({ senderBankDetails: null })
+      })
+
+      test('more than 4 lines are refused next to the field and nothing is saved', async () => {
+        render(<Harness list={settingsGroups} />)
+        await screen.findByRole('group', { name: 'Rechnungen' })
+
+        await userEvent.type(bank(), '1{Enter}2{Enter}3{Enter}4{Enter}5')
+        await save()
+
+        expect(await screen.findByText('Verwende höchstens 4 Zeilen.')).toBeInTheDocument()
+        expect(bank()).toHaveAttribute('aria-invalid', 'true')
+        expect(api.updateSettings).not.toHaveBeenCalled()
+      })
+    })
+
     describe('invoicing', () => {
       const saved = { showAmounts: false, roundingMinutes: 0, roundingDirection: 'up', showRoundingNote: false, defaultHourlyRate: null, weekStart: 'monday', senderName: null, senderAddress: null, senderEmail: null, senderTaxId: null, vatMode: 'regular', vatRate: 19, invoiceNumberPattern: '{YYYY}-{NNNN}', invoiceNextNumber: 1 }
       const mode = () => screen.getByRole('combobox', { name: 'Umsatzsteuer' })

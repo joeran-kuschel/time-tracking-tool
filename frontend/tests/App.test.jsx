@@ -434,6 +434,190 @@ describe('App', () => {
     expect(screen.queryByText(/gerundet/)).not.toBeInTheDocument()
   })
 
+  describe('the address and tax ID of a customer, for invoices', () => {
+    const addressLabel = 'Adresse für Rechnungen (optional)'
+    const taxIdLabel = 'Steuernummer (optional)'
+
+    test('the form has an address with several lines and a tax ID, both empty at first, with the limits of the backend', async () => {
+      api.getCustomers.mockResolvedValue([])
+      await renderTimeTracking()
+      const dialog = await openNewCustomer()
+
+      const address = within(dialog).getByLabelText(addressLabel)
+      expect(address.tagName).toBe('TEXTAREA')
+      expect(address).toHaveValue('')
+      expect(address).toHaveAttribute('maxlength', '300')
+      expect(within(dialog).getByLabelText(taxIdLabel)).toHaveValue('')
+      expect(within(dialog).getByLabelText(taxIdLabel)).toHaveAttribute('maxlength', '30')
+    })
+
+    test('a new customer is saved with the typed address and tax ID, trimmed', async () => {
+      api.getCustomers.mockResolvedValue([])
+      api.createCustomer.mockResolvedValue({ id: 2, name: 'Eigen AG' })
+      await renderTimeTracking()
+      const dialog = await openNewCustomer()
+
+      await userEvent.type(within(dialog).getByLabelText('Name'), 'Eigen AG')
+      await userEvent.type(within(dialog).getByLabelText(addressLabel), '  Musterweg 1{Enter}12345 Beispielstadt  ')
+      await userEvent.type(within(dialog).getByLabelText(taxIdLabel), ' DE123456789 ')
+      await userEvent.click(within(dialog).getByRole('button', { name: 'Speichern' }))
+
+      expect(api.createCustomer).toHaveBeenCalledWith('Eigen AG', '', expect.objectContaining({ address: 'Musterweg 1\n12345 Beispielstadt', taxId: 'DE123456789' }))
+    })
+
+    test('spaces only count as empty: null is sent', async () => {
+      api.getCustomers.mockResolvedValue([])
+      api.createCustomer.mockResolvedValue({ id: 2, name: 'Eigen AG' })
+      await renderTimeTracking()
+      const dialog = await openNewCustomer()
+
+      await userEvent.type(within(dialog).getByLabelText('Name'), 'Eigen AG')
+      await userEvent.type(within(dialog).getByLabelText(addressLabel), '   ')
+      await userEvent.type(within(dialog).getByLabelText(taxIdLabel), '  ')
+      await userEvent.click(within(dialog).getByRole('button', { name: 'Speichern' }))
+
+      expect(api.createCustomer).toHaveBeenCalledWith('Eigen AG', '', expect.objectContaining({ address: null, taxId: null }))
+    })
+
+    test('an address of more than 6 lines is refused next to the field and nothing is sent', async () => {
+      api.getCustomers.mockResolvedValue([])
+      await renderTimeTracking()
+      const dialog = await openNewCustomer()
+
+      await userEvent.type(within(dialog).getByLabelText('Name'), 'Eigen AG')
+      await userEvent.type(within(dialog).getByLabelText(addressLabel), '1{Enter}2{Enter}3{Enter}4{Enter}5{Enter}6{Enter}7')
+      await userEvent.click(within(dialog).getByRole('button', { name: 'Speichern' }))
+
+      expect(within(dialog).getByText('Verwende höchstens 6 Zeilen.')).toBeInTheDocument()
+      expect(within(dialog).getByLabelText(addressLabel)).toHaveAttribute('aria-invalid', 'true')
+      expect(api.createCustomer).not.toHaveBeenCalled()
+    })
+
+    test('6 lines are fine', async () => {
+      api.getCustomers.mockResolvedValue([])
+      api.createCustomer.mockResolvedValue({ id: 2, name: 'Eigen AG' })
+      await renderTimeTracking()
+      const dialog = await openNewCustomer()
+
+      await userEvent.type(within(dialog).getByLabelText('Name'), 'Eigen AG')
+      await userEvent.type(within(dialog).getByLabelText(addressLabel), '1{Enter}2{Enter}3{Enter}4{Enter}5{Enter}6')
+      await userEvent.click(within(dialog).getByRole('button', { name: 'Speichern' }))
+
+      expect(api.createCustomer).toHaveBeenCalledWith('Eigen AG', '', expect.objectContaining({ address: '1\n2\n3\n4\n5\n6' }))
+    })
+
+    test('the customer shows its address, with the lines, and its tax ID', async () => {
+      api.getCustomers.mockResolvedValue([{ id: 1, name: 'Muster GmbH', email: null, address: 'Musterweg 1\n12345 Beispielstadt', tax_id: 'DE123456789' }])
+      await renderTimeTracking()
+
+      await userEvent.click(await screen.findByRole('button', { name: 'Muster GmbH' }))
+
+      const address = await screen.findByText(/Musterweg 1/)
+      expect(address).toHaveTextContent('Musterweg 1 12345 Beispielstadt')
+      expect(address).toHaveClass('whitespace-pre-line')
+      expect(screen.getByText('Steuernummer: DE123456789')).toBeInTheDocument()
+    })
+
+    test('a customer without them shows neither', async () => {
+      api.getCustomers.mockResolvedValue([{ id: 1, name: 'Muster GmbH', email: null, address: null, tax_id: null }])
+      await renderTimeTracking()
+
+      await userEvent.click(await screen.findByRole('button', { name: 'Muster GmbH' }))
+
+      await screen.findByRole('heading', { name: 'Muster GmbH' })
+      expect(screen.queryByText(/Steuernummer:/)).not.toBeInTheDocument()
+    })
+
+    test('the edit form shows them and saves changed ones, and removes one with null', async () => {
+      api.getCustomers.mockResolvedValue([{ id: 1, name: 'Muster GmbH', email: null, address: 'Musterweg 1', tax_id: 'DE1' }])
+      api.updateCustomer.mockResolvedValue({ id: 1 })
+      await renderTimeTracking()
+      await userEvent.click(await screen.findByRole('button', { name: 'Muster GmbH' }))
+
+      await userEvent.click(await screen.findByRole('button', { name: 'Muster GmbH bearbeiten' }))
+      expect(screen.getByLabelText(addressLabel)).toHaveValue('Musterweg 1')
+      expect(screen.getByLabelText(taxIdLabel)).toHaveValue('DE1')
+      await userEvent.clear(screen.getByLabelText(addressLabel))
+      await userEvent.type(screen.getByLabelText(addressLabel), 'Neuweg 2')
+      await userEvent.clear(screen.getByLabelText(taxIdLabel))
+      await userEvent.click(screen.getByRole('button', { name: 'Speichern' }))
+
+      expect(api.updateCustomer).toHaveBeenCalledWith(1, 'Muster GmbH', '', expect.objectContaining({ address: 'Neuweg 2', taxId: null }))
+    })
+
+    test('a customer without the fields (an older answer) has empty ones in the edit form', async () => {
+      api.getCustomers.mockResolvedValue([{ id: 1, name: 'Muster GmbH', email: null }])
+      await renderTimeTracking()
+      await userEvent.click(await screen.findByRole('button', { name: 'Muster GmbH' }))
+
+      await userEvent.click(await screen.findByRole('button', { name: 'Muster GmbH bearbeiten' }))
+
+      expect(screen.getByLabelText(addressLabel)).toHaveValue('')
+      expect(screen.getByLabelText(taxIdLabel)).toHaveValue('')
+    })
+
+    test('the edit form refuses too many lines too', async () => {
+      api.getCustomers.mockResolvedValue([{ id: 1, name: 'Muster GmbH', email: null }])
+      await renderTimeTracking()
+      await userEvent.click(await screen.findByRole('button', { name: 'Muster GmbH' }))
+      await userEvent.click(await screen.findByRole('button', { name: 'Muster GmbH bearbeiten' }))
+
+      await userEvent.type(screen.getByLabelText(addressLabel), '1{Enter}2{Enter}3{Enter}4{Enter}5{Enter}6{Enter}7')
+      await userEvent.click(screen.getByRole('button', { name: 'Speichern' }))
+
+      expect(screen.getByText('Verwende höchstens 6 Zeilen.')).toBeInTheDocument()
+      expect(api.updateCustomer).not.toHaveBeenCalled()
+    })
+
+    test('a stored address with HTML is shown as text, not as markup', async () => {
+      api.getCustomers.mockResolvedValue([{ id: 1, name: 'Muster GmbH', email: null, address: '<img src=x onerror=alert(1)>\n<b>fett</b>', tax_id: '<i>DE1</i>' }])
+      await renderTimeTracking()
+
+      await userEvent.click(await screen.findByRole('button', { name: 'Muster GmbH' }))
+
+      expect(await screen.findByText(/<b>fett<\/b>/)).toBeInTheDocument()
+      expect(screen.getByText('Steuernummer: <i>DE1</i>')).toBeInTheDocument()
+      expect(document.querySelector('img[src="x"], b')).toBeNull()
+    })
+
+    test('the form with the new fields, and with the lines error, has no accessibility violations', async () => {
+      api.getCustomers.mockResolvedValue([])
+      await renderTimeTracking()
+      const dialog = await openNewCustomer()
+      expect(await axe(dialog)).toHaveNoViolations()
+
+      await userEvent.type(within(dialog).getByLabelText('Name'), 'Eigen AG')
+      await userEvent.type(within(dialog).getByLabelText(addressLabel), '1{Enter}2{Enter}3{Enter}4{Enter}5{Enter}6{Enter}7')
+      await userEvent.click(within(dialog).getByRole('button', { name: 'Speichern' }))
+
+      expect(within(dialog).getByLabelText(addressLabel)).toHaveAccessibleDescription(/höchstens 6 Zeilen/)
+      expect(await axe(dialog)).toHaveNoViolations()
+    })
+
+    test('the shown address and tax ID have no accessibility violations', async () => {
+      api.getCustomers.mockResolvedValue([{ id: 1, name: 'Muster GmbH', email: null, address: 'Musterweg 1\n12345 Beispielstadt', tax_id: 'DE1' }])
+      const { container } = await renderTimeTracking()
+
+      await userEvent.click(await screen.findByRole('button', { name: 'Muster GmbH' }))
+      await screen.findByText('Steuernummer: DE1')
+
+      expect(await axe(container)).toHaveNoViolations()
+    })
+
+    test('Escape in the edit form cancels it without saving', async () => {
+      api.getCustomers.mockResolvedValue([{ id: 1, name: 'Muster GmbH', email: null, address: 'Musterweg 1', tax_id: 'DE1' }])
+      await renderTimeTracking()
+      await userEvent.click(await screen.findByRole('button', { name: 'Muster GmbH' }))
+      await userEvent.click(await screen.findByRole('button', { name: 'Muster GmbH bearbeiten' }))
+
+      await userEvent.type(screen.getByLabelText(addressLabel), ' geändert{Escape}')
+
+      expect(api.updateCustomer).not.toHaveBeenCalled()
+      expect(screen.queryByLabelText(addressLabel)).not.toBeInTheDocument()
+      expect(screen.getByText('Musterweg 1')).toBeInTheDocument()
+    })
+  })
+
   describe('the report language of a customer', () => {
     const labelOf = 'Berichtssprache'
 
@@ -459,7 +643,7 @@ describe('App', () => {
       await userEvent.selectOptions(within(dialog).getByLabelText(labelOf), 'en')
       await userEvent.click(within(dialog).getByRole('button', { name: 'Speichern' }))
 
-      expect(api.createCustomer).toHaveBeenCalledWith('Eigen AG', '', { roundingMinutes: null, roundingDirection: null, reportLanguage: 'en' })
+      expect(api.createCustomer).toHaveBeenCalledWith('Eigen AG', '', { roundingMinutes: null, roundingDirection: null, reportLanguage: 'en', address: null, taxId: null })
     })
 
     test('a new customer without a choice uses the language of the app (null)', async () => {
@@ -541,7 +725,7 @@ describe('App', () => {
       await userEvent.selectOptions(within(dialog).getByLabelText(labelOf), 'Viertelstunde (15 Minuten), Auf- oder abrunden (nächstgelegene Stufe)')
       await userEvent.click(within(dialog).getByRole('button', { name: 'Speichern' }))
 
-      expect(api.createCustomer).toHaveBeenCalledWith('Eigen AG', '', { roundingMinutes: 15, roundingDirection: 'nearest', reportLanguage: null })
+      expect(api.createCustomer).toHaveBeenCalledWith('Eigen AG', '', { roundingMinutes: 15, roundingDirection: 'nearest', reportLanguage: null, address: null, taxId: null })
     })
 
     test('offers the global setting, no rounding and every step in both directions', async () => {
@@ -569,7 +753,7 @@ describe('App', () => {
       await userEvent.selectOptions(screen.getByLabelText(labelOf), 'none')
       await userEvent.click(screen.getByRole('button', { name: 'Speichern' }))
 
-      expect(api.updateCustomer).toHaveBeenCalledWith(1, 'Muster GmbH', '', { roundingMinutes: 0, roundingDirection: 'up', reportLanguage: null })
+      expect(api.updateCustomer).toHaveBeenCalledWith(1, 'Muster GmbH', '', { roundingMinutes: 0, roundingDirection: 'up', reportLanguage: null, address: null, taxId: null })
     })
 
     test('a changed rule loads the customer\'s entries again, so the month summary follows it; an unchanged rule does not', async () => {
@@ -614,7 +798,7 @@ describe('App', () => {
       await userEvent.selectOptions(screen.getByLabelText(labelOf), 'global')
       await userEvent.click(screen.getByRole('button', { name: 'Speichern' }))
 
-      expect(api.updateCustomer).toHaveBeenCalledWith(1, 'Muster GmbH', '', { roundingMinutes: null, roundingDirection: null, reportLanguage: null })
+      expect(api.updateCustomer).toHaveBeenCalledWith(1, 'Muster GmbH', '', { roundingMinutes: null, roundingDirection: null, reportLanguage: null, address: null, taxId: null })
     })
 
     test('a failed save keeps the dialog with the chosen rule, shows the error and sends nothing twice', async () => {
@@ -764,7 +948,7 @@ describe('App', () => {
     await userEvent.type(within(dialog).getByLabelText('E-Mail (optional)'), 'info@neu.de')
     await userEvent.click(within(dialog).getByRole('button', { name: 'Speichern' }))
 
-    expect(api.createCustomer).toHaveBeenCalledWith('Neu AG', 'info@neu.de', { roundingMinutes: null, roundingDirection: null, reportLanguage: null })
+    expect(api.createCustomer).toHaveBeenCalledWith('Neu AG', 'info@neu.de', { roundingMinutes: null, roundingDirection: null, reportLanguage: null, address: null, taxId: null })
     expect(await screen.findByRole('button', { name: 'Neu AG', pressed: false })).toBeInTheDocument()
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Neuer Kunde' })).toHaveFocus()
@@ -934,7 +1118,7 @@ describe('App', () => {
     await userEvent.type(name, 'Muster AG')
     await userEvent.click(screen.getByRole('button', { name: 'Speichern' }))
 
-    expect(api.updateCustomer).toHaveBeenCalledWith(1, 'Muster AG', '', { roundingMinutes: null, roundingDirection: null, reportLanguage: null })
+    expect(api.updateCustomer).toHaveBeenCalledWith(1, 'Muster AG', '', { roundingMinutes: null, roundingDirection: null, reportLanguage: null, address: null, taxId: null })
     expect(await screen.findByRole('button', { name: 'Muster AG', pressed: true })).toBeInTheDocument()
     expect(screen.getByRole('heading', { name: 'Einträge für Website' })).toBeInTheDocument()
     expect(api.getProjects).toHaveBeenCalledTimes(1)

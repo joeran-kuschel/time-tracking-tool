@@ -133,6 +133,7 @@ describe('settingsController', () => {
   test.each([
     [{ senderName: 'Jana Beispiel' }], [{ senderAddress: 'Musterweg 1\n12345 Beispielstadt' }], [{ senderEmail: 'jana@example.test' }],
     [{ senderName: null, senderAddress: null, senderEmail: null }],
+    [{ senderBankDetails: 'DE89 3704 0044 0532 0130 00\nBIC COBADEFFXXX\nCommerzbank' }], [{ senderBankDetails: null }],
   ])('update saves your details %j', async (body) => {
     Settings.update.mockResolvedValue({});
 
@@ -143,6 +144,7 @@ describe('settingsController', () => {
 
   test.each([
     ['senderName', ''], ['senderName', ' x'], ['senderName', 'a\nb'], ['senderName', 'x'.repeat(101)],
+    ['senderBankDetails', ''], ['senderBankDetails', '1\n2\n3\n4\n5'], ['senderBankDetails', 'x'.repeat(301)], ['senderBankDetails', ' IBAN'], ['senderBankDetails', 5],
     ['senderAddress', 'a\nb\nc\nd\ne\nf\ng'], ['senderAddress', 'x'.repeat(301)], ['senderEmail', 'not-an-email'], ['senderEmail', 5],
   ])('update rejects %s %j', async (name, value) => {
     const res = mockResponse();

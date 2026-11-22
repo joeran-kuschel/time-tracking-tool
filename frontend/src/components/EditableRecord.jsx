@@ -6,7 +6,7 @@ import RecordActions from './RecordActions'
 
 // One record, edited in place or deleted after a confirmation.
 // children(actions) renders the record in view mode; actions are its edit and delete buttons.
-// form: { legend, fields, toValues(item) } for the edit form. onDeleted() should move focus somewhere that stays.
+// form: { legend, fields, toValues(item), validate(values) (optional, see RecordForm) } for the edit form. onDeleted() should move focus somewhere that stays.
 function EditableRecord({ item, form, onUpdate, onDelete, deleteMessage, messages, onDeleted, children }) {
   const { t } = useLingui()
   const editable = useEditable({ onUpdate: (values) => onUpdate(item, values), onDelete: () => onDelete(item), onDeleted, messages })
@@ -18,6 +18,7 @@ function EditableRecord({ item, form, onUpdate, onDelete, deleteMessage, message
         legend={form.legend}
         fields={form.fields}
         initialValues={form.toValues(item)}
+        validate={form.validate}
         submitLabel={t`Save`}
         onSubmit={editable.save}
         onCancel={editable.cancel}
