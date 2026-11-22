@@ -6,6 +6,7 @@ import SettingField from '../components/SettingField'
 import { msg } from '@lingui/core/macro'
 import { settingsGroups, textTypes } from '../settingsGroups'
 import { formatDecimal, parseDecimal } from '../format'
+import { MAX_PATTERN, parseInvoiceNumber } from '../invoiceNumber'
 import { ui } from '../ui'
 
 
@@ -15,7 +16,9 @@ import { ui } from '../ui'
 // A text option loses control characters (a pasted tab becomes a space; only a textarea keeps its line breaks), is trimmed,
 // and an empty one becomes null (not set); an email must have the format something@something.tld (the same check as the
 // backend's settingsOptions.js), and a multi-line text can have at most `maxLines` lines.
-// Returns { values: { name: value }, invalid: { name: kind } }, where kind says what is wrong: 'amount', 'email' or 'lines'.
+// A text option with a `check` (settingsGroups.js) must pass it, also when empty. An 'integer' option must be digits within its limits.
+// Returns { values: { name: value }, invalid: { name: kind } }, where kind says what is wrong: 'amount', 'integer', 'email', 'lines'
+// or 'pattern-' and the problem the check found.
 const emailFormat = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 function readChanges(changes, options, i18n) {
   const byName = Object.fromEntries(options.map((option) => [option.name, option]))
@@ -27,10 +30,16 @@ function readChanges(changes, options, i18n) {
       const parsed = parseDecimal(i18n, value)
       if (parsed === undefined) invalid[name] = 'amount'
       else values[name] = parsed
+    } else if (option?.type === 'integer' && typeof value === 'string') {
+      const parsed = parseInvoiceNumber(value)
+      if (parsed === undefined) invalid[name] = 'integer'
+      else values[name] = parsed
     } else if (textTypes.includes(option?.type)) {
       // eslint-disable-next-line no-control-regex
       const text = (value ?? '').replace(option.type === 'textarea' ? /[\u0000-\u0009\u000b-\u001f\u007f]/g : /[\u0000-\u001f\u007f]/g, ' ').trim()
-      if (option.type === 'email' && text && !emailFormat.test(text)) invalid[name] = 'email'
+      const problem = option.check?.(text)
+      if (problem) invalid[name] = `pattern-${problem}`
+      else if (option.type === 'email' && text && !emailFormat.test(text)) invalid[name] = 'email'
       else if (option.maxLines && text.split('\n').length > option.maxLines) invalid[name] = 'lines'
       else values[name] = text === '' ? null : text
     } else {
@@ -44,7 +53,13 @@ function readChanges(changes, options, i18n) {
 function errorText(kind, option, i18n) {
   const example = formatDecimal(i18n, 80)
   const maxLines = option.maxLines
+  const maxLength = MAX_PATTERN
+  const counter = '{NNNN}'
   const messages = {
+    integer: msg`Enter a whole number from 1 to 99,999,999.`,
+    'pattern-text': msg`Enter a pattern of up to ${maxLength} characters, without a space at the start or end.`,
+    'pattern-characters': msg`Besides the placeholders, use only letters, digits and . _ / - and spaces.`,
+    'pattern-counter': msg`The pattern needs exactly one counter, for example ${counter}.`,
     amount: msg`Enter an amount from 0 with up to two decimals, for example ${example}.`,
     email: msg`Enter an email address like name@example.com.`,
     lines: msg`Use at most ${maxLines} lines.`,
@@ -143,6 +158,7 @@ function Settings({ settings, groups = settingsGroups }) {
                   value={current[option.name]}
                   disabled={option.disabledWhen?.(current) ?? false}
                   error={fieldErrors[option.name]}
+                  preview={option.preview?.(current)}
                   onChange={(value) => change(option.name, value)}
                 />
               ))}

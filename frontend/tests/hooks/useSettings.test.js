@@ -55,6 +55,20 @@ describe('useSettings', () => {
     expect(result.current.values).toEqual({ a: 2, b: 1 })
   })
 
+  test('a 409 on save says that the next invoice number can only be raised', async () => {
+    api.getSettings.mockResolvedValue({ a: 1 })
+    api.updateSettings.mockRejectedValue(new ApiError(409, 'cannot be lowered'))
+    const { result } = renderHook(() => useSettings())
+    await waitFor(() => expect(result.current.values).not.toBeNull())
+
+    await act(async () => {
+      await result.current.save({ a: 2 })
+    })
+
+    expect(result.current.error).toBe('Einstellungen konnten nicht gespeichert werden. Die nächste Rechnungsnummer kann nur erhöht, nicht verringert werden.')
+    expect(result.current.values).toEqual({ a: 1 })
+  })
+
   test('clear hides the error', async () => {
     api.getSettings.mockRejectedValue(new ApiError(500, 'boom'))
     const { result } = renderHook(() => useSettings())

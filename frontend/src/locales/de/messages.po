@@ -59,13 +59,25 @@ msgstr "{total} gesamt"
 msgid "{weekStart} to {today}"
 msgstr "{weekStart} bis {today}"
 
-#: src/settingsGroups.js:53
+#: src/settingsGroups.js:172
+msgid "0 %"
+msgstr "0 %"
+
+#: src/settingsGroups.js:65
 msgid "10 minutes"
 msgstr "10 Minuten"
 
-#: src/settingsGroups.js:52
+#: src/settingsGroups.js:170
+msgid "19 %"
+msgstr "19 %"
+
+#: src/settingsGroups.js:64
 msgid "5 minutes"
 msgstr "5 Minuten"
+
+#: src/settingsGroups.js:171
+msgid "7 %"
+msgstr "7 %"
 
 #: src/hooks/useActiveEntry.js:44
 msgid "A timer is already running."
@@ -93,11 +105,11 @@ msgstr "Lege zuerst auf der Seite Zeiterfassung einen Kunden und ein Projekt an.
 msgid "Add time"
 msgstr "Zeit nachtragen"
 
-#: src/settingsGroups.js:117
+#: src/settingsGroups.js:129
 msgid "Address"
 msgstr "Adresse"
 
-#: src/settingsGroups.js:74
+#: src/settingsGroups.js:86
 msgid "Adds a sentence such as \"Hours rounded up to quarter hours.\" to the Reports page and the PDF."
 msgstr "Fügt der Berichte-Seite und dem PDF einen Satz hinzu, z. B. \"Stunden auf Viertelstunden aufgerundet.\""
 
@@ -135,6 +147,10 @@ msgstr "Zurück zu Zeiterfassung"
 msgid "Bars, use the arrow keys to read the values"
 msgstr "Balken, mit den Pfeiltasten die Werte lesen"
 
+#: src/pages/Settings.jsx:61
+msgid "Besides the placeholders, use only letters, digits and . _ / - and spaces."
+msgstr "Verwende außer den Platzhaltern nur Buchstaben, Ziffern und . _ / - sowie Leerzeichen."
+
 #: src/components/MonthSummary.jsx:23
 msgid "Billable amount"
 msgstr "Abrechenbarer Betrag"
@@ -151,7 +167,7 @@ msgstr "Abrechnung · {monthName}"
 msgid "By customer · {monthName}"
 msgstr "Nach Kunde · {monthName}"
 
-#: src/settingsGroups.js:82
+#: src/settingsGroups.js:94
 msgid "Calendar"
 msgstr "Kalender"
 
@@ -172,15 +188,15 @@ msgstr "Prüfe E-Mail und Passwort."
 msgid "Choose a PNG or JPEG image of at most 1 MB and 2000 × 2000 pixels."
 msgstr "Wähle ein PNG- oder JPEG-Bild mit höchstens 1 MB und 2000 × 2000 Pixeln."
 
-#: src/components/LogoField.jsx:84
+#: src/components/LogoField.jsx:87
 msgid "Choose a PNG or JPEG image. Other types, such as SVG, are not accepted."
 msgstr "Wähle ein PNG- oder JPEG-Bild. Andere Typen, etwa SVG, werden nicht angenommen."
 
-#: src/settingsGroups.js:76
+#: src/settingsGroups.js:88
 msgid "Choose a step in \"Round time entries\" first."
 msgstr "Wähle zuerst bei \"Zeiteinträge runden\" eine Stufe."
 
-#: src/settingsGroups.js:68
+#: src/settingsGroups.js:80
 msgid "Choose a step in \"Round time entries\" to set the direction."
 msgstr "Wähle bei \"Zeiteinträge runden\" eine Stufe, um die Richtung festzulegen."
 
@@ -256,7 +272,7 @@ msgstr "Tag"
 msgid "Days"
 msgstr "Tage"
 
-#: src/settingsGroups.js:42
+#: src/settingsGroups.js:54
 msgid "Default hourly rate for new projects (€)"
 msgstr "Standard-Stundensatz für neue Projekte (€)"
 
@@ -295,7 +311,7 @@ msgstr "Beschreibung"
 msgid "Description (optional)"
 msgstr "Beschreibung (optional)"
 
-#: src/settingsGroups.js:62
+#: src/settingsGroups.js:74
 msgid "Direction"
 msgstr "Richtung"
 
@@ -315,7 +331,7 @@ msgstr "Entwurf"
 msgid "Draft"
 msgstr "Entwurf"
 
-#: src/settingsGroups.js:49
+#: src/settingsGroups.js:61
 msgid "Each entry is rounded on its own in reports. The stored times never change. A customer can have its own rule."
 msgstr "In Berichten wird jeder Eintrag einzeln gerundet. Die gespeicherten Zeiten ändern sich nie. Ein Kunde kann eine eigene Regel haben."
 
@@ -343,7 +359,7 @@ msgstr "E-Mail"
 msgid "Email (optional)"
 msgstr "E-Mail (optional)"
 
-#: src/settingsGroups.js:126
+#: src/settingsGroups.js:138
 msgid "Email address"
 msgstr "E-Mail-Adresse"
 
@@ -363,11 +379,19 @@ msgstr "Das Ende muss nach dem Start liegen."
 msgid "English"
 msgstr "Englisch"
 
-#: src/pages/Settings.jsx:48
+#: src/pages/Settings.jsx:60
+msgid "Enter a pattern of up to {maxLength} characters, without a space at the start or end."
+msgstr "Gib ein Muster mit bis zu {maxLength} Zeichen ein, ohne Leerzeichen am Anfang oder Ende."
+
+#: src/pages/Settings.jsx:59
+msgid "Enter a whole number from 1 to 99,999,999."
+msgstr "Gib eine ganze Zahl von 1 bis 99.999.999 ein."
+
+#: src/pages/Settings.jsx:63
 msgid "Enter an amount from 0 with up to two decimals, for example {example}."
 msgstr "Geben Sie einen Betrag ab 0 mit bis zu zwei Nachkommastellen ein, zum Beispiel {example}."
 
-#: src/pages/Settings.jsx:49
+#: src/pages/Settings.jsx:64
 msgid "Enter an email address like name@example.com."
 msgstr "Gib eine E-Mail-Adresse wie name@beispiel.de ein."
 
@@ -394,7 +418,7 @@ msgstr "Einträge filtern"
 msgid "Filters"
 msgstr "Filter"
 
-#: src/settingsGroups.js:87
+#: src/settingsGroups.js:99
 msgid "First day of the week"
 msgstr "Erster Tag der Woche"
 
@@ -410,11 +434,11 @@ msgstr "Deutsch"
 msgid "Go to the Dashboard"
 msgstr "Zum Dashboard"
 
-#: src/settingsGroups.js:55
+#: src/settingsGroups.js:67
 msgid "Half hour (30 minutes)"
 msgstr "Halbe Stunde (30 Minuten)"
 
-#: src/settingsGroups.js:56
+#: src/settingsGroups.js:68
 msgid "Hour (60 minutes)"
 msgstr "Stunde (60 Minuten)"
 
@@ -498,6 +522,14 @@ msgstr "Stunden diesen Monat"
 msgid "in Time tracking"
 msgstr "in Zeiterfassung"
 
+#: src/settingsGroups.js:180
+msgid "Invoice number pattern"
+msgstr "Muster der Rechnungsnummer"
+
+#: src/settingsGroups.js:153
+msgid "Invoicing"
+msgstr "Rechnungen"
+
 #: src/components/dashboard/KeyFigures.jsx:47
 msgid "Key figures"
 msgstr "Kennzahlen"
@@ -526,8 +558,8 @@ msgstr "Wie das System"
 #: src/components/AuthGate.jsx:70
 #: src/pages/Dashboard.jsx:78
 #: src/pages/Reports.jsx:253
-#: src/pages/Settings.jsx:125
-#: src/pages/Settings.jsx:131
+#: src/pages/Settings.jsx:140
+#: src/pages/Settings.jsx:146
 msgid "Loading..."
 msgstr "Laden..."
 
@@ -549,15 +581,15 @@ msgstr "Abmelden fehlgeschlagen."
 msgid "Login failed."
 msgstr "Anmeldung fehlgeschlagen."
 
-#: src/settingsGroups.js:104
+#: src/settingsGroups.js:116
 msgid "Logo"
 msgstr "Logo"
 
-#: src/components/LogoField.jsx:140
+#: src/components/LogoField.jsx:143
 msgid "Logo removed."
 msgstr "Logo entfernt."
 
-#: src/components/LogoField.jsx:139
+#: src/components/LogoField.jsx:142
 msgid "Logo saved."
 msgstr "Logo gespeichert."
 
@@ -569,7 +601,7 @@ msgstr "Hauptnavigation"
 msgid "Manual entry"
 msgstr "Nachtragen"
 
-#: src/settingsGroups.js:90
+#: src/settingsGroups.js:102
 msgid "Monday"
 msgstr "Montag"
 
@@ -590,7 +622,7 @@ msgstr "Monatsabrechnungen"
 msgid "Name"
 msgstr "Name"
 
-#: src/settingsGroups.js:73
+#: src/settingsGroups.js:85
 msgid "Name the rounding rule in reports"
 msgstr "Rundungsregel in Berichten nennen"
 
@@ -604,13 +636,17 @@ msgstr "Neuer Kunde"
 msgid "New project"
 msgstr "Neues Projekt"
 
-#: src/settingsGroups.js:43
+#: src/settingsGroups.js:55
 msgid "New projects start with this rate, which you can change for each project. Leave it empty for no default. Existing projects and reports do not change."
 msgstr "Neue Projekte starten mit diesem Satz, den Sie für jedes Projekt ändern können. Leer lassen für keinen Standard. Bestehende Projekte und Berichte ändern sich nicht."
 
 #: src/components/EntryFilters.jsx:20
 msgid "Newest first"
 msgstr "Neueste zuerst"
+
+#: src/settingsGroups.js:188
+msgid "Next invoice number"
+msgstr "Nächste Rechnungsnummer"
 
 #: src/pages/Reports.jsx:181
 msgid "Next month"
@@ -646,7 +682,7 @@ msgid "No filters active"
 msgstr "Keine Filter aktiv"
 
 #: src/customerRounding.js:24
-#: src/settingsGroups.js:51
+#: src/settingsGroups.js:63
 msgid "No rounding"
 msgstr "Keine Rundung"
 
@@ -656,7 +692,7 @@ msgstr "Keine Rundung"
 msgid "No time recorded this month yet."
 msgstr "In diesem Monat ist noch keine Zeit erfasst."
 
-#: src/pages/Settings.jsx:157
+#: src/pages/Settings.jsx:173
 msgid "Nothing has changed."
 msgstr "Nichts geändert."
 
@@ -698,11 +734,15 @@ msgstr "Zeitraum"
 msgid "Period: {periodName}"
 msgstr "Zeitraum: {periodName}"
 
+#: src/settingsGroups.js:181
+msgid "Placeholders: {year} year, {shortYear} short year, {month} month, and one counter such as {counter} (four digits). Example: {example}."
+msgstr "Platzhalter: {year} Jahr, {shortYear} Jahr zweistellig, {month} Monat und ein Zähler wie {counter} (vier Stellen). Beispiel: {example}."
+
 #: src/hooks/useAction.js:6
 msgid "Please try again."
 msgstr "Bitte versuche es erneut."
 
-#: src/settingsGroups.js:105
+#: src/settingsGroups.js:117
 msgid "PNG or JPEG, up to 1 MB and 2000 × 2000 pixels. Printed at the top left of the PDF report. It is saved as soon as you choose it."
 msgstr "PNG oder JPEG, bis zu 1 MB und 2000 × 2000 Pixel. Wird oben links im PDF-Bericht gedruckt. Es wird gespeichert, sobald du es auswählst."
 
@@ -717,10 +757,6 @@ msgstr "PDF ansehen für {customerName} (öffnet in einem neuen Tab)"
 #: src/pages/Reports.jsx:177
 msgid "Previous month"
 msgstr "Vorheriger Monat"
-
-#: src/settingsGroups.js:99
-msgid "Printed at the top right of the PDF report, next to the logo. Leave them empty for a report without a sender block. The CSV does not change."
-msgstr "Wird oben rechts im PDF-Bericht gedruckt, neben dem Logo. Lass sie leer, wenn der Bericht keinen Absender haben soll. Die CSV-Datei ändert sich nicht."
 
 #: src/components/EntryFilters.jsx:150
 #: src/components/EntryForm.jsx:36
@@ -756,7 +792,7 @@ msgstr "Projekte"
 msgid "Projects could not be loaded."
 msgstr "Projekte konnten nicht geladen werden."
 
-#: src/settingsGroups.js:54
+#: src/settingsGroups.js:66
 msgid "Quarter hour (15 minutes)"
 msgstr "Viertelstunde (15 Minuten)"
 
@@ -776,11 +812,15 @@ msgstr "Bereit zum Versand"
 msgid "Recent entries"
 msgstr "Letzte Einträge"
 
+#: src/settingsGroups.js:161
+msgid "Regular, with VAT"
+msgstr "Regulär, mit Umsatzsteuer"
+
 #: src/components/EntryFilters.jsx:108
 msgid "Remove filter: {label}"
 msgstr "Filter entfernen: {label}"
 
-#: src/components/LogoField.jsx:123
+#: src/components/LogoField.jsx:126
 msgid "Remove logo"
 msgstr "Logo entfernen"
 
@@ -829,7 +869,7 @@ msgstr "Fortsetzen: {projectName}"
 msgid "Resume: {projectName}, {description}"
 msgstr "Fortsetzen: {projectName}, {description}"
 
-#: src/settingsGroups.js:48
+#: src/settingsGroups.js:60
 msgid "Round time entries"
 msgstr "Zeiteinträge runden"
 
@@ -841,7 +881,7 @@ msgstr "Gerundete Stunden × Stundensatz des Projekts"
 msgid "Rounding"
 msgstr "Rundung"
 
-#: src/settingsGroups.js:31
+#: src/settingsGroups.js:43
 msgid "Rounding also applies to the reports of past months. PDF and CSV files you have already downloaded do not change."
 msgstr "Die Rundung gilt auch für Berichte vergangener Monate. PDF- und CSV-Dateien, die du schon heruntergeladen hast, ändern sich nicht."
 
@@ -876,7 +916,7 @@ msgstr "Wie die App"
 
 #: src/components/EditableRecord.jsx:21
 #: src/components/EntriesList.jsx:36
-#: src/pages/Settings.jsx:154
+#: src/pages/Settings.jsx:170
 #: src/pages/TimeTracking.jsx:427
 #: src/pages/TimeTracking.jsx:431
 #: src/pages/TimeTracking.jsx:435
@@ -912,20 +952,20 @@ msgstr "Wähle ein Projekt, um den Timer zu starten."
 msgid "Sent"
 msgstr "Verschickt"
 
-#: src/pages/Settings.jsx:167
+#: src/pages/Settings.jsx:183
 #: src/routes.js:13
 msgid "Settings"
 msgstr "Einstellungen"
 
-#: src/hooks/useSettings.js:14
+#: src/hooks/useSettings.js:16
 msgid "Settings could not be loaded."
 msgstr "Einstellungen konnten nicht geladen werden."
 
-#: src/hooks/useSettings.js:23
+#: src/hooks/useSettings.js:26
 msgid "Settings could not be saved."
 msgstr "Einstellungen konnten nicht gespeichert werden."
 
-#: src/pages/Settings.jsx:156
+#: src/pages/Settings.jsx:172
 msgid "Settings saved."
 msgstr "Einstellungen gespeichert."
 
@@ -937,7 +977,7 @@ msgstr "Alle Projekte anzeigen"
 msgid "Show hourly rate and amounts"
 msgstr "Stundensatz und Beträge anzeigen"
 
-#: src/settingsGroups.js:36
+#: src/settingsGroups.js:48
 msgid "Show hourly rate and amounts in reports"
 msgstr "Stundensatz und Beträge in Berichten anzeigen"
 
@@ -948,6 +988,14 @@ msgstr "Mehr anzeigen"
 #: src/components/EntryResults.jsx:117
 msgid "Showing {shown} of {total}"
 msgstr "{shown} von {total} angezeigt"
+
+#: src/settingsGroups.js:162
+msgid "Small business, no VAT (§19 UStG)"
+msgstr "Kleinunternehmer, ohne Umsatzsteuer (§19 UStG)"
+
+#: src/settingsGroups.js:175
+msgid "Small businesses charge no VAT."
+msgstr "Kleinunternehmer weisen keine Umsatzsteuer aus."
 
 #: src/components/EntryFilters.jsx:164
 msgid "Sort"
@@ -980,11 +1028,19 @@ msgstr "Stop <0>Timer</0>"
 msgid "Stop the running timer first."
 msgstr "Stoppe zuerst den laufenden Timer."
 
-#: src/settingsGroups.js:91
+#: src/settingsGroups.js:103
 msgid "Sunday"
 msgstr "Sonntag"
 
-#: src/settingsGroups.js:88
+#: src/settingsGroups.js:145
+msgid "Tax ID"
+msgstr "Steuernummer"
+
+#: src/settingsGroups.js:189
+msgid "The counter can only be raised, so a number is never used twice. If the pattern has a year, the counter starts again at 1 every year."
+msgstr "Der Zähler kann nur erhöht werden, damit keine Nummer zweimal vergeben wird. Enthält das Muster ein Jahr, beginnt der Zähler jedes Jahr wieder bei 1."
+
+#: src/settingsGroups.js:100
 msgid "The Dashboard and the period choices This week and Last week on the Entries page start their weeks on this day. Months and reports stay calendar months."
 msgstr "Das Dashboard und die Zeiträume „Diese Woche“ und „Letzte Woche“ auf der Seite „Einträge“ beginnen ihre Wochen an diesem Tag. Monate und Berichte bleiben Kalendermonate."
 
@@ -1016,9 +1072,21 @@ msgstr "Das Logo konnte nicht entfernt werden."
 msgid "The logo could not be saved."
 msgstr "Das Logo konnte nicht gespeichert werden."
 
-#: src/components/LogoField.jsx:85
+#: src/components/LogoField.jsx:88
 msgid "The logo is larger than 1 MB. Choose a smaller file."
 msgstr "Das Logo ist größer als 1 MB. Wähle eine kleinere Datei."
+
+#: src/hooks/useSettings.js:6
+msgid "The next invoice number can only be raised, not lowered."
+msgstr "Die nächste Rechnungsnummer kann nur erhöht, nicht verringert werden."
+
+#: src/settingsGroups.js:191
+msgid "The next invoice would get the number"
+msgstr "Die nächste Rechnung bekäme die Nummer"
+
+#: src/pages/Settings.jsx:62
+msgid "The pattern needs exactly one counter, for example {counter}."
+msgstr "Das Muster braucht genau einen Zähler, zum Beispiel {counter}."
 
 #. placeholder {0}: languageName(i18n, ownLanguage)
 #: src/pages/Reports.jsx:151
@@ -1030,7 +1098,7 @@ msgstr "PDF und CSV sind auf {0} (Berichtssprache dieses Kunden)."
 msgid "The PDF and CSV are in the language of the app ({0})."
 msgstr "PDF und CSV sind in der Sprache der App ({0})."
 
-#: src/settingsGroups.js:37
+#: src/settingsGroups.js:49
 msgid "The Reports page starts with this. You can still change it for a single report."
 msgstr "Die Berichte-Seite startet mit dieser Einstellung. Für einen einzelnen Bericht kannst du sie dort ändern."
 
@@ -1046,13 +1114,17 @@ msgstr "Der Timer läuft für {trackedProject}. Stoppe ihn, um {selectedProject}
 msgid "Theme"
 msgstr "Farbschema"
 
-#: src/pages/Settings.jsx:120
+#: src/pages/Settings.jsx:135
 msgid "There are no options yet."
 msgstr "Es gibt noch keine Optionen."
 
 #: src/pages/NotFound.jsx:10
 msgid "There is no page at this address."
 msgstr "Unter dieser Adresse gibt es keine Seite."
+
+#: src/settingsGroups.js:154
+msgid "These settings are used by invoices, which can be created in a later version. Nothing else changes."
+msgstr "Diese Einstellungen verwenden Rechnungen, die in einer späteren Version erstellt werden können. Sonst ändert sich nichts."
 
 #: src/pages/Reports.jsx:247
 #: src/pages/TimeTracking.jsx:383
@@ -1083,7 +1155,7 @@ msgstr "Dieses Jahr"
 msgid "Time"
 msgstr "Zeit"
 
-#: src/settingsGroups.js:30
+#: src/settingsGroups.js:42
 msgid "Time and billing"
 msgstr "Zeit und Abrechnung"
 
@@ -1132,7 +1204,7 @@ msgid "To"
 msgstr "Bis"
 
 #: src/customerRounding.js:14
-#: src/settingsGroups.js:65
+#: src/settingsGroups.js:77
 msgid "To the nearest"
 msgstr "Auf- oder abrunden (nächstgelegene Stufe)"
 
@@ -1163,16 +1235,16 @@ msgstr "Zeit erfassen"
 #: src/components/AuthGate.jsx:66
 #: src/pages/Dashboard.jsx:75
 #: src/pages/Reports.jsx:238
-#: src/pages/Settings.jsx:127
+#: src/pages/Settings.jsx:142
 msgid "Try again"
 msgstr "Erneut versuchen"
 
 #: src/customerRounding.js:13
-#: src/settingsGroups.js:64
+#: src/settingsGroups.js:76
 msgid "Up"
 msgstr "Aufrunden"
 
-#: src/settingsGroups.js:118
+#: src/settingsGroups.js:130
 msgid "Up to 6 lines, for example street and town."
 msgstr "Bis zu 6 Zeilen, zum Beispiel Straße und Ort."
 
@@ -1180,13 +1252,21 @@ msgstr "Bis zu 6 Zeilen, zum Beispiel Straße und Ort."
 msgid "upcoming"
 msgstr "noch offen"
 
-#: src/pages/Settings.jsx:50
+#: src/pages/Settings.jsx:65
 msgid "Use at most {maxLines} lines."
 msgstr "Verwende höchstens {maxLines} Zeilen."
 
 #: src/customerRounding.js:23
 msgid "Use the global setting"
 msgstr "Globale Einstellung verwenden"
+
+#: src/settingsGroups.js:159
+msgid "VAT"
+msgstr "Umsatzsteuer"
+
+#: src/settingsGroups.js:168
+msgid "VAT rate"
+msgstr "Umsatzsteuersatz"
 
 #: src/components/dashboard/RecentEntries.jsx:27
 msgid "View all"
@@ -1208,18 +1288,26 @@ msgstr "Woche {week}, {range}"
 msgid "Weeks"
 msgstr "Wochen"
 
-#: src/settingsGroups.js:98
+#: src/settingsGroups.js:110
 msgid "Your details"
 msgstr "Deine Angaben"
 
-#: src/components/LogoField.jsx:122
+#: src/components/LogoField.jsx:125
 msgid "Your logo"
 msgstr "Dein Logo"
 
-#: src/settingsGroups.js:110
+#: src/settingsGroups.js:122
 msgid "Your name or business name"
 msgstr "Dein Name oder Firmenname"
+
+#: src/settingsGroups.js:111
+msgid "Your name, address and email are printed at the top right of the PDF report, next to the logo. Leave them empty for a report without a sender block. The CSV does not change."
+msgstr "Name, Adresse und E-Mail-Adresse werden oben rechts im PDF-Bericht gedruckt, neben dem Logo. Lass sie leer, wenn der Bericht keinen Absender haben soll. Die CSV-Datei ändert sich nicht."
 
 #: src/pages/Login.jsx:50
 msgid "Your session has ended. Please log in again."
 msgstr "Deine Sitzung ist abgelaufen. Bitte melde dich erneut an."
+
+#: src/settingsGroups.js:146
+msgid "Your Steuernummer or USt-IdNr. Kept for invoices; it is not printed on reports."
+msgstr "Deine Steuernummer oder USt-IdNr. Wird für Rechnungen gespeichert; auf Berichten wird sie nicht gedruckt."

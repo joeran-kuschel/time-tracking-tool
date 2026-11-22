@@ -213,4 +213,49 @@ describe('SettingField', () => {
       expect(await axe(container)).toHaveNoViolations()
     })
   })
+  describe('an integer', () => {
+    const integer = { name: 'next', type: 'integer', label: msg`Next number`, hint: msg`Counts up.`, preview: () => null, previewLabel: msg`Would be` }
+
+    test('is a text field with the numeric keyboard that shows a number and gives the typed text back', async () => {
+      const onChange = vi.fn()
+      render(<SettingField option={integer} value={42} onChange={onChange} />)
+
+      const field = screen.getByRole('textbox', { name: 'Next number' })
+      expect(field).toHaveValue('42')
+      expect(field).toHaveAttribute('inputmode', 'numeric')
+      expect(field).toHaveAccessibleDescription('Counts up.')
+
+      await userEvent.type(field, '7')
+      expect(onChange).toHaveBeenCalledWith('427')
+    })
+
+    test('shows a typed text as it is, and an empty value as empty', () => {
+      const { rerender } = render(<SettingField option={integer} value="12x" onChange={() => {}} />)
+      expect(screen.getByRole('textbox', { name: 'Next number' })).toHaveValue('12x')
+
+      rerender(<SettingField option={integer} value={null} onChange={() => {}} />)
+      expect(screen.getByRole('textbox', { name: 'Next number' })).toHaveValue('')
+    })
+
+    test('shows the preview in a polite live region that is there even without a preview', () => {
+      const { container, rerender } = render(<SettingField option={integer} value={1} onChange={() => {}} />)
+      const region = container.querySelector('[aria-live="polite"]')
+      expect(region).toBeEmptyDOMElement()
+
+      rerender(<SettingField option={integer} value={1} preview="2026-0001" onChange={() => {}} />)
+      expect(region).toHaveTextContent('Would be: 2026-0001')
+    })
+
+    test('has no preview region without a preview option', () => {
+      const { container } = render(<SettingField option={{ ...integer, preview: undefined }} value={1} onChange={() => {}} />)
+
+      expect(container.querySelector('[aria-live]')).toBeNull()
+    })
+
+    test('has no detectable accessibility violations', async () => {
+      const { container } = render(<SettingField option={integer} value={1} preview="2026-0001" onChange={() => {}} />)
+
+      expect(await axe(container)).toHaveNoViolations()
+    })
+  })
 })

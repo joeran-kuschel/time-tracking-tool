@@ -11,7 +11,7 @@ const Settings = require('../src/models/Settings');
 const OPTIONS = require('../src/config/settingsOptions');
 
 // What a fresh install has: no amounts, no rounding (direction up once a step is chosen), no sentence about it, no default rate
-const DEFAULTS = { showAmounts: false, roundingMinutes: 0, roundingDirection: 'up', showRoundingNote: false, defaultHourlyRate: null, weekStart: 'monday', senderName: null, senderAddress: null, senderEmail: null };
+const DEFAULTS = { showAmounts: false, roundingMinutes: 0, roundingDirection: 'up', showRoundingNote: false, defaultHourlyRate: null, weekStart: 'monday', senderName: null, senderAddress: null, senderEmail: null, senderTaxId: null, vatMode: 'regular', vatRate: 19, invoiceNumberPattern: '{YYYY}-{NNNN}', invoiceNextNumber: 1 };
 
 const rows = async () => (await mockPool.query('SELECT * FROM settings')).rows;
 
@@ -200,8 +200,10 @@ describe('Settings', () => {
     await Settings.get();
     const row = (await rows())[0];
 
-    for (const [name, { column, isValid }] of Object.entries(OPTIONS)) {
-      expect(Object.keys(row)).toContain(column);
+    // The counter of the invoice numbers is the one option without a column (it is in invoice_counters)
+    for (const [name, { column, counter, isValid }] of Object.entries(OPTIONS)) {
+      if (counter) expect(column).toBeUndefined();
+      else expect(Object.keys(row)).toContain(column);
       expect(typeof isValid).toBe('function');
       expect(name).toMatch(/^[a-z][A-Za-z]*$/);
     }
@@ -351,5 +353,177 @@ describe('Settings', () => {
         expect(OPTIONS.defaultHourlyRate.isValid(value)).toBe(valid);
       }
     );
+  });
+
+  describe('invoicing', () => {
+    const jan2026 = new Date('2026-01-15T12:00:00Z');
+    const jan2027 = new Date('2027-01-02T12:00:00Z');
+    const counters = async () => (await mockPool.query('SELECT scope_year, next_number FROM invoice_counters ORDER BY scope_year')).rows;
+
+    test('are on a fresh install: regular VAT of 19 %, no tax ID, the pattern {YYYY}-{NNNN}, next number 1', async () => {
+      expect(await Settings.get()).toMatchObject({ vatMode: 'regular', vatRate: 19, senderTaxId: null, invoiceNumberPattern: '{YYYY}-{NNNN}', invoiceNextNumber: 1 });
+    });
+
+    test('VAT, the tax ID and the pattern are saved, read back and kept when another option is saved', async () => {
+      const values = { vatMode: 'small_business', vatRate: 7, senderTaxId: 'DE123456789', invoiceNumberPattern: 'RE-{YY}{MM}-{NNN}' };
+      await Settings.update(values);
+      await Settings.update({ showAmounts: true });
+
+      expect(await Settings.get()).toMatchObject(values);
+      expect((await rows())[0]).toMatchObject({ vat_mode: 'small_business', vat_rate: 7, sender_tax_id: 'DE123456789', invoice_number_pattern: 'RE-{YY}{MM}-{NNN}' });
+    });
+
+    test('the tax ID can be removed again with null', async () => {
+      await Settings.update({ senderTaxId: 'DE123456789' });
+
+      expect((await Settings.update({ senderTaxId: null })).senderTaxId).toBeNull();
+    });
+
+    test('the vat rate comes back as a number', async () => {
+      await Settings.update({ vatRate: 0 });
+
+      expect((await Settings.get()).vatRate).toBe(0);
+    });
+
+    test.each([['vat_mode', "'gross'"], ['vat_rate', '16']])('the database refuses %s = %s', async (column, value) => {
+      await Settings.get();
+
+      await expect(mockPool.query(`UPDATE settings SET ${column} = ${value}`)).rejects.toThrow();
+    });
+
+    test('the lists the database accepts are exactly those of config/settingsOptions.js', async () => {
+      await Settings.get();
+      for (const rate of [0, 7, 19, 16, 5]) {
+        const accepted = await mockPool.query(`UPDATE settings SET vat_rate = ${rate}`).then(() => true, () => false);
+        expect(accepted).toBe(OPTIONS.vatRate.isValid(rate));
+      }
+      for (const mode of ['regular', 'small_business', 'gross']) {
+        const accepted = await mockPool.query(`UPDATE settings SET vat_mode = '${mode}'`).then(() => true, () => false);
+        expect(accepted).toBe(OPTIONS.vatMode.isValid(mode));
+      }
+    });
+
+    test('the next number is stored in invoice_counters for the year of a pattern with a year', async () => {
+      await Settings.update({ invoiceNextNumber: 42 }, jan2026);
+
+      expect(await counters()).toEqual([{ scope_year: 2026, next_number: 42 }]);
+      expect((await Settings.get(jan2026)).invoiceNextNumber).toBe(42);
+    });
+
+    test('a new year starts at 1 again, and the old year keeps its number', async () => {
+      await Settings.update({ invoiceNextNumber: 42 }, jan2026);
+
+      expect((await Settings.get(jan2027)).invoiceNextNumber).toBe(1);
+      expect((await Settings.get(jan2026)).invoiceNextNumber).toBe(42);
+    });
+
+    test('a pattern without a year has one counter that keeps counting', async () => {
+      await Settings.update({ invoiceNumberPattern: 'RE-{NNNN}', invoiceNextNumber: 7 }, jan2026);
+
+      expect(await counters()).toEqual([{ scope_year: 0, next_number: 7 }]);
+      expect((await Settings.get(jan2027)).invoiceNextNumber).toBe(7);
+    });
+
+    test('the number is saved for the counter of the pattern saved with it', async () => {
+      await Settings.update({ invoiceNextNumber: 42 }, jan2026);
+
+      await Settings.update({ invoiceNumberPattern: 'RE-{NNNN}', invoiceNextNumber: 3 }, jan2026);
+
+      expect(await counters()).toEqual([{ scope_year: 0, next_number: 3 }, { scope_year: 2026, next_number: 42 }]);
+    });
+
+    test('changing only the pattern moves no counter', async () => {
+      await Settings.update({ invoiceNextNumber: 42 }, jan2026);
+
+      await Settings.update({ invoiceNumberPattern: 'RE-{YY}-{NN}' }, jan2026);
+
+      expect(await counters()).toEqual([{ scope_year: 2026, next_number: 42 }]);
+      expect((await Settings.get(jan2026)).invoiceNextNumber).toBe(42);
+    });
+
+    test('the same number again is accepted, a higher one too', async () => {
+      await Settings.update({ invoiceNextNumber: 10 }, jan2026);
+
+      expect((await Settings.update({ invoiceNextNumber: 10 }, jan2026)).invoiceNextNumber).toBe(10);
+      expect((await Settings.update({ invoiceNextNumber: 11 }, jan2026)).invoiceNextNumber).toBe(11);
+    });
+
+    test('a lower number is refused with COUNTER_LOWERED and nothing of the request is saved', async () => {
+      await Settings.update({ invoiceNextNumber: 10 }, jan2026);
+
+      await expect(Settings.update({ invoiceNextNumber: 9, showAmounts: true, vatRate: 7 }, jan2026)).rejects.toMatchObject({ code: 'COUNTER_LOWERED' });
+
+      expect(await Settings.get(jan2026)).toMatchObject({ invoiceNextNumber: 10, showAmounts: false, vatRate: 19 });
+    });
+
+    test('a lower number for the counter of the new pattern is refused and the new pattern is not saved either', async () => {
+      await Settings.update({ invoiceNumberPattern: 'RE-{NNNN}', invoiceNextNumber: 10 }, jan2026);
+      await Settings.update({ invoiceNumberPattern: '{YYYY}-{NNNN}' }, jan2026);
+
+      await expect(Settings.update({ invoiceNumberPattern: 'RE-{NNNN}', invoiceNextNumber: 3 }, jan2026)).rejects.toMatchObject({ code: 'COUNTER_LOWERED' });
+
+      expect(await Settings.get(jan2026)).toMatchObject({ invoiceNumberPattern: '{YYYY}-{NNNN}', invoiceNextNumber: 1 });
+      expect(await counters()).toEqual([{ scope_year: 0, next_number: 10 }]);
+    });
+
+    test('the number is compared with the counter of the saved pattern when the request has no pattern', async () => {
+      await Settings.update({ invoiceNumberPattern: 'RE-{NNNN}', invoiceNextNumber: 10 }, jan2026);
+
+      await expect(Settings.update({ invoiceNextNumber: 9 }, jan2026)).rejects.toMatchObject({ code: 'COUNTER_LOWERED' });
+      expect((await Settings.update({ invoiceNextNumber: 11 }, jan2026)).invoiceNextNumber).toBe(11);
+    });
+
+    test('the year of a counter is the UTC year at the turn of the year', async () => {
+      await Settings.update({ invoiceNextNumber: 8 }, new Date('2026-12-31T23:59:59Z'));
+
+      expect((await Settings.get(new Date('2027-01-01T00:00:00Z'))).invoiceNextNumber).toBe(1);
+      expect((await Settings.get(new Date('2026-12-31T23:59:59Z'))).invoiceNextNumber).toBe(8);
+    });
+
+    test('the largest number, 99999999, is stored', async () => {
+      expect((await Settings.update({ invoiceNextNumber: 99999999 }, jan2026)).invoiceNextNumber).toBe(99999999);
+    });
+
+    // The counter is raised in one conditional statement, so the save that writes last cannot lower what the other raised
+    test('two saves at the same time never lower the counter', async () => {
+      await Promise.all([Settings.update({ invoiceNextNumber: 20 }, jan2026), Settings.update({ invoiceNextNumber: 10 }, jan2026).catch(() => {})]);
+
+      expect((await Settings.get(jan2026)).invoiceNextNumber).toBe(20);
+    });
+
+    test('1 on a fresh counter is not lower, and a year without a row can start at 1', async () => {
+      await Settings.update({ invoiceNextNumber: 10 }, jan2026);
+
+      expect((await Settings.update({ invoiceNextNumber: 1 }, jan2027)).invoiceNextNumber).toBe(1);
+    });
+
+    test('the database refuses a counter outside 1 to 99999999 and a year outside 1000 to 9999', async () => {
+      await expect(mockPool.query('INSERT INTO invoice_counters (scope_year, next_number) VALUES (2026, 0)')).rejects.toThrow();
+      await expect(mockPool.query('INSERT INTO invoice_counters (scope_year, next_number) VALUES (2026, 100000000)')).rejects.toThrow();
+      await expect(mockPool.query('INSERT INTO invoice_counters (scope_year, next_number) VALUES (12, 1)')).rejects.toThrow();
+    });
+
+    test('migration 015 can run twice and keeps the saved values and counters', async () => {
+      await Settings.update({ vatMode: 'small_business', senderTaxId: 'DE1', invoiceNextNumber: 5 }, jan2026);
+      const sql = fs.readFileSync(path.join(__dirname, '..', 'migrations', '015_settings_invoicing.sql'), 'utf8');
+
+      await mockPool.query(sql);
+
+      expect(await Settings.get(jan2026)).toMatchObject({ vatMode: 'small_business', senderTaxId: 'DE1', invoiceNextNumber: 5 });
+    });
+
+    test.each([
+      ['senderTaxId', null, true], ['senderTaxId', 'DE123456789', true], ['senderTaxId', 'x'.repeat(30), true],
+      ['senderTaxId', '', false], ['senderTaxId', ' DE1', false], ['senderTaxId', 'x'.repeat(31), false], ['senderTaxId', 'a\nb', false], ['senderTaxId', 5, false],
+      ['vatMode', 'regular', true], ['vatMode', 'small_business', true], ['vatMode', 'Regular', false], ['vatMode', null, false],
+      ['vatRate', 0, true], ['vatRate', 7, true], ['vatRate', 19, true], ['vatRate', '19', false], ['vatRate', 16, false], ['vatRate', null, false],
+      ['invoiceNumberPattern', '{YYYY}-{NNNN}', true], ['invoiceNumberPattern', 'RE-{NNNN}', true], ['invoiceNumberPattern', '{NNNN}', true],
+      ['invoiceNumberPattern', '{YYYY}-{NNNN}-{NNNN}', false], ['invoiceNumberPattern', '{YYYY}', false], ['invoiceNumberPattern', '', false],
+      ['invoiceNumberPattern', null, false], ['invoiceNumberPattern', 5, false],
+      ['invoiceNextNumber', 1, true], ['invoiceNextNumber', 99999999, true],
+      ['invoiceNextNumber', 0, false], ['invoiceNextNumber', 100000000, false], ['invoiceNextNumber', 1.5, false], ['invoiceNextNumber', '5', false], ['invoiceNextNumber', null, false],
+    ])('%s accepts or refuses %j: %s', (name, value, valid) => {
+      expect(OPTIONS[name].isValid(value)).toBe(valid);
+    });
   });
 });

@@ -24,6 +24,7 @@ exports.update = async (req, res) => {
     }
     res.json(await Settings.update(body));
   } catch (err) {
+    if (err.code === 'COUNTER_LOWERED') return res.status(409).json({ error: err.message, code: err.code });
     console.error(err);
     res.status(500).json({ error: 'Failed to save the settings' });
   }
