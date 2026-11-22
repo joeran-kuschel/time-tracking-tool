@@ -69,4 +69,20 @@ export const settingsGroups = [
       },
     ],
   },
+  {
+    id: 'calendar',
+    label: msg`Calendar`,
+    options: [
+      {
+        name: 'weekStart',
+        type: 'select',
+        label: msg`First day of the week`,
+        hint: msg`The Dashboard and the period choices This week and Last week on the Entries page start their weeks on this day. Months and reports stay calendar months.`,
+        choices: [
+          { value: 'monday', label: msg`Monday` },
+          { value: 'sunday', label: msg`Sunday` },
+        ],
+      },
+    ],
+  },
 ]

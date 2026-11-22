@@ -28,7 +28,7 @@ const chipButton = 'inline-flex min-h-[2.75rem] items-center gap-1.5 rounded-ful
 // filters: see emptyFilters in filters.js. onChange(changes) merges changes into them; onSearch applies the search
 // text at once (Enter); onReset clears all filters. customers and projects fill the selects; the project select
 // belongs to the chosen customer.
-function EntryFilters({ filters, customers, projects, onChange, onSearch, onReset }) {
+function EntryFilters({ filters, customers, projects, firstDay, onChange, onSearch, onReset }) {
   const { t, i18n } = useLingui()
   const [expanded, setExpanded] = useState(true)
   const search = useRef(null)
@@ -58,7 +58,7 @@ function EntryFilters({ filters, customers, projects, onChange, onSearch, onRese
     filters.sort !== 'newest' && { key: 'sort', label: t`Sort: ${sortName}`, clear: { sort: 'newest' } },
   ].filter(Boolean)
 
-  const changePreset = (preset) => onChange({ preset, ...periodPreset(preset, new Date()) })
+  const changePreset = (preset) => onChange({ preset, ...periodPreset(preset, new Date(), firstDay) })
 
   // The chip disappears with its filter, so focus moves to the toggle
   const removeChip = (clear) => {

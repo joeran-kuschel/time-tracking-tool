@@ -20,8 +20,9 @@ import { ui } from '../ui'
 // The start page: track time, the month's figures, chart and billing, and the latest entries.
 // Everything comes from one request (GET /api/dashboard); the sums are calculated here (dashboard.js).
 // Its links open the Time tracking page for a customer and project and the Reports page.
+// firstDay: the first day of the week, 1 Monday or 0 Sunday (the setting); the data covers both kinds of week.
 // onResume(entry): runs a recent entry on again (App); the buttons are disabled while a timer runs.
-function Dashboard({ timer, onResume }) {
+function Dashboard({ timer, onResume, firstDay }) {
   const [data, setData] = useState(null)
   const [run, error] = useAction()
   const { i18n } = useLingui()
@@ -85,10 +86,10 @@ function Dashboard({ timer, onResume }) {
               timer={timer}
               onSaved={load}
             />
-            <KeyFigures entries={data.entries} lastMonthReports={data.lastMonthReports} now={now} rounding={rounding} />
+            <KeyFigures entries={data.entries} lastMonthReports={data.lastMonthReports} now={now} rounding={rounding} firstDay={firstDay} />
           </div>
           <div className="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,24rem)]">
-            <HoursChart entries={data.entries} now={now} />
+            <HoursChart entries={data.entries} now={now} firstDay={firstDay} />
             <ByCustomer rows={customers} now={now} rounding={rounding} />
           </div>
           <div className="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,24rem)]">

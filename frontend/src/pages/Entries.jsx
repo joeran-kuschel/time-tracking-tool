@@ -16,8 +16,9 @@ const appendNew = (shown, page) => [...shown, ...page.filter((entry) => !shown.s
 // Search and filter the entries of all customers. Opens with the current month; the filters live in this page's
 // state, so they are gone when another page opens. The search text applies after a short pause or on Enter,
 // everything else at once. Results come from the backend, PAGE_SIZE at a time.
+// firstDay: the first day of the week (1 Monday, 0 Sunday) for the period choices This week and Last week.
 // timer and onResume(entry) (App): the Resume buttons of the results; the results reload when the running timer changes.
-function Entries({ customers, timer, onResume }) {
+function Entries({ customers, timer, onResume, firstDay }) {
   const [filters, setFilters] = useState(() => openingFilters(new Date()))
   const [searchText, applySearchText] = useDebouncedValue(filters.q)
   const [projects, setProjects] = useState([])
@@ -96,6 +97,7 @@ function Entries({ customers, timer, onResume }) {
         filters={filters}
         customers={customers}
         projects={projects}
+        firstDay={firstDay}
         onChange={change}
         onSearch={() => applySearchText(filters.q)}
         onReset={reset}

@@ -30,6 +30,8 @@ function App({ onLogout, logoutError, focusOnStart }) {
   const timer = useActiveEntry()
   // Loaded once here, so every page sees a saved change without a reload
   const settings = useSettings()
+  // The first day of the week as Date.getDay() numbers it: 1 Monday (also while the settings load), 0 Sunday
+  const firstDay = settings.values?.weekStart === 'sunday' ? 0 : 1
   const main = useRef(null)
   const { t, i18n } = useLingui()
   // The current page: a match of the address (a trailing slash counts, so do the selections after the page), also for the navigation below
@@ -80,9 +82,9 @@ function App({ onLogout, logoutError, focusOnStart }) {
     : timer.announcement.kind === 'started' ? t`Timer started for ${announcedProject}` : t`Timer stopped`
 
   const elements = {
-    dashboard: <Dashboard timer={timer} onResume={resumeFromList} />,
+    dashboard: <Dashboard timer={timer} onResume={resumeFromList} firstDay={firstDay} />,
     'time-tracking': <TimeTracking customers={customers} onCustomersChange={loadCustomers} timer={timer} settings={settings} />,
-    entries: <Entries customers={customers} timer={timer} onResume={resumeFromList} />,
+    entries: <Entries customers={customers} timer={timer} onResume={resumeFromList} firstDay={firstDay} />,
     reports: <Reports customers={customers} settings={settings} />,
     settings: <Settings settings={settings} />,
   }

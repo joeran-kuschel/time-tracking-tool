@@ -20,6 +20,26 @@ const rounded = [
 
 const figure = (label) => screen.getByText(label).parentElement
 
+describe('KeyFigures and the first day of the week', () => {
+  // Sunday 20 September belongs to the week before when weeks start on Monday
+  const withSunday = [entry(5, '2026-09-20T10:00:00', '2026-09-20T11:00:00'), ...rounded]
+  const weekFigure = () => figure('Diese Woche')
+
+  test('count from Monday by default and name the day', () => {
+    render(<KeyFigures entries={withSunday} lastMonthReports={lastMonthReports} now={now} />)
+
+    expect(weekFigure()).toHaveTextContent('0:27 h')
+    expect(weekFigure()).toHaveTextContent('Mo., 21. bis Do., 24. Sept.')
+  })
+
+  test('count from Sunday with that setting and name the day', () => {
+    render(<KeyFigures entries={withSunday} lastMonthReports={lastMonthReports} now={now} firstDay={0} />)
+
+    expect(weekFigure()).toHaveTextContent('1:27 h')
+    expect(weekFigure()).toHaveTextContent('So., 20. bis Do., 24. Sept.')
+  })
+})
+
 describe('KeyFigures with a rounding rule', () => {
   test('keeps this week and this month exact and bills the rounded hours', () => {
     render(<KeyFigures entries={rounded} lastMonthReports={lastMonthReports} now={now} rounding={rule} />)

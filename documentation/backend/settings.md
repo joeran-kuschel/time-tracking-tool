@@ -23,6 +23,7 @@ saved then). `500` when the database fails.
 | `roundingMinutes` | `rounding_minutes` | `0`, `5`, `10`, `15`, `30` or `60` (a number) | `0` | The step the hours of an entry are rounded to in reports; 0 is no rounding ([Rounding](reports.md#rounding)) |
 | `roundingDirection` | `rounding_direction` | `"up"` or `"nearest"` | `"up"` | Whether an entry is rounded up or to the nearest step; without effect while the step is 0 |
 | `showRoundingNote` | `show_rounding_note` | `true` or `false` | `false` | The Reports page and the PDF name the rounding rule in a sentence; without effect while the step is 0 |
+| `weekStart` | `week_start` | `"monday"` or `"sunday"` | `"monday"` | The day the weeks of the Dashboard and the *This week* and *Last week* choices of the Entries page start on. The server does not use it: months and reports stay calendar months ([Settings page](../ui/settings.md)) |
 | `defaultHourlyRate` | `default_hourly_rate` | `null` or a number from 0 to 99999999.99 with at most two decimals (a number, not a string) | `null` | The hourly rate (euros) that the form for a new project starts with; `null` is no default. Nothing else reads it: existing projects and report amounts never change with it ([Projects](projects.md)) |
 
 The list lives in `backend/src/config/settingsOptions.js`: the name, the column and the check of each option, and
@@ -31,7 +32,7 @@ the rate becomes a number).
 
 ## Storage
 
-`backend/migrations/005_settings.sql` creates the table `settings` (`006_settings_show_amounts.sql`, `007_settings_rounding.sql`, `008_settings_rounding_steps.sql` and `010_settings_default_hourly_rate.sql` add the columns and the steps): a single row (`id` is always 1, enforced by a
+`backend/migrations/005_settings.sql` creates the table `settings` (`006_settings_show_amounts.sql`, `007_settings_rounding.sql`, `008_settings_rounding_steps.sql` and `010_settings_default_hourly_rate.sql` and `012_settings_week_start.sql` add the columns and the steps): a single row (`id` is always 1, enforced by a
 `CHECK`) with one typed column per option, each with its default. The row is created on the first read, so a fresh
 install behaves as before and every option has its default until something is saved. `models/Settings.js` creates the row
 on first use and updates it.

@@ -22,6 +22,20 @@ describe('periodPreset', () => {
     expect(periodPreset('thisWeek', new Date(2026, 8, 21))).toEqual({ from: '2026-09-21', to: '2026-09-27' })
   })
 
+  test('starts the weeks on Sunday when asked to, also when today is Saturday or Sunday', () => {
+    expect(periodPreset('thisWeek', now, 0)).toEqual({ from: '2026-09-20', to: '2026-09-26' })
+    expect(periodPreset('lastWeek', now, 0)).toEqual({ from: '2026-09-13', to: '2026-09-19' })
+    expect(periodPreset('thisWeek', new Date(2026, 8, 26), 0)).toEqual({ from: '2026-09-20', to: '2026-09-26' })
+    expect(periodPreset('thisWeek', new Date(2026, 8, 27), 0)).toEqual({ from: '2026-09-27', to: '2026-10-03' })
+    expect(periodPreset('thisWeek', now, 1)).toEqual(periodPreset('thisWeek', now))
+  })
+
+  test('the first day does not change the other periods', () => {
+    for (const preset of ['any', 'today', 'thisMonth', 'lastMonth', 'thisYear', 'custom']) {
+      expect(periodPreset(preset, now, 0)).toEqual(periodPreset(preset, now))
+    }
+  })
+
   test('crosses month and year ends', () => {
     expect(periodPreset('lastMonth', new Date(2026, 0, 5))).toEqual({ from: '2025-12-01', to: '2025-12-31' })
     expect(periodPreset('lastWeek', new Date(2026, 0, 5))).toEqual({ from: '2025-12-29', to: '2026-01-04' })

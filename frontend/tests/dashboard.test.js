@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest'
 import {
-  byCustomer, dailyMinutes, dashboardRange, isoWeek, startOfWeek, trackedMinutes, weekMinutes, weeklyMinutes, workingDaysSoFar,
+  byCustomer, dailyMinutes, dashboardRange, isoWeek, startOfWeek, trackedMinutes, weekMinutes, weekNumber, weeklyMinutes, workingDaysSoFar,
 } from '@/dashboard'
 
 // Thursday, 24 September 2026
@@ -44,12 +44,76 @@ describe('dashboardRange', () => {
     expect(dashboardRange(now)).toEqual({ from: new Date(2026, 8, 1), to: new Date(2026, 9, 1) })
   })
 
-  test('reaches back when the week started in the month before', () => {
-    expect(dashboardRange(new Date(2026, 8, 2))).toEqual({ from: new Date(2026, 7, 31), to: new Date(2026, 9, 1) })
+  // The range fits a week from Monday and one from Sunday, so the setting can change without loading again
+  test('reaches back when a week started in the month before, whether it starts on Monday or Sunday', () => {
+    expect(dashboardRange(new Date(2026, 8, 2))).toEqual({ from: new Date(2026, 7, 30), to: new Date(2026, 9, 1) })
   })
 
   test('reaches ahead when the week ends in the next month', () => {
     expect(dashboardRange(new Date(2026, 8, 29))).toEqual({ from: new Date(2026, 8, 1), to: new Date(2026, 9, 5) })
+  })
+})
+
+describe('a week from Sunday', () => {
+  // Thursday, 24 September 2026: the week from Monday starts on the 21st, the one from Sunday on the 20th
+  test('startOfWeek goes back to the chosen day, and defaults to Monday', () => {
+    expect(startOfWeek(now)).toEqual(new Date(2026, 8, 21))
+    expect(startOfWeek(now, 1)).toEqual(new Date(2026, 8, 21))
+    expect(startOfWeek(now, 0)).toEqual(new Date(2026, 8, 20))
+    expect(startOfWeek(new Date(2026, 8, 20), 0)).toEqual(new Date(2026, 8, 20)) // a Sunday is its own week start
+    expect(startOfWeek(new Date(2026, 8, 20), 1)).toEqual(new Date(2026, 8, 14)) // and belongs to the week from the 14th otherwise
+    expect(startOfWeek(new Date(2026, 8, 19), 0)).toEqual(new Date(2026, 8, 13)) // Saturday
+  })
+
+  test('weekNumber is the ISO week that holds most of the days', () => {
+    expect(weekNumber(now)).toBe(39)
+    expect(weekNumber(now, 0)).toBe(39) // Sunday 20 to Saturday 26 September: its Monday is in ISO week 39
+    expect(weekNumber(new Date(2026, 8, 20), 0)).toBe(39) // the Sunday itself is ISO week 38, but its week is number 39
+    expect(isoWeek(new Date(2026, 8, 20))).toBe(38)
+    expect(weekNumber(new Date(2026, 0, 1), 0)).toBe(1) // Thursday 1 January 2026 is in ISO week 1
+  })
+
+  test('weekMinutes counts from Sunday: the entry on Sunday 20 September joins the week', () => {
+    const sunday = [entry(10, muster, website, '95.00', '2026-09-20T10:00:00', '2026-09-20T11:00:00'), ...entries]
+
+    expect(weekMinutes(sunday, now, 0)).toBe(60 + 90 + 240)
+    expect(weekMinutes(sunday, now)).toBe(90 + 240) // from Monday it belongs to the week before
+  })
+
+  test('weekMinutes from Sunday ends on Saturday', () => {
+    const saturday = [entry(11, muster, website, '95.00', '2026-09-26T10:00:00', '2026-09-26T11:00:00'), entry(12, muster, website, '95.00', '2026-09-27T10:00:00', '2026-09-27T11:00:00')]
+
+    expect(weekMinutes(saturday, now, 0)).toBe(60)
+    expect(weekMinutes(saturday, now, 1)).toBe(120)
+  })
+
+  test('weeklyMinutes starts a new bar on Sunday and numbers it', () => {
+    const rows = weeklyMinutes([], now, 0).map(({ week, start, end }) => [week, start.getDate(), end.getDate()])
+
+    expect(rows).toEqual([[36, 1, 5], [37, 6, 12], [38, 13, 19], [39, 20, 26], [40, 27, 30]])
+  })
+
+  // Sunday 31 December 2023 starts a week whose Monday is 1 January 2024, ISO week 1; the Sunday itself is ISO week 52
+  test('weekNumber counts a week from Sunday into the new year by its Monday', () => {
+    expect(weekNumber(new Date(2023, 11, 31), 0)).toBe(1)
+    expect(weekNumber(new Date(2023, 11, 30), 0)).toBe(52)
+    expect(weekNumber(new Date(2023, 11, 31))).toBe(52)
+  })
+
+  test('weeklyMinutes numbers the first bar of January by the week it belongs to', () => {
+    const rows = weeklyMinutes([], new Date(2024, 0, 10), 0).map(({ week, start, end }) => [week, start.getDate(), end.getDate()])
+
+    expect(rows[0]).toEqual([1, 1, 6]) // Monday 1 to Saturday 6 January: the week from Sunday 31 December
+  })
+
+  test('dashboardRange covers a week from Sunday over the turn of the year', () => {
+    expect(dashboardRange(new Date(2024, 0, 2))).toEqual({ from: new Date(2023, 11, 31), to: new Date(2024, 1, 1) })
+  })
+
+  test('weeklyMinutes from Monday is unchanged', () => {
+    const rows = weeklyMinutes([], now).map(({ week, start, end }) => [week, start.getDate(), end.getDate()])
+
+    expect(rows).toEqual([[36, 1, 6], [37, 7, 13], [38, 14, 20], [39, 21, 27], [40, 28, 30]])
   })
 })
 

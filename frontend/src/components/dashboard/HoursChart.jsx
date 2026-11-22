@@ -12,10 +12,10 @@ const views = [
 
 const sameDay = (a, b) => a.toDateString() === b.toDateString()
 
-// Hours of the month per day or per calendar week, as bars. Hovering or focusing a bar shows its value
+// Hours of the month per day or per calendar week (from firstDay: 1 Monday, 0 Sunday), as bars. Hovering or focusing a bar shows its value
 // next to the title; without one, the month total shows. The chart is one tab stop: the arrow keys move
 // between bars. A visually hidden table carries the same values for screen readers.
-function HoursChart({ entries, now }) {
+function HoursChart({ entries, now, firstDay }) {
   const [view, setView] = useState('days')
   const [active, setActive] = useState(null)
   const { t, i18n } = useLingui()
@@ -32,11 +32,11 @@ function HoursChart({ entries, now }) {
           minutes,
           future: date > now && !isToday,
           current: isToday,
-          label: isToday ? t`Today` : date.getDate() === 1 || date.getDay() === 1 ? i18n.number(date.getDate()) : '',
+          label: isToday ? t`Today` : date.getDate() === 1 || date.getDay() === firstDay ? i18n.number(date.getDate()) : '',
           sub: '',
         }
       })
-    : weeklyMinutes(entries, now).map(({ week, start, end, minutes }) => {
+    : weeklyMinutes(entries, now, firstDay).map(({ week, start, end, minutes }) => {
         const range = sameDay(start, end) ? dayMonth(start) : `${dayMonth(start)} – ${dayMonth(end)}`
         const current = now >= start && now < new Date(end.getFullYear(), end.getMonth(), end.getDate() + 1)
         return {
