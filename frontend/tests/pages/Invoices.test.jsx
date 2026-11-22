@@ -34,8 +34,6 @@ const toField = () => screen.getByLabelText('Bis')
 const dateField = () => screen.getByLabelText('Rechnungsdatum')
 const setDay = (field, value) => fireEvent.change(field, { target: { value } })
 const selectCustomer = (name) => userEvent.selectOptions(customerSelect(), name)
-// Amounts have a non-breaking space before the euro sign
-const money = (text) => new RegExp(text.replace(/[.,]/g, '\\$&').replace(' €', '\\s€'))
 const previewCard = () => screen.findByRole('region', { name: 'Rechnung für Muster GmbH' })
 const createButton = () => screen.getByRole('button', { name: 'Rechnung erstellen' })
 
@@ -145,7 +143,7 @@ describe('Invoices', () => {
 
       expect(card.queryByText('Nettobetrag')).not.toBeInTheDocument()
       expect(card.queryByText(/Umsatzsteuer 19/)).not.toBeInTheDocument()
-      expect(card.getByText('Gesamtbetrag').nextElementSibling).toHaveTextContent(money('1.142,50 €'))
+      expect(card.getByText('Gesamtbetrag').nextElementSibling).toHaveTextContent('1.142,50 €')
       expect(card.getByText('Gemäß § 19 UStG wird keine Umsatzsteuer berechnet.')).toBeInTheDocument()
     })
 
@@ -157,7 +155,7 @@ describe('Invoices', () => {
       await selectCustomer('Muster GmbH')
       await previewCard()
 
-      await waitFor(() => expect(status()).toHaveTextContent(money('Die Rechnung hätte insgesamt 1.359,58 €.')))
+      await waitFor(() => expect(status()).toHaveTextContent('Die Rechnung hätte insgesamt 1.359,58 €.'))
       expect((await previewCard()).querySelector('tfoot')).not.toHaveAttribute('aria-live')
     })
 
