@@ -17,6 +17,12 @@ jest.mock('pdfkit', () => {
     registerFont(name, file) { this.registered[name] = file; return this; }
     fontSize() { return this; }
     font(name) { this.fontsUsed.add(name); this.currentFont = name; return this; }
+    // An image is 300 x 100, or 100 x 400 when the bytes are 'tall', and unreadable when they are 'broken'
+    openImage(buffer) {
+      if (String(buffer) === 'broken') throw new Error('Unknown image format.');
+      return String(buffer) === 'tall' ? { width: 100, height: 400 } : String(buffer) === 'small' ? { width: 60, height: 30 } : { width: 300, height: 100 };
+    }
+    image(buffer, x, y, options) { this.images = [...(this.images ?? []), { x, y, ...options }]; return this; }
     text(value, x, y, options) {
       this.texts.push(String(value));
       this.calls.push({ value: String(value), x, y, options, page: this.pageNumber, font: this.currentFont });
@@ -80,6 +86,55 @@ describe('the sender block', () => {
     const doc = await run({ sender: { name: null, address: 'Musterweg 1\n\n   \n12345 Beispielstadt', email: null } })
 
     expect(doc.texts.slice(0, 3)).toEqual(['Musterweg 1', '12345 Beispielstadt', 'TIME REPORT'])
+  })
+
+  describe('with a logo', () => {
+    const logo = (name) => Buffer.from(name)
+
+    test('draws it at the top left, scaled into the room of 150 x 70, and moves the text to its right', async () => {
+      const doc = await run({ sender: { ...sender, logo: logo('wide') } })
+
+      expect(doc.images).toEqual([{ x: 50, y: 50, width: 150, height: 50 }])
+      const block = doc.calls.slice(0, 4)
+      expect(block.every((call) => call.x === 220 && call.options.width === 325 && call.options.align === 'right')).toBe(true)
+    })
+
+    test('scales a tall logo by its height, and keeps a small one at its size', async () => {
+      expect((await run({ sender: { ...sender, logo: logo('tall') } })).images).toEqual([{ x: 50, y: 50, width: 17.5, height: 70 }])
+      expect((await run({ sender: { ...sender, logo: logo('small') } })).images).toEqual([{ x: 50, y: 50, width: 60, height: 30 }])
+    })
+
+    test('draws only the logo when there are no details, and the title starts below it', async () => {
+      const doc = await run({ sender: { name: null, address: null, email: null, logo: logo('tall') } })
+
+      expect(doc.images).toHaveLength(1)
+      expect(doc.texts[0]).toBe('TIME REPORT')
+      expect(doc.y).toBeGreaterThanOrEqual(120)
+    })
+
+    test('gives the text the whole width without a logo, as before', async () => {
+      const doc = await run({ sender })
+
+      expect(doc.images).toBeUndefined()
+      expect(doc.calls[0].x).toBe(50)
+      expect(doc.calls[0].options.width).toBe(495)
+    })
+
+    test('leaves out a logo that cannot be drawn, and the report is the same as without it', async () => {
+      const doc = await run({ sender: { ...sender, logo: logo('broken') } })
+      const without = await run({ sender })
+
+      expect(doc.images).toBeUndefined()
+      expect(doc.calls).toEqual(without.calls)
+    })
+
+    test('a logo that cannot be drawn and no details draws nothing at all', async () => {
+      const doc = await run({ sender: { name: null, address: null, email: null, logo: logo('broken') } })
+      const without = await run({})
+
+      expect(doc.images).toBeUndefined()
+      expect(doc.calls).toEqual(without.calls)
+    })
   })
 
   test('is the same in German', async () => {

@@ -2,7 +2,9 @@
 # their own host instead of a port. Everything goes to the frontend; its nginx proxies /api and
 # /health to the backend (frontend/nginx.conf), so the backend has no route here. Needs an ingress controller with the class "nginx"
 # (see k8s/README.md), time-tracking.local pointing to 127.0.0.1 and ::1 in /etc/hosts and
-# the Secret time-tracking-tls from k8s/setup-tls.sh. Plain http is redirected to https.
+# the Secret time-tracking-tls from k8s/setup-tls.sh. Plain http is redirected to https. The body limit of 2 MB lets the
+# logo upload through (JSON with the image in base64, up to about 1.4 MB, nginx's default is 1 MB); the frontend's nginx
+# and the backend keep every other route small.
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
@@ -10,6 +12,7 @@ metadata:
   namespace: time-tracking
   annotations:
     nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/proxy-body-size: "2m"
 spec:
   ingressClassName: nginx
   tls:

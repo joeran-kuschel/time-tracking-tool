@@ -156,6 +156,10 @@ export const api = {
 
   // options: the settings to change; answers with all settings
   updateSettings: (options) => request('/settings', { method: 'PUT', body: options }),
+  // Your logo for the PDF report: the image as a Blob (ApiError 404 when there is none), stored as { contentType, data (base64) }
+  getLogo: async () => (await send(`${API_URL}/settings/logo`, { method: 'GET' })).blob(),
+  putLogo: (logo) => request('/settings/logo', { method: 'PUT', body: logo }),
+  deleteLogo: () => request('/settings/logo', { method: 'DELETE' }),
 
   // Reports
   getMonthlyReport: (customerId, month, year, amounts) =>

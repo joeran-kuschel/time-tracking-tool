@@ -59,11 +59,11 @@ msgstr "{total} total"
 msgid "{weekStart} to {today}"
 msgstr "{weekStart} to {today}"
 
-#: src/settingsGroups.js:51
+#: src/settingsGroups.js:53
 msgid "10 minutes"
 msgstr "10 minutes"
 
-#: src/settingsGroups.js:50
+#: src/settingsGroups.js:52
 msgid "5 minutes"
 msgstr "5 minutes"
 
@@ -93,11 +93,11 @@ msgstr "Add a customer and a project on the Time tracking page first."
 msgid "Add time"
 msgstr "Add time"
 
-#: src/settingsGroups.js:109
+#: src/settingsGroups.js:117
 msgid "Address"
 msgstr "Address"
 
-#: src/settingsGroups.js:72
+#: src/settingsGroups.js:74
 msgid "Adds a sentence such as \"Hours rounded up to quarter hours.\" to the Reports page and the PDF."
 msgstr "Adds a sentence such as \"Hours rounded up to quarter hours.\" to the Reports page and the PDF."
 
@@ -151,7 +151,7 @@ msgstr "Billing · {monthName}"
 msgid "By customer · {monthName}"
 msgstr "By customer · {monthName}"
 
-#: src/settingsGroups.js:80
+#: src/settingsGroups.js:82
 msgid "Calendar"
 msgstr "Calendar"
 
@@ -168,11 +168,19 @@ msgstr "Chart view"
 msgid "Check email and password."
 msgstr "Check email and password."
 
-#: src/settingsGroups.js:74
+#: src/components/LogoField.jsx:16
+msgid "Choose a PNG or JPEG image of at most 1 MB and 2000 × 2000 pixels."
+msgstr "Choose a PNG or JPEG image of at most 1 MB and 2000 × 2000 pixels."
+
+#: src/components/LogoField.jsx:84
+msgid "Choose a PNG or JPEG image. Other types, such as SVG, are not accepted."
+msgstr "Choose a PNG or JPEG image. Other types, such as SVG, are not accepted."
+
+#: src/settingsGroups.js:76
 msgid "Choose a step in \"Round time entries\" first."
 msgstr "Choose a step in \"Round time entries\" first."
 
-#: src/settingsGroups.js:66
+#: src/settingsGroups.js:68
 msgid "Choose a step in \"Round time entries\" to set the direction."
 msgstr "Choose a step in \"Round time entries\" to set the direction."
 
@@ -248,7 +256,7 @@ msgstr "Day"
 msgid "Days"
 msgstr "Days"
 
-#: src/settingsGroups.js:40
+#: src/settingsGroups.js:42
 msgid "Default hourly rate for new projects (€)"
 msgstr "Default hourly rate for new projects (€)"
 
@@ -287,7 +295,7 @@ msgstr "Description"
 msgid "Description (optional)"
 msgstr "Description (optional)"
 
-#: src/settingsGroups.js:60
+#: src/settingsGroups.js:62
 msgid "Direction"
 msgstr "Direction"
 
@@ -307,7 +315,7 @@ msgstr "draft"
 msgid "Draft"
 msgstr "Draft"
 
-#: src/settingsGroups.js:47
+#: src/settingsGroups.js:49
 msgid "Each entry is rounded on its own in reports. The stored times never change. A customer can have its own rule."
 msgstr "Each entry is rounded on its own in reports. The stored times never change. A customer can have its own rule."
 
@@ -335,7 +343,7 @@ msgstr "Email"
 msgid "Email (optional)"
 msgstr "Email (optional)"
 
-#: src/settingsGroups.js:118
+#: src/settingsGroups.js:126
 msgid "Email address"
 msgstr "Email address"
 
@@ -386,7 +394,7 @@ msgstr "Filter entries"
 msgid "Filters"
 msgstr "Filters"
 
-#: src/settingsGroups.js:85
+#: src/settingsGroups.js:87
 msgid "First day of the week"
 msgstr "First day of the week"
 
@@ -402,11 +410,11 @@ msgstr "German"
 msgid "Go to the Dashboard"
 msgstr "Go to the Dashboard"
 
-#: src/settingsGroups.js:53
+#: src/settingsGroups.js:55
 msgid "Half hour (30 minutes)"
 msgstr "Half hour (30 minutes)"
 
-#: src/settingsGroups.js:54
+#: src/settingsGroups.js:56
 msgid "Hour (60 minutes)"
 msgstr "Hour (60 minutes)"
 
@@ -541,6 +549,18 @@ msgstr "Logging out failed."
 msgid "Login failed."
 msgstr "Login failed."
 
+#: src/settingsGroups.js:104
+msgid "Logo"
+msgstr "Logo"
+
+#: src/components/LogoField.jsx:140
+msgid "Logo removed."
+msgstr "Logo removed."
+
+#: src/components/LogoField.jsx:139
+msgid "Logo saved."
+msgstr "Logo saved."
+
 #: src/App.jsx:104
 msgid "Main"
 msgstr "Main"
@@ -549,7 +569,7 @@ msgstr "Main"
 msgid "Manual entry"
 msgstr "Manual entry"
 
-#: src/settingsGroups.js:88
+#: src/settingsGroups.js:90
 msgid "Monday"
 msgstr "Monday"
 
@@ -570,7 +590,7 @@ msgstr "Monthly reports"
 msgid "Name"
 msgstr "Name"
 
-#: src/settingsGroups.js:71
+#: src/settingsGroups.js:73
 msgid "Name the rounding rule in reports"
 msgstr "Name the rounding rule in reports"
 
@@ -584,7 +604,7 @@ msgstr "New customer"
 msgid "New project"
 msgstr "New project"
 
-#: src/settingsGroups.js:41
+#: src/settingsGroups.js:43
 msgid "New projects start with this rate, which you can change for each project. Leave it empty for no default. Existing projects and reports do not change."
 msgstr "New projects start with this rate, which you can change for each project. Leave it empty for no default. Existing projects and reports do not change."
 
@@ -626,7 +646,7 @@ msgid "No filters active"
 msgstr "No filters active"
 
 #: src/customerRounding.js:24
-#: src/settingsGroups.js:49
+#: src/settingsGroups.js:51
 msgid "No rounding"
 msgstr "No rounding"
 
@@ -682,6 +702,10 @@ msgstr "Period: {periodName}"
 msgid "Please try again."
 msgstr "Please try again."
 
+#: src/settingsGroups.js:105
+msgid "PNG or JPEG, up to 1 MB and 2000 × 2000 pixels. Printed at the top left of the PDF report. It is saved as soon as you choose it."
+msgstr "PNG or JPEG, up to 1 MB and 2000 × 2000 pixels. Printed at the top left of the PDF report. It is saved as soon as you choose it."
+
 #: src/components/dashboard/BillingTable.jsx:81
 msgid "Preview PDF"
 msgstr "Preview PDF"
@@ -694,9 +718,9 @@ msgstr "Preview PDF for {customerName} (opens in a new tab)"
 msgid "Previous month"
 msgstr "Previous month"
 
-#: src/settingsGroups.js:97
-msgid "Printed at the top right of the PDF report. Leave them empty for a report without a sender block. The CSV does not change."
-msgstr "Printed at the top right of the PDF report. Leave them empty for a report without a sender block. The CSV does not change."
+#: src/settingsGroups.js:99
+msgid "Printed at the top right of the PDF report, next to the logo. Leave them empty for a report without a sender block. The CSV does not change."
+msgstr "Printed at the top right of the PDF report, next to the logo. Leave them empty for a report without a sender block. The CSV does not change."
 
 #: src/components/EntryFilters.jsx:150
 #: src/components/EntryForm.jsx:36
@@ -732,7 +756,7 @@ msgstr "Projects"
 msgid "Projects could not be loaded."
 msgstr "Projects could not be loaded."
 
-#: src/settingsGroups.js:52
+#: src/settingsGroups.js:54
 msgid "Quarter hour (15 minutes)"
 msgstr "Quarter hour (15 minutes)"
 
@@ -755,6 +779,10 @@ msgstr "Recent entries"
 #: src/components/EntryFilters.jsx:108
 msgid "Remove filter: {label}"
 msgstr "Remove filter: {label}"
+
+#: src/components/LogoField.jsx:123
+msgid "Remove logo"
+msgstr "Remove logo"
 
 #: src/components/dashboard/BillingTable.jsx:54
 msgid "Report"
@@ -801,7 +829,7 @@ msgstr "Resume: {projectName}"
 msgid "Resume: {projectName}, {description}"
 msgstr "Resume: {projectName}, {description}"
 
-#: src/settingsGroups.js:46
+#: src/settingsGroups.js:48
 msgid "Round time entries"
 msgstr "Round time entries"
 
@@ -813,7 +841,7 @@ msgstr "Rounded hours × hourly rate of each project"
 msgid "Rounding"
 msgstr "Rounding"
 
-#: src/settingsGroups.js:29
+#: src/settingsGroups.js:31
 msgid "Rounding also applies to the reports of past months. PDF and CSV files you have already downloaded do not change."
 msgstr "Rounding also applies to the reports of past months. PDF and CSV files you have already downloaded do not change."
 
@@ -909,7 +937,7 @@ msgstr "Show all projects"
 msgid "Show hourly rate and amounts"
 msgstr "Show hourly rate and amounts"
 
-#: src/settingsGroups.js:34
+#: src/settingsGroups.js:36
 msgid "Show hourly rate and amounts in reports"
 msgstr "Show hourly rate and amounts in reports"
 
@@ -952,11 +980,11 @@ msgstr "Stop <0>timer</0>"
 msgid "Stop the running timer first."
 msgstr "Stop the running timer first."
 
-#: src/settingsGroups.js:89
+#: src/settingsGroups.js:91
 msgid "Sunday"
 msgstr "Sunday"
 
-#: src/settingsGroups.js:86
+#: src/settingsGroups.js:88
 msgid "The Dashboard and the period choices This week and Last week on the Entries page start their weeks on this day. Months and reports stay calendar months."
 msgstr "The Dashboard and the period choices This week and Last week on the Entries page start their weeks on this day. Months and reports stay calendar months."
 
@@ -968,9 +996,29 @@ msgstr "The end date must not be before the start date"
 msgid "The entry runs on: the time since its end counts as work time."
 msgstr "The entry runs on: the time since its end counts as work time."
 
+#: src/components/LogoField.jsx:17
+msgid "The file is too large. Choose an image of at most 1 MB."
+msgstr "The file is too large. Choose an image of at most 1 MB."
+
 #: src/components/AuthGate.jsx:31
 msgid "The login status could not be checked."
 msgstr "The login status could not be checked."
+
+#: src/components/LogoField.jsx:12
+msgid "The logo could not be loaded."
+msgstr "The logo could not be loaded."
+
+#: src/components/LogoField.jsx:14
+msgid "The logo could not be removed."
+msgstr "The logo could not be removed."
+
+#: src/components/LogoField.jsx:13
+msgid "The logo could not be saved."
+msgstr "The logo could not be saved."
+
+#: src/components/LogoField.jsx:85
+msgid "The logo is larger than 1 MB. Choose a smaller file."
+msgstr "The logo is larger than 1 MB. Choose a smaller file."
 
 #. placeholder {0}: languageName(i18n, ownLanguage)
 #: src/pages/Reports.jsx:151
@@ -982,7 +1030,7 @@ msgstr "The PDF and CSV are in {0} (the report language of this customer)."
 msgid "The PDF and CSV are in the language of the app ({0})."
 msgstr "The PDF and CSV are in the language of the app ({0})."
 
-#: src/settingsGroups.js:35
+#: src/settingsGroups.js:37
 msgid "The Reports page starts with this. You can still change it for a single report."
 msgstr "The Reports page starts with this. You can still change it for a single report."
 
@@ -1035,7 +1083,7 @@ msgstr "This year"
 msgid "Time"
 msgstr "Time"
 
-#: src/settingsGroups.js:28
+#: src/settingsGroups.js:30
 msgid "Time and billing"
 msgstr "Time and billing"
 
@@ -1084,7 +1132,7 @@ msgid "To"
 msgstr "To"
 
 #: src/customerRounding.js:14
-#: src/settingsGroups.js:63
+#: src/settingsGroups.js:65
 msgid "To the nearest"
 msgstr "To the nearest"
 
@@ -1120,11 +1168,11 @@ msgid "Try again"
 msgstr "Try again"
 
 #: src/customerRounding.js:13
-#: src/settingsGroups.js:62
+#: src/settingsGroups.js:64
 msgid "Up"
 msgstr "Up"
 
-#: src/settingsGroups.js:110
+#: src/settingsGroups.js:118
 msgid "Up to 6 lines, for example street and town."
 msgstr "Up to 6 lines, for example street and town."
 
@@ -1160,11 +1208,15 @@ msgstr "Week {week}, {range}"
 msgid "Weeks"
 msgstr "Weeks"
 
-#: src/settingsGroups.js:96
+#: src/settingsGroups.js:98
 msgid "Your details"
 msgstr "Your details"
 
-#: src/settingsGroups.js:102
+#: src/components/LogoField.jsx:122
+msgid "Your logo"
+msgstr "Your logo"
+
+#: src/settingsGroups.js:110
 msgid "Your name or business name"
 msgstr "Your name or business name"
 

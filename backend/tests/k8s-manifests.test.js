@@ -145,6 +145,10 @@ describe('ingress', () => {
     expect(ingress.metadata.annotations['nginx.ingress.kubernetes.io/ssl-redirect']).toBe('true');
   });
 
+  test('lets bodies of 2 MB through, which the logo upload needs (nginx refuses more than 1 MB by default)', () => {
+    expect(ingress.metadata.annotations['nginx.ingress.kubernetes.io/proxy-body-size']).toBe('2m');
+  });
+
   test('routes / to the port of the frontend service', () => {
     const service = find(loadManifests('frontend.yaml'), 'Service', 'frontend');
     expect(route('/').pathType).toBe('Prefix');

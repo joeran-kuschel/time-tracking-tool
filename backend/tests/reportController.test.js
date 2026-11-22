@@ -1,6 +1,7 @@
 jest.mock('../src/models/TimeEntry');
 jest.mock('../src/models/Customer');
 jest.mock('../src/models/Settings');
+jest.mock('../src/models/Logo');
 jest.mock('../src/models/ReportStatus', () => ({
   get: jest.fn(),
   set: jest.fn(),
@@ -15,6 +16,7 @@ const TimeEntry = require('../src/models/TimeEntry');
 const Customer = require('../src/models/Customer');
 const ReportStatus = require('../src/models/ReportStatus');
 const Settings = require('../src/models/Settings');
+const Logo = require('../src/models/Logo');
 const { generateReportPDF } = require('../src/utils/pdfGenerator');
 const controller = require('../src/controllers/reportController');
 const router = require('../src/routes/reports');
@@ -46,7 +48,7 @@ describe('reportController.generatePDF', () => {
 
     await controller.generatePDF({ params: { customerId: '1' }, query: { month: '3', year: '2026', lang: 'en' } }, res);
 
-    expect(generateReportPDF).toHaveBeenCalledWith([{ id: 1 }], { customerName: 'Muster', month: 3, year: 2026, locale: 'en', timeZone: 'UTC', rounding: null, sender: { name: undefined, address: undefined, email: undefined } });
+    expect(generateReportPDF).toHaveBeenCalledWith([{ id: 1 }], { customerName: 'Muster', month: 3, year: 2026, locale: 'en', timeZone: 'UTC', rounding: null, sender: { name: undefined, address: undefined, email: undefined, logo: null } });
     expect(res.headers['Content-Disposition']).toBe('attachment; filename=time-report-Muster-2026-3.pdf');
   });
 
@@ -55,7 +57,32 @@ describe('reportController.generatePDF', () => {
 
     await controller.generatePDF({ params: { customerId: '1' }, query: { month: '3', year: '2026', lang: 'de' } }, mockResponse());
 
-    expect(generateReportPDF.mock.calls.at(-1)[1].sender).toEqual({ name: 'Jana Beispiel', address: 'Musterweg 1\n12345 Beispielstadt', email: 'jana@example.test' });
+    expect(generateReportPDF.mock.calls.at(-1)[1].sender).toEqual({ name: 'Jana Beispiel', address: 'Musterweg 1\n12345 Beispielstadt', email: 'jana@example.test', logo: null });
+  });
+
+  test('passes your logo to the PDF, and null without one', async () => {
+    const image = Buffer.from('logo bytes');
+    const run = () => controller.generatePDF({ params: { customerId: '1' }, query: { month: '3', year: '2026', lang: 'de' } }, mockResponse());
+    Logo.get.mockResolvedValue({ contentType: 'image/png', data: image });
+
+    await run();
+    expect(generateReportPDF.mock.calls.at(-1)[1].sender.logo).toBe(image);
+
+    Logo.get.mockResolvedValue(null);
+    await run();
+    expect(generateReportPDF.mock.calls.at(-1)[1].sender.logo).toBeNull();
+  });
+
+  test('the JSON report and the CSV never load your logo', async () => {
+    Logo.get.mockClear();
+    TimeEntry.getByCustomerIdInRange.mockResolvedValue([
+      { id: 1, project_id: 7, project_name: 'Web', hourly_rate: '80.00', description: 'Konzept', start_time: '2026-03-02T08:00:00Z', end_time: '2026-03-02T09:30:00Z' },
+    ]);
+
+    await controller.getMonthlyReport({ params: { customerId: '1' }, query: { month: '3', year: '2026' } }, mockResponse());
+    await controller.exportCsv({ params: { customerId: '1' }, query: { month: '3', year: '2026', lang: 'en' } }, mockResponse());
+
+    expect(Logo.get).not.toHaveBeenCalled();
   });
 
   test('the JSON report and the CSV do not carry your details', async () => {

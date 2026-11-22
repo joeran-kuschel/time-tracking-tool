@@ -56,6 +56,31 @@ describe('a real PDF with your own details', () => {
     expect((pdfText(withDetails).match(/\/Type \/Page\b/g) ?? []).length).toBe((pdfText(plain).match(/\/Type \/Page\b/g) ?? []).length);
   });
 
+  test('draws a real PNG and a real JPEG as the logo, next to the details, on one page', async () => {
+    const { png, TINY_JPEG } = require('./helpers/images');
+    const sender = { name: 'Jana Beispiel', address: 'Musterweg 1', email: 'jana@example.test' };
+    const plain = await generateReportPDF(entries, { customerName: 'Muster GmbH', month: 3, year: 2026, locale: 'de', sender });
+
+    for (const logo of [png(400, 150), TINY_JPEG]) {
+      const pdf = await generateReportPDF(entries, { customerName: 'Muster GmbH', month: 3, year: 2026, locale: 'de', sender: { ...sender, logo } });
+
+      expect(pdf.subarray(0, 5).toString()).toBe('%PDF-');
+      expect(pdfText(pdf)).toMatch(/\/Subtype \/Image/);
+      expect(pdfText(plain)).not.toMatch(/\/Subtype \/Image/);
+      expect((pdfText(pdf).match(/\/Type \/Page\b/g) ?? []).length).toBe(1);
+    }
+  });
+
+  test('a real logo with no details, and a broken logo, still give a report', async () => {
+    const { png } = require('./helpers/images');
+    const only = await generateReportPDF(entries, { customerName: 'Muster GmbH', month: 3, year: 2026, locale: 'en', sender: { logo: png(100, 100) } });
+    const broken = await generateReportPDF(entries, { customerName: 'Muster GmbH', month: 3, year: 2026, locale: 'en', sender: { name: 'Jana', logo: Buffer.from('not an image') } });
+
+    expect(pdfText(only)).toMatch(/\/Subtype \/Image/);
+    expect(broken.subarray(0, 5).toString()).toBe('%PDF-');
+    expect(pdfText(broken)).not.toMatch(/\/Subtype \/Image/);
+  });
+
   test('long values wrap and the report stays on one page', async () => {
     const pdf = await generateReportPDF(entries, { customerName: 'Muster GmbH', month: 3, year: 2026, locale: 'en', sender: longSender });
 

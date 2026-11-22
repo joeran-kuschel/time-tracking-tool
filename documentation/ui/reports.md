@@ -32,7 +32,8 @@ The **Reports** page (German: **Berichte**) shows a customer's time entries of o
    - The file keeps the name the backend gives it (`Content-Disposition`), e.g. `abrechnung-Muster GmbH-2026-9.pdf`.
      See [Reports API](../backend/reports.md).
    - **Sender block:** with your details stored in [Settings](settings.md) (**Your details**), the PDF starts with them at the
-     top right: the name in bold, the lines of the address and the email. Without any detail the PDF is as it was. The
+     top right: the name in bold, the lines of the address and the email. A logo is printed at the top left, with the
+     text to its right. Without any detail the PDF is as it was. The
      CSV and the screen do not change. Long values wrap inside the page; the details never take a second page.
 5. **Download CSV** (German: **CSV herunterladen**), next to it, downloads the same entries as a CSV file for
    spreadsheets: date, start, end, customer, project, description and hours per entry, plus the hourly rate and the

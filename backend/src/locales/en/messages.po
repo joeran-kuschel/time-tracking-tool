@@ -14,7 +14,7 @@ msgstr ""
 "Plural-Forms: \n"
 
 #. js-lingui-explicit-id
-#: src/utils/pdfGenerator.js:142
+#: src/utils/pdfGenerator.js:164
 msgid "report.amount"
 msgstr "Amount"
 
@@ -29,18 +29,18 @@ msgid "export.customer"
 msgstr "Customer"
 
 #. js-lingui-explicit-id
-#: src/utils/pdfGenerator.js:126
+#: src/utils/pdfGenerator.js:148
 msgid "report.customer"
 msgstr "Customer: {customerName}"
 
 #. js-lingui-explicit-id
-#: src/utils/pdfGenerator.js:138
+#: src/utils/pdfGenerator.js:160
 #: src/utils/reportRows.js:29
 msgid "report.date"
 msgstr "Date"
 
 #. js-lingui-explicit-id
-#: src/utils/pdfGenerator.js:141
+#: src/utils/pdfGenerator.js:163
 #: src/utils/reportRows.js:34
 msgid "report.description"
 msgstr "Description"
@@ -51,7 +51,7 @@ msgid "export.end"
 msgstr "End"
 
 #. js-lingui-explicit-id
-#: src/utils/pdfGenerator.js:140
+#: src/utils/pdfGenerator.js:162
 #: src/utils/reportRows.js:35
 msgid "report.hours"
 msgstr "Hours"
@@ -97,18 +97,18 @@ msgid "report.rounding.upMinutes"
 msgstr "Hours rounded up to steps of {minutes} minutes."
 
 #. js-lingui-explicit-id
-#: src/utils/pdfGenerator.js:195
+#: src/utils/pdfGenerator.js:217
 msgid "report.projects"
 msgstr "Per project"
 
 #. js-lingui-explicit-id
-#: src/utils/pdfGenerator.js:139
+#: src/utils/pdfGenerator.js:161
 #: src/utils/reportRows.js:33
 msgid "report.project"
 msgstr "Project"
 
 #. js-lingui-explicit-id
-#: src/utils/pdfGenerator.js:143
+#: src/utils/pdfGenerator.js:165
 msgid "report.rate"
 msgstr "Rate"
 
@@ -123,7 +123,7 @@ msgid "export.start"
 msgstr "Start"
 
 #. js-lingui-explicit-id
-#: src/utils/pdfGenerator.js:121
+#: src/utils/pdfGenerator.js:143
 msgid "report.title"
 msgstr "TIME REPORT"
 
@@ -133,11 +133,11 @@ msgid "report.filename"
 msgstr "time-report"
 
 #. js-lingui-explicit-id
-#: src/utils/pdfGenerator.js:182
+#: src/utils/pdfGenerator.js:204
 msgid "report.totalAmount"
 msgstr "TOTAL AMOUNT:"
 
 #. js-lingui-explicit-id
-#: src/utils/pdfGenerator.js:179
+#: src/utils/pdfGenerator.js:201
 msgid "report.total"
 msgstr "TOTAL HOURS:"

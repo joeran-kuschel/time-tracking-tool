@@ -3,6 +3,7 @@ const TimeEntry = require('../models/TimeEntry');
 const Customer = require('../models/Customer');
 const ReportStatus = require('../models/ReportStatus');
 const Settings = require('../models/Settings');
+const Logo = require('../models/Logo');
 const { parseMonth, parseTimeZone, monthRange } = require('../utils/period');
 const { generateReportPDF, reportFileName } = require('../utils/pdfGenerator');
 const { reportRows } = require('../utils/reportRows');
@@ -91,7 +92,10 @@ exports.generatePDF = async (req, res) => {
     const report = await loadReport(req, res);
     if (!report) return;
 
-    const { customer, entries, period, amounts, rounding, showRoundingNote, sender, lang } = report;
+    const { customer, entries, period, amounts, rounding, showRoundingNote, lang } = report;
+    // Your logo is only needed here: the JSON report and the CSV do not carry your details
+    const logo = await Logo.get();
+    const sender = { ...report.sender, logo: logo?.data ?? null };
     const { month, year, timeZone } = period;
     // The rounded hours are always in the PDF; the sentence that names the rule only when the setting says so
     const pdfBuffer = await generateReportPDF(entries, { customerName: customer.name, month, year, locale: lang, timeZone, rounding: showRoundingNote ? rounding : null, sender, ...(amounts && { amounts }) });

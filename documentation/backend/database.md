@@ -5,7 +5,7 @@ instead.
 
 ## Schema
 
-Defined in `backend/migrations/001_init_schema.sql`, `002_report_status.sql`, `003_one_running_timer.sql`, `004_auth.sql`, `005_settings.sql`, `006_settings_show_amounts.sql`, `007_settings_rounding.sql`, `008_settings_rounding_steps.sql`, `009_customer_rounding.sql`, `010_settings_default_hourly_rate.sql`, `011_customer_report_language.sql`, `012_settings_week_start.sql` and `013_settings_sender_details.sql`:
+Defined in `backend/migrations/001_init_schema.sql`, `002_report_status.sql`, `003_one_running_timer.sql`, `004_auth.sql`, `005_settings.sql`, `006_settings_show_amounts.sql`, `007_settings_rounding.sql`, `008_settings_rounding_steps.sql`, `009_customer_rounding.sql`, `010_settings_default_hourly_rate.sql`, `011_customer_report_language.sql`, `012_settings_week_start.sql`, `013_settings_sender_details.sql` and `014_sender_logo.sql`:
 
 | Table | Columns | Relations |
 |---|---|---|

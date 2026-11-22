@@ -1,10 +1,13 @@
 jest.mock('../src/models/Customer');
 jest.mock('../src/models/Session');
 jest.mock('../src/models/Settings');
+jest.mock('../src/models/Logo');
 
 const Customer = require('../src/models/Customer');
 const Session = require('../src/models/Session');
 const Settings = require('../src/models/Settings');
+const Logo = require('../src/models/Logo');
+const { png, upload } = require('./helpers/images');
 const { createApp, parseOrigins } = require('../src/app');
 
 const FRONTEND = 'http://localhost';
@@ -241,5 +244,101 @@ describe('parseOrigins', () => {
 
   test.each([undefined, '', ' , '])('has no origins for %p', (value) => {
     expect(parseOrigins(value)).toEqual([]);
+  });
+});
+
+describe('the logo', () => {
+  const logoRequest = (method, body, headers = {}) => fetch(`${baseUrl}/api/settings/logo`, {
+    method,
+    headers: { 'Content-Type': 'application/json', ...LOGGED_IN, ...headers },
+    body: body === undefined ? undefined : JSON.stringify(body),
+  });
+
+  test('PUT stores an image whose JSON body is far larger than the default limit of 100 kB', async () => {
+    const big = Buffer.concat([png(4, 2), Buffer.alloc(900 * 1024)]);
+
+    const response = await logoRequest('PUT', upload('image/png', big));
+
+    expect(response.status).toBe(200);
+    expect(Logo.set).toHaveBeenCalledWith('image/png', big);
+  });
+
+  test('PUT of a body above 1.5 MB answers 413 and stores nothing', async () => {
+    const response = await logoRequest('PUT', { contentType: 'image/png', data: 'A'.repeat(1.6 * 1024 * 1024) });
+
+    expect(response.status).toBe(413);
+    expect(Logo.set).not.toHaveBeenCalled();
+  });
+
+  test('every other route keeps the small body limit', async () => {
+    const response = await fetch(`${baseUrl}/api/customers`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...LOGGED_IN },
+      body: JSON.stringify({ name: 'x'.repeat(200 * 1024) }),
+    });
+
+    expect(response.status).toBe(413);
+    expect(Customer.create).not.toHaveBeenCalled();
+  });
+
+  test('the settings route keeps it too', async () => {
+    const response = await fetch(`${baseUrl}/api/settings`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', ...LOGGED_IN },
+      body: JSON.stringify({ senderName: 'x'.repeat(200 * 1024) }),
+    });
+
+    expect(response.status).toBe(413);
+  });
+
+  test.each([['GET'], ['PUT'], ['DELETE']])('%s needs a login, and a large body is not read without one', async (method) => {
+    Session.findUser.mockResolvedValue(null);
+    const body = method === 'PUT' ? upload('image/png', Buffer.concat([png(), Buffer.alloc(500 * 1024)])) : undefined;
+
+    const response = await logoRequest(method, body, { Cookie: '' });
+
+    expect(response.status).toBe(401);
+    expect(Logo.get).not.toHaveBeenCalled();
+    expect(Logo.set).not.toHaveBeenCalled();
+    expect(Logo.remove).not.toHaveBeenCalled();
+  });
+
+  test('PUT refuses a request from another origin', async () => {
+    const response = await logoRequest('PUT', upload('image/png', png()), { Origin: 'https://evil.example' });
+
+    expect(response.status).toBe(403);
+    expect(Logo.set).not.toHaveBeenCalled();
+  });
+
+  test('GET sends the stored image with its type, nosniff and no caching', async () => {
+    const image = png(40, 20);
+    Logo.get.mockResolvedValue({ contentType: 'image/png', data: image });
+
+    const response = await logoRequest('GET');
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get('content-type')).toBe('image/png');
+    expect(response.headers.get('x-content-type-options')).toBe('nosniff');
+    expect(response.headers.get('cache-control')).toBe('no-store');
+    expect(Buffer.from(await response.arrayBuffer()).equals(image)).toBe(true);
+  });
+
+  test('GET answers 404 without a logo, and DELETE answers 204', async () => {
+    Logo.get.mockResolvedValue(null);
+
+    expect((await logoRequest('GET')).status).toBe(404);
+    expect((await logoRequest('DELETE')).status).toBe(204);
+    expect(Logo.remove).toHaveBeenCalled();
+  });
+
+  test('PUT with a body that is not JSON answers 400', async () => {
+    const response = await fetch(`${baseUrl}/api/settings/logo`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'text/plain', ...LOGGED_IN },
+      body: 'hello',
+    });
+
+    expect(response.status).toBe(400);
+    expect(Logo.set).not.toHaveBeenCalled();
   });
 });
