@@ -993,7 +993,7 @@ describe('App', () => {
 
     expect(await screen.findByRole('heading', { level: 1, name: 'Dashboard' })).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Dashboard' })).toHaveAttribute('aria-current', 'page')
-    expect(screen.getByRole('navigation').textContent).toBe('DashboardZeiterfassungEinträgeBerichteEinstellungen')
+    expect(screen.getByRole('navigation').textContent).toBe('DashboardZeiterfassungEinträgeBerichteRechnungenEinstellungen')
     expect(api.getDashboard).toHaveBeenCalledTimes(1)
 
     await userEvent.click(screen.getByRole('link', { name: 'Zeiterfassung' }))
@@ -1001,7 +1001,7 @@ describe('App', () => {
 
     await userEvent.click(screen.getByRole('button', { name: 'English' }))
     expect(screen.getByRole('heading', { level: 1, name: 'Time tracking' })).toBeInTheDocument()
-    expect(screen.getByRole('navigation').textContent).toBe('DashboardTime trackingEntriesReportsSettings')
+    expect(screen.getByRole('navigation').textContent).toBe('DashboardTime trackingEntriesReportsInvoicesSettings')
   })
 
   test('the Entries page searches all customers and opens a result on the Time tracking page', async () => {
@@ -1355,7 +1355,7 @@ describe('App addresses', () => {
 
     const nav = within(await screen.findByRole('navigation', { name: 'Hauptnavigation' }))
     expect(nav.getAllByRole('link').map((link) => link.getAttribute('href'))).toEqual(
-      ['/', '/time-tracking', '/entries', '/reports', '/settings']
+      ['/', '/time-tracking', '/entries', '/reports', '/invoices', '/settings']
     )
     expect(nav.getByRole('link', { name: 'Dashboard' })).toHaveAttribute('aria-current', 'page')
     expect(nav.getByRole('link', { name: 'Berichte' })).not.toHaveAttribute('aria-current')

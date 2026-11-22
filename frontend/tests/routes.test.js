@@ -8,6 +8,7 @@ describe('routes', () => {
       ['time-tracking', '/time-tracking'],
       ['entries', '/entries'],
       ['reports', '/reports'],
+      ['invoices', '/invoices'],
       ['settings', '/settings'],
     ])
   })
@@ -31,6 +32,12 @@ describe('routes', () => {
     expect(pageFor('/reports')?.id).toBe('reports')
     expect(pageFor('/reports/')?.id).toBe('reports')
     expect(pageFor('/settings')?.id).toBe('settings')
+    expect(pageFor('/invoices')?.id).toBe('invoices')
+    expect(pageFor('/invoices/')?.id).toBe('invoices')
+  })
+
+  test('the invoices page has no selection in its address', () => {
+    expect(pageFor('/invoices/1')).toBeUndefined()
   })
 
   test('pageFor finds nothing for other addresses', () => {

@@ -21,6 +21,10 @@ msgstr ", {share} vom Gesamtwert"
 msgid ", timer running"
 msgstr ", Timer läuft"
 
+#: src/components/invoices/InvoiceList.jsx:69
+msgid "(deleted)"
+msgstr "(gelöscht)"
+
 #. placeholder {0}: results.total
 #: src/components/EntryResults.jsx:51
 msgid "{0, plural, one {# entry} other {# entries}}"
@@ -38,6 +42,10 @@ msgstr "{customerName}: {status}"
 #: src/components/dashboard/KeyFigures.jsx:36
 msgid "{days} working days, {perDay} per day"
 msgstr "{days} Arbeitstage, {perDay} pro Tag"
+
+#: src/components/invoices/InvoicePreview.jsx:37
+msgid "{from} to {to}, dated {date}"
+msgstr "{from} bis {to}, datiert {date}"
 
 #: src/components/dashboard/BillingTable.jsx:103
 msgid "{lastMonthName}: {sent} of {total} reports sent."
@@ -85,6 +93,7 @@ msgstr "Es läuft bereits ein Timer."
 
 #: src/components/EntriesList.jsx:95
 #: src/components/EntryResults.jsx:65
+#: src/components/invoices/InvoiceList.jsx:42
 msgid "Actions"
 msgstr "Aktionen"
 
@@ -127,6 +136,7 @@ msgid "All projects"
 msgstr "Alle Projekte"
 
 #: src/components/dashboard/BillingTable.jsx:53
+#: src/components/invoices/InvoicePreview.jsx:66
 #: src/pages/Reports.jsx:304
 msgid "Amount"
 msgstr "Betrag"
@@ -179,6 +189,7 @@ msgstr "Nach Kunde · {monthName}"
 msgid "Calendar"
 msgstr "Kalender"
 
+#: src/components/ConfirmAction.jsx:32
 #: src/components/ConfirmDelete.jsx:30
 #: src/components/RecordForm.jsx:80
 msgid "Cancel"
@@ -187,6 +198,10 @@ msgstr "Abbrechen"
 #: src/components/dashboard/HoursChart.jsx:84
 msgid "Chart view"
 msgstr "Ansicht des Diagramms"
+
+#: src/components/invoices/InvoicePreview.jsx:46
+msgid "Check before you create it: this customer already has an invoice for this period."
+msgstr "Bitte prüfen, bevor du sie erstellst: Für diesen Kunden gibt es schon eine Rechnung für diesen Zeitraum."
 
 #: src/pages/Login.jsx:12
 msgid "Check email and password."
@@ -208,6 +223,19 @@ msgstr "Wähle zuerst bei \"Zeiteinträge runden\" eine Stufe."
 msgid "Choose a step in \"Round time entries\" to set the direction."
 msgstr "Wähle bei \"Zeiteinträge runden\" eine Stufe, um die Richtung festzulegen."
 
+#: src/components/invoices/InvoicePreview.jsx:105
+#: src/components/invoices/InvoicePreview.jsx:120
+msgid "Create invoice"
+msgstr "Rechnung erstellen"
+
+#: src/components/invoices/InvoicePreview.jsx:104
+msgid "Create invoice {number} for {customerName} over {total}? The number is used up and the invoice cannot be changed."
+msgstr "Rechnung {number} für {customerName} über {total} erstellen? Die Nummer ist dann vergeben und die Rechnung lässt sich nicht mehr ändern."
+
+#: src/components/invoices/InvoiceList.jsx:19
+msgid "Created invoices"
+msgstr "Erstellte Rechnungen"
+
 #: src/pages/Reports.jsx:124
 msgid "CSV could not be downloaded."
 msgstr "CSV konnte nicht heruntergeladen werden."
@@ -219,6 +247,8 @@ msgstr "Benutzerdefiniert"
 #: src/components/dashboard/BillingTable.jsx:49
 #: src/components/EntryFilters.jsx:137
 #: src/components/EntryResults.jsx:43
+#: src/components/invoices/InvoiceList.jsx:39
+#: src/pages/Invoices.jsx:203
 #: src/pages/Reports.jsx:160
 msgid "Customer"
 msgstr "Kunde"
@@ -248,7 +278,7 @@ msgstr "Kunde: {customerName}"
 msgid "Customers"
 msgstr "Kunden"
 
-#: src/App.jsx:49
+#: src/App.jsx:50
 msgid "Customers could not be loaded."
 msgstr "Kunden konnten nicht geladen werden."
 
@@ -268,6 +298,7 @@ msgstr "Dashboard konnte nicht geladen werden."
 #: src/components/EntriesList.jsx:91
 #: src/components/EntryForm.jsx:37
 #: src/components/EntryResults.jsx:43
+#: src/components/invoices/InvoiceList.jsx:38
 #: src/pages/Reports.jsx:300
 msgid "Date"
 msgstr "Datum"
@@ -300,6 +331,15 @@ msgstr "{name} löschen"
 msgid "Delete {projectName} and all its time entries?"
 msgstr "{projectName} und alle Zeiteinträge löschen?"
 
+#: src/components/invoices/InvoiceList.jsx:95
+#: src/components/invoices/InvoiceList.jsx:95
+msgid "Delete invoice {number}"
+msgstr "Rechnung {number} löschen"
+
+#: src/components/invoices/InvoiceList.jsx:105
+msgid "Delete invoice {number}? Its number stays used and is never reused. An invoice you have sent should be kept."
+msgstr "Rechnung {number} löschen? Ihre Nummer bleibt vergeben und wird nie wieder verwendet. Eine Rechnung, die du verschickt hast, solltest du aufbewahren."
+
 #: src/components/EntriesList.jsx:64
 msgid "Delete the entry from {start}"
 msgstr "Eintrag vom {start} löschen"
@@ -323,6 +363,10 @@ msgstr "Beschreibung (optional)"
 msgid "Direction"
 msgstr "Richtung"
 
+#: src/components/invoices/InvoiceList.jsx:93
+msgid "Download"
+msgstr "Herunterladen"
+
 #: src/pages/Reports.jsx:217
 msgid "Download CSV"
 msgstr "CSV herunterladen"
@@ -330,6 +374,10 @@ msgstr "CSV herunterladen"
 #: src/pages/Reports.jsx:221
 msgid "Download PDF"
 msgstr "PDF herunterladen"
+
+#: src/components/invoices/InvoiceList.jsx:89
+msgid "Download PDF of invoice {number}"
+msgstr "PDF der Rechnung {number} herunterladen"
 
 #: src/components/dashboard/BillingTable.jsx:35
 msgid "draft"
@@ -403,6 +451,14 @@ msgstr "Geben Sie einen Betrag ab 0 mit bis zu zwei Nachkommastellen ein, zum Be
 msgid "Enter an email address like name@example.com."
 msgstr "Gib eine E-Mail-Adresse wie name@beispiel.de ein."
 
+#: src/pages/Invoices.jsx:187
+msgid "Enter the first and the last day of the period."
+msgstr "Gib den ersten und den letzten Tag des Zeitraums ein."
+
+#: src/pages/Invoices.jsx:223
+msgid "Enter the invoice date."
+msgstr "Gib das Rechnungsdatum ein."
+
 #: src/components/MonthSummary.jsx:24
 #: src/pages/Entries.jsx:94
 #: src/routes.js:11
@@ -435,6 +491,7 @@ msgid "For example your IBAN, BIC and the bank. Up to 4 lines."
 msgstr "Zum Beispiel deine IBAN, BIC und die Bank. Bis zu 4 Zeilen."
 
 #: src/components/EntryFilters.jsx:183
+#: src/pages/Invoices.jsx:210
 msgid "From"
 msgstr "Von"
 
@@ -462,6 +519,7 @@ msgstr "Stundensatz (€)"
 #: src/components/dashboard/HoursChart.jsx:151
 #: src/components/EntriesList.jsx:93
 #: src/components/EntryResults.jsx:43
+#: src/components/invoices/InvoicePreview.jsx:64
 #: src/pages/Reports.jsx:303
 msgid "Hours"
 msgstr "Stunden"
@@ -534,9 +592,42 @@ msgstr "Stunden diesen Monat"
 msgid "in Time tracking"
 msgstr "in Zeiterfassung"
 
+#: src/components/invoices/InvoicePreview.jsx:52
+msgid "Invoice {existing} covers {existingFrom} to {existingTo}."
+msgstr "Rechnung {existing} umfasst {existingFrom} bis {existingTo}."
+
+#: src/pages/Invoices.jsx:249
+msgid "Invoice {number} created."
+msgstr "Rechnung {number} erstellt."
+
+#: src/pages/Invoices.jsx:250
+msgid "Invoice {number} deleted."
+msgstr "Rechnung {number} gelöscht."
+
+#: src/pages/Invoices.jsx:218
+msgid "Invoice date"
+msgstr "Rechnungsdatum"
+
+#: src/components/invoices/InvoicePreview.jsx:36
+msgid "Invoice for {customerName}"
+msgstr "Rechnung für {customerName}"
+
+#: src/components/invoices/InvoicePreview.jsx:38
+msgid "Invoice number {number}. It is given when you create the invoice."
+msgstr "Rechnungsnummer {number}. Sie wird vergeben, wenn du die Rechnung erstellst."
+
 #: src/settingsGroups.js:180
 msgid "Invoice number pattern"
 msgstr "Muster der Rechnungsnummer"
+
+#: src/pages/Invoices.jsx:196
+#: src/routes.js:13
+msgid "Invoices"
+msgstr "Rechnungen"
+
+#: src/pages/Invoices.jsx:66
+msgid "Invoices could not be loaded."
+msgstr "Rechnungen konnten nicht geladen werden."
 
 #: src/settingsGroups.js:153
 msgid "Invoicing"
@@ -566,9 +657,11 @@ msgstr "Hell"
 msgid "Like the system"
 msgstr "Wie das System"
 
-#: src/App.jsx:93
+#: src/App.jsx:95
 #: src/components/AuthGate.jsx:70
+#: src/components/invoices/InvoiceList.jsx:29
 #: src/pages/Dashboard.jsx:78
+#: src/pages/Invoices.jsx:227
 #: src/pages/Reports.jsx:253
 #: src/pages/Settings.jsx:140
 #: src/pages/Settings.jsx:146
@@ -581,7 +674,7 @@ msgstr "Laden..."
 msgid "Log in"
 msgstr "Anmelden"
 
-#: src/App.jsx:122
+#: src/App.jsx:124
 msgid "Log out"
 msgstr "Abmelden"
 
@@ -605,7 +698,7 @@ msgstr "Logo entfernt."
 msgid "Logo saved."
 msgstr "Logo gespeichert."
 
-#: src/App.jsx:104
+#: src/App.jsx:106
 msgid "Main"
 msgstr "Hauptnavigation"
 
@@ -638,10 +731,18 @@ msgstr "Name"
 msgid "Name the rounding rule in reports"
 msgstr "Rundungsregel in Berichten nennen"
 
+#: src/components/invoices/InvoicePreview.jsx:83
+msgid "Net amount"
+msgstr "Nettobetrag"
+
 #: src/pages/TimeTracking.jsx:317
 #: src/pages/TimeTracking.jsx:448
 msgid "New customer"
 msgstr "Neuer Kunde"
+
+#: src/pages/Invoices.jsx:199
+msgid "New invoice"
+msgstr "Neue Rechnung"
 
 #: src/pages/TimeTracking.jsx:302
 #: src/pages/TimeTracking.jsx:452
@@ -693,6 +794,10 @@ msgstr "Noch keine Einträge."
 msgid "No filters active"
 msgstr "Keine Filter aktiv"
 
+#: src/components/invoices/InvoiceList.jsx:30
+msgid "No invoices yet."
+msgstr "Noch keine Rechnungen."
+
 #: src/customerRounding.js:24
 #: src/settingsGroups.js:63
 msgid "No rounding"
@@ -704,17 +809,34 @@ msgstr "Keine Rundung"
 msgid "No time recorded this month yet."
 msgstr "In diesem Monat ist noch keine Zeit erfasst."
 
+#: src/components/invoices/InvoicePreview.jsx:98
+msgid "No VAT is charged under section 19 of the German VAT Act (UStG)."
+msgstr "Gemäß § 19 UStG wird keine Umsatzsteuer berechnet."
+
 #: src/pages/Settings.jsx:173
 msgid "Nothing has changed."
 msgstr "Nichts geändert."
+
+#: src/components/invoices/InvoiceList.jsx:37
+msgid "Number"
+msgstr "Nummer"
 
 #: src/components/EntryFilters.jsx:21
 msgid "Oldest first"
 msgstr "Älteste zuerst"
 
 #: src/components/EntryResults.jsx:97
+#: src/components/invoices/InvoiceList.jsx:82
 msgid "Open"
 msgstr "Öffnen"
+
+#: src/components/invoices/MissingDetails.jsx:30
+msgid "Open customer"
+msgstr "Kunden öffnen"
+
+#: src/components/invoices/InvoiceList.jsx:78
+msgid "Open PDF of invoice {number} in a new tab"
+msgstr "PDF der Rechnung {number} in einem neuen Tab öffnen"
 
 #: src/components/dashboard/BillingTable.jsx:116
 #: src/components/MonthSummary.jsx:32
@@ -725,7 +847,12 @@ msgstr "Bericht öffnen"
 msgid "Open report for {customerName}"
 msgstr "Abrechnung für {customerName} öffnen"
 
-#: src/App.jsx:40
+#: src/components/invoices/MissingDetails.jsx:29
+#: src/pages/Invoices.jsx:244
+msgid "Open Settings"
+msgstr "Einstellungen öffnen"
+
+#: src/App.jsx:41
 #: src/pages/NotFound.jsx:9
 msgid "Page not found"
 msgstr "Seite nicht gefunden"
@@ -739,6 +866,7 @@ msgid "PDF could not be downloaded."
 msgstr "PDF konnte nicht heruntergeladen werden."
 
 #: src/components/EntryFilters.jsx:171
+#: src/components/invoices/InvoiceList.jsx:40
 msgid "Period"
 msgstr "Zeitraum"
 
@@ -758,6 +886,10 @@ msgstr "Bitte versuche es erneut."
 msgid "PNG or JPEG, up to 1 MB and 2000 × 2000 pixels. Printed at the top left of the PDF report. It is saved as soon as you choose it."
 msgstr "PNG oder JPEG, bis zu 1 MB und 2000 × 2000 Pixel. Wird oben links im PDF-Bericht gedruckt. Es wird gespeichert, sobald du es auswählst."
 
+#: src/components/invoices/InvoicePreview.jsx:35
+msgid "Preview"
+msgstr "Vorschau"
+
 #: src/components/dashboard/BillingTable.jsx:81
 msgid "Preview PDF"
 msgstr "PDF ansehen"
@@ -773,6 +905,7 @@ msgstr "Vorheriger Monat"
 #: src/components/EntryFilters.jsx:150
 #: src/components/EntryForm.jsx:36
 #: src/components/EntryResults.jsx:43
+#: src/components/invoices/InvoicePreview.jsx:63
 #: src/pages/Reports.jsx:301
 msgid "Project"
 msgstr "Projekt"
@@ -804,11 +937,16 @@ msgstr "Projekte"
 msgid "Projects could not be loaded."
 msgstr "Projekte konnten nicht geladen werden."
 
+#: src/components/invoices/InvoicePreview.jsx:122
+msgid "Put right what is missing first."
+msgstr "Ergänze zuerst, was fehlt."
+
 #: src/settingsGroups.js:66
 msgid "Quarter hour (15 minutes)"
 msgstr "Viertelstunde (15 Minuten)"
 
 #: src/components/dashboard/BillingTable.jsx:52
+#: src/components/invoices/InvoicePreview.jsx:65
 msgid "Rate"
 msgstr "Satz"
 
@@ -947,10 +1085,15 @@ msgstr "In Beschreibungen suchen"
 msgid "Search: {query}"
 msgstr "Suche: {query}"
 
+#: src/pages/Invoices.jsx:205
 #: src/pages/Reports.jsx:167
 #: src/pages/TimeTracking.jsx:410
 msgid "Select a customer"
 msgstr "Wähle einen Kunden"
+
+#: src/pages/Invoices.jsx:226
+msgid "Select a customer to prepare an invoice."
+msgstr "Wähle einen Kunden, um eine Rechnung vorzubereiten."
 
 #: src/pages/Reports.jsx:252
 msgid "Select a customer to see the report."
@@ -965,7 +1108,7 @@ msgid "Sent"
 msgstr "Verschickt"
 
 #: src/pages/Settings.jsx:183
-#: src/routes.js:13
+#: src/routes.js:14
 msgid "Settings"
 msgstr "Einstellungen"
 
@@ -1008,6 +1151,10 @@ msgstr "Kleinunternehmer, ohne Umsatzsteuer (§19 UStG)"
 #: src/settingsGroups.js:175
 msgid "Small businesses charge no VAT."
 msgstr "Kleinunternehmer weisen keine Umsatzsteuer aus."
+
+#: src/pages/Invoices.jsx:20
+msgid "Something the invoice needs is missing. The list above shows what."
+msgstr "Es fehlt etwas, das die Rechnung braucht. Die Liste oben zeigt, was."
 
 #: src/components/EntryFilters.jsx:164
 msgid "Sort"
@@ -1060,6 +1207,14 @@ msgstr "Steuernummer: {customerTaxId}"
 msgid "The counter can only be raised, so a number is never used twice. If the pattern has a year, the counter starts again at 1 every year."
 msgstr "Der Zähler kann nur erhöht werden, damit keine Nummer zweimal vergeben wird. Enthält das Muster ein Jahr, beginnt der Zähler jedes Jahr wieder bei 1."
 
+#: src/pages/Invoices.jsx:18
+msgid "The customer does not exist any more."
+msgstr "Den Kunden gibt es nicht mehr."
+
+#: src/components/invoices/MissingDetails.jsx:13
+msgid "The customer has no address."
+msgstr "Der Kunde hat keine Adresse."
+
 #: src/settingsGroups.js:100
 msgid "The Dashboard and the period choices This week and Last week on the Entries page start their weeks on this day. Months and reports stay calendar months."
 msgstr "Das Dashboard und die Zeiträume „Diese Woche“ und „Letzte Woche“ auf der Seite „Einträge“ beginnen ihre Wochen an diesem Tag. Monate und Berichte bleiben Kalendermonate."
@@ -1075,6 +1230,38 @@ msgstr "Der Eintrag läuft weiter: die Zeit seit seinem Ende zählt als Arbeitsz
 #: src/components/LogoField.jsx:17
 msgid "The file is too large. Choose an image of at most 1 MB."
 msgstr "Die Datei ist zu groß. Wähle ein Bild mit höchstens 1 MB."
+
+#: src/pages/Invoices.jsx:188
+msgid "The first day must not be after the last day."
+msgstr "Der erste Tag darf nicht nach dem letzten Tag liegen."
+
+#: src/pages/Invoices.jsx:144
+msgid "The invoice could not be created."
+msgstr "Die Rechnung konnte nicht erstellt werden."
+
+#: src/pages/Invoices.jsx:163
+msgid "The invoice could not be deleted."
+msgstr "Die Rechnung konnte nicht gelöscht werden."
+
+#: src/pages/Invoices.jsx:100
+msgid "The invoice could not be prepared."
+msgstr "Die Rechnung konnte nicht vorbereitet werden."
+
+#: src/components/invoices/InvoicePreview.jsx:26
+msgid "The invoice is in {language} (the language of the app)."
+msgstr "Die Rechnung ist auf {language} (die Sprache der App)."
+
+#: src/components/invoices/InvoicePreview.jsx:25
+msgid "The invoice is in {language} (the report language of this customer)."
+msgstr "Die Rechnung ist auf {language} (die Berichtssprache dieses Kunden)."
+
+#: src/pages/Invoices.jsx:19
+msgid "The invoice number is already used. Raise the next invoice number in the settings."
+msgstr "Die Rechnungsnummer ist schon vergeben. Erhöhe die nächste Rechnungsnummer in den Einstellungen."
+
+#: src/pages/Invoices.jsx:247
+msgid "The invoice would be {previewTotal} in total."
+msgstr "Die Rechnung hätte insgesamt {previewTotal}."
 
 #: src/components/AuthGate.jsx:31
 msgid "The login status could not be checked."
@@ -1118,6 +1305,14 @@ msgstr "PDF und CSV sind auf {0} (Berichtssprache dieses Kunden)."
 msgid "The PDF and CSV are in the language of the app ({0})."
 msgstr "PDF und CSV sind in der Sprache der App ({0})."
 
+#: src/pages/Invoices.jsx:177
+msgid "The PDF could not be downloaded."
+msgstr "Das PDF konnte nicht heruntergeladen werden."
+
+#: src/pages/Invoices.jsx:189
+msgid "The period can be at most {maxDays} days."
+msgstr "Der Zeitraum darf höchstens {maxDays} Tage lang sein."
+
 #: src/settingsGroups.js:49
 msgid "The Reports page starts with this. You can still change it for a single report."
 msgstr "Die Berichte-Seite startet mit dieser Einstellung. Für einen einzelnen Bericht kannst du sie dort ändern."
@@ -1133,6 +1328,10 @@ msgstr "Der Timer läuft für {trackedProject}. Stoppe ihn, um {selectedProject}
 #: src/components/ThemeSwitcher.jsx:31
 msgid "Theme"
 msgstr "Farbschema"
+
+#: src/components/invoices/MissingDetails.jsx:14
+msgid "There are no entries to bill in this period."
+msgstr "In diesem Zeitraum gibt es keine Einträge zum Abrechnen."
 
 #: src/pages/Settings.jsx:135
 msgid "There are no options yet."
@@ -1150,6 +1349,10 @@ msgstr "Diese Einstellungen verwenden Rechnungen, die in einer späteren Version
 #: src/pages/TimeTracking.jsx:405
 msgid "This customer does not exist (any more)."
 msgstr "Dieser Kunde existiert nicht (mehr)."
+
+#: src/components/invoices/MissingDetails.jsx:21
+msgid "This invoice cannot be created yet:"
+msgstr "Diese Rechnung kann noch nicht erstellt werden:"
 
 #: src/components/dashboard/KeyFigures.jsx:36
 #: src/components/EntryFilters.jsx:13
@@ -1211,15 +1414,16 @@ msgstr "Timer konnte nicht gestartet werden."
 msgid "Timer could not be stopped."
 msgstr "Timer konnte nicht gestoppt werden."
 
-#: src/App.jsx:82
+#: src/App.jsx:83
 msgid "Timer started for {announcedProject}"
 msgstr "Timer gestartet für {announcedProject}"
 
-#: src/App.jsx:82
+#: src/App.jsx:83
 msgid "Timer stopped"
 msgstr "Timer gestoppt"
 
 #: src/components/EntryFilters.jsx:196
+#: src/pages/Invoices.jsx:214
 msgid "To"
 msgstr "Bis"
 
@@ -1238,9 +1442,14 @@ msgid "Too many failed attempts. Try again in a few minutes."
 msgstr "Zu viele fehlgeschlagene Versuche. Versuche es in ein paar Minuten erneut."
 
 #: src/components/dashboard/BillingTable.jsx:90
+#: src/components/invoices/InvoiceList.jsx:41
 #: src/pages/Reports.jsx:324
 msgid "Total"
 msgstr "Gesamt"
+
+#: src/components/invoices/InvoicePreview.jsx:93
+msgid "Total amount"
+msgstr "Gesamtbetrag"
 
 #: src/pages/Reports.jsx:269
 msgid "Total hours"
@@ -1251,8 +1460,9 @@ msgstr "Gesamtstunden"
 msgid "Track time"
 msgstr "Zeit erfassen"
 
-#: src/App.jsx:133
+#: src/App.jsx:135
 #: src/components/AuthGate.jsx:66
+#: src/components/invoices/InvoiceList.jsx:25
 #: src/pages/Dashboard.jsx:75
 #: src/pages/Reports.jsx:238
 #: src/pages/Settings.jsx:142
@@ -1285,6 +1495,10 @@ msgstr "Globale Einstellung verwenden"
 msgid "VAT"
 msgstr "Umsatzsteuer"
 
+#: src/components/invoices/InvoicePreview.jsx:87
+msgid "VAT {vatRate} %"
+msgstr "Umsatzsteuer {vatRate} %"
+
 #: src/settingsGroups.js:168
 msgid "VAT rate"
 msgstr "Umsatzsteuersatz"
@@ -1309,6 +1523,10 @@ msgstr "Woche {week}, {range}"
 msgid "Weeks"
 msgstr "Wochen"
 
+#: src/components/invoices/MissingDetails.jsx:11
+msgid "Your address is missing."
+msgstr "Deine Adresse fehlt."
+
 #: src/settingsGroups.js:110
 msgid "Your details"
 msgstr "Deine Angaben"
@@ -1316,6 +1534,10 @@ msgstr "Deine Angaben"
 #: src/components/LogoField.jsx:125
 msgid "Your logo"
 msgstr "Dein Logo"
+
+#: src/components/invoices/MissingDetails.jsx:10
+msgid "Your name is missing."
+msgstr "Dein Name fehlt."
 
 #: src/settingsGroups.js:122
 msgid "Your name or business name"
@@ -1332,3 +1554,7 @@ msgstr "Deine Sitzung ist abgelaufen. Bitte melde dich erneut an."
 #: src/settingsGroups.js:146
 msgid "Your Steuernummer or USt-IdNr. Kept for invoices; it is not printed on reports."
 msgstr "Deine Steuernummer oder USt-IdNr. Wird für Rechnungen gespeichert; auf Berichten wird sie nicht gedruckt."
+
+#: src/components/invoices/MissingDetails.jsx:12
+msgid "Your tax ID is missing."
+msgstr "Deine Steuernummer fehlt."

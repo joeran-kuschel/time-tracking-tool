@@ -17,6 +17,7 @@ import Dashboard from './pages/Dashboard'
 import TimeTracking from './pages/TimeTracking'
 import Entries from './pages/Entries'
 import Reports from './pages/Reports'
+import Invoices from './pages/Invoices'
 import Settings from './pages/Settings'
 import NotFound from './pages/NotFound'
 import { pageFor, pages } from './routes'
@@ -86,6 +87,7 @@ function App({ onLogout, logoutError, focusOnStart }) {
     'time-tracking': <TimeTracking customers={customers} onCustomersChange={loadCustomers} timer={timer} settings={settings} />,
     entries: <Entries customers={customers} timer={timer} onResume={resumeFromList} firstDay={firstDay} />,
     reports: <Reports customers={customers} settings={settings} />,
+    invoices: <Invoices customers={customers} />,
     settings: <Settings settings={settings} />,
   }
 

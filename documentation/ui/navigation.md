@@ -15,6 +15,7 @@ visited pages, and a page can be bookmarked or opened in a new tab.
 | `/reports` | Reports, no customer selected |
 | `/reports/:customerId` | Reports of the customer for the current month |
 | `/reports/:customerId/:yearMonth` | the report of a month, e.g. `/reports/3/2026-09` |
+| `/invoices` | Invoices (the customer and the period are not part of the address) |
 | `/settings` | Settings |
 | anything else | *Page not found* (German: *Seite nicht gefunden*) with a link to the Dashboard |
 

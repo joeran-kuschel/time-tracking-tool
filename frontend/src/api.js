@@ -45,7 +45,10 @@ export function fileNameFrom(header, fallback) {
   const utf8 = header?.match(/filename\*=UTF-8''([^;]+)/i);
   if (utf8) return decodeURIComponent(utf8[1]);
   const quoted = header?.match(/filename="((?:[^"\\]|\\.)*)"/);
-  return quoted ? quoted[1].replace(/\\(.)/g, '$1') : fallback;
+  if (quoted) return quoted[1].replace(/\\(.)/g, '$1');
+  // A name of letters, digits and the like has no quotes (filename=invoice-2026-0001.pdf)
+  const token = header?.match(/filename=([^\s";]+)/i);
+  return token ? token[1] : fallback;
 }
 
 // Saves a blob as a file through a temporary link
@@ -61,7 +64,8 @@ function saveFile(blob, fileName) {
 }
 
 // The browser's time zone (e.g. "Europe/Berlin"): the backend limits months by it, like the dashboard does
-const timeZone = () => encodeURIComponent(Intl.DateTimeFormat().resolvedOptions().timeZone);
+const browserTimeZone = () => Intl.DateTimeFormat().resolvedOptions().timeZone;
+const timeZone = () => encodeURIComponent(browserTimeZone());
 
 // format: the report's file type in the backend's path, 'pdf' or 'csv'
 // amounts: also ask for hourly rates and amounts; the parameter is only sent when true
@@ -171,6 +175,23 @@ export const api = {
 
   // The PDF shown in the browser instead of downloaded
   pdfPreviewUrl: (customerId, month, year, locale) => `${reportUrl('pdf', customerId, month, year, locale)}&inline=1`,
+
+  // Invoices (the backend's documentation/backend/invoices.md). invoice: { customerId, from, to, invoiceDate, lang }, the days as
+  // 'YYYY-MM-DD'; the browser's time zone is added. previewInvoice answers with the lines, the totals and what is missing and
+  // takes no number; createInvoice takes one, makes the PDF and stores both (422: something is missing, 409: the number is
+  // used, 404: the customer is gone).
+  previewInvoice: (invoice) => request('/invoices/preview', { method: 'POST', body: { ...invoice, tz: browserTimeZone() } }),
+
+  createInvoice: (invoice) => request('/invoices', { method: 'POST', body: { ...invoice, tz: browserTimeZone() } }),
+
+  getInvoices: () => request('/invoices'),
+
+  deleteInvoice: (id) => request(`/invoices/${id}`, { method: 'DELETE' }),
+
+  downloadInvoicePdf: (id) => download(`${API_URL}/invoices/${id}/pdf`, 'invoice.pdf'),
+
+  // The stored PDF shown in the browser instead of downloaded
+  invoicePdfUrl: (id) => `${API_URL}/invoices/${id}/pdf?inline=1`,
 
   // Dashboard: entries starting in [from, to), recent entries, all projects and last month's report statuses
   getDashboard: (from, to, month, year) =>
