@@ -22,6 +22,16 @@ function createTestPool() {
     returns: DataType.float,
     implementation: (value) => Math.sign(value) * Math.round(Math.abs(value)),
   });
+  // pg-mem lacks to_char, which the invoices use for their dates; only the format 'YYYY-MM-DD' of a date is supported here
+  db.public.registerFunction({
+    name: 'to_char',
+    args: [DataType.date, DataType.text],
+    returns: DataType.text,
+    implementation: (date, format) => {
+      if (format !== 'YYYY-MM-DD') throw new Error(`to_char: the test database only knows YYYY-MM-DD, not ${format}`);
+      return date.toISOString().slice(0, 10);
+    },
+  });
   for (const file of fs.readdirSync(migrationsDir).filter((f) => f.endsWith('.sql')).sort()) {
     db.public.none(fs.readFileSync(path.join(migrationsDir, file), 'utf8'));
   }

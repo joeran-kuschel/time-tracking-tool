@@ -14,7 +14,8 @@ msgstr ""
 "Plural-Forms: \n"
 
 #. js-lingui-explicit-id
-#: src/utils/pdfGenerator.js:164
+#: src/utils/invoicePdf.js:55
+#: src/utils/pdfGenerator.js:165
 msgid "report.amount"
 msgstr "Betrag"
 
@@ -24,23 +25,29 @@ msgid "export.amount"
 msgstr "Betrag (EUR)"
 
 #. js-lingui-explicit-id
+#: src/utils/invoicePdf.js:116
+msgid "invoice.bank"
+msgstr "Bankverbindung"
+
+#. js-lingui-explicit-id
 #: src/utils/reportRows.js:32
 msgid "export.customer"
 msgstr "Kunde"
 
 #. js-lingui-explicit-id
-#: src/utils/pdfGenerator.js:148
+#: src/utils/pdfGenerator.js:149
 msgid "report.customer"
 msgstr "Kunde: {customerName}"
 
 #. js-lingui-explicit-id
-#: src/utils/pdfGenerator.js:160
+#: src/utils/pdfGenerator.js:161
 #: src/utils/reportRows.js:29
 msgid "report.date"
 msgstr "Datum"
 
 #. js-lingui-explicit-id
-#: src/utils/pdfGenerator.js:163
+#: src/utils/invoicePdf.js:52
+#: src/utils/pdfGenerator.js:164
 #: src/utils/reportRows.js:34
 msgid "report.description"
 msgstr "Beschreibung"
@@ -51,7 +58,8 @@ msgid "export.end"
 msgstr "Ende"
 
 #. js-lingui-explicit-id
-#: src/utils/pdfGenerator.js:162
+#: src/utils/invoicePdf.js:53
+#: src/utils/pdfGenerator.js:163
 #: src/utils/reportRows.js:35
 msgid "report.hours"
 msgstr "Stunden"
@@ -97,18 +105,44 @@ msgid "report.rounding.upMinutes"
 msgstr "Stunden auf Schritte von {minutes} Minuten aufgerundet."
 
 #. js-lingui-explicit-id
-#: src/utils/pdfGenerator.js:217
+#: src/utils/invoicePdf.js:40
+msgid "invoice.title"
+msgstr "RECHNUNG"
+
+#. js-lingui-explicit-id
+#: src/utils/invoicePdf.js:44
+msgid "invoice.date"
+msgstr "Rechnungsdatum: {date}"
+
+#. js-lingui-explicit-id
+#: src/utils/invoicePdf.js:43
+msgid "invoice.number"
+msgstr "Rechnungsnummer: {number}"
+
+#. js-lingui-explicit-id
+#: src/utils/invoicePdf.js:101
+msgid "invoice.net"
+msgstr "Nettobetrag"
+
+#. js-lingui-explicit-id
+#: src/utils/invoicePdf.js:98
+msgid "invoice.smallBusiness"
+msgstr "Gemäß § 19 UStG wird keine Umsatzsteuer berechnet."
+
+#. js-lingui-explicit-id
+#: src/utils/pdfGenerator.js:218
 msgid "report.projects"
 msgstr "Je Projekt"
 
 #. js-lingui-explicit-id
-#: src/utils/pdfGenerator.js:161
+#: src/utils/pdfGenerator.js:162
 #: src/utils/reportRows.js:33
 msgid "report.project"
 msgstr "Projekt"
 
 #. js-lingui-explicit-id
-#: src/utils/pdfGenerator.js:165
+#: src/utils/invoicePdf.js:54
+#: src/utils/pdfGenerator.js:166
 msgid "report.rate"
 msgstr "Stundensatz"
 
@@ -118,12 +152,27 @@ msgid "export.rate"
 msgstr "Stundensatz (EUR/h)"
 
 #. js-lingui-explicit-id
+#: src/utils/invoicePdf.js:45
+msgid "invoice.period"
+msgstr "Leistungszeitraum: {from} - {to}"
+
+#. js-lingui-explicit-id
 #: src/utils/reportRows.js:30
 msgid "export.start"
 msgstr "Beginn"
 
 #. js-lingui-explicit-id
-#: src/utils/pdfGenerator.js:143
+#: src/utils/invoicePdf.js:30
+msgid "invoice.customerTaxId"
+msgstr "Steuernummer / USt-IdNr.: {taxId}"
+
+#. js-lingui-explicit-id
+#: src/utils/pdfGenerator.js:124
+msgid "sender.taxId"
+msgstr "Steuernummer / USt-IdNr.: {taxId}"
+
+#. js-lingui-explicit-id
+#: src/utils/pdfGenerator.js:144
 msgid "report.title"
 msgstr "ZEITABRECHNUNG"
 
@@ -133,11 +182,22 @@ msgid "report.filename"
 msgstr "abrechnung"
 
 #. js-lingui-explicit-id
-#: src/utils/pdfGenerator.js:204
+#: src/utils/invoicePdf.js:95
+#: src/utils/invoicePdf.js:103
+msgid "invoice.total"
+msgstr "Gesamtbetrag"
+
+#. js-lingui-explicit-id
+#: src/utils/pdfGenerator.js:205
 msgid "report.totalAmount"
 msgstr "GESAMTBETRAG:"
 
 #. js-lingui-explicit-id
-#: src/utils/pdfGenerator.js:201
+#: src/utils/pdfGenerator.js:202
 msgid "report.total"
 msgstr "GESAMTSTUNDEN:"
+
+#. js-lingui-explicit-id
+#: src/utils/invoicePdf.js:102
+msgid "invoice.vat"
+msgstr "Umsatzsteuer {rate} %"

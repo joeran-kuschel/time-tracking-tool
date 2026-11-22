@@ -27,6 +27,7 @@ Feature documentation for the time tracking tool, split into UI and Backend. Eac
 - [Reports API](backend/reports.md): monthly reports as JSON and PDF, and the report status
 - [Dashboard API](backend/dashboard.md): everything the Dashboard shows in one request
 - [Settings API](backend/settings.md): app-wide options, stored in one row
+- [Invoices API](backend/invoices.md): preview, create, list, download and delete invoices
 - [Translation](backend/translation.md): the translated PDF report and adding texts
 - [Database](backend/database.md): schema, migrations, connection and the remote database option
 - [Database backups](backend/database-backups.md): hourly backups of the in-cluster database and how to restore them

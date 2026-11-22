@@ -8,6 +8,18 @@ class InvoiceCounter {
     return result.rows[0]?.next_number ?? 1;
   }
 
+  // Takes the next number of a counter and moves it on, in one statement, so two takers never get the same number. `db`
+  // is a pg client inside a transaction (the row stays locked until it ends, and a rollback gives the number back).
+  static async take(db, scope) {
+    const result = await db.query(
+      `INSERT INTO invoice_counters (scope_year, next_number) VALUES ($1, 2)
+       ON CONFLICT (scope_year) DO UPDATE SET next_number = invoice_counters.next_number + 1, updated_at = CURRENT_TIMESTAMP
+       RETURNING next_number - 1 AS number`,
+      [scope]
+    );
+    return result.rows[0].number;
+  }
+
   // Raises the next number of a counter to `number`. Resolves to false, and changes nothing, when the counter is already
   // above `number`. The check and the write are one statement each (`WHERE next_number <= $2`), so two saves at the same
   // time cannot lower the counter again: whichever writes last only wins when its number is not lower. A year without a
