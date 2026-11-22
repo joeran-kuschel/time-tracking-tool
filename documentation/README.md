@@ -13,6 +13,7 @@ Feature documentation for the time tracking tool, split into UI and Backend. Eac
 - [Timer](ui/timer.md): starting and stopping, the running timer across pages and reloads
 - [Settings](ui/settings.md): the page for app-wide options
 - [Reports](ui/reports.md): monthly reports, their status and the PDF download
+- [Invoices](ui/invoices.md): making invoices for a customer and a period, and the list of them
 - [Languages](ui/languages.md): German and English, switching without a reload, adding texts
 - [Error messages](ui/error-messages.md): how failed requests are shown
 - [Accessibility](ui/accessibility.md): what meets WCAG 2.2 AA and what is still missing

@@ -136,6 +136,13 @@ describe('api', () => {
     [`attachment; filename="a-?.pdf"; filename*=UTF-8''a-%C5%81.pdf`, 'a-Ł.pdf'],
     ['attachment; filename="Caf\u00e9 \\"Post\\".pdf"', 'Caf\u00e9 "Post".pdf'],
     [null, 'report.pdf'],
+    // The backend sends no quotes around a name of letters, digits and dashes (the content-disposition library leaves them out)
+    ['attachment; filename=abrechnung-Muster-2026-3.pdf', 'abrechnung-Muster-2026-3.pdf'],
+    ['attachment; filename=invoice-2026-0001.pdf', 'invoice-2026-0001.pdf'],
+    ['inline; filename=invoice-RE_2026_03.pdf; other=x', 'invoice-RE_2026_03.pdf'],
+    ['attachment; FILENAME=invoice-7.pdf', 'invoice-7.pdf'],
+    ['attachment; filename=', 'report.pdf'],
+    ['inline', 'report.pdf'],
   ])('reads the file name from %p', (header, name) => {
     expect(fileNameFrom(header, 'report.pdf')).toBe(name)
   })
@@ -280,6 +287,88 @@ describe('api', () => {
   })
 })
 
+describe('invoices', () => {
+  const request = { customerId: 3, from: '2026-02-01', to: '2026-02-28', invoiceDate: '2026-03-05', lang: 'de' }
+
+  test.each([['previewInvoice', '/invoices/preview'], ['createInvoice', '/invoices']])('%s posts the request with the browser time zone', async (name, path) => {
+    const fetch = mockFetch(200, { number: '2026-0001' })
+
+    await api[name](request)
+
+    const [url, options] = fetch.mock.calls[0]
+    expect(url.endsWith(path)).toBe(true)
+    expect(options.method).toBe('POST')
+    expect(options.headers).toEqual({ 'Content-Type': 'application/json' })
+    expect(JSON.parse(options.body)).toEqual({ ...request, tz: 'Europe/Berlin' })
+  })
+
+  test('the time zone does not change what the caller passed', async () => {
+    mockFetch(200, {})
+    const copy = { ...request }
+
+    await api.previewInvoice(request)
+
+    expect(request).toEqual(copy)
+  })
+
+  test('getInvoices asks for the list', async () => {
+    const fetch = mockFetch(200, [{ id: 1 }])
+
+    await expect(api.getInvoices()).resolves.toEqual([{ id: 1 }])
+
+    expect(fetch.mock.calls[0][0]).toMatch(/\/invoices$/)
+    expect(fetch.mock.calls[0][1]).toEqual({ credentials: 'include', method: 'GET' })
+  })
+
+  test('deleteInvoice sends DELETE for the id and takes the empty 204 answer', async () => {
+    const fetch = mockFetch(204)
+
+    await expect(api.deleteInvoice(7)).resolves.toBeNull()
+
+    expect(fetch.mock.calls[0][0]).toMatch(/\/invoices\/7$/)
+    expect(fetch.mock.calls[0][1].method).toBe('DELETE')
+  })
+
+  test.each([[422, 'Details for the invoice are missing'], [409, 'The invoice number 2026-0001 is already used'], [404, 'Customer not found']])('a %i answer throws an ApiError with its status and message', async (status, message) => {
+    mockFetch(status, { error: message })
+
+    const error = await api.createInvoice(request).catch((err) => err)
+
+    expect(error).toBeInstanceOf(ApiError)
+    expect(error.status).toBe(status)
+    expect(error.message).toBe(message)
+  })
+
+  test('the PDF url is the stored file, shown inline', () => {
+    expect(api.invoicePdfUrl(7)).toMatch(/\/invoices\/7\/pdf\?inline=1$/)
+  })
+
+  test('downloadInvoicePdf saves the file under the name the backend gives', async () => {
+    const blob = new Blob(['pdf'])
+    const fetch = vi.fn().mockResolvedValue({ ok: true, status: 200, headers: { get: () => 'attachment; filename=invoice-2026-0001.pdf' }, blob: () => Promise.resolve(blob) })
+    vi.stubGlobal('fetch', fetch)
+    URL.createObjectURL = vi.fn(() => 'blob:pdf')
+    URL.revokeObjectURL = vi.fn()
+    const click = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {})
+    const append = vi.spyOn(document.body, 'appendChild')
+
+    await api.downloadInvoicePdf(7)
+
+    expect(fetch.mock.calls[0][0]).toMatch(/\/invoices\/7\/pdf$/)
+    expect(URL.createObjectURL).toHaveBeenCalledWith(blob)
+    expect(append.mock.calls[0][0].download).toBe('invoice-2026-0001.pdf')
+    expect(click).toHaveBeenCalled()
+  })
+
+  test('a failed download throws the ApiError and saves nothing', async () => {
+    mockFetch(404, { error: 'Invoice not found' })
+
+    const error = await api.downloadInvoicePdf(99).catch((err) => err)
+
+    expect(error.status).toBe(404)
+  })
+})
+
 describe('login', () => {
   test.each([
     ['getCustomers', []],
@@ -291,6 +380,11 @@ describe('login', () => {
     ['deleteLogo', []],
     ['downloadPDF', [1, 9, 2026, 'de']],
     ['downloadCSV', [1, 9, 2026, 'de']],
+    ['previewInvoice', [{ customerId: 1 }]],
+    ['createInvoice', [{ customerId: 1 }]],
+    ['getInvoices', []],
+    ['deleteInvoice', [3]],
+    ['downloadInvoicePdf', [3]],
   ])('%s sends the login cookie', async (name, args) => {
     const fetch = mockFetch(200, {})
     if (name.startsWith('download')) {
@@ -390,6 +484,10 @@ describe('login', () => {
     ['getDashboard', ['f', 't', 9, 2026]],
     ['downloadPDF', [1, 9, 2026, 'de']],
     ['downloadCSV', [1, 9, 2026, 'de']],
+    ['previewInvoice', [{ customerId: 1 }]],
+    ['createInvoice', [{ customerId: 1 }]],
+    ['getInvoices', []],
+    ['downloadInvoicePdf', [3]],
   ])('a 401 from %s says the session has ended and still throws', async (name, args) => {
     mockFetch(401, { error: 'Not logged in' })
     const ended = vi.fn()

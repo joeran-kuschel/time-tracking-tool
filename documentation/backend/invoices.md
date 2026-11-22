@@ -3,8 +3,8 @@
 An invoice bills one customer for a period. It is made from the customer's time entries of the period, but it does not
 need a report and does not change one: the report status is not touched. An invoice never changes after it is created. It
 keeps a copy of everything it needs and the PDF that was made, so later changes to the settings, the customer, the entries
-or the rates do not alter it ([#114](https://github.com/joeran-kuschel/time-tracking-tool/issues/114)). The page that uses
-this API follows in a later change; this chapter is the API.
+or the rates do not alter it ([#114](https://github.com/joeran-kuschel/time-tracking-tool/issues/114)). The [Invoices page](../ui/invoices.md)
+uses this API; this chapter is the API.
 
 ## Endpoints
 
@@ -55,7 +55,7 @@ in the period). The customer's tax ID, your email and your bank details are opti
    `gross` and `createdAt`.
 
 `404` when the customer was deleted while the invoice was being made. Creating is not idempotent: the same customer and period can be
-invoiced twice (two requests make two invoices with two numbers), so the page that uses this API should warn first. A timer
+invoiced twice (two requests make two invoices with two numbers), so the [page](../ui/invoices.md) warns when an invoice already covers part of the period. A timer
 that is still running in the period is not billed and does not stop the invoice.
 
 `409` (code `NUMBER_TAKEN`) when the number the pattern makes is already used by another invoice, which can happen after the
