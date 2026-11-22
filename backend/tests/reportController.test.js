@@ -46,8 +46,31 @@ describe('reportController.generatePDF', () => {
 
     await controller.generatePDF({ params: { customerId: '1' }, query: { month: '3', year: '2026', lang: 'en' } }, res);
 
-    expect(generateReportPDF).toHaveBeenCalledWith([{ id: 1 }], { customerName: 'Muster', month: 3, year: 2026, locale: 'en', timeZone: 'UTC', rounding: null });
+    expect(generateReportPDF).toHaveBeenCalledWith([{ id: 1 }], { customerName: 'Muster', month: 3, year: 2026, locale: 'en', timeZone: 'UTC', rounding: null, sender: { name: undefined, address: undefined, email: undefined } });
     expect(res.headers['Content-Disposition']).toBe('attachment; filename=time-report-Muster-2026-3.pdf');
+  });
+
+  test('passes your own details of the settings to the PDF, and nothing for a customer', async () => {
+    Settings.get.mockResolvedValue({ ...NO_ROUNDING, senderName: 'Jana Beispiel', senderAddress: 'Musterweg 1\n12345 Beispielstadt', senderEmail: 'jana@example.test' });
+
+    await controller.generatePDF({ params: { customerId: '1' }, query: { month: '3', year: '2026', lang: 'de' } }, mockResponse());
+
+    expect(generateReportPDF.mock.calls.at(-1)[1].sender).toEqual({ name: 'Jana Beispiel', address: 'Musterweg 1\n12345 Beispielstadt', email: 'jana@example.test' });
+  });
+
+  test('the JSON report and the CSV do not carry your details', async () => {
+    Settings.get.mockResolvedValue({ ...NO_ROUNDING, senderName: 'Jana Beispiel', senderAddress: 'Musterweg 1', senderEmail: 'jana@example.test' });
+    const json = mockResponse();
+    const csv = mockResponse();
+    TimeEntry.getByCustomerIdInRange.mockResolvedValue([
+      { id: 1, project_id: 7, project_name: 'Web', hourly_rate: '80.00', description: 'Konzept', start_time: '2026-03-02T08:00:00Z', end_time: '2026-03-02T09:30:00Z' },
+    ]);
+
+    await controller.getMonthlyReport({ params: { customerId: '1' }, query: { month: '3', year: '2026' } }, json);
+    await controller.exportCsv({ params: { customerId: '1' }, query: { month: '3', year: '2026', lang: 'en' } }, csv);
+
+    expect(JSON.stringify(json.json.mock.calls[0][0])).not.toContain('Jana');
+    expect(String(csv.send.mock.calls[0][0])).not.toContain('Jana');
   });
 
   test('keeps the German file name without a language', async () => {

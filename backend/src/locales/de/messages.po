@@ -14,7 +14,7 @@ msgstr ""
 "Plural-Forms: \n"
 
 #. js-lingui-explicit-id
-#: src/utils/pdfGenerator.js:123
+#: src/utils/pdfGenerator.js:142
 msgid "report.amount"
 msgstr "Betrag"
 
@@ -29,18 +29,18 @@ msgid "export.customer"
 msgstr "Kunde"
 
 #. js-lingui-explicit-id
-#: src/utils/pdfGenerator.js:107
+#: src/utils/pdfGenerator.js:126
 msgid "report.customer"
 msgstr "Kunde: {customerName}"
 
 #. js-lingui-explicit-id
-#: src/utils/pdfGenerator.js:119
+#: src/utils/pdfGenerator.js:138
 #: src/utils/reportRows.js:29
 msgid "report.date"
 msgstr "Datum"
 
 #. js-lingui-explicit-id
-#: src/utils/pdfGenerator.js:122
+#: src/utils/pdfGenerator.js:141
 #: src/utils/reportRows.js:34
 msgid "report.description"
 msgstr "Beschreibung"
@@ -51,7 +51,7 @@ msgid "export.end"
 msgstr "Ende"
 
 #. js-lingui-explicit-id
-#: src/utils/pdfGenerator.js:121
+#: src/utils/pdfGenerator.js:140
 #: src/utils/reportRows.js:35
 msgid "report.hours"
 msgstr "Stunden"
@@ -97,18 +97,18 @@ msgid "report.rounding.upMinutes"
 msgstr "Stunden auf Schritte von {minutes} Minuten aufgerundet."
 
 #. js-lingui-explicit-id
-#: src/utils/pdfGenerator.js:176
+#: src/utils/pdfGenerator.js:195
 msgid "report.projects"
 msgstr "Je Projekt"
 
 #. js-lingui-explicit-id
-#: src/utils/pdfGenerator.js:120
+#: src/utils/pdfGenerator.js:139
 #: src/utils/reportRows.js:33
 msgid "report.project"
 msgstr "Projekt"
 
 #. js-lingui-explicit-id
-#: src/utils/pdfGenerator.js:124
+#: src/utils/pdfGenerator.js:143
 msgid "report.rate"
 msgstr "Stundensatz"
 
@@ -123,7 +123,7 @@ msgid "export.start"
 msgstr "Beginn"
 
 #. js-lingui-explicit-id
-#: src/utils/pdfGenerator.js:102
+#: src/utils/pdfGenerator.js:121
 msgid "report.title"
 msgstr "ZEITABRECHNUNG"
 
@@ -133,11 +133,11 @@ msgid "report.filename"
 msgstr "abrechnung"
 
 #. js-lingui-explicit-id
-#: src/utils/pdfGenerator.js:163
+#: src/utils/pdfGenerator.js:182
 msgid "report.totalAmount"
 msgstr "GESAMTBETRAG:"
 
 #. js-lingui-explicit-id
-#: src/utils/pdfGenerator.js:160
+#: src/utils/pdfGenerator.js:179
 msgid "report.total"
 msgstr "GESAMTSTUNDEN:"

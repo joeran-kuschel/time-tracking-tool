@@ -10,11 +10,17 @@
 // (shown under the field) are msg descriptors, and `type` is one of:
 //   'checkbox'  a boolean
 //   'select'    one of `choices`: [{ value, label }] (value a string or a number, label a msg descriptor)
+//   'text'      one line of text; 'textarea' several lines; 'email' an email address (format checked when saving).
+//               The value is a text, or null when empty; the page trims it. Options can set `maxLength` (what the field
+//               accepts), `maxLines` (textarea) and `autoComplete` (the token that says what the field is)
 //   'decimal'   an amount with up to two decimals, typed in the format of the active language ("80,00" / "80.00");
 //               its value is a number, or null when empty. The page shows an error for anything else and does not save it
 // `disabledWhen(values)` (optional) tells from the current values of the form whether the field is disabled, and
 // `disabledHint` (a msg descriptor) says why; it replaces the hint while the field is disabled.
 import { msg } from '@lingui/core/macro'
+
+// The option types that are typed text (a 'decimal' is typed text too, but is read as an amount)
+export const textTypes = ['text', 'email', 'textarea']
 
 export const settingsGroups = [
   {
@@ -82,6 +88,36 @@ export const settingsGroups = [
           { value: 'monday', label: msg`Monday` },
           { value: 'sunday', label: msg`Sunday` },
         ],
+      },
+    ],
+  },
+  {
+    id: 'details',
+    label: msg`Your details`,
+    note: msg`Printed at the top right of the PDF report. Leave them empty for a report without a sender block. The CSV does not change.`,
+    options: [
+      {
+        name: 'senderName',
+        type: 'text',
+        label: msg`Your name or business name`,
+        maxLength: 100,
+        autoComplete: 'name',
+      },
+      {
+        name: 'senderAddress',
+        type: 'textarea',
+        label: msg`Address`,
+        hint: msg`Up to 6 lines, for example street and town.`,
+        maxLength: 300,
+        maxLines: 6,
+        autoComplete: 'street-address',
+      },
+      {
+        name: 'senderEmail',
+        type: 'email',
+        label: msg`Email address`,
+        maxLength: 254,
+        autoComplete: 'email',
       },
     ],
   },

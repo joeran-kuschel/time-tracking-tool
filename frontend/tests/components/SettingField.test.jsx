@@ -145,4 +145,72 @@ describe('SettingField', () => {
       expect(await axe(container)).toHaveNoViolations()
     })
   })
+
+  describe('a text option', () => {
+    const text = { name: 't', type: 'text', label: msg`Test name`, hint: msg`Shown on the report.`, maxLength: 20, autoComplete: 'name' }
+    const email = { name: 'e', type: 'email', label: msg`Test email`, autoComplete: 'email' }
+    const area = { name: 'a', type: 'textarea', label: msg`Test address`, maxLength: 50, autoComplete: 'street-address' }
+
+    test('shows the text, or an empty field for null, and gives the typed text back', async () => {
+      const onChange = vi.fn()
+      const { rerender } = render(<SettingField option={text} value={null} onChange={onChange} />)
+      const input = screen.getByRole('textbox', { name: 'Test name' })
+      expect(input).toHaveValue('')
+
+      await userEvent.type(input, 'J')
+      expect(onChange).toHaveBeenCalledWith('J')
+
+      rerender(<SettingField option={text} value="Jana" onChange={onChange} />)
+      expect(screen.getByRole('textbox', { name: 'Test name' })).toHaveValue('Jana')
+    })
+
+    test('passes the length limit and the autocomplete token on, off when none is set', () => {
+      render(<>
+        <SettingField option={text} value={null} onChange={() => {}} />
+        <SettingField option={{ ...text, label: msg`Plain`, autoComplete: undefined, maxLength: undefined }} value={null} onChange={() => {}} />
+      </>)
+
+      expect(screen.getByRole('textbox', { name: 'Test name' })).toHaveAttribute('maxlength', '20')
+      expect(screen.getByRole('textbox', { name: 'Test name' })).toHaveAttribute('autocomplete', 'name')
+      expect(screen.getByRole('textbox', { name: 'Plain' })).toHaveAttribute('autocomplete', 'off')
+      expect(screen.getByRole('textbox', { name: 'Plain' })).not.toHaveAttribute('maxlength')
+    })
+
+    test('an email option is an email field', () => {
+      render(<SettingField option={email} value="a@b.de" onChange={() => {}} />)
+
+      expect(screen.getByRole('textbox', { name: 'Test email' })).toHaveAttribute('type', 'email')
+    })
+
+    test('a textarea keeps the lines and gives them back', async () => {
+      const onChange = vi.fn()
+      render(<SettingField option={area} value={'Weg 1\n12345 Stadt'} onChange={onChange} />)
+      const input = screen.getByRole('textbox', { name: 'Test address' })
+
+      expect(input.tagName).toBe('TEXTAREA')
+      expect(input).toHaveValue('Weg 1\n12345 Stadt')
+
+      await userEvent.type(input, '{Enter}')
+      expect(onChange).toHaveBeenCalledWith('Weg 1\n12345 Stadt\n')
+    })
+
+    test('is described by its hint and its error, and can be disabled', () => {
+      render(<SettingField option={text} value="x" onChange={() => {}} error="Too odd." disabled />)
+
+      const input = screen.getByRole('textbox', { name: 'Test name' })
+      expect(input).toBeDisabled()
+      expect(input).toHaveAttribute('aria-invalid', 'true')
+      expect(input).toHaveAccessibleDescription('Shown on the report. Too odd.')
+    })
+
+    test('has no detectable accessibility violations, for every type', async () => {
+      const { container } = render(<>
+        <SettingField option={text} value="x" onChange={() => {}} error="Too odd." />
+        <SettingField option={email} value="a@b.de" onChange={() => {}} />
+        <SettingField option={area} value="x" onChange={() => {}} />
+      </>)
+
+      expect(await axe(container)).toHaveNoViolations()
+    })
+  })
 })
