@@ -33,7 +33,20 @@ k8s/restore-db.sh ~/TimeTrackingBackups/time_tracking-20260921-113113.sql.gz
 ```
 
 A restore replaces **all** current data with the backup, so it asks you to type `restore` first. Pass `--yes` to skip the
-question in scripts. The restore runs in a single transaction: if any statement fails, nothing is changed.
+question in scripts. The restore runs in one transaction, and after a successful restore it prints the row count of every table.
+
+The script opens the transaction itself (`BEGIN;`), streams the dump into `psql` in the postgres pod, and sends `COMMIT;`
+and then `SELECT 'restore-complete';` as the last lines. It reports success only when `psql` answers `restore-complete`.
+
+- **Why not `psql --single-transaction`:** the dump travels through `kubectl exec -i`, which can cut the stream off
+  without an error (seen after the Docker Desktop upgrade of 2026-11-20). `psql` cannot tell a cut from a clean end of
+  input, so a cut between two statements committed a partial restore, for example empty tables, and the script said
+  "Restored". Now a stream that is cut anywhere never reaches `COMMIT;`, the database rolls back, and the script exits
+  with `Restore incomplete` or `Restore failed`.
+- **A failed restore changes nothing.** Run it again. The only exception is a cut exactly between `COMMIT;` and the
+  marker: the restore is complete but reported as incomplete, so check the row counts.
+- **Row counts:** compare them with what you expect (customers, projects, time entries). An empty table after a
+  restore of a backup that had data is a sign to restore again.
 
 ### After a cluster reset
 

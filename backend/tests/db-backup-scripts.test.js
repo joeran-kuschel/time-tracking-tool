@@ -8,11 +8,18 @@ const k8sDir = path.join(__dirname, '..', '..', 'k8s');
 const completeDump = '-- PostgreSQL database dump\nCREATE TABLE customers ();\n-- PostgreSQL database dump complete\n';
 
 // Fake kubectl: logs its arguments, prints $FAKE_DUMP for pg_dump and stores stdin for psql.
+// The restore psql answers "restore-complete" only if its input holds the marker line, like the real one;
+// FAKE_CUT=<bytes> keeps only the first bytes of that input (a stream cut off on the way).
+// Any other psql is the row count query: its input is stored and it prints one count.
 const fakeKubectl = `#!/bin/bash
 echo "$@" >> "$FAKE_DIR/kubectl.log"
 case "\${@: -1}" in
   pg_dump*) cat "$FAKE_DUMP" ;;
-  psql*) cat > "$FAKE_DIR/psql-stdin" ;;
+  psql*ON_ERROR_STOP*)
+    if [ -n "$FAKE_CUT" ]; then head -c "$FAKE_CUT" > "$FAKE_DIR/psql-stdin"; else cat > "$FAKE_DIR/psql-stdin"; fi
+    grep -qx "SELECT 'restore-complete';" "$FAKE_DIR/psql-stdin" && echo restore-complete
+    ;;
+  psql*) cat > "$FAKE_DIR/counts-sql"; echo "customers: 3" ;;
 esac
 exit "\${FAKE_EXIT:-0}"
 `;
@@ -122,12 +129,69 @@ describe('restore-db.sh', () => {
     fs.writeFileSync(backupFile, zlib.gzipSync(completeDump));
   });
 
-  test('feeds the decompressed dump to psql in the postgres pod', () => {
+  const restoredInput = () => fs.readFileSync(path.join(dir, 'psql-stdin'), 'utf8');
+
+  test('feeds the dump to psql inside a transaction that ends with COMMIT', () => {
     const result = run('restore-db.sh', [backupFile, '--yes']);
 
     expect(result.status).toBe(0);
-    expect(fs.readFileSync(path.join(dir, 'psql-stdin'), 'utf8')).toBe(completeDump);
-    expect(kubectlCalls()).toContain('psql -v ON_ERROR_STOP=1 --single-transaction');
+    expect(restoredInput()).toBe(`BEGIN;\n${completeDump}\nCOMMIT;\nSELECT 'restore-complete';\n`);
+    expect(kubectlCalls()).toContain('psql -v ON_ERROR_STOP=1');
+    expect(kubectlCalls()).not.toContain('--single-transaction');
+  });
+
+  test('reports success and prints the row counts of the tables', () => {
+    const result = run('restore-db.sh', [backupFile, '--yes']);
+
+    expect(result.stdout).toContain(`Restored ${backupFile}`);
+    expect(result.stdout).toContain('customers: 3');
+    expect(fs.readFileSync(path.join(dir, 'counts-sql'), 'utf8')).toContain('query_to_xml');
+  });
+
+  test('fails and never says "Restored" when the stream is cut off inside the dump', () => {
+    const result = run('restore-db.sh', [backupFile, '--yes'], { env: { FAKE_CUT: '30' } });
+
+    expect(result.status).not.toBe(0);
+    expect(result.stderr).toContain('Restore incomplete');
+    expect(result.stdout).not.toContain('Restored');
+    expect(restoredInput()).not.toContain('COMMIT;');
+  });
+
+  test('fails when the stream is cut exactly after the last statement of the dump', () => {
+    const cut = String(Buffer.byteLength(`BEGIN;\n${completeDump}`));
+    const result = run('restore-db.sh', [backupFile, '--yes'], { env: { FAKE_CUT: cut } });
+
+    expect(result.status).not.toBe(0);
+    expect(result.stderr).toContain('Restore incomplete');
+    expect(result.stdout).not.toContain('Restored');
+  });
+
+  test('fails when the stream is cut right before the marker, after COMMIT', () => {
+    const cut = String(Buffer.byteLength(`BEGIN;\n${completeDump}\nCOMMIT;\n`));
+    const result = run('restore-db.sh', [backupFile, '--yes'], { env: { FAKE_CUT: cut } });
+
+    expect(result.status).not.toBe(0);
+    expect(result.stderr).toContain('Restore incomplete');
+    expect(result.stdout).not.toContain('Restored');
+  });
+
+  test('does not send COMMIT when the backup file is a cut-off gzip', () => {
+    fs.writeFileSync(backupFile, zlib.gzipSync(completeDump).subarray(0, 20));
+
+    const result = run('restore-db.sh', [backupFile, '--yes']);
+
+    expect(result.status).not.toBe(0);
+    expect(result.stdout).not.toContain('Restored');
+    expect(restoredInput()).not.toContain('COMMIT;');
+  });
+
+  test('fails with a message and no row counts when psql fails', () => {
+    const result = run('restore-db.sh', [backupFile, '--yes'], { env: { FAKE_EXIT: '1' } });
+
+    expect(result.status).not.toBe(0);
+    expect(result.stderr).toContain('Restore failed');
+    expect(result.stdout).not.toContain('Restored');
+    expect(fs.existsSync(path.join(dir, 'counts-sql'))).toBe(false);
   });
 
   test('restores after typing the confirmation word', () => {
