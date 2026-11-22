@@ -2,11 +2,17 @@ jest.mock('../src/models/Customer');
 jest.mock('../src/models/Session');
 jest.mock('../src/models/Settings');
 jest.mock('../src/models/Logo');
+jest.mock('../src/models/Invoice');
+jest.mock('../src/models/InvoiceCounter');
+jest.mock('../src/models/TimeEntry');
 
 const Customer = require('../src/models/Customer');
 const Session = require('../src/models/Session');
 const Settings = require('../src/models/Settings');
 const Logo = require('../src/models/Logo');
+const Invoice = require('../src/models/Invoice');
+const InvoiceCounter = require('../src/models/InvoiceCounter');
+const TimeEntry = require('../src/models/TimeEntry');
 const { png, upload } = require('./helpers/images');
 const { createApp, parseOrigins } = require('../src/app');
 
@@ -399,5 +405,104 @@ describe('the address and tax ID of a customer, through the routes', () => {
 
     expect(response.status).toBe(401);
     expect(Customer.create).not.toHaveBeenCalled();
+  });
+});
+
+describe('the invoices, through the routes', () => {
+  const url = (path) => `${baseUrl}/api/invoices${path}`;
+  const json = (method, path, body, headers = LOGGED_IN) => fetch(url(path), { method, headers: { 'Content-Type': 'application/json', ...headers }, body: body === undefined ? undefined : JSON.stringify(body) });
+  const BODY = { customerId: 1, from: '2026-02-01', to: '2026-02-28', tz: 'Europe/Berlin', invoiceDate: '2026-03-05' };
+
+  beforeEach(() => {
+    Customer.getById.mockResolvedValue({ id: 1, name: 'Muster', address: 'Weg 1', tax_id: null, report_language: null });
+    Settings.get.mockResolvedValue({ senderName: 'Jana', senderAddress: 'Weg 5', senderEmail: null, senderTaxId: '1', senderBankDetails: null, vatMode: 'regular', vatRate: 19, invoiceNumberPattern: '{YYYY}-{NNNN}', roundingMinutes: 0 });
+    TimeEntry.getByCustomerIdInRange.mockResolvedValue([{ project_id: 1, project_name: 'Website', hourly_rate: '80.00', start_time: '2026-02-02T08:00:00Z', end_time: '2026-02-02T09:00:00Z' }]);
+    InvoiceCounter.next.mockResolvedValue(1);
+  });
+
+  test.each([
+    ['POST', '/preview', BODY], ['POST', '', BODY], ['GET', '', undefined], ['GET', '/1/pdf', undefined], ['DELETE', '/1', undefined],
+  ])('%s /api/invoices%s needs a login and does nothing without one', async (method, path, body) => {
+    Session.findUser.mockResolvedValue(null);
+
+    const response = await json(method, path, body, {});
+
+    expect(response.status).toBe(401);
+    expect(Invoice.create).not.toHaveBeenCalled();
+    expect(Invoice.getAll).not.toHaveBeenCalled();
+    expect(Invoice.getPdf).not.toHaveBeenCalled();
+    expect(Invoice.delete).not.toHaveBeenCalled();
+    expect(TimeEntry.getByCustomerIdInRange).not.toHaveBeenCalled();
+  });
+
+  test('POST /preview answers with the lines and totals', async () => {
+    const response = await json('POST', '/preview', BODY);
+
+    expect(response.status).toBe(200);
+    expect(await response.json()).toMatchObject({ number: '2026-0001', net: '80.00', vat: '15.20', gross: '95.20', missing: [] });
+  });
+
+  test('POST creates the invoice and answers 201; the PDF is made inside the model call', async () => {
+    Invoice.create.mockImplementation(async (data, render) => {
+      const pdf = await render('2026-0001');
+      expect(pdf.subarray(0, 5).toString()).toBe('%PDF-');
+      return { id: 1, number: '2026-0001', customer_id: 1, customer_name: 'Muster', invoice_date: '2026-03-05', period_from: '2026-02-01', period_to: '2026-02-28', language: 'de', vat_mode: 'regular', vat_rate: 19, net_cents: 8000, vat_cents: 1520, gross_cents: 9520, created_at: 'now' };
+    });
+    Logo.get.mockResolvedValue(null);
+
+    const response = await json('POST', '', BODY);
+
+    expect(response.status).toBe(201);
+    expect(await response.json()).toMatchObject({ id: 1, number: '2026-0001', gross: '95.20' });
+  });
+
+  test('POST answers 422 with what is missing', async () => {
+    Customer.getById.mockResolvedValue({ id: 1, name: 'Muster', address: null });
+
+    const response = await json('POST', '', BODY);
+
+    expect(response.status).toBe(422);
+    expect(await response.json()).toEqual({ error: 'Details for the invoice are missing', missing: ['customerAddress'] });
+  });
+
+  test('POST answers 400 for a body that is not JSON-valid for the request, and ignores form data', async () => {
+    const form = await fetch(url(''), { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded', ...LOGGED_IN }, body: 'customerId=1&from=2026-02-01&to=2026-02-28' });
+
+    expect(form.status).toBe(400);
+    expect(Invoice.create).not.toHaveBeenCalled();
+  });
+
+  test('GET lists them, GET /:id/pdf sends the stored file, DELETE answers 204', async () => {
+    Invoice.getAll.mockResolvedValue([]);
+    Invoice.getPdf.mockResolvedValue({ number: '2026-0001', pdf: Buffer.from('%PDF-stored') });
+    Invoice.delete.mockResolvedValue('2026-0001');
+
+    const list = await json('GET', '', undefined);
+    const pdf = await json('GET', '/1/pdf', undefined);
+    const removed = await json('DELETE', '/1', undefined);
+
+    expect(await list.json()).toEqual([]);
+    expect(pdf.headers.get('content-type')).toBe('application/pdf');
+    expect(pdf.headers.get('content-disposition')).toBe('attachment; filename=invoice-2026-0001.pdf');
+    expect(await pdf.text()).toBe('%PDF-stored');
+    expect(removed.status).toBe(204);
+  });
+
+  test('a path with something other than an id is a 404 and does not reach the model', async () => {
+    const pdf = await json('GET', '/abc/pdf', undefined);
+    const removed = await json('DELETE', '/1%3B%20DROP', undefined);
+
+    expect(pdf.status).toBe(404);
+    expect(removed.status).toBe(404);
+    expect(Invoice.getPdf).not.toHaveBeenCalled();
+    expect(Invoice.delete).not.toHaveBeenCalled();
+  });
+
+  test('another origin gets no permission to read the list in a browser (no CORS header)', async () => {
+    Invoice.getAll.mockResolvedValue([]);
+
+    const response = await fetch(url(''), { headers: { ...LOGGED_IN, Origin: 'https://evil.example' } });
+
+    expect(response.headers.get('access-control-allow-origin')).toBeNull();
   });
 });

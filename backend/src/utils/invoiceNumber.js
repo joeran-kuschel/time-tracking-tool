@@ -31,4 +31,4 @@ function formatInvoiceNumber(pattern, number, date) {
   });
 }
 
-module.exports = { MAX_PATTERN,patternProblem, hasYear, counterScope, formatInvoiceNumber };
+module.exports = { MAX_PATTERN, patternProblem, hasYear, counterScope, formatInvoiceNumber };

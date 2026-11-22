@@ -74,6 +74,7 @@ rows have the columns above):
 ## Behavior
 
 - `PUT` replaces name and email: sending only `name` clears `email` (the rounding rule is only changed when named).
+- `DELETE` keeps the customer's [invoices](invoices.md) (their `customer_id` becomes `null`; they hold a copy of the name and address).
 - `DELETE` also deletes all projects of the customer and their time entries (`ON DELETE CASCADE`). There is no undo;
   see [Database backups](database-backups.md).
 - `DELETE` answers `409` while the running timer belongs to one of the customer's projects. A timer of another customer

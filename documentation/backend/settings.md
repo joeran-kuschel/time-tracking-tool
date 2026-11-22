@@ -55,8 +55,8 @@ action. `GET` shows the counter of today's year (UTC) for the saved pattern. `PU
 counter of the pattern saved with it (or the saved one), and refuses a lower number than the counter has, so a number
 is never used twice (the check is part of the `UPDATE ... WHERE next_number <= ...` that writes it, so two saves at the same
 time cannot lower it; the counter is raised before the other options are saved, so a failed save can only skip numbers); changing only the pattern moves no counter, and a pattern without a year starts its own counter at 1,
-so raise it first when you already used such numbers. Nothing creates invoices yet: the invoice will take its number from
-this counter in one atomic step and a unique index on the invoice number is the second guard.
+so raise it first when you already used such numbers. Creating an [invoice](invoices.md#numbering) takes its number from
+this counter in one atomic step, and a unique index on the invoice number is the second guard.
 
 ## Logo
 

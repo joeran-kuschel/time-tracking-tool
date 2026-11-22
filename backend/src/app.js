@@ -7,6 +7,7 @@ const timeEntryRoutes = require('./routes/timeEntries');
 const reportRoutes = require('./routes/reports');
 const dashboardRoutes = require('./routes/dashboard');
 const settingsRoutes = require('./routes/settings');
+const invoiceRoutes = require('./routes/invoices');
 const authRoutes = require('./routes/auth');
 const requireAuth = require('./middleware/requireAuth');
 const allowedOrigin = require('./middleware/allowedOrigin');
@@ -54,6 +55,7 @@ function createApp({ corsOrigins }) {
   app.use('/api/reports', reportRoutes);
   app.use('/api/dashboard', dashboardRoutes);
   app.use('/api/settings', settingsRoutes);
+  app.use('/api/invoices', invoiceRoutes);
 
   app.get('/health', (req, res) => {
     res.json({ status: 'OK' });

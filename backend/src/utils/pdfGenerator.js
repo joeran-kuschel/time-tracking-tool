@@ -118,9 +118,10 @@ function drawLogo(doc, logo) {
 // Your own details at the top: the logo on the left, and on the right the name in bold, then the address and the email.
 // Nothing is drawn (and nothing moves) when there is no detail and no logo, so a report without them looks as it always
 // did. Long lines wrap inside their column, and an empty line inside the address is left out.
-// sender: { name, address, email, logo }, each a text (logo: the image as a Buffer) or null
+// sender: { name, address, email, taxId, logo }, each a text (logo: the image as a Buffer) or null; only the invoice has a taxId
 function drawSender(doc, sender) {
-  const lines = [sender?.name && { text: sender.name, bold: true }, ...(sender?.address?.split('\n') ?? []).filter((line) => line.trim() !== '').map((text) => ({ text })), sender?.email && { text: sender.email }]
+  const lines = [sender?.name && { text: sender.name, bold: true }, ...(sender?.address?.split('\n') ?? []).filter((line) => line.trim() !== '').map((text) => ({ text })), sender?.email && { text: sender.email },
+    sender?.taxId && { text: i18n._({ id: 'sender.taxId', message: 'Tax ID: {taxId}' }, { taxId: sender.taxId }) }]
     .filter(Boolean);
   const top = doc.page.margins.top;
   const logoBottom = sender?.logo ? drawLogo(doc, sender.logo) : null;
@@ -273,5 +274,15 @@ function generateReportPDF(entries, { customerName, month, year, locale, timeZon
 
 module.exports = {
   generateReportPDF,
-  reportFileName
+  reportFileName,
+  // The building blocks that the invoice (utils/invoicePdf.js) shares with the report
+  FONTS,
+  registerFonts,
+  drawSender,
+  drawCells,
+  rowHeight,
+  line,
+  pageBottom,
+  TABLE_LEFT,
+  TABLE_RIGHT,
 };
