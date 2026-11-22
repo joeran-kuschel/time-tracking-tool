@@ -60,6 +60,7 @@ How to write an entry and cut a release: [documentation/backend/changelog.md](do
 
 ### Fixed
 
+- Restoring a backup (`k8s/restore-db.sh`) can no longer report success after the data stream was cut off on the way into the cluster. Before, a cut that fell between two statements committed a partial restore (for example empty tables) and still printed "Restored". Now the restore commits only if the whole dump arrived; otherwise it fails with a message and changes nothing, and after a successful restore it prints the number of rows per table, so you see what came back. No migration or image rebuild needed.
 - On the Time tracking page, the month summary no longer prints a large billable amount over the number of entries: the three figures take the space they need and wrap onto a new line on narrow screens.
 - Stopping the timer can no longer save an entry that ends before it starts (for example when the browser's clock is behind): the server's time is used instead. Entries that already end before they start can be corrected by editing them (the edit form now opens them with the end on the day of the start).
 - Creating a project for a customer that does not exist now answers `400` ("Customer not found") instead of a server error `500`. The same goes for a customer id that is not a number.
