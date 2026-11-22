@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef, useState } from 'react'
+import { useCallback, useEffect, useId, useRef, useState } from 'react'
 import { msg } from '@lingui/core/macro'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { api } from '../api'
@@ -48,21 +48,24 @@ function LogoField({ option }) {
   const shownError = fileError ?? error
 
   // The logo is loaded as a file and shown from the browser's memory, so a changed logo is never a cached one
+  // Loads the stored logo and shows it (or none, when there is none). `current()` tells whether the page is still there.
+  const loadPreview = useCallback((current = () => true) => run(async () => {
+    try {
+      const blob = await api.getLogo()
+      if (current()) show(URL.createObjectURL(blob))
+    } catch (err) {
+      if (current()) show(null)
+      if (err.status !== 404) throw err
+    }
+  }, loadFailed), [run])
+
   useEffect(() => {
     let current = true
-    run(async () => {
-      try {
-        const blob = await api.getLogo()
-        if (current) show(URL.createObjectURL(blob))
-      } catch (err) {
-        if (current) show(null)
-        if (err.status !== 404) throw err
-      }
-    }, loadFailed)
+    loadPreview(() => current)
     return () => {
       current = false
     }
-  }, [run])
+  }, [loadPreview])
 
   useEffect(() => () => {
     if (shown.current) URL.revokeObjectURL(shown.current)
@@ -88,8 +91,8 @@ function LogoField({ option }) {
     try {
       const saved = await run(async () => api.putLogo({ contentType: file.type, data: await readBase64(file) }), saveFailed, uploadHints)
       if (saved) {
-        show(URL.createObjectURL(file))
         setStatus('saved')
+        await loadPreview() // what is shown is what is stored, not the file that was chosen
       }
     } finally {
       busy.current = false

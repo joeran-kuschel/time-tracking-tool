@@ -23,7 +23,11 @@ beforeEach(() => {
   vi.resetAllMocks()
   vi.spyOn(console, 'error').mockImplementation(() => {})
   api.getLogo.mockRejectedValue(NO_LOGO)
-  api.putLogo.mockResolvedValue({ contentType: 'image/png', bytes: 3 })
+  // Storing a logo makes it the one that the next load returns, as on the server; the page shows what it loads back
+  api.putLogo.mockImplementation(async () => {
+    api.getLogo.mockResolvedValue(new Blob(['stored logo'], { type: 'image/png' }))
+    return { contentType: 'image/png', bytes: 3 }
+  })
   api.deleteLogo.mockResolvedValue(null)
 })
 
@@ -108,6 +112,30 @@ describe('LogoField', () => {
     expect(screen.getByRole('status')).toHaveTextContent('Logo gespeichert.')
     expect(field()).toHaveFocus()
     expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+  })
+
+  test('after storing, shows the logo that it loads back from the server, not the chosen file', async () => {
+    await renderField()
+    expect(api.getLogo).toHaveBeenCalledTimes(1)
+
+    await user().upload(field(), png())
+
+    await waitFor(() => expect(api.getLogo).toHaveBeenCalledTimes(2))
+    expect(await screen.findByRole('img', { name: 'Dein Logo' })).toBeInTheDocument()
+  })
+
+  test('when the stored logo cannot be loaded back, the upload still counts and an error says what failed', async () => {
+    await renderField()
+    api.putLogo.mockImplementation(async () => {
+      api.getLogo.mockRejectedValue(new ApiError(500, 'boom'))
+      return { contentType: 'image/png', bytes: 3 }
+    })
+
+    await user().upload(field(), png())
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('Das Logo konnte nicht geladen werden. Bitte versuche es erneut.')
+    expect(screen.getByRole('status')).toHaveTextContent('Logo gespeichert.')
+    expect(field()).toBeEnabled()
   })
 
   test('stores a JPEG too', async () => {

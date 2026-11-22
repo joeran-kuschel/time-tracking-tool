@@ -44,7 +44,8 @@ With no group at all the page says
   field is described by (`aria-describedby`). The types are `checkbox`, `select` (the value of a choice can be a string or a number) and `decimal`; a new type is
   added there together with the first option that needs it.
 - **Logo (`logo`):** `components/LogoField.jsx`. A visible label, a file field (`accept="image/png,image/jpeg"`) described by
-  its hint and error, the preview (loaded as a file and shown from memory, so a changed logo is never a cached one) and
+  its hint and error, the preview (loaded from the server as a file and shown from memory, so a changed logo is never a cached
+  one; after storing, the logo is loaded back, so the preview is what is stored and not the file that was chosen) and
   **Remove logo**. Unlike the other options it does not use the Save button: choosing a file stores it at once, as base64
   in a JSON body (`PUT /api/settings/logo`, see [Settings API](../backend/settings.md#logo)). The browser checks the type
   and size first, so the error names the limit without a request (*Choose a PNG or JPEG image. Other types, such as SVG,
