@@ -7,6 +7,7 @@
 // this list and a check disagree (settings.model.test.js, customer.model.test.js).
 const ROUNDING_MINUTES = [0, 5, 10, 15, 30, 60];
 const ROUNDING_DIRECTIONS = ['up', 'nearest'];
+const WEEK_STARTS = ['monday', 'sunday'];
 // The largest rate the column holds (DECIMAL(10, 2))
 const MAX_RATE = 99999999.99;
 // A rate in euros: a number from 0 with at most two decimals
@@ -22,6 +23,8 @@ const OPTIONS = {
   roundingDirection: { column: 'rounding_direction', isValid: (value) => ROUNDING_DIRECTIONS.includes(value) },
   // Whether the Reports page and the PDF name the rounding rule in a sentence
   showRoundingNote: { column: 'show_rounding_note', isValid: (value) => typeof value === 'boolean' },
+  // The day the weeks of the Dashboard and the Entries filters start on; months and reports stay calendar months
+  weekStart: { column: 'week_start', isValid: (value) => WEEK_STARTS.includes(value) },
   // The hourly rate (euros) the form for a new project starts with; null is no default
   defaultHourlyRate: {
     column: 'default_hourly_rate',

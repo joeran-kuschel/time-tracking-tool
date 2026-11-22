@@ -182,6 +182,22 @@ describe('settings', () => {
     expect(Settings.update).not.toHaveBeenCalled();
   });
 
+  test.each([[{ weekStart: 'sunday' }], [{ weekStart: 'monday' }]])('PUT saves the first day of the week %j', async (change) => {
+    Settings.update.mockResolvedValue(change);
+
+    const response = await send('PUT', change);
+
+    expect(response.status).toBe(200);
+    expect(Settings.update).toHaveBeenCalledWith(change);
+  });
+
+  test.each([['friday'], [''], [null], [0]])('PUT with the first day of the week %j answers 400 and saves nothing', async (value) => {
+    const response = await send('PUT', { weekStart: value });
+
+    expect(response.status).toBe(400);
+    expect(Settings.update).not.toHaveBeenCalled();
+  });
+
   test.each([[{ defaultHourlyRate: 80 }], [{ defaultHourlyRate: 0 }], [{ defaultHourlyRate: null }]])('PUT saves the default rate %j', async (change) => {
     Settings.update.mockResolvedValue(change);
 

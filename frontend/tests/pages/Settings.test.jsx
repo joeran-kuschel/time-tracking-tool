@@ -78,6 +78,44 @@ describe('Settings', () => {
       expect(box).toHaveAccessibleDescription('Die Berichte-Seite startet mit dieser Einstellung. Für einen einzelnen Bericht kannst du sie dort ändern.')
     })
 
+    describe('first day of the week', () => {
+      const saved = { showAmounts: false, roundingMinutes: 0, roundingDirection: 'up', showRoundingNote: false, defaultHourlyRate: null, weekStart: 'monday' }
+      const day = () => screen.getByRole('combobox', { name: 'Erster Tag der Woche' })
+
+      beforeEach(() => {
+        api.getSettings.mockResolvedValue(saved)
+        api.updateSettings.mockImplementation(async (changes) => ({ ...saved, ...changes }))
+      })
+
+      test('is a select in the group Kalender, set to the saved day, with a hint', async () => {
+        render(<Harness list={settingsGroups} />)
+
+        const group = await screen.findByRole('group', { name: 'Kalender' })
+        expect(within(group).getByRole('combobox', { name: 'Erster Tag der Woche' })).toHaveValue('monday')
+        expect(within(group).getAllByRole('option').map((option) => option.textContent)).toEqual(['Montag', 'Sonntag'])
+        expect(day()).toHaveAccessibleDescription(/Monate und Berichte bleiben Kalendermonate\./)
+      })
+
+      test('saves Sunday', async () => {
+        render(<Harness list={settingsGroups} />)
+        await screen.findByRole('group', { name: 'Kalender' })
+
+        await userEvent.selectOptions(day(), 'Sonntag')
+        await userEvent.click(screen.getByRole('button', { name: 'Speichern' }))
+
+        expect(api.updateSettings).toHaveBeenCalledWith({ weekStart: 'sunday' })
+        expect(await screen.findByText('Einstellungen gespeichert.')).toBeInTheDocument()
+      })
+
+      test('is Monday when the backend did not send it', async () => {
+        api.getSettings.mockResolvedValue({ showAmounts: false })
+        render(<Harness list={settingsGroups} />)
+
+        await screen.findByRole('group', { name: 'Kalender' })
+        expect(day()).toHaveValue('monday')
+      })
+    })
+
     describe('default hourly rate', () => {
       const saved = { showAmounts: false, roundingMinutes: 0, roundingDirection: 'up', showRoundingNote: false, defaultHourlyRate: 80 }
       const rate = () => screen.getByRole('textbox', { name: 'Standard-Stundensatz für neue Projekte (€)' })
@@ -437,7 +475,7 @@ describe('Settings', () => {
 
         step().focus()
         await userEvent.tab()
-        expect(screen.getByRole('button', { name: 'Speichern' })).toHaveFocus()
+        expect(screen.getByRole('combobox', { name: 'Erster Tag der Woche' })).toHaveFocus()
 
         await userEvent.selectOptions(step(), 'Halbe Stunde (30 Minuten)')
         step().focus()

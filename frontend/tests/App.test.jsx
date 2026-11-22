@@ -1204,6 +1204,24 @@ describe('App addresses', () => {
     expect(api.getSettings).toHaveBeenCalledTimes(1)
   })
 
+  test('a saved first day of the week applies on the Dashboard without a reload', async () => {
+    api.getSettings.mockResolvedValue({ weekStart: 'monday' })
+    api.updateSettings.mockResolvedValue({ weekStart: 'sunday' })
+    renderAt('/')
+    const weekNote = async () => (await screen.findByText('Diese Woche')).parentElement.textContent
+    expect(await weekNote()).toMatch(/Mo\./)
+
+    await userEvent.click(screen.getByRole('link', { name: 'Einstellungen' }))
+    await userEvent.selectOptions(await screen.findByRole('combobox', { name: 'Erster Tag der Woche' }), 'Sonntag')
+    await userEvent.click(screen.getByRole('button', { name: 'Speichern' }))
+    expect(await screen.findByText('Einstellungen gespeichert.')).toBeInTheDocument()
+    expect(api.updateSettings).toHaveBeenCalledWith({ weekStart: 'sunday' })
+    await userEvent.click(screen.getByRole('link', { name: 'Dashboard' }))
+
+    expect(await weekNote()).toMatch(/So\./)
+    expect(api.getSettings).toHaveBeenCalledTimes(1)
+  })
+
   test('loads the settings once, however many pages are visited', async () => {
     api.getCustomers.mockResolvedValue([])
     renderAt('/')

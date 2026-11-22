@@ -7,17 +7,17 @@ export const emptyFilters = { q: '', customerId: '', projectId: '', preset: 'any
 
 export const presets = ['any', 'today', 'thisWeek', 'lastWeek', 'thisMonth', 'lastMonth', 'thisYear', 'custom']
 
-// The dates of a period choice relative to now (weeks start on Monday), as local YYYY-MM-DD strings.
+// The dates of a period choice relative to now (weeks start on firstDay: 1 Monday, 0 Sunday), as local YYYY-MM-DD strings.
 // 'any' has no dates; 'custom' keeps whatever the user typed, so it returns null.
-export function periodPreset(preset, now) {
+export function periodPreset(preset, now, firstDay = 1) {
   const range = (from, to) => ({ from: toDateInput(from), to: toDateInput(to) })
   const year = now.getFullYear()
   const month = now.getMonth()
   switch (preset) {
     case 'any': return { from: '', to: '' }
     case 'today': return range(now, now)
-    case 'thisWeek': return range(startOfWeek(now), addDays(startOfWeek(now), 6))
-    case 'lastWeek': return range(addDays(startOfWeek(now), -7), addDays(startOfWeek(now), -1))
+    case 'thisWeek': return range(startOfWeek(now, firstDay), addDays(startOfWeek(now, firstDay), 6))
+    case 'lastWeek': return range(addDays(startOfWeek(now, firstDay), -7), addDays(startOfWeek(now, firstDay), -1))
     case 'thisMonth': return range(new Date(year, month, 1), new Date(year, month + 1, 0))
     case 'lastMonth': return range(new Date(year, month - 1, 1), new Date(year, month, 0))
     case 'thisYear': return range(new Date(year, 0, 1), new Date(year, 11, 31))

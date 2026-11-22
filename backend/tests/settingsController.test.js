@@ -127,6 +127,24 @@ describe('settingsController', () => {
     expect(Settings.update).not.toHaveBeenCalled();
   });
 
+  test.each([['monday'], ['sunday']])('update saves weekStart: %j', async (value) => {
+    Settings.update.mockResolvedValue({});
+
+    await controller.update({ body: { weekStart: value } }, mockResponse());
+
+    expect(Settings.update).toHaveBeenCalledWith({ weekStart: value });
+  });
+
+  test.each([['saturday'], ['Monday'], [''], [null], [1]])('update rejects %j as weekStart', async (value) => {
+    const res = mockResponse();
+
+    await controller.update({ body: { weekStart: value } }, res);
+
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(res.json).toHaveBeenCalledWith({ error: 'Invalid value for weekStart' });
+    expect(Settings.update).not.toHaveBeenCalled();
+  });
+
   test.each([[0], [80], [95.5], [null]])('update saves defaultHourlyRate: %j', async (value) => {
     Settings.update.mockResolvedValue({});
     const res = mockResponse();

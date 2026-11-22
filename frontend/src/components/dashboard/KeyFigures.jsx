@@ -10,7 +10,8 @@ import { ui } from '../../ui'
 // The hours are the tracked time, exact; the billable amount counts the rounded time when there is a rounding rule.
 // lastMonthReports: { month, year, reports: [{ customer_id, customer_name, status }] }
 // rounding: { minutes, direction } of the rule, or null/undefined
-function KeyFigures({ entries, lastMonthReports, now, rounding }) {
+// firstDay: the first day of the week, 1 Monday or 0 Sunday (the setting)
+function KeyFigures({ entries, lastMonthReports, now, rounding, firstDay }) {
   const { i18n } = useLingui()
   const headingId = useId()
 
@@ -20,7 +21,7 @@ function KeyFigures({ entries, lastMonthReports, now, rounding }) {
   const monthAmount = customers.reduce((sum, c) => sum + c.amount, 0)
   const workingDays = workingDaysSoFar(now)
 
-  const weekStart = i18n.date(startOfWeek(now), { weekday: 'short', day: 'numeric' })
+  const weekStart = i18n.date(startOfWeek(now, firstDay), { weekday: 'short', day: 'numeric' })
   const today = i18n.date(now, { weekday: 'short', day: 'numeric', month: 'short' })
   const perDay = formatDuration(i18n, workingDays ? monthMinutes / workingDays : 0)
   const days = i18n.number(workingDays)
@@ -31,7 +32,7 @@ function KeyFigures({ entries, lastMonthReports, now, rounding }) {
   const lastMonthName = i18n.date(new Date(lastMonthReports.year, lastMonthReports.month - 1, 1), { month: 'long' })
 
   const figures = [
-    { label: <Trans>This week</Trans>, value: <Duration minutes={weekMinutes(entries, now)} />, note: <Trans>{weekStart} to {today}</Trans> },
+    { label: <Trans>This week</Trans>, value: <Duration minutes={weekMinutes(entries, now, firstDay)} />, note: <Trans>{weekStart} to {today}</Trans> },
     { label: <Trans>This month</Trans>, value: <Duration minutes={monthMinutes} />, note: <Trans>{days} working days, {perDay} per day</Trans> },
     { label: <Trans>Billable in {monthName}</Trans>, value: formatAmount(i18n, monthAmount), note: rounding ? <Trans>Rounded hours × hourly rate of each project</Trans> : <Trans>Hours × hourly rate of each project</Trans> },
     {

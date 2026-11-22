@@ -20,30 +20,40 @@ const startsIn = (from, to) => (entry) => {
   return start >= from && start < to
 }
 
-// Monday 00:00 of the date's week
-export function startOfWeek(date) {
-  return addDays(date, -((date.getDay() + 6) % 7))
+// The first day of the week is a weekday number as in Date.getDay(): 1 for Monday (the default), 0 for Sunday.
+// 00:00 of the first day of the date's week
+export function startOfWeek(date, firstDay = 1) {
+  return addDays(date, -((date.getDay() - firstDay + 7) % 7))
 }
 
-// ISO 8601 week number: week 1 is the week with the year's first Thursday
+// ISO 8601 week number: week 1 is the week with the year's first Thursday (ISO weeks start on Monday)
 export function isoWeek(date) {
   const thursday = addDays(startOfWeek(date), 3)
   const firstThursday = addDays(startOfWeek(new Date(thursday.getFullYear(), 0, 4)), 3)
   return Math.round((thursday - firstThursday) / (7 * DAY)) + 1
 }
 
-// The entries to load for a date: its month and its week, which can reach into the month before or after
+// The number shown for a week: the ISO week that holds most of its days. For a week from Monday that is its own ISO
+// week; a week from Sunday gets the number of the ISO week of its Monday, which holds six of its seven days.
+export function weekNumber(date, firstDay = 1) {
+  const start = startOfWeek(date, firstDay)
+  return isoWeek(firstDay === 1 ? start : addDays(start, 1))
+}
+
+// The entries to load for a date: its month and its week, which can reach into the month before or after.
+// The range fits a week from Monday as well as one from Sunday, so the setting can change without loading again.
 export function dashboardRange(now) {
   const monthStart = firstOfMonth(now)
   const nextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1)
-  const weekStart = startOfWeek(now)
-  const weekEnd = addDays(weekStart, 7)
-  return { from: weekStart < monthStart ? weekStart : monthStart, to: weekEnd > nextMonth ? weekEnd : nextMonth }
+  const weekStarts = [startOfWeek(now, 1), startOfWeek(now, 0)]
+  const from = new Date(Math.min(monthStart, ...weekStarts))
+  const to = new Date(Math.max(nextMonth, ...weekStarts.map((start) => addDays(start, 7))))
+  return { from, to }
 }
 
-// Minutes of the current week (Monday to Sunday)
-export function weekMinutes(entries, now) {
-  const from = startOfWeek(now)
+// Minutes of the current week (seven days from the first day)
+export function weekMinutes(entries, now, firstDay = 1) {
+  const from = startOfWeek(now, firstDay)
   return sumMinutes(entries.filter(startsIn(from, addDays(from, 7))))
 }
 
@@ -71,16 +81,16 @@ export function dailyMinutes(entries, now) {
 
 // One row per calendar week touching the month, counting only the month's days:
 // { week, start, end } with start and end clipped to the month, and minutes
-export function weeklyMinutes(entries, now) {
+export function weeklyMinutes(entries, now, firstDay = 1) {
   const days = dailyMinutes(entries, now)
   const weeks = []
   for (const { date, minutes } of days) {
     const last = weeks[weeks.length - 1]
-    if (last && date.getDay() !== 1) {
+    if (last && date.getDay() !== firstDay) {
       last.end = date
       last.minutes += minutes
     } else {
-      weeks.push({ week: isoWeek(date), start: date, end: date, minutes })
+      weeks.push({ week: weekNumber(date, firstDay), start: date, end: date, minutes })
     }
   }
   return weeks

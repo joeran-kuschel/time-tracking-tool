@@ -35,7 +35,7 @@ msgstr "{0, plural, one {# filter active} other {# filters active}}"
 msgid "{customerName}: {status}"
 msgstr "{customerName}: {status}"
 
-#: src/components/dashboard/KeyFigures.jsx:35
+#: src/components/dashboard/KeyFigures.jsx:36
 msgid "{days} working days, {perDay} per day"
 msgstr "{days} working days, {perDay} per day"
 
@@ -43,7 +43,7 @@ msgstr "{days} working days, {perDay} per day"
 msgid "{lastMonthName}: {sent} of {total} reports sent."
 msgstr "{lastMonthName}: {sent} of {total} reports sent."
 
-#: src/components/dashboard/KeyFigures.jsx:39
+#: src/components/dashboard/KeyFigures.jsx:40
 msgid "{sent} of {total}"
 msgstr "{sent} of {total}"
 
@@ -55,7 +55,7 @@ msgstr "{total} this month"
 msgid "{total} total"
 msgstr "{total} total"
 
-#: src/components/dashboard/KeyFigures.jsx:34
+#: src/components/dashboard/KeyFigures.jsx:35
 msgid "{weekStart} to {today}"
 msgstr "{weekStart} to {today}"
 
@@ -135,7 +135,7 @@ msgstr "Bars, use the arrow keys to read the values"
 msgid "Billable amount"
 msgstr "Billable amount"
 
-#: src/components/dashboard/KeyFigures.jsx:36
+#: src/components/dashboard/KeyFigures.jsx:37
 msgid "Billable in {monthName}"
 msgstr "Billable in {monthName}"
 
@@ -146,6 +146,10 @@ msgstr "Billing · {monthName}"
 #: src/components/dashboard/ByCustomer.jsx:23
 msgid "By customer · {monthName}"
 msgstr "By customer · {monthName}"
+
+#: src/settingsGroups.js:74
+msgid "Calendar"
+msgstr "Calendar"
 
 #: src/components/ConfirmDelete.jsx:30
 #: src/components/RecordForm.jsx:78
@@ -208,7 +212,7 @@ msgstr "Customer: {customerName}"
 msgid "Customers"
 msgstr "Customers"
 
-#: src/App.jsx:47
+#: src/App.jsx:49
 msgid "Customers could not be loaded."
 msgstr "Customers could not be loaded."
 
@@ -216,12 +220,12 @@ msgstr "Customers could not be loaded."
 msgid "Dark"
 msgstr "Dark"
 
-#: src/pages/Dashboard.jsx:63
+#: src/pages/Dashboard.jsx:64
 #: src/routes.js:9
 msgid "Dashboard"
 msgstr "Dashboard"
 
-#: src/pages/Dashboard.jsx:34
+#: src/pages/Dashboard.jsx:35
 msgid "Dashboard could not be loaded."
 msgstr "Dashboard could not be loaded."
 
@@ -349,12 +353,12 @@ msgid "Enter an amount from 0 with up to two decimals, for example {0}."
 msgstr "Enter an amount from 0 with up to two decimals, for example {0}."
 
 #: src/components/MonthSummary.jsx:24
-#: src/pages/Entries.jsx:93
+#: src/pages/Entries.jsx:94
 #: src/routes.js:11
 msgid "Entries"
 msgstr "Entries"
 
-#: src/pages/Entries.jsx:41
+#: src/pages/Entries.jsx:42
 #: src/pages/TimeTracking.jsx:131
 msgid "Entries could not be loaded."
 msgstr "Entries could not be loaded."
@@ -370,6 +374,10 @@ msgstr "Filter entries"
 #: src/components/EntryFilters.jsx:94
 msgid "Filters"
 msgstr "Filters"
+
+#: src/settingsGroups.js:79
+msgid "First day of the week"
+msgstr "First day of the week"
 
 #: src/components/EntryFilters.jsx:183
 msgid "From"
@@ -403,7 +411,7 @@ msgstr "Hourly rate (€)"
 msgid "Hours"
 msgstr "Hours"
 
-#: src/components/dashboard/KeyFigures.jsx:36
+#: src/components/dashboard/KeyFigures.jsx:37
 msgid "Hours × hourly rate of each project"
 msgstr "Hours × hourly rate of each project"
 
@@ -471,7 +479,7 @@ msgstr "Hours this month"
 msgid "in Time tracking"
 msgstr "in Time tracking"
 
-#: src/components/dashboard/KeyFigures.jsx:46
+#: src/components/dashboard/KeyFigures.jsx:47
 msgid "Key figures"
 msgstr "Key figures"
 
@@ -495,9 +503,9 @@ msgstr "Light"
 msgid "Like the system"
 msgstr "Like the system"
 
-#: src/App.jsx:91
+#: src/App.jsx:93
 #: src/components/AuthGate.jsx:70
-#: src/pages/Dashboard.jsx:77
+#: src/pages/Dashboard.jsx:78
 #: src/pages/Reports.jsx:253
 #: src/pages/Settings.jsx:96
 #: src/pages/Settings.jsx:102
@@ -510,7 +518,7 @@ msgstr "Loading..."
 msgid "Log in"
 msgstr "Log in"
 
-#: src/App.jsx:120
+#: src/App.jsx:122
 msgid "Log out"
 msgstr "Log out"
 
@@ -522,13 +530,17 @@ msgstr "Logging out failed."
 msgid "Login failed."
 msgstr "Login failed."
 
-#: src/App.jsx:102
+#: src/App.jsx:104
 msgid "Main"
 msgstr "Main"
 
 #: src/components/dashboard/TrackTimeCard.jsx:100
 msgid "Manual entry"
 msgstr "Manual entry"
+
+#: src/settingsGroups.js:82
+msgid "Monday"
+msgstr "Monday"
 
 #: src/pages/Reports.jsx:175
 msgid "Month"
@@ -538,7 +550,7 @@ msgstr "Month"
 msgid "Monthly report"
 msgstr "Monthly report"
 
-#: src/pages/Dashboard.jsx:67
+#: src/pages/Dashboard.jsx:68
 msgid "Monthly reports"
 msgstr "Monthly reports"
 
@@ -586,7 +598,7 @@ msgstr "No entries for this period"
 msgid "No entries found"
 msgstr "No entries found"
 
-#: src/components/dashboard/KeyFigures.jsx:40
+#: src/components/dashboard/KeyFigures.jsx:41
 msgid "No entries in {lastMonthName}"
 msgstr "No entries in {lastMonthName}"
 
@@ -634,7 +646,7 @@ msgstr "Open report"
 msgid "Open report for {customerName}"
 msgstr "Open report for {customerName}"
 
-#: src/App.jsx:38
+#: src/App.jsx:40
 #: src/pages/NotFound.jsx:9
 msgid "Page not found"
 msgstr "Page not found"
@@ -700,7 +712,7 @@ msgstr "Project: {projectName}"
 msgid "Projects"
 msgstr "Projects"
 
-#: src/pages/Entries.jsx:74
+#: src/pages/Entries.jsx:75
 #: src/pages/TimeTracking.jsx:112
 msgid "Projects could not be loaded."
 msgstr "Projects could not be loaded."
@@ -754,7 +766,7 @@ msgstr "Report status could not be saved."
 msgid "Reports"
 msgstr "Reports"
 
-#: src/components/dashboard/KeyFigures.jsx:38
+#: src/components/dashboard/KeyFigures.jsx:39
 msgid "Reports sent for {lastMonthName}"
 msgstr "Reports sent for {lastMonthName}"
 
@@ -778,7 +790,7 @@ msgstr "Resume: {projectName}, {description}"
 msgid "Round time entries"
 msgstr "Round time entries"
 
-#: src/components/dashboard/KeyFigures.jsx:36
+#: src/components/dashboard/KeyFigures.jsx:37
 msgid "Rounded hours × hourly rate of each project"
 msgstr "Rounded hours × hourly rate of each project"
 
@@ -925,6 +937,14 @@ msgstr "Stop <0>timer</0>"
 msgid "Stop the running timer first."
 msgstr "Stop the running timer first."
 
+#: src/settingsGroups.js:83
+msgid "Sunday"
+msgstr "Sunday"
+
+#: src/settingsGroups.js:80
+msgid "The Dashboard and the period choices This week and Last week on the Entries page start their weeks on this day. Months and reports stay calendar months."
+msgstr "The Dashboard and the period choices This week and Last week on the Entries page start their weeks on this day. Months and reports stay calendar months."
+
 #: src/components/EntryFilters.jsx:210
 msgid "The end date must not be before the start date"
 msgstr "The end date must not be before the start date"
@@ -976,7 +996,7 @@ msgstr "There is no page at this address."
 msgid "This customer does not exist (any more)."
 msgstr "This customer does not exist (any more)."
 
-#: src/components/dashboard/KeyFigures.jsx:35
+#: src/components/dashboard/KeyFigures.jsx:36
 #: src/components/EntryFilters.jsx:13
 msgid "This month"
 msgstr "This month"
@@ -986,7 +1006,7 @@ msgid "This project does not exist (any more)."
 msgstr "This project does not exist (any more)."
 
 #: src/components/dashboard/HoursChart.jsx:47
-#: src/components/dashboard/KeyFigures.jsx:34
+#: src/components/dashboard/KeyFigures.jsx:35
 #: src/components/EntryFilters.jsx:11
 msgid "This week"
 msgstr "This week"
@@ -1036,11 +1056,11 @@ msgstr "Timer could not be started."
 msgid "Timer could not be stopped."
 msgstr "Timer could not be stopped."
 
-#: src/App.jsx:80
+#: src/App.jsx:82
 msgid "Timer started for {announcedProject}"
 msgstr "Timer started for {announcedProject}"
 
-#: src/App.jsx:80
+#: src/App.jsx:82
 msgid "Timer stopped"
 msgstr "Timer stopped"
 
@@ -1076,9 +1096,9 @@ msgstr "Total hours"
 msgid "Track time"
 msgstr "Track time"
 
-#: src/App.jsx:131
+#: src/App.jsx:133
 #: src/components/AuthGate.jsx:66
-#: src/pages/Dashboard.jsx:74
+#: src/pages/Dashboard.jsx:75
 #: src/pages/Reports.jsx:238
 #: src/pages/Settings.jsx:98
 msgid "Try again"

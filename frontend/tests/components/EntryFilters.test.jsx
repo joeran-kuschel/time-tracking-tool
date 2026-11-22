@@ -11,13 +11,14 @@ const customers = [{ id: 1, name: 'Muster GmbH' }, { id: 2, name: 'Neu AG' }]
 const projects = [{ id: 7, name: 'Website' }, { id: 8, name: 'Wartung' }]
 
 // Holds the filters like the page does
-function Harness({ initial = openingFilters(new Date(2026, 8, 23)), onReset = () => {}, onSearch = () => {}, projectList = projects }) {
+function Harness({ initial = openingFilters(new Date(2026, 8, 23)), onReset = () => {}, onSearch = () => {}, projectList = projects, firstDay }) {
   const [filters, setFilters] = useState(initial)
   return (
     <EntryFilters
       filters={filters}
       customers={customers}
       projects={projectList}
+      firstDay={firstDay}
       onChange={(changes) => setFilters((old) => ({ ...old, ...changes }))}
       onSearch={onSearch}
       onReset={() => { onReset(); setFilters(emptyFilters) }}
@@ -95,6 +96,18 @@ describe('EntryFilters', () => {
     await userEvent.type(screen.getByLabelText('Von'), '2026-09-10')
     expect(screen.getByLabelText('Zeitraum')).toHaveValue('custom')
     expect(screen.getByLabelText('Bis')).toHaveValue('2026-09-23')
+  })
+
+  test('the week choices start on Sunday with that setting', async () => {
+    render(<Harness firstDay={0} />)
+
+    await userEvent.selectOptions(screen.getByLabelText('Zeitraum'), 'Diese Woche')
+    expect(screen.getByLabelText('Von')).toHaveValue('2026-09-20')
+    expect(screen.getByLabelText('Bis')).toHaveValue('2026-09-26')
+
+    await userEvent.selectOptions(screen.getByLabelText('Zeitraum'), 'Letzte Woche')
+    expect(screen.getByLabelText('Von')).toHaveValue('2026-09-13')
+    expect(screen.getByLabelText('Bis')).toHaveValue('2026-09-19')
   })
 
   test('choosing Custom keeps the dates', async () => {

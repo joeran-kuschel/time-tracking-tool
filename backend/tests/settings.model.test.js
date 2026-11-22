@@ -11,7 +11,7 @@ const Settings = require('../src/models/Settings');
 const OPTIONS = require('../src/config/settingsOptions');
 
 // What a fresh install has: no amounts, no rounding (direction up once a step is chosen), no sentence about it, no default rate
-const DEFAULTS = { showAmounts: false, roundingMinutes: 0, roundingDirection: 'up', showRoundingNote: false, defaultHourlyRate: null };
+const DEFAULTS = { showAmounts: false, roundingMinutes: 0, roundingDirection: 'up', showRoundingNote: false, defaultHourlyRate: null, weekStart: 'monday' };
 
 const rows = async () => (await mockPool.query('SELECT * FROM settings')).rows;
 
@@ -206,6 +206,39 @@ describe('Settings', () => {
       expect(name).toMatch(/^[a-z][A-Za-z]*$/);
     }
   });
+  describe('first day of the week', () => {
+    test('is Monday on a fresh install', async () => {
+      expect((await Settings.get()).weekStart).toBe('monday');
+    });
+
+    test('is saved, read back and kept when another option is saved', async () => {
+      expect((await Settings.update({ weekStart: 'sunday' })).weekStart).toBe('sunday');
+      expect((await Settings.update({ showAmounts: true })).weekStart).toBe('sunday');
+      expect((await rows())[0].week_start).toBe('sunday');
+    });
+
+    test.each([['monday', true], ['sunday', true], ['saturday', false], ['Monday', false], ['', false], [null, false], [1, false], [true, false]])(
+      'accepts only monday and sunday: %j is %j', (value, valid) => {
+        expect(OPTIONS.weekStart.isValid(value)).toBe(valid);
+      }
+    );
+
+    test('the database refuses another value', async () => {
+      await Settings.get();
+
+      await expect(mockPool.query("UPDATE settings SET week_start = 'friday'")).rejects.toThrow();
+    });
+
+    test('migration 012 keeps the saved day on a second run', async () => {
+      await Settings.update({ weekStart: 'sunday' });
+      const sql = fs.readFileSync(path.join(__dirname, '..', 'migrations', '012_settings_week_start.sql'), 'utf8');
+
+      await mockPool.query(sql);
+
+      expect((await Settings.get()).weekStart).toBe('sunday');
+    });
+  });
+
   describe('default hourly rate', () => {
     test('is not set on a fresh install', async () => {
       expect((await Settings.get()).defaultHourlyRate).toBeNull();

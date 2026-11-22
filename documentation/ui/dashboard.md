@@ -38,7 +38,7 @@ Without any project, the card asks to add a customer and a project on the Time t
 
 | Figure | Meaning |
 |---|---|
-| This week | Hours Monday to today, including days of the previous month (tracked time, always exact) |
+| This week | Hours from the first day of the week (Monday or Sunday, see below) to today, including days of the previous month (tracked time, always exact). The note names the first day, for example *Mon, 21 to Thu, 24 Sep*. |
 | This month | Hours this month, with the number of working days (Monday to Friday) so far and the average per working day (tracked time, always exact) |
 | Billable in *month* | Time × the hourly rate of each project (rate × minutes / 60, rounded to cents per entry, like the report); with a rounding rule the rounded hours (*Rounded hours × hourly rate of each project*) |
 | Reports sent for *last month* | Reports with status *Sent* out of all customers with entries last month; "–" without any |
@@ -61,14 +61,29 @@ entries](../backend/time-entries.md#entries-that-end-before-they-start).)
 
 Bars for the month, with a **Days / Weeks** switch (buttons with `aria-pressed`).
 
-- **Days:** one bar per day, scale 0 to 8 h (higher when a day has more). Labels on the 1st, on Mondays and *Today*.
-- **Weeks:** one bar per calendar week touching the month (ISO week numbers), counting only that month's days; scale 0
-  to 40 h. Labels *Week 36* plus the date range, the current week as *This week*.
+- **Days:** one bar per day, scale 0 to 8 h (higher when a day has more). Labels on the 1st, on the first day of each week and *Today*.
+- **Weeks:** one bar per calendar week touching the month, counting only that month's days; scale 0
+  to 40 h. Weeks start on the first day of the week (see below) and carry ISO week numbers. Labels *Week 36* plus the date range, the current week as *This week*.
 - Next to the title, a readout shows the month total. Hovering a bar shows its value there instead (*Mon, Sep 21:
   1:30 h*; future days read *upcoming*).
 - **Keyboard and screen readers:** the bars are one tab stop (a group named *Bars, use the arrow keys to read the
   values*). The arrow keys, Home and End move between bars and update the readout, which is a polite live region. A
   visually hidden table (*Hours per day, September 2026*) lists every value.
+
+## First day of the week
+
+The setting **First day of the week** (*Erster Tag der Woche*, [Settings](settings.md)) is **Monday** or **Sunday**, Monday by
+default. It moves the start of *This week*, the bars of the **Weeks** view and the day labels of the **Days** view.
+Months and reports stay calendar months, and *This month* and the working days (Monday to Friday) do not change.
+
+- **Week numbers:** ISO week numbers start on Monday. A week from Sunday gets the number of the ISO week that holds most of
+  its days, which is the one of its Monday (Sunday 20 to Saturday 26 September 2026 is *Week 39*). The label stays *Week 39*
+  plus the date range.
+- **No reload:** a saved change shows when you open the Dashboard again, without reloading the page. The data request loads
+  a range that fits both kinds of week (up to a few days more than before), so the setting never needs another request.
+- **Code:** `startOfWeek(date, firstDay)`, `weekNumber`, `weekMinutes` and `weeklyMinutes` in `dashboard.js` take the first
+  day as a weekday number (`1` Monday, the default, or `0` Sunday); `App` turns the setting into that number and passes it
+  down as `firstDay`.
 
 ## By customer
 

@@ -126,6 +126,32 @@ describe('Dashboard', () => {
     ])
   })
 
+  test('with weeks from Sunday the chart has Sunday bars, labels the Sundays and numbers the weeks by their Monday', async () => {
+    render(<Dashboard timer={stoppedTimer()} onResume={vi.fn()} firstDay={0} />)
+    await loaded()
+
+    await userEvent.click(screen.getByRole('button', { name: 'Wochen', pressed: false }))
+
+    const table = screen.getByRole('table', { name: 'Stunden pro Woche, September 2026' })
+    const rows = within(table).getAllByRole('row').slice(1)
+    expect(rows.map((row) => row.textContent)).toEqual([
+      'Woche 36, 1. Sept. – 5. Sept.3:30 h',
+      'Woche 37, 6. Sept. – 12. Sept.0:00 h',
+      'Woche 38, 13. Sept. – 19. Sept.0:00 h',
+      'Woche 39, 20. Sept. – 26. Sept.5:30 h',
+      'Woche 40, 27. Sept. – 30. Sept.noch offen',
+    ])
+  })
+
+  test('with weeks from Sunday the key figure counts from Sunday and the day labels move to Sundays', async () => {
+    api.getDashboard.mockResolvedValue({ ...data, entries: [entry(4, muster, 8, 'Shop', '80.00', '2026-09-20T09:00:00', '2026-09-20T10:00:00'), ...data.entries] })
+    render(<Dashboard timer={stoppedTimer()} onResume={vi.fn()} firstDay={0} />)
+    const figures = within(await screen.findByRole('region', { name: 'Kennzahlen' }))
+
+    expect(figures.getByText('Diese Woche').nextSibling).toHaveTextContent('6:30 h')
+    expect(figures.getByText('So., 20. bis Do., 24. Sept.')).toBeInTheDocument()
+  })
+
   test('shows hours per customer and opens a customer on the Time tracking page', async () => {
     renderDashboard()
     const section = within(await screen.findByRole('region', { name: 'Nach Kunde · September' }))

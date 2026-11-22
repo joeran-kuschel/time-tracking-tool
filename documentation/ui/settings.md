@@ -13,6 +13,7 @@ header.
 | | **Direction** (*Richtung*) | up | **Up** (*Aufrunden*) or **To the nearest** (*Auf- oder abrunden (nächstgelegene Stufe)*). Disabled while the step is *No rounding*, with a hint that says why. |
 | | **Default hourly rate for new projects (€)** (*Standard-Stundensatz für neue Projekte (€)*) | empty (no default) | The form for a new project on the [Time tracking](time-tracking.md) page starts with this rate, which stays editable there. Existing projects and the amounts of existing reports never change with it. |
 | | **Name the rounding rule in reports** (*Rundungsregel in Berichten nennen*) | off | Adds a sentence such as *Hours rounded up to quarter hours.* to the Reports page and the PDF. Disabled while the step is *No rounding*, with a hint that says why. |
+| **Calendar** (*Kalender*) | **First day of the week** (*Erster Tag der Woche*) | Monday | **Monday** (*Montag*) or **Sunday** (*Sonntag*): the day the weeks of the [Dashboard](dashboard.md#first-day-of-the-week) and the period choices *This week* and *Last week* on the [Entries page](entries.md) start on. Months and reports stay calendar months. |
 
 A customer can have its own rule (or none) in its form, which then wins over this setting
 ([Time tracking](time-tracking.md#customers)). Rounding applies to the billing numbers: the reports, the Dashboard's billing figures and the month summary on the Time

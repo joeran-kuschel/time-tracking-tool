@@ -13,7 +13,7 @@ The page opens with the **current month** selected. Results load right away and 
 | *Search in descriptions* (*In Beschreibungen suchen*) | Finds entries whose description contains the text, in any case. `%`, `_` and `\` mean themselves. Applies after a short pause in typing (about 0.3 seconds) and at once on Enter or when the field is emptied. |
 | *Customer* (*Kunde*) | Only this customer's entries. |
 | *Project* (*Projekt*) | Only this project. Disabled until a customer is chosen; changing the customer clears the project. |
-| *Period* (*Zeitraum*) | *Any time* (*Beliebig*), *Today*, *This week* (Monday to Sunday), *Last week*, *This month*, *Last month*, *This year*, *Custom* (*Benutzerdefiniert*). Choosing one fills *From* and *To*. |
+| *Period* (*Zeitraum*) | *Any time* (*Beliebig*), *Today*, *This week* (seven days from the first day of the week: Monday or Sunday, see [Settings](settings.md)), *Last week*, *This month*, *Last month*, *This year*, *Custom* (*Benutzerdefiniert*). Choosing one fills *From* and *To*. |
 | *From* / *To* (*Von* / *Bis*) | The first and last day (included), in the browser's time zone. Either can stay empty. Typing a date switches the period to *Custom*. An entry belongs to the day it starts in. |
 | *Sort* (*Sortierung*) | *Newest first* (default) or *Oldest first*. |
 

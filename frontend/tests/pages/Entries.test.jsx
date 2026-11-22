@@ -48,6 +48,18 @@ afterEach(() => {
 })
 
 describe('Entries', () => {
+  test.each([
+    [1, '2026-09-21', '2026-09-27'],
+    [0, '2026-09-20', '2026-09-26'],
+  ])('with firstDay %i the period choice This week searches %s to %s', async (firstDay, from, to) => {
+    renderPage({ firstDay })
+    await screen.findByRole('region', { name: 'Ergebnisse' })
+
+    await userEvent.selectOptions(screen.getByLabelText('Zeitraum'), 'Diese Woche')
+
+    await waitFor(() => expect(lastQuery()).toMatchObject({ from, to }))
+  })
+
   test('has the page heading in the same style as the Dashboard heading, and a results section', async () => {
     renderPage()
 
