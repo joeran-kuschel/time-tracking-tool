@@ -80,7 +80,7 @@ describe('Settings', () => {
     })
 
     describe('your details', () => {
-      const saved = { showAmounts: false, roundingMinutes: 0, roundingDirection: 'up', showRoundingNote: false, defaultHourlyRate: null, weekStart: 'monday', senderName: null, senderAddress: null, senderEmail: null }
+      const saved = { showAmounts: false, roundingMinutes: 0, roundingDirection: 'up', showRoundingNote: false, defaultHourlyRate: null, weekStart: 'monday', senderName: null, senderAddress: null, senderEmail: null, senderTaxId: null, vatMode: 'regular', vatRate: 19, invoiceNumberPattern: '{YYYY}-{NNNN}', invoiceNextNumber: 1 }
       const name = () => screen.getByRole('textbox', { name: 'Dein Name oder Firmenname' })
       const address = () => screen.getByRole('textbox', { name: 'Adresse' })
       const email = () => screen.getByRole('textbox', { name: 'E-Mail-Adresse' })
@@ -116,7 +116,7 @@ describe('Settings', () => {
         render(<Harness list={settingsGroups} />)
 
         const group = await screen.findByRole('group', { name: 'Deine Angaben' })
-        expect(within(group).getByText(/Wird oben rechts im PDF-Bericht gedruckt/)).toBeInTheDocument()
+        expect(within(group).getByText(/Name, Adresse und E-Mail-Adresse werden oben rechts im PDF-Bericht gedruckt/)).toBeInTheDocument()
         expect(address()).toHaveAccessibleDescription('Bis zu 6 Zeilen, zum Beispiel Straße und Ort.')
       })
 
@@ -254,6 +254,244 @@ describe('Settings', () => {
 
         act(() => activateLocale('en'))
         expect(await axe(container)).toHaveNoViolations()
+      })
+    })
+
+    describe('invoicing', () => {
+      const saved = { showAmounts: false, roundingMinutes: 0, roundingDirection: 'up', showRoundingNote: false, defaultHourlyRate: null, weekStart: 'monday', senderName: null, senderAddress: null, senderEmail: null, senderTaxId: null, vatMode: 'regular', vatRate: 19, invoiceNumberPattern: '{YYYY}-{NNNN}', invoiceNextNumber: 1 }
+      const mode = () => screen.getByRole('combobox', { name: 'Umsatzsteuer' })
+      const rate = () => screen.getByRole('combobox', { name: 'Umsatzsteuersatz' })
+      const pattern = () => screen.getByRole('textbox', { name: 'Muster der Rechnungsnummer' })
+      const next = () => screen.getByRole('textbox', { name: 'Nächste Rechnungsnummer' })
+      const taxId = () => screen.getByRole('textbox', { name: 'Steuernummer' })
+      const save = () => userEvent.click(screen.getByRole('button', { name: 'Speichern' }))
+      const year = String(new Date().getUTCFullYear())
+
+      beforeEach(() => {
+        api.getSettings.mockResolvedValue(saved)
+        api.updateSettings.mockImplementation(async (changes) => ({ ...saved, ...changes }))
+      })
+
+      afterEach(() => activateLocale('de'))
+
+      test('is a group with the VAT, the pattern and the next number, and says that nothing else changes', async () => {
+        render(<Harness list={settingsGroups} />)
+
+        const group = await screen.findByRole('group', { name: 'Rechnungen' })
+        expect(within(group).getByRole('combobox', { name: 'Umsatzsteuer' })).toHaveValue('regular')
+        expect(rate()).toHaveValue('19')
+        expect(pattern()).toHaveValue('{YYYY}-{NNNN}')
+        expect(next()).toHaveValue('1')
+        expect(next()).toHaveAttribute('inputmode', 'numeric')
+        expect(within(group).getByText(/Sonst ändert sich nichts/)).toBeInTheDocument()
+      })
+
+      test('the tax ID is in Your details, one line, up to 30 characters', async () => {
+        render(<Harness list={settingsGroups} />)
+
+        const group = await screen.findByRole('group', { name: 'Deine Angaben' })
+        expect(within(group).getByRole('textbox', { name: 'Steuernummer' })).toHaveAttribute('maxlength', '30')
+        expect(taxId()).toHaveValue('')
+      })
+
+      test('saves the tax ID trimmed, and removes it with null', async () => {
+        render(<Harness list={settingsGroups} />)
+        await screen.findByRole('group', { name: 'Deine Angaben' })
+
+        await userEvent.type(taxId(), '  DE123456789 ')
+        await save()
+        expect(api.updateSettings).toHaveBeenLastCalledWith({ senderTaxId: 'DE123456789' })
+
+        await userEvent.clear(taxId())
+        await save()
+        expect(api.updateSettings).toHaveBeenLastCalledWith({ senderTaxId: null })
+      })
+
+      test('shows the next number live, from the pattern and the number as typed', async () => {
+        render(<Harness list={settingsGroups} />)
+        await screen.findByRole('group', { name: 'Rechnungen' })
+        const preview = screen.getByText(/Die nächste Rechnung bekäme die Nummer/).closest('p')
+        expect(preview).toHaveTextContent(`Die nächste Rechnung bekäme die Nummer: ${year}-0001`)
+        expect(preview).toHaveAttribute('aria-live', 'polite')
+
+        await userEvent.clear(next())
+        await userEvent.type(next(), '42')
+        expect(preview).toHaveTextContent(`${year}-0042`)
+
+        await userEvent.clear(pattern())
+        await userEvent.type(pattern(), 'RE-{{NNN}')
+        expect(preview).toHaveTextContent('Die nächste Rechnung bekäme die Nummer: RE-042')
+      })
+
+      test('the preview is empty while the pattern or the number cannot be used, but stays in the page', async () => {
+        render(<Harness list={settingsGroups} />)
+        await screen.findByRole('group', { name: 'Rechnungen' })
+        const preview = screen.getByText(/Die nächste Rechnung bekäme die Nummer/).closest('p')
+
+        await userEvent.clear(next())
+        expect(preview).toBeEmptyDOMElement()
+        await userEvent.type(next(), '5')
+        await userEvent.clear(pattern())
+        expect(preview).toBeEmptyDOMElement()
+      })
+
+      test('a small business has no VAT rate to choose: the field is disabled and says why', async () => {
+        render(<Harness list={settingsGroups} />)
+        await screen.findByRole('group', { name: 'Rechnungen' })
+
+        await userEvent.selectOptions(mode(), 'small_business')
+
+        expect(rate()).toBeDisabled()
+        expect(rate()).toHaveAccessibleDescription('Kleinunternehmer weisen keine Umsatzsteuer aus.')
+        await userEvent.selectOptions(mode(), 'regular')
+        expect(rate()).toBeEnabled()
+      })
+
+      test('saves the VAT as numbers and strings of the options, and the pattern and number together', async () => {
+        render(<Harness list={settingsGroups} />)
+        await screen.findByRole('group', { name: 'Rechnungen' })
+
+        await userEvent.selectOptions(rate(), '7 %')
+        await userEvent.clear(pattern())
+        await userEvent.type(pattern(), 'RE-{{YY}-{{NNN}')
+        await userEvent.clear(next())
+        await userEvent.type(next(), '12')
+        await save()
+
+        expect(api.updateSettings).toHaveBeenCalledWith({ vatRate: 7, invoiceNumberPattern: 'RE-{YY}-{NNN}', invoiceNextNumber: 12 })
+        expect(await screen.findByText('Einstellungen gespeichert.')).toBeInTheDocument()
+      })
+
+      test('describes the pattern field by its hint, which names the placeholders', async () => {
+        render(<Harness list={settingsGroups} />)
+        await screen.findByRole('group', { name: 'Rechnungen' })
+
+        expect(pattern()).toHaveAccessibleDescription(/Platzhalter: \{YYYY\} Jahr, \{YY\} Jahr zweistellig, \{MM\} Monat und ein Zähler wie \{NNNN\}/)
+        expect(next()).toHaveAccessibleDescription(/nur erhöht werden/)
+      })
+
+      test.each([
+        ['{{YYYY}', 'Das Muster braucht genau einen Zähler, zum Beispiel {NNNN}.'],
+        ['{{NNNN}{{NN}', 'Das Muster braucht genau einen Zähler, zum Beispiel {NNNN}.'],
+        ['#{{NNNN}', 'Verwende außer den Platzhaltern nur Buchstaben, Ziffern und . _ / - sowie Leerzeichen.'],
+        ['{{NNNN} ', null],
+      ])('refuses the pattern %j with an error next to the field, the focus on it, and saves nothing', async (value, message) => {
+        render(<Harness list={settingsGroups} />)
+        await screen.findByRole('group', { name: 'Rechnungen' })
+
+        await userEvent.clear(pattern())
+        await userEvent.type(pattern(), value)
+        await save()
+
+        if (message) {
+          expect(await screen.findByText(message)).toBeInTheDocument()
+          expect(pattern()).toHaveAttribute('aria-invalid', 'true')
+          expect(pattern()).toHaveAccessibleDescription(expect.stringContaining(message))
+          expect(pattern()).toHaveFocus()
+          expect(api.updateSettings).not.toHaveBeenCalled()
+        } else {
+          // Spaces at the end are trimmed away, so this one is valid
+          expect(api.updateSettings).toHaveBeenCalledWith({ invoiceNumberPattern: '{NNNN}' })
+        }
+      })
+
+      test('an empty pattern is refused, not saved as not set', async () => {
+        render(<Harness list={settingsGroups} />)
+        await screen.findByRole('group', { name: 'Rechnungen' })
+
+        await userEvent.clear(pattern())
+        await save()
+
+        expect(await screen.findByText(/Gib ein Muster mit bis zu 40 Zeichen ein/)).toBeInTheDocument()
+        expect(api.updateSettings).not.toHaveBeenCalled()
+      })
+
+      test.each([[''], ['0'], ['abc'], ['1.5'], ['-3'], ['100000000']])('refuses the next number %j with an error next to the field', async (value) => {
+        render(<Harness list={settingsGroups} />)
+        await screen.findByRole('group', { name: 'Rechnungen' })
+
+        await userEvent.clear(next())
+        if (value) await userEvent.type(next(), value)
+        await save()
+
+        expect(await screen.findByText('Gib eine ganze Zahl von 1 bis 99.999.999 ein.')).toBeInTheDocument()
+        expect(next()).toHaveAttribute('aria-invalid', 'true')
+        expect(next()).toHaveFocus()
+        expect(api.updateSettings).not.toHaveBeenCalled()
+      })
+
+      test('a bad pattern and a bad number show both errors, and nothing of the form is saved, not even a valid change', async () => {
+        render(<Harness list={settingsGroups} />)
+        await screen.findByRole('group', { name: 'Rechnungen' })
+
+        await userEvent.type(taxId(), 'DE123456789')
+        await userEvent.clear(pattern())
+        await userEvent.type(pattern(), 'RE#{{}NNNN}')
+        await userEvent.clear(next())
+        await userEvent.type(next(), 'abc')
+        await save()
+
+        expect(await screen.findByText('Gib eine ganze Zahl von 1 bis 99.999.999 ein.')).toBeInTheDocument()
+        expect(screen.getByText(/Verwende außer den Platzhaltern nur/)).toBeInTheDocument()
+        expect(pattern()).toHaveAttribute('aria-invalid', 'true')
+        expect(next()).toHaveAttribute('aria-invalid', 'true')
+        expect(api.updateSettings).not.toHaveBeenCalled()
+      })
+
+      test('a number with leading zeros is read as the number', async () => {
+        render(<Harness list={settingsGroups} />)
+        await screen.findByRole('group', { name: 'Rechnungen' })
+
+        await userEvent.clear(next())
+        await userEvent.type(next(), '0007')
+        await save()
+
+        expect(api.updateSettings).toHaveBeenCalledWith({ invoiceNextNumber: 7 })
+      })
+
+      test('the error goes away when the number is typed again', async () => {
+        render(<Harness list={settingsGroups} />)
+        await screen.findByRole('group', { name: 'Rechnungen' })
+        await userEvent.clear(next())
+        await save()
+        await screen.findByText('Gib eine ganze Zahl von 1 bis 99.999.999 ein.')
+
+        await userEvent.type(next(), '3')
+
+        expect(screen.queryByText('Gib eine ganze Zahl von 1 bis 99.999.999 ein.')).not.toBeInTheDocument()
+      })
+
+      test('a refused lowering (409) says that the number can only be raised and keeps what was typed', async () => {
+        api.getSettings.mockResolvedValue({ ...saved, invoiceNextNumber: 10 })
+        api.updateSettings.mockRejectedValue(new ApiError(409, 'The next invoice number cannot be lowered'))
+        render(<Harness list={settingsGroups} />)
+        await screen.findByRole('group', { name: 'Rechnungen' })
+
+        await userEvent.clear(next())
+        await userEvent.type(next(), '3')
+        await save()
+
+        expect(await screen.findByRole('alert')).toHaveTextContent('Einstellungen konnten nicht gespeichert werden. Die nächste Rechnungsnummer kann nur erhöht, nicht verringert werden.')
+        expect(next()).toHaveValue('3')
+      })
+
+      test.each(['de', 'en'])('has no detectable accessibility violations in %s', async (locale) => {
+        activateLocale(locale)
+        const { container } = render(<Harness list={settingsGroups} />)
+        await screen.findByRole('group', { name: locale === 'de' ? 'Rechnungen' : 'Invoicing' })
+
+        expect(await axe(container)).toHaveNoViolations()
+      })
+
+      test('shows the English texts', async () => {
+        activateLocale('en')
+        render(<Harness list={settingsGroups} />)
+
+        const group = await screen.findByRole('group', { name: 'Invoicing' })
+        expect(within(group).getByRole('combobox', { name: 'VAT' })).toBeInTheDocument()
+        expect(within(group).getByRole('textbox', { name: 'Invoice number pattern' })).toBeInTheDocument()
+        expect(within(group).getByRole('textbox', { name: 'Next invoice number' })).toBeInTheDocument()
+        expect(screen.getByRole('textbox', { name: 'Tax ID' })).toBeInTheDocument()
       })
     })
 
@@ -733,7 +971,7 @@ describe('Settings', () => {
       expect(new Set(options.map((option) => option.name)).size).toBe(options.length)
       expect(new Set(settingsGroups.map((group) => group.id)).size).toBe(settingsGroups.length)
       for (const option of options) {
-        expect(['checkbox', 'select', 'decimal', 'text', 'textarea', 'email', 'logo']).toContain(option.type)
+        expect(['checkbox', 'select', 'decimal', 'integer', 'text', 'textarea', 'email', 'logo']).toContain(option.type)
         expect(option.label).toBeTruthy()
       }
     })

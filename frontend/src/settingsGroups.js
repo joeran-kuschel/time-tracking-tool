@@ -15,14 +15,26 @@
 //               accepts), `maxLines` (textarea) and `autoComplete` (the token that says what the field is)
 //   'logo'      the logo for the PDF report: a preview, a file field and a Remove button; it stores the image at once
 //               (not with Save) and has no value in /api/settings, so it needs no backend option
+//   'integer'   a whole number from 1 to 99,999,999, typed as digits; its value is a number
 //   'decimal'   an amount with up to two decimals, typed in the format of the active language ("80,00" / "80.00");
 //               its value is a number, or null when empty. The page shows an error for anything else and does not save it
+// A text option can have `check(text)`, which returns null for a usable text or a kind of problem (the Settings page
+// has a message for each), and any option can have `preview(values)`, which returns a text shown live under the field
+// (or null for none) from what the form shows now; `previewLabel` (a msg descriptor) introduces it.
 // `disabledWhen(values)` (optional) tells from the current values of the form whether the field is disabled, and
 // `disabledHint` (a msg descriptor) says why; it replaces the hint while the field is disabled.
 import { msg } from '@lingui/core/macro'
+import { patternProblem, previewInvoiceNumber, MAX_PATTERN } from './invoiceNumber'
 
 // The option types that are typed text (a 'decimal' is typed text too, but is read as an amount)
 export const textTypes = ['text', 'email', 'textarea']
+
+// The placeholders of the invoice number pattern, as variables so that the translators see names, not {0}
+const year = '{YYYY}'
+const shortYear = '{YY}'
+const month = '{MM}'
+const counter = '{NNNN}'
+const example = '{YYYY}-{NNNN}'
 
 export const settingsGroups = [
   {
@@ -96,7 +108,7 @@ export const settingsGroups = [
   {
     id: 'details',
     label: msg`Your details`,
-    note: msg`Printed at the top right of the PDF report, next to the logo. Leave them empty for a report without a sender block. The CSV does not change.`,
+    note: msg`Your name, address and email are printed at the top right of the PDF report, next to the logo. Leave them empty for a report without a sender block. The CSV does not change.`,
     options: [
       {
         name: 'logo',
@@ -126,6 +138,57 @@ export const settingsGroups = [
         label: msg`Email address`,
         maxLength: 254,
         autoComplete: 'email',
+      },
+      {
+        name: 'senderTaxId',
+        type: 'text',
+        label: msg`Tax ID`,
+        hint: msg`Your Steuernummer or USt-IdNr. Kept for invoices; it is not printed on reports.`,
+        maxLength: 30,
+      },
+    ],
+  },
+  {
+    id: 'invoicing',
+    label: msg`Invoicing`,
+    note: msg`These settings are used by invoices, which can be created in a later version. Nothing else changes.`,
+    options: [
+      {
+        name: 'vatMode',
+        type: 'select',
+        label: msg`VAT`,
+        choices: [
+          { value: 'regular', label: msg`Regular, with VAT` },
+          { value: 'small_business', label: msg`Small business, no VAT (§19 UStG)` },
+        ],
+      },
+      {
+        name: 'vatRate',
+        type: 'select',
+        label: msg`VAT rate`,
+        choices: [
+          { value: 19, label: msg`19 %` },
+          { value: 7, label: msg`7 %` },
+          { value: 0, label: msg`0 %` },
+        ],
+        disabledWhen: (values) => values.vatMode === 'small_business',
+        disabledHint: msg`Small businesses charge no VAT.`,
+      },
+      {
+        name: 'invoiceNumberPattern',
+        type: 'text',
+        label: msg`Invoice number pattern`,
+        hint: msg`Placeholders: ${year} year, ${shortYear} short year, ${month} month, and one counter such as ${counter} (four digits). Example: ${example}.`,
+        maxLength: MAX_PATTERN,
+        check: patternProblem,
+      },
+      {
+        name: 'invoiceNextNumber',
+        type: 'integer',
+        label: msg`Next invoice number`,
+        hint: msg`The counter can only be raised, so a number is never used twice. If the pattern has a year, the counter starts again at 1 every year.`,
+        preview: previewInvoiceNumber,
+        previewLabel: msg`The next invoice would get the number`,
       },
     ],
   },

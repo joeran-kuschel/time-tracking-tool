@@ -1,3 +1,5 @@
+const { patternProblem } = require('../utils/invoiceNumber');
+
 // The app-wide options of the settings table: the name in the API, the column and a check for a valid value. This is
 // the only place that knows the column names, so SQL never takes a column from a request (models/Settings.js builds
 // it from this list). A new option is an entry here plus a migration that adds the column with its default. `fromColumn`
@@ -8,6 +10,12 @@
 const ROUNDING_MINUTES = [0, 5, 10, 15, 30, 60];
 const ROUNDING_DIRECTIONS = ['up', 'nearest'];
 const WEEK_STARTS = ['monday', 'sunday'];
+// 'small_business' charges no VAT (§19 UStG); the rates are those of Germany. Both lists are also database checks
+// (settings_vat_mode_check, settings_vat_rate_check in migration 015)
+const VAT_MODES = ['regular', 'small_business'];
+const VAT_RATES = [0, 7, 19];
+// The largest invoice number the counter table holds
+const MAX_INVOICE_NUMBER = 99999999;
 // The largest rate the column holds (DECIMAL(10, 2))
 const MAX_RATE = 99999999.99;
 // A rate in euros: a number from 0 with at most two decimals
@@ -17,6 +25,7 @@ const isRate = (value) => Number.isFinite(value) && value >= 0 && value <= MAX_R
 // Your own details for the sender block of the PDF report: null (not set) or a text that is already trimmed. The name is
 // one line; the address can have a few lines (separated by \n, no other control characters).
 const MAX_NAME = 100;
+const MAX_TAX_ID = 30;
 const MAX_ADDRESS = 300;
 const MAX_ADDRESS_LINES = 6;
 const MAX_EMAIL = 254;
@@ -44,6 +53,16 @@ const OPTIONS = {
     isValid: (value) => value === null || (isTrimmedText(value, MAX_ADDRESS, '\n') && value.split('\n').length <= MAX_ADDRESS_LINES),
   },
   senderEmail: { column: 'sender_email', isValid: (value) => value === null || isEmail(value) },
+  // Your tax ID (Steuernummer or USt-IdNr), one line; null is not set
+  senderTaxId: { column: 'sender_tax_id', isValid: (value) => value === null || isTrimmedText(value, MAX_TAX_ID) },
+  // VAT for invoices: the mode and, for 'regular', the rate in percent
+  vatMode: { column: 'vat_mode', isValid: (value) => VAT_MODES.includes(value) },
+  vatRate: { column: 'vat_rate', isValid: (value) => VAT_RATES.includes(value) },
+  // The pattern of invoice numbers, e.g. {YYYY}-{NNNN} (utils/invoiceNumber.js)
+  invoiceNumberPattern: { column: 'invoice_number_pattern', isValid: (value) => patternProblem(value) === null },
+  // The next invoice number of the counter the pattern uses today. It has no column: models/Settings.js reads and raises
+  // it in invoice_counters, and refuses a number below the current one
+  invoiceNextNumber: { counter: true, isValid: (value) => Number.isInteger(value) && value >= 1 && value <= MAX_INVOICE_NUMBER },
   // The hourly rate (euros) the form for a new project starts with; null is no default
   defaultHourlyRate: {
     column: 'default_hourly_rate',

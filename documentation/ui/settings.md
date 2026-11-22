@@ -17,6 +17,11 @@ header.
 | | **Your name or business name** (*Dein Name oder Firmenname*) | empty | Printed in bold at the top right of the PDF report ([Reports](reports.md)). One line, up to 100 characters. |
 | | **Address** (*Adresse*) | empty | Printed under the name, one line per line you type. Up to 6 lines and 300 characters. |
 | | **Email address** (*E-Mail-Adresse*) | empty | Printed under the address. Only the format is checked (`name@example.com`), not whether the address exists. |
+| | **Tax ID** (*Steuernummer*) | empty | Your Steuernummer or USt-IdNr, one line, up to 30 characters. It is stored for invoices; reports do not print it. |
+| **Invoicing** (*Rechnungen*) | **VAT** (*Umsatzsteuer*) | regular | **Regular, with VAT** (*Regulär, mit Umsatzsteuer*) or **Small business, no VAT (§19 UStG)** (*Kleinunternehmer, ohne Umsatzsteuer (§19 UStG)*). |
+| | **VAT rate** (*Umsatzsteuersatz*) | 19 % | **19 %**, **7 %** or **0 %**. Disabled for a small business, with a hint that says why. |
+| | **Invoice number pattern** (*Muster der Rechnungsnummer*) | `{YYYY}-{NNNN}` | Text with the placeholders `{YYYY}` (year), `{YY}` (short year), `{MM}` (month) and exactly one counter such as `{NNNN}` (four digits, with leading zeros). Besides them only letters, digits and `. _ / -` and spaces. Up to 40 characters. |
+| | **Next invoice number** (*Nächste Rechnungsnummer*) | 1 | The counter of the next invoice, a whole number from 1 to 99,999,999. It can only be raised, so a number is never used twice (the backend answers `409`; the page says *The next invoice number can only be raised, not lowered.*). If the pattern has a year, the counter starts again at 1 every year; the field shows the counter of the current year. A live preview under it shows the number (*The next invoice would get the number: 2026-0001*), in a polite live region. |
 | **Calendar** (*Kalender*) | **First day of the week** (*Erster Tag der Woche*) | Monday | **Monday** (*Montag*) or **Sunday** (*Sonntag*): the day the weeks of the [Dashboard](dashboard.md#first-day-of-the-week) and the period choices *This week* and *Last week* on the [Entries page](entries.md) start on. Months and reports stay calendar months. |
 
 A customer can have its own rule (or none) in its form, which then wins over this setting
@@ -26,6 +31,9 @@ tracking page ([Dashboard](dashboard.md#rounded-hours)).
 The group has a note: the rounding also applies to the reports of past months; PDF and CSV files that were already
 downloaded do not change. Stored entries are never changed, and the timer, the entry lists and the Entries search keep
 showing the exact times.
+
+The **Invoicing** group has a note: invoices can be created in a later version, and nothing else changes. The three
+settings are only stored until then; the pattern and the counter are described in the [Settings API](../backend/settings.md#invoice-numbers).
 
 Your details are optional: leave them all empty and the report has no sender block, as before. The group has a note that
 says where they are printed and that the CSV does not change. Without a logo and details the report has no sender block.
@@ -59,6 +67,16 @@ With no group at all the page says
   trims it and sends `null` for an empty one (*not set*); spaces only are no change. An email that is not
   `something@something.tld` shows *Enter an email address like name@example.com.* and an address with more than 6 lines
   *Use at most 6 lines.* next to the field, with the focus on it, and nothing is saved, as for an amount.
+- **Whole number (`integer`) and preview:** a text field with the numeric keyboard (`inputmode="numeric"`) that accepts
+  digits for 1 to 99,999,999; anything else shows *Enter a whole number from 1 to 99,999,999.* next to the field (as for an
+  amount). An option can have `preview(values)` and `previewLabel`: the text under the field is built live from the
+  values the form shows now (`previewInvoiceNumber` in `src/invoiceNumber.js`, which follows the backend's rules, with
+  UTC dates like the backend). It sits in a `aria-live="polite"` paragraph that is always in the page, so a screen reader
+  announces a change, and it is empty while the pattern or number cannot be used.
+- **Text check (`check`):** a text option can have `check(text)`, which returns `null` or a kind of problem. The invoice
+  number pattern uses it, and it must pass also when empty (an empty pattern is refused, not saved as *not set*): *Enter a
+  pattern of up to 40 characters, without a space at the start or end.*, *Besides the placeholders, use only letters,
+  digits and . _ / - and spaces.* or *The pattern needs exactly one counter, for example {NNNN}.*
 - **Amount field (`decimal`):** a text field with the decimal keyboard (`inputmode="decimal"`), not `type="number"`, so
   the number is shown and read in the format of the active language: `80,00` in German, `80.00` in English
   (`formatDecimal` and `parseDecimal` in `src/format.js`). It accepts digits with one decimal separator of the language
@@ -92,6 +110,6 @@ title (*Settings · Time Tracking*) and moves focus to its `<h1>` when it is ope
 
 ## Tests
 
-`tests/pages/Settings.test.jsx` (groups, hint, one save with several changes, only the changes are sent, nothing changed,
-failed save and load, language switch, axe in German and English), `tests/hooks/useSettings.test.js`, `tests/routes.test.js`,
+`tests/pages/Settings.test.jsx` (groups, the Invoicing group, hint, one save with several changes, only the changes are sent, nothing changed,
+failed save and load, language switch, axe in German and English), `tests/hooks/useSettings.test.js`, `tests/invoiceNumber.test.js` (the pattern rules, the same table as the backend), `tests/routes.test.js`,
 `tests/api.test.js` and `tests/App.test.jsx` (the navigation item, the settings are loaded once).

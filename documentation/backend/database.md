@@ -5,7 +5,7 @@ instead.
 
 ## Schema
 
-Defined in `backend/migrations/001_init_schema.sql`, `002_report_status.sql`, `003_one_running_timer.sql`, `004_auth.sql`, `005_settings.sql`, `006_settings_show_amounts.sql`, `007_settings_rounding.sql`, `008_settings_rounding_steps.sql`, `009_customer_rounding.sql`, `010_settings_default_hourly_rate.sql`, `011_customer_report_language.sql`, `012_settings_week_start.sql`, `013_settings_sender_details.sql` and `014_sender_logo.sql`:
+Defined in `backend/migrations/001_init_schema.sql`, `002_report_status.sql`, `003_one_running_timer.sql`, `004_auth.sql`, `005_settings.sql`, `006_settings_show_amounts.sql`, `007_settings_rounding.sql`, `008_settings_rounding_steps.sql`, `009_customer_rounding.sql`, `010_settings_default_hourly_rate.sql`, `011_customer_report_language.sql`, `012_settings_week_start.sql`, `013_settings_sender_details.sql`, `014_sender_logo.sql` and `015_settings_invoicing.sql`:
 
 | Table | Columns | Relations |
 |---|---|---|
@@ -15,7 +15,8 @@ Defined in `backend/migrations/001_init_schema.sql`, `002_report_status.sql`, `0
 | `report_status` | `customer_id`, `year`, `month` (1–12), `status` (`draft`, `ready` or `sent`), `updated_at`; primary key `(customer_id, year, month)` | `customer_id` → `customers`, `ON DELETE CASCADE` |
 | `users` | `id`, `email` (unique, lower case), `password_hash`, `created_at` | |
 | `sessions` | `token_hash` (SHA-256 of the cookie's token, primary key), `user_id`, `created_at`, `expires_at` (idle expiry) | `user_id` → `users`, `ON DELETE CASCADE` |
-| `settings` | `id` (always 1), `updated_at`; one column per option: `show_amounts` (boolean, default false), `rounding_minutes` (0, 5, 10, 15, 30 or 60, default 0), `rounding_direction` (`up` or `nearest`, default `up`), `show_rounding_note` (boolean, default false), `default_hourly_rate` (decimal(10,2) ≥ 0, `NULL` = no default), `week_start` (`monday` or `sunday`, default `monday`), `sender_name` (varchar(100)), `sender_address` (varchar(300)) and `sender_email` (varchar(254)), all `NULL` = not set | |
+| `settings` | `id` (always 1), `updated_at`; one column per option: `show_amounts` (boolean, default false), `rounding_minutes` (0, 5, 10, 15, 30 or 60, default 0), `rounding_direction` (`up` or `nearest`, default `up`), `show_rounding_note` (boolean, default false), `default_hourly_rate` (decimal(10,2) ≥ 0, `NULL` = no default), `week_start` (`monday` or `sunday`, default `monday`), `sender_name` (varchar(100)), `sender_address` (varchar(300)) and `sender_email` (varchar(254)), all `NULL` = not set, `sender_tax_id` (varchar(30), `NULL` = not set), `vat_mode` (`regular` or `small_business`, default `regular`), `vat_rate` (0, 7 or 19, default 19) and `invoice_number_pattern` (varchar(40), default `{YYYY}-{NNNN}`) | |
+| `invoice_counters` | `scope_year` (primary key: the year of a pattern with a year, or 0), `next_number` (1 to 99999999), `updated_at`; a year without a row is at 1 ([Settings API](settings.md#invoice-numbers)) | |
 
 Indexes: `projects(customer_id)`, `time_entries(project_id)`, `time_entries(start_time)`, and the partial unique index
 `one_running_timer`, which allows only one time entry without `end_time` (one running timer, see

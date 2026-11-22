@@ -13,7 +13,8 @@ Both need a login like every `/api` route.
 | `PUT /api/settings` | Saves the options in the body (any of them) and answers with all options. |
 
 `400` when the body is not an object, or names an option that does not exist or gives it an invalid value (nothing is
-saved then). `500` when the database fails.
+saved then). `409` (code `COUNTER_LOWERED`) when `invoiceNextNumber` is lower than the current number of its counter; nothing of the request is
+saved then. `500` when the database fails.
 
 ## Options
 
@@ -27,11 +28,34 @@ saved then). `500` when the database fails.
 | `senderName` | `sender_name` | `null` or a text of 1 to 100 characters, one line, trimmed | `null` | Your name or business name for the sender block of the PDF report ([Reports](reports.md#pdf-report)) |
 | `senderAddress` | `sender_address` | `null` or a text of 1 to 300 characters with at most 6 lines (separated by `\n`), trimmed | `null` | Your address for the sender block; one printed line per line |
 | `senderEmail` | `sender_email` | `null` or an email address of at most 254 characters, in the format `something@something.tld` only | `null` | Your email address for the sender block |
+| `senderTaxId` | `sender_tax_id` | `null` or a text of 1 to 30 characters, one line, trimmed | `null` | Your Steuernummer or USt-IdNr, kept for invoices (reports do not print it) |
+| `vatMode` | `vat_mode` | `"regular"` or `"small_business"` | `"regular"` | VAT for invoices: with VAT, or none under §19 UStG. Nothing reads it yet |
+| `vatRate` | `vat_rate` | `0`, `7` or `19` (a number) | `19` | The VAT rate in percent for `"regular"` |
+| `invoiceNumberPattern` | `invoice_number_pattern` | a [pattern](#invoice-numbers) of up to 40 characters | `"{YYYY}-{NNNN}"` | The format of invoice numbers |
+| `invoiceNextNumber` | none (table `invoice_counters`) | a whole number from 1 to 99999999 | `1` | The next invoice number of the counter the pattern uses today; only ever raised (see below) |
 | `defaultHourlyRate` | `default_hourly_rate` | `null` or a number from 0 to 99999999.99 with at most two decimals (a number, not a string) | `null` | The hourly rate (euros) that the form for a new project starts with; `null` is no default. Nothing else reads it: existing projects and report amounts never change with it ([Projects](projects.md)) |
 
 The list lives in `backend/src/config/settingsOptions.js`: the name, the column and the check of each option, and
 optionally `fromColumn`, which turns what `pg` returns into the API value (a `DECIMAL` column comes back as a string, so
 the rate becomes a number).
+
+## Invoice numbers
+
+The pattern is text with the placeholders `{YYYY}` (year), `{YY}` (year of two digits), `{MM}` (month) and exactly one counter,
+a run of `N` such as `{NNNN}` (up to 8; four digits with leading zeros). The rest is letters, digits and `. _ / -`, and
+spaces inside, up to 40 characters in all. `utils/invoiceNumber.js` checks a pattern (`patternProblem`), formats a number
+(`formatInvoiceNumber`, with a UTC date) and says which counter a date uses (`counterScope`); the frontend has the same
+rules for its preview (`frontend/src/invoiceNumber.js`) and both test files use the same table of examples.
+
+The counters are in the table `invoice_counters` (`015_settings_invoicing.sql`): one row per `scope_year` with its
+`next_number`. A pattern **with a year** restarts at 1 every year, so its counter is the year of the invoice date; a
+pattern without a year keeps counting, with `scope_year` 0. A counter without a row is at 1, so a new year needs no
+action. `GET` shows the counter of today's year (UTC) for the saved pattern. `PUT` with `invoiceNextNumber` sets the
+counter of the pattern saved with it (or the saved one), and refuses a lower number than the counter has, so a number
+is never used twice (the check is part of the `UPDATE ... WHERE next_number <= ...` that writes it, so two saves at the same
+time cannot lower it; the counter is raised before the other options are saved, so a failed save can only skip numbers); changing only the pattern moves no counter, and a pattern without a year starts its own counter at 1,
+so raise it first when you already used such numbers. Nothing creates invoices yet: the invoice will take its number from
+this counter in one atomic step and a unique index on the invoice number is the second guard.
 
 ## Logo
 
@@ -67,7 +91,7 @@ dependency), which keeps other websites from using the session with a plain HTML
 
 ## Storage
 
-`backend/migrations/005_settings.sql` creates the table `settings` (`006_settings_show_amounts.sql`, `007_settings_rounding.sql`, `008_settings_rounding_steps.sql` and `010_settings_default_hourly_rate.sql`, `012_settings_week_start.sql` and `013_settings_sender_details.sql` add the columns and the steps): a single row (`id` is always 1, enforced by a
+`backend/migrations/005_settings.sql` creates the table `settings` (`006_settings_show_amounts.sql`, `007_settings_rounding.sql`, `008_settings_rounding_steps.sql` and `010_settings_default_hourly_rate.sql`, `012_settings_week_start.sql`, `013_settings_sender_details.sql` and `015_settings_invoicing.sql` add the columns and the steps): a single row (`id` is always 1, enforced by a
 `CHECK`) with one typed column per option, each with its default. The row is created on the first read, so a fresh
 install behaves as before and every option has its default until something is saved. `models/Settings.js` creates the row
 on first use and updates it.
@@ -85,7 +109,7 @@ removes it. The hourly backup includes it (up to about 1 MB more).
    by name, and pg-mem (the tests) names an unnamed check differently from Postgres. pg-mem also fails ("Corrupted
    alias") on a check written inside `ADD COLUMN IF NOT EXISTS` for a column without `NOT NULL DEFAULT`, so add such a
    check separately (`DROP CONSTRAINT IF EXISTS`, then `ADD CONSTRAINT`), as `010` does.
-2. An entry in `config/settingsOptions.js` (name, column, `isValid`). `Settings.get()` and `Settings.update()` and the
+2. An entry in `config/settingsOptions.js` (name, column, `isValid`; `counter: true` instead of a column for the invoice counter, which `models/Settings.js` handles apart). `Settings.get()` and `Settings.update()` and the
    controller's validation use that list, so nothing else changes. Column names come only from this list, never from the
    request body: only values can be parameterized, so names taken from the body would allow SQL injection.
 3. The option in a group of `frontend/src/settingsGroups.js`, see [Settings page](../ui/settings.md#adding-an-option).

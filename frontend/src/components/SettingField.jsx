@@ -16,10 +16,12 @@ import LogoField from './LogoField'
 // A 'text', 'email' or 'textarea' option is a text field (a multi-line one for 'textarea', 'email' with the email keyboard)
 // whose value is the typed text, or null when nothing is set; the page trims it and turns an empty text into null when
 // saving. The option can set `maxLength` and `autoComplete` (the token that tells the browser what the field is).
+// An 'integer' option is a text field with digits (a number until edited, then the typed text), like 'decimal'.
+// `preview` (a text, with `option.previewLabel` before it) is shown live under the field and announced politely.
 // `error` (a text) is shown under the field and marks it invalid.
-const typedTypes = ['decimal', ...textTypes]
+const typedTypes = ['decimal', 'integer', ...textTypes]
 
-function SettingField({ option, value, onChange, disabled = false, error = null }) {
+function SettingField({ option, value, onChange, disabled = false, error = null, preview = null }) {
   const { i18n } = useLingui()
   const id = useId()
   if (option.type === 'logo') return <LogoField option={option} />
@@ -29,7 +31,7 @@ function SettingField({ option, value, onChange, disabled = false, error = null 
   const hint = hintText && <p id={hintId} className="mt-1 text-sm text-muted">{i18n._(hintText)}</p>
 
   if (typedTypes.includes(option.type)) {
-    const text = option.type === 'decimal' && typeof value !== 'string' ? (value == null ? '' : formatDecimal(i18n, value)) : (value ?? '')
+    const text = option.type === 'decimal' && typeof value !== 'string' ? (value == null ? '' : formatDecimal(i18n, value)) : String(value ?? '')
     const errorId = error ? `${id}-error` : undefined
     const props = {
       id,
@@ -47,8 +49,14 @@ function SettingField({ option, value, onChange, disabled = false, error = null 
         <label htmlFor={id} className={ui.label}>{i18n._(option.label)}</label>
         {option.type === 'textarea'
           ? <textarea rows={4} {...props} className={`${props.className} py-2`} />
-          : <input type={option.type === 'email' ? 'email' : 'text'} inputMode={option.type === 'decimal' ? 'decimal' : undefined} {...props} />}
+          : <input type={option.type === 'email' ? 'email' : 'text'} inputMode={option.type === 'decimal' ? 'decimal' : option.type === 'integer' ? 'numeric' : undefined} {...props} />}
         {hint}
+        {option.preview && (
+          // Always in the page, so a screen reader announces it when it changes
+          <p aria-live="polite" className="mt-1 text-sm">
+            {preview && <>{i18n._(option.previewLabel)}: <strong>{preview}</strong></>}
+          </p>
+        )}
         <ErrorMessage id={errorId} message={error} />
       </div>
     )

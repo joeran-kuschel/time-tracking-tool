@@ -219,6 +219,68 @@ describe('settingsController', () => {
     expect(Settings.update).not.toHaveBeenCalled();
   });
 
+  test.each([
+    [{ senderTaxId: 'DE123456789', vatMode: 'small_business', vatRate: 0, invoiceNumberPattern: 'RE-{YY}-{NNN}', invoiceNextNumber: 12 }],
+    [{ senderTaxId: null }],
+  ])('update saves the invoicing options %j', async (body) => {
+    Settings.update.mockResolvedValue({});
+
+    await controller.update({ body }, mockResponse());
+
+    expect(Settings.update).toHaveBeenCalledWith(body);
+  });
+
+  test.each([
+    ['senderTaxId', ''], ['senderTaxId', 'x'.repeat(31)], ['vatMode', 'gross'], ['vatRate', 16], ['vatRate', '19'],
+    ['invoiceNumberPattern', '{YYYY}'], ['invoiceNumberPattern', '{NNNN}{NNNN}'], ['invoiceNumberPattern', 'a#{NNNN}'],
+    ['invoiceNextNumber', 0], ['invoiceNextNumber', 1.5], ['invoiceNextNumber', '5'], ['invoiceNextNumber', 100000000],
+  ])('update rejects %s %j', async (name, value) => {
+    const res = mockResponse();
+
+    await controller.update({ body: { [name]: value } }, res);
+
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(res.json).toHaveBeenCalledWith({ error: `Invalid value for ${name}` });
+    expect(Settings.update).not.toHaveBeenCalled();
+  });
+
+  test('update saves nothing when a valid invoice number comes with an invalid pattern', async () => {
+    const res = mockResponse();
+
+    await controller.update({ body: { invoiceNextNumber: 5, invoiceNumberPattern: '{YYYY}' } }, res);
+
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(Settings.update).not.toHaveBeenCalled();
+  });
+
+  test.each([['invoiceNextNumber', 1], ['invoiceNextNumber', 99999999], ['invoiceNumberPattern', 'x'.repeat(34) + '{NNNN}']])('update accepts the limit %s %j', async (name, value) => {
+    Settings.update.mockResolvedValue({});
+
+    await controller.update({ body: { [name]: value } }, mockResponse());
+
+    expect(Settings.update).toHaveBeenCalledWith({ [name]: value });
+  });
+
+  test.each([[NaN], [Infinity], [-1], [null], [true], [[5]]])('update rejects %j as invoiceNextNumber', async (value) => {
+    const res = mockResponse();
+
+    await controller.update({ body: { invoiceNextNumber: value } }, res);
+
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(Settings.update).not.toHaveBeenCalled();
+  });
+
+  test('update answers 409 with a code when the next invoice number would be lowered, without logging an error', async () => {
+    Settings.update.mockRejectedValue(Object.assign(new Error('The next invoice number cannot be lowered'), { code: 'COUNTER_LOWERED' }));
+    const res = mockResponse();
+
+    await controller.update({ body: { invoiceNextNumber: 3 } }, res);
+
+    expect(res.status).toHaveBeenCalledWith(409);
+    expect(res.json).toHaveBeenCalledWith({ error: 'The next invoice number cannot be lowered', code: 'COUNTER_LOWERED' });
+    expect(console.error).not.toHaveBeenCalled();
+  });
+
   test('update answers 500 when the database fails', async () => {
     Settings.update.mockRejectedValue(new Error('down'));
     const res = mockResponse();
