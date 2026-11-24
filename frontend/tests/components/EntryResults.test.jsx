@@ -3,6 +3,7 @@ import { renderWithRouter as render, screen, within } from '../support/render'
 import userEvent from '@testing-library/user-event'
 import { axe } from '../support/axe'
 import EntryResults from '@/components/EntryResults'
+import { useSelection } from '@/hooks/useSelection'
 
 const entry = (id, extra = {}) => ({
   id, customer_id: 1, customer_name: 'Muster GmbH', project_id: 7, project_name: 'Website', description: `Eintrag ${id}`,
@@ -73,6 +74,63 @@ describe('EntryResults', () => {
 
   test('has no accessibility violations with resume buttons', async () => {
     const { container } = renderResults({ resume: resume({ timerRunning: true }) })
+
+    expect(await axe(container)).toHaveNoViolations()
+  })
+})
+
+function WithSelection({ list }) {
+  const selection = useSelection()
+  return (
+    <>
+      <p data-testid="ids">{selection.ids.join(',')}</p>
+      <EntryResults results={results(list)} onShowMore={vi.fn()} selection={selection} />
+    </>
+  )
+}
+
+describe('EntryResults with a selection', () => {
+  const list = [entry(1), entry(2, { end_time: null }), entry(3)]
+
+  test('has no checkboxes without a selection', () => {
+    renderResults()
+
+    expect(screen.queryByRole('checkbox')).not.toBeInTheDocument()
+  })
+
+  test('has a checkbox for each finished result, none for a running one, and one in the header for all shown', () => {
+    render(<WithSelection list={list} />)
+
+    const boxes = screen.getAllByRole('checkbox')
+    expect(boxes).toHaveLength(3)
+    expect(boxes[0]).toHaveAccessibleName('Alle angezeigten auswählen')
+    expect(boxes[1].getAttribute('aria-label')).toMatch(/^Auswählen: Website, .*, Eintrag 1$/)
+  })
+
+  test('selects one result, and all shown with the header checkbox (mixed in between)', async () => {
+    render(<WithSelection list={list} />)
+    const all = () => screen.getByRole('checkbox', { name: 'Alle angezeigten auswählen' })
+
+    await userEvent.click(screen.getAllByRole('checkbox')[1])
+    expect(screen.getByTestId('ids')).toHaveTextContent('1')
+    expect(all().indeterminate).toBe(true)
+
+    await userEvent.click(all())
+    expect(screen.getByTestId('ids')).toHaveTextContent('1,3')
+    expect(all()).toBeChecked()
+
+    await userEvent.click(all())
+    expect(screen.getByTestId('ids')).toHaveTextContent('')
+  })
+
+  test('has no header checkbox when only a running entry is shown', () => {
+    render(<WithSelection list={[entry(2, { end_time: null })]} />)
+
+    expect(screen.queryByRole('checkbox')).not.toBeInTheDocument()
+  })
+
+  test('has no accessibility violations', async () => {
+    const { container } = render(<WithSelection list={list} />)
 
     expect(await axe(container)).toHaveNoViolations()
   })

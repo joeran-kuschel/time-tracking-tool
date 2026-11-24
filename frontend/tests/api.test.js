@@ -137,6 +137,16 @@ describe('api', () => {
     expect(fetch.mock.calls[3][0]).toMatch(/&amounts=1$/)
   })
 
+  test('sets the task of several entries with one PATCH', async () => {
+    const fetch = mockFetch(200, { updated: 2 })
+
+    await expect(api.setTask([5, 6], 'Fix login')).resolves.toEqual({ updated: 2 })
+
+    expect(fetch.mock.calls[0][0]).toMatch(/\/time-entries\/task$/)
+    expect(fetch.mock.calls[0][1]).toMatchObject({ method: 'PATCH' })
+    expect(JSON.parse(fetch.mock.calls[0][1].body)).toEqual({ ids: [5, 6], task: 'Fix login' })
+  })
+
   test('downloads a grouped report with group=task, and a detailed one without', async () => {
     const response = { ok: true, status: 200, headers: new Headers(), blob: () => Promise.resolve(new Blob(['x'])) }
     const fetch = vi.fn().mockResolvedValue(response)

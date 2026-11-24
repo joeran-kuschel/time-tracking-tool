@@ -5,6 +5,9 @@ import { api } from '../api'
 import { useAction } from '../hooks/useAction'
 import { useDebouncedValue } from '../hooks/useDebouncedValue'
 import EntryFilters from '../components/EntryFilters'
+import SetTaskBar from '../components/SetTaskBar'
+import { useBulkTask } from '../hooks/useBulkTask'
+import { tasksOfAll } from '../tasks'
 import EntryResults from '../components/EntryResults'
 import ErrorMessage from '../components/ErrorMessage'
 import { emptyFilters, isReversed, openingFilters, toQuery } from '../filters'
@@ -30,6 +33,11 @@ function Entries({ customers, timer, onResume, firstDay }) {
   // Counts the requests, so only the answer to the latest one is used
   const latest = useRef(0)
 
+  // Setting the task of several results; the first page is loaded again afterwards, and what is selected is gone with a new search
+  // The reload after a success uses the query of the latest render, not the one of the render that sent the request
+  const reload = useRef(null)
+  const bulk = useBulkTask(() => reload.current(0))
+
   const applied = { ...filters, q: searchText }
   const reversed = isReversed(filters)
   const query = toQuery(applied)
@@ -48,6 +56,8 @@ function Entries({ customers, timer, onResume, firstDay }) {
     setLoadingMore(false)
   }
 
+  reload.current = load
+
   useEffect(() => {
     if (reversed) {
       // A request for the last valid filters is dropped, its busy state with it
@@ -58,6 +68,10 @@ function Entries({ customers, timer, onResume, firstDay }) {
     }
     return () => { latest.current++ }
   }, [queryKey, reversed])
+
+  useEffect(() => {
+    bulk.selection.keepOnly((results?.entries ?? []).map((entry) => entry.id))
+  }, [results])
 
   // A timer started or stopped (Resume, the header) changes the entries shown, so the first page is loaded again
   const activeId = timer.activeEntry?.id
@@ -105,8 +119,12 @@ function Entries({ customers, timer, onResume, firstDay }) {
       <ErrorMessage message={projectsError} />
       <ErrorMessage message={error} />
 
+      <SetTaskBar count={bulk.selection.count} done={bulk.done} suggestions={tasksOfAll(results?.entries ?? [])} onApply={bulk.apply}
+        onClear={bulk.selection.clear} busy={bulk.busy} error={bulk.error} />
+
       <EntryResults
         results={results}
+        selection={bulk.selection}
         busy={loading || loadingMore}
         loadingMore={loadingMore}
         onShowMore={() => load(results.entries.length)}

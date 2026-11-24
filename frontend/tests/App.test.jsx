@@ -22,6 +22,8 @@ vi.mock('@/api', async (importOriginal) => ({
     stopTimeEntry: vi.fn(),
     createTimeEntry: vi.fn(),
     resumeTimeEntry: vi.fn(),
+    setTask: vi.fn(),
+    deleteTimeEntry: vi.fn(),
     updateCustomer: vi.fn(),
     deleteCustomer: vi.fn(),
     getDashboard: vi.fn(),
@@ -1120,6 +1122,73 @@ describe('App', () => {
 
     expect(api.createTimeEntry).toHaveBeenCalledWith(7, expect.any(String), '', undefined, 'Review')
     expect(await runningTimer()).toHaveTextContent('Review')
+  })
+
+  test('sets the task of the selected entries, reloads them, announces it and puts the focus on the status', async () => {
+    const entries = [
+      { id: 5, project_id: 7, start_time: '2026-09-20T08:00:00Z', end_time: '2026-09-20T09:00:00Z', description: 'Fehler gefunden', task: null },
+      { id: 6, project_id: 7, start_time: '2026-09-21T08:00:00Z', end_time: '2026-09-21T08:30:00Z', description: 'Tests', task: null },
+      { id: 7, project_id: 7, start_time: '2026-09-22T08:00:00Z', end_time: '2026-09-22T09:30:00Z', description: 'Konzept', task: 'Konzept' },
+    ]
+    api.getCustomers.mockResolvedValue([{ id: 1, name: 'Muster GmbH' }])
+    api.getCustomerTimeEntries.mockResolvedValueOnce(entries).mockResolvedValue(entries.map((e) => (e.id === 7 ? e : { ...e, task: 'Fix login' })))
+    api.setTask.mockResolvedValue({ updated: 2 })
+    await renderTimeTracking()
+    await userEvent.click(await screen.findByRole('button', { name: 'Muster GmbH' }))
+    await screen.findByText('Fehler gefunden')
+
+    await userEvent.click(screen.getByRole('checkbox', { name: /^Auswählen: Website.*Fehler gefunden$/ }))
+    await userEvent.click(screen.getByRole('checkbox', { name: /^Auswählen: Website.*Tests$/ }))
+    expect(screen.getByText('2 Einträge ausgewählt')).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: 'Aufgabe setzen' }))
+    await userEvent.type(screen.getByLabelText('Aufgabe'), 'Fix login')
+    await userEvent.click(screen.getByRole('button', { name: 'Übernehmen' }))
+
+    await waitFor(() => expect(api.setTask).toHaveBeenCalledWith([5, 6], 'Fix login'))
+    const message = await screen.findByText('Aufgabe für 2 Einträge geändert.')
+    expect(message).toHaveFocus()
+    expect(await screen.findAllByText('Fix login')).not.toHaveLength(0)
+    expect(screen.queryByText('2 Einträge ausgewählt')).not.toBeInTheDocument()
+  })
+
+  test('the selection is gone when another project is selected', async () => {
+    const entries = [{ id: 5, project_id: 7, start_time: '2026-09-20T08:00:00Z', end_time: '2026-09-20T09:00:00Z', description: 'Fehler gefunden', task: null }]
+    api.getCustomers.mockResolvedValue([{ id: 1, name: 'Muster GmbH' }])
+    api.getCustomerTimeEntries.mockResolvedValue(entries)
+    await renderTimeTracking()
+    await userEvent.click(await screen.findByRole('button', { name: 'Muster GmbH' }))
+    await userEvent.click(await screen.findByRole('button', { name: /Website/, pressed: false }))
+    await userEvent.click(await screen.findByRole('checkbox', { name: /^Auswählen: Website.*Fehler gefunden$/ }))
+    expect(screen.getByText('1 Eintrag ausgewählt')).toBeInTheDocument()
+
+    await userEvent.click(screen.getByRole('button', { name: /Alle Projekte/ }))
+
+    expect(screen.queryByText('1 Eintrag ausgewählt')).not.toBeInTheDocument()
+  })
+
+  test('an entry that is deleted drops out of the selection, and the rest is sent', async () => {
+    const entries = [
+      { id: 5, project_id: 7, start_time: '2026-09-20T08:00:00Z', end_time: '2026-09-20T09:00:00Z', description: 'Fehler gefunden', task: null },
+      { id: 6, project_id: 7, start_time: '2026-09-21T08:00:00Z', end_time: '2026-09-21T08:30:00Z', description: 'Tests', task: null },
+    ]
+    api.getCustomers.mockResolvedValue([{ id: 1, name: 'Muster GmbH' }])
+    api.getCustomerTimeEntries.mockResolvedValueOnce(entries).mockResolvedValue([entries[1]])
+    api.deleteTimeEntry.mockResolvedValue({ id: 5 })
+    api.setTask.mockResolvedValue({ updated: 1 })
+    await renderTimeTracking()
+    await userEvent.click(await screen.findByRole('button', { name: 'Muster GmbH' }))
+    await screen.findByText('Fehler gefunden')
+    await userEvent.click(screen.getByRole('checkbox', { name: /^Auswählen: Website.*Fehler gefunden$/ }))
+    await userEvent.click(screen.getByRole('checkbox', { name: /^Auswählen: Website.*Tests$/ }))
+    expect(screen.getByText('2 Einträge ausgewählt')).toBeInTheDocument()
+
+    await userEvent.click(screen.getAllByRole('button', { name: /^Eintrag vom .* löschen$/ })[0])
+    await userEvent.click(screen.getByRole('button', { name: 'Löschen' }))
+
+    expect(await screen.findByText('1 Eintrag ausgewählt')).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: 'Aufgabe setzen' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Übernehmen' }))
+    await waitFor(() => expect(api.setTask).toHaveBeenCalledWith([6], ''))
   })
 
   test('adds time manually with a task, and the form offers the earlier tasks', async () => {

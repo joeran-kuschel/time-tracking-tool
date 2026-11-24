@@ -17,3 +17,6 @@ export function tasksOf(entries, projectId) {
       return true
     })
 }
+
+// The distinct tasks of these entries (any project), the most recently worked on first
+export const tasksOfAll = (entries) => tasksOf(entries.map((entry) => ({ ...entry, project_id: 0 })), 0)

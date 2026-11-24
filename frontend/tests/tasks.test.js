@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest'
-import { MAX_TASK, tasksOf } from '@/tasks'
+import { MAX_TASK, tasksOf, tasksOfAll } from '@/tasks'
 
 const entry = (project_id, task, start_time) => ({ project_id, task, start_time })
 
@@ -30,5 +30,21 @@ describe('tasksOf', () => {
 
   test('has the same limit as the backend', () => {
     expect(MAX_TASK).toBe(100)
+  })
+})
+
+describe('tasksOfAll', () => {
+  test('lists the tasks of all projects once, the most recently worked on first', () => {
+    const entries = [entry(7, 'Old', '2026-11-20T09:00:00Z'), entry(8, 'New', '2026-11-24T09:00:00Z'), entry(9, 'old', '2026-11-22T09:00:00Z'), entry(7, null, '2026-11-25T09:00:00Z')]
+
+    expect(tasksOfAll(entries)).toEqual(['New', 'old'])
+  })
+
+  test('is empty for no entries, and does not change the entries', () => {
+    const entries = [entry(7, 'Mine', '2026-11-22T09:00:00Z')]
+
+    expect(tasksOfAll([])).toEqual([])
+    tasksOfAll(entries)
+    expect(entries).toEqual([entry(7, 'Mine', '2026-11-22T09:00:00Z')])
   })
 })
