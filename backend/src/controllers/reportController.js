@@ -12,14 +12,23 @@ const { activateLocale } = require('../i18n');
 const { reportAmounts, decimal, CURRENCY } = require('../utils/amounts');
 const { minutesToHours, reportMinutes } = require('../utils/hours');
 const { roundingRuleOf, ruleOfCustomer, withBilledHours } = require('../utils/rounding');
+const { groupByTask } = require('../utils/tasks');
 
 const INVALID_PERIOD = { error: 'month (1-12) and year are required' };
 const INVALID_AMOUNTS = { error: 'amounts must be 0 or 1' };
+const INVALID_GROUP = { error: 'group must be task' };
 
 // A 0/1 flag from the query: false when absent or "0", true for "1", null for anything else (also a repeated parameter)
 function parseFlag(value) {
   if (value === undefined || value === '0') return false;
   return value === '1' ? true : null;
+}
+
+// The grouping from the query: false when absent or empty, true for "task" (the hours summed per day and task, see
+// utils/tasks.js), null for anything else (also a repeated parameter)
+function parseGroup(value) {
+  if (value === undefined || value === '') return false;
+  return value === 'task' ? true : null;
 }
 
 // The report's month from the query: { month, year, timeZone, range }, or null when month or year is invalid.
@@ -51,6 +60,11 @@ async function loadReport(req, res) {
     res.status(400).json(INVALID_AMOUNTS);
     return null;
   }
+  const group = parseGroup(req.query.group);
+  if (group === null) {
+    res.status(400).json(INVALID_GROUP);
+    return null;
+  }
   const period = reportPeriod(req.query);
   if (!period) {
     res.status(400).json(INVALID_PERIOD);
@@ -75,7 +89,8 @@ async function loadReport(req, res) {
   // The report is about one customer, so it has one rule: the customer's own, else the global one
   // The files come out in the customer's own report language, else in the language of the app (lang of the query)
   const lang = customer.report_language ?? req.query.lang;
-  return { customer, entries: withBilledHours(stored, rounding), period, amounts, rounding: ruleOfCustomer(customer, rounding), showRoundingNote, sender, lang };
+  const rows = group ? groupByTask(stored, period.timeZone) : stored;
+  return { customer, entries: withBilledHours(rows, rounding), grouped: group, period, amounts, rounding: ruleOfCustomer(customer, rounding), showRoundingNote, sender, lang };
 }
 
 // Sends a report file. contentDisposition escapes quotes and adds a UTF-8 file name for names like "Łódź".
@@ -114,8 +129,8 @@ exports.exportCsv = async (req, res) => {
     const report = await loadReport(req, res);
     if (!report) return;
 
-    const { customer, entries, period, amounts, lang } = report;
-    const table = reportRows(entries, { customerName: customer.name, locale: lang, timeZone: period.timeZone, ...(amounts && { amounts }) });
+    const { customer, entries, grouped, period, amounts, lang } = report;
+    const table = reportRows(entries, { customerName: customer.name, locale: lang, timeZone: period.timeZone, grouped, ...(amounts && { amounts }) });
 
     sendFile(res, { body: toCsv(table, activateLocale(lang)), contentType: 'text/csv; charset=utf-8', customer, period, lang, extension: 'csv' });
   } catch (err) {
@@ -149,6 +164,10 @@ exports.getMonthlyReport = async (req, res) => {
     if (amounts === null) {
       return res.status(400).json(INVALID_AMOUNTS);
     }
+    const group = parseGroup(req.query.group);
+    if (group === null) {
+      return res.status(400).json(INVALID_GROUP);
+    }
     const period = reportPeriod(req.query);
     if (!period) {
       return res.status(400).json(INVALID_PERIOD);
@@ -163,7 +182,7 @@ exports.getMonthlyReport = async (req, res) => {
     ]);
     // With a rounding rule each entry has billed_hours, and the report names the rule: the customer's own, else the global
     // one (also for a month without entries). An unknown customer gets the global rule.
-    const entries = withBilledHours(stored, settings.rounding);
+    const entries = withBilledHours(group ? groupByTask(stored, period.timeZone) : stored, settings.rounding);
     const rounding = ruleOfCustomer(customer, settings.rounding);
 
     res.json({

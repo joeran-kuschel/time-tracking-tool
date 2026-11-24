@@ -20,6 +20,22 @@ describe('EntryResults', () => {
     expect(screen.getAllByRole('link', { name: /Öffnen/ })).toHaveLength(2)
   })
 
+  test('shows the task in bold before the description, and the description alone without a task', () => {
+    render(<EntryResults results={results([entry(1, { task: 'Fix login' }), entry(2)])} onShowMore={vi.fn()} />)
+
+    const [withTask, without] = screen.getAllByRole('row').slice(1)
+    expect(withTask).toHaveTextContent('Fix login · Eintrag 1')
+    expect(without).toHaveTextContent('Eintrag 2')
+    expect(without).not.toHaveTextContent('·  ·')
+  })
+
+  test('an entry with a task and no description shows the task only', () => {
+    render(<EntryResults results={results([entry(1, { task: 'Fix login', description: null })])} onShowMore={vi.fn()} />)
+
+    expect(screen.getAllByRole('row')[1]).toHaveTextContent('Fix login')
+    expect(screen.queryByText('Keine Beschreibung')).not.toBeInTheDocument()
+  })
+
   test('puts the Resume button before Open in the row of a finished entry only', () => {
     renderResults({ resume: resume() })
 

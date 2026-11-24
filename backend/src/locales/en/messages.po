@@ -15,12 +15,12 @@ msgstr ""
 
 #. js-lingui-explicit-id
 #: src/utils/invoicePdf.js:55
-#: src/utils/pdfGenerator.js:165
+#: src/utils/pdfGenerator.js:166
 msgid "report.amount"
 msgstr "Amount"
 
 #. js-lingui-explicit-id
-#: src/utils/reportRows.js:38
+#: src/utils/reportRows.js:43
 msgid "export.amount"
 msgstr "Amount (EUR)"
 
@@ -30,77 +30,77 @@ msgid "invoice.bank"
 msgstr "Bank details"
 
 #. js-lingui-explicit-id
-#: src/utils/reportRows.js:32
+#: src/utils/reportRows.js:36
 msgid "export.customer"
 msgstr "Customer"
 
 #. js-lingui-explicit-id
-#: src/utils/pdfGenerator.js:149
+#: src/utils/pdfGenerator.js:150
 msgid "report.customer"
 msgstr "Customer: {customerName}"
 
 #. js-lingui-explicit-id
-#: src/utils/pdfGenerator.js:161
-#: src/utils/reportRows.js:29
+#: src/utils/pdfGenerator.js:162
+#: src/utils/reportRows.js:31
 msgid "report.date"
 msgstr "Date"
 
 #. js-lingui-explicit-id
 #: src/utils/invoicePdf.js:52
-#: src/utils/pdfGenerator.js:164
-#: src/utils/reportRows.js:34
+#: src/utils/pdfGenerator.js:165
+#: src/utils/reportRows.js:39
 msgid "report.description"
 msgstr "Description"
 
 #. js-lingui-explicit-id
-#: src/utils/reportRows.js:31
+#: src/utils/reportRows.js:34
 msgid "export.end"
 msgstr "End"
 
 #. js-lingui-explicit-id
 #: src/utils/invoicePdf.js:53
-#: src/utils/pdfGenerator.js:163
-#: src/utils/reportRows.js:35
+#: src/utils/pdfGenerator.js:164
+#: src/utils/reportRows.js:40
 msgid "report.hours"
 msgstr "Hours"
 
 #. js-lingui-explicit-id
-#: src/utils/pdfGenerator.js:96
+#: src/utils/pdfGenerator.js:97
 msgid "report.rounding.nearestMinutes"
 msgstr "Hours rounded to the nearest {minutes} minutes."
 
 #. js-lingui-explicit-id
-#: src/utils/pdfGenerator.js:91
+#: src/utils/pdfGenerator.js:92
 msgid "report.rounding.nearest60"
 msgstr "Hours rounded to the nearest full hour."
 
 #. js-lingui-explicit-id
-#: src/utils/pdfGenerator.js:86
+#: src/utils/pdfGenerator.js:87
 msgid "report.rounding.nearest30"
 msgstr "Hours rounded to the nearest half hour."
 
 #. js-lingui-explicit-id
-#: src/utils/pdfGenerator.js:81
+#: src/utils/pdfGenerator.js:82
 msgid "report.rounding.nearest15"
 msgstr "Hours rounded to the nearest quarter hour."
 
 #. js-lingui-explicit-id
-#: src/utils/pdfGenerator.js:92
+#: src/utils/pdfGenerator.js:93
 msgid "report.rounding.up60"
 msgstr "Hours rounded up to full hours."
 
 #. js-lingui-explicit-id
-#: src/utils/pdfGenerator.js:87
+#: src/utils/pdfGenerator.js:88
 msgid "report.rounding.up30"
 msgstr "Hours rounded up to half hours."
 
 #. js-lingui-explicit-id
-#: src/utils/pdfGenerator.js:82
+#: src/utils/pdfGenerator.js:83
 msgid "report.rounding.up15"
 msgstr "Hours rounded up to quarter hours."
 
 #. js-lingui-explicit-id
-#: src/utils/pdfGenerator.js:97
+#: src/utils/pdfGenerator.js:98
 msgid "report.rounding.upMinutes"
 msgstr "Hours rounded up to steps of {minutes} minutes."
 
@@ -130,24 +130,24 @@ msgid "invoice.smallBusiness"
 msgstr "No VAT is charged under section 19 of the German VAT Act (UStG)."
 
 #. js-lingui-explicit-id
-#: src/utils/pdfGenerator.js:218
+#: src/utils/pdfGenerator.js:219
 msgid "report.projects"
 msgstr "Per project"
 
 #. js-lingui-explicit-id
-#: src/utils/pdfGenerator.js:162
-#: src/utils/reportRows.js:33
+#: src/utils/pdfGenerator.js:163
+#: src/utils/reportRows.js:37
 msgid "report.project"
 msgstr "Project"
 
 #. js-lingui-explicit-id
 #: src/utils/invoicePdf.js:54
-#: src/utils/pdfGenerator.js:166
+#: src/utils/pdfGenerator.js:167
 msgid "report.rate"
 msgstr "Rate"
 
 #. js-lingui-explicit-id
-#: src/utils/reportRows.js:37
+#: src/utils/reportRows.js:42
 msgid "export.rate"
 msgstr "Rate (EUR/h)"
 
@@ -157,9 +157,14 @@ msgid "invoice.period"
 msgstr "Service period: {from} - {to}"
 
 #. js-lingui-explicit-id
-#: src/utils/reportRows.js:30
+#: src/utils/reportRows.js:33
 msgid "export.start"
 msgstr "Start"
+
+#. js-lingui-explicit-id
+#: src/utils/reportRows.js:38
+msgid "report.task"
+msgstr "Task"
 
 #. js-lingui-explicit-id
 #: src/utils/invoicePdf.js:30
@@ -167,17 +172,17 @@ msgid "invoice.customerTaxId"
 msgstr "Tax ID: {taxId}"
 
 #. js-lingui-explicit-id
-#: src/utils/pdfGenerator.js:124
+#: src/utils/pdfGenerator.js:125
 msgid "sender.taxId"
 msgstr "Tax ID: {taxId}"
 
 #. js-lingui-explicit-id
-#: src/utils/pdfGenerator.js:144
+#: src/utils/pdfGenerator.js:145
 msgid "report.title"
 msgstr "TIME REPORT"
 
 #. js-lingui-explicit-id
-#: src/utils/pdfGenerator.js:11
+#: src/utils/pdfGenerator.js:12
 msgid "report.filename"
 msgstr "time-report"
 
@@ -188,12 +193,12 @@ msgid "invoice.total"
 msgstr "Total amount"
 
 #. js-lingui-explicit-id
-#: src/utils/pdfGenerator.js:205
+#: src/utils/pdfGenerator.js:206
 msgid "report.totalAmount"
 msgstr "TOTAL AMOUNT:"
 
 #. js-lingui-explicit-id
-#: src/utils/pdfGenerator.js:202
+#: src/utils/pdfGenerator.js:203
 msgid "report.total"
 msgstr "TOTAL HOURS:"
 

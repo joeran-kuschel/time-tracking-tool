@@ -14,7 +14,7 @@ All paths are under `/api/reports`.
 | `PUT` | `/customer/:customerId/status` | Sets the report status, see below |
 
 `month` (1–12) and `year` are required; a missing or invalid value answers `400` (`month=abc`, `month=13`).
-`amounts` is optional, see [Amounts](#amounts).
+`amounts` is optional, see [Amounts](#amounts). `group=task` is optional too, see [Sum per day and task](#sum-per-day-and-task); any other value answers `400` (*group must be task*). All three report endpoints take it.
 
 ## Amounts
 
@@ -158,6 +158,23 @@ With a rounding rule the rows, the project lines and the total of the PDF show t
 rule below the customer line of the title (*Hours rounded up to quarter hours.*, in the report's language:
 `report.rounding.*` messages) only when the setting `showRoundingNote` is on (the controller then passes `rounding` to
 `generateReportPDF`; otherwise it passes `null`).
+
+## Sum per day and task
+
+With `group=task`, the finished entries that have a [task](time-entries.md#task) are summed up per **day** (in the `tz` time
+zone), **project** and **task** (compared ignoring case and spaces). `groupByTask(entries, timeZone)` in `utils/tasks.js` does
+it, before the rounding, and nothing is stored.
+
+- A group becomes one row: the first entry's fields with the earliest start and an end that makes the **sum of the durations**
+  (not a real time), plus `task`, `details` (the distinct descriptions in time order), `count` and `entryIds`. A group of one entry
+  keeps its own end. Entries without a task and a running entry stay as they are.
+- Because a row is an entry like any other, the hours, the rounding (**once per row**, see [Rounding](#rounding)), the amounts and
+  the total work on it unchanged. Without a rounding rule the total is the same as without `group`; with one it can be smaller,
+  because several short blocks round up once instead of each.
+- The JSON report answers the rows as `entries`. In the PDF a row's description reads `Task: detail; detail`.
+- The grouped CSV has the columns **Date, Customer, Project, Task, Description, Hours** (with amounts: Rate and Amount), without Start
+  and End, because the summed end is not a real time; Description holds the details joined with `; `. The CSV without `group` keeps its columns.
+- [Invoices](invoices.md) take the same choice as `groupByTask`.
 
 ## CSV export
 

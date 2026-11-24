@@ -50,10 +50,10 @@ describe('EntryFilters', () => {
     render(<Harness />)
 
     expect(screen.getByRole('search', { name: 'Einträge filtern' })).toBeInTheDocument()
-    for (const label of ['In Beschreibungen suchen', 'Kunde', 'Projekt', 'Sortierung', 'Zeitraum', 'Von', 'Bis']) {
+    for (const label of ['In Aufgabe und Beschreibung suchen', 'Kunde', 'Projekt', 'Sortierung', 'Zeitraum', 'Von', 'Bis']) {
       expect(screen.getByLabelText(label)).toBeInTheDocument()
     }
-    expect(screen.getByLabelText('In Beschreibungen suchen')).toHaveAttribute('type', 'search')
+    expect(screen.getByLabelText('In Aufgabe und Beschreibung suchen')).toHaveAttribute('type', 'search')
   })
 
   test('opens with the current month in the period fields', () => {
@@ -122,7 +122,7 @@ describe('EntryFilters', () => {
     const onSearch = vi.fn()
     render(<Harness onSearch={onSearch} />)
 
-    await userEvent.type(screen.getByLabelText('In Beschreibungen suchen'), 'Konzept{Enter}')
+    await userEvent.type(screen.getByLabelText('In Aufgabe und Beschreibung suchen'), 'Konzept{Enter}')
 
     expect(onSearch).toHaveBeenCalledTimes(1)
   })
@@ -193,7 +193,7 @@ describe('EntryFilters', () => {
       expect(screen.getByLabelText('Kunde')).toHaveValue('1')
 
       await userEvent.click(screen.getByRole('button', { name: 'Filter entfernen: Suche: x' }))
-      expect(screen.getByLabelText('In Beschreibungen suchen')).toHaveValue('')
+      expect(screen.getByLabelText('In Aufgabe und Beschreibung suchen')).toHaveValue('')
       expect(screen.getByLabelText('Kunde')).toHaveValue('1')
     })
 
@@ -224,13 +224,13 @@ describe('EntryFilters', () => {
       await userEvent.click(screen.getByRole('button', { name: 'Filter zurücksetzen' }))
 
       expect(onReset).toHaveBeenCalledTimes(1)
-      expect(screen.getByLabelText('In Beschreibungen suchen')).toHaveValue('')
+      expect(screen.getByLabelText('In Aufgabe und Beschreibung suchen')).toHaveValue('')
       expect(screen.getByLabelText('Kunde')).toHaveValue('')
       expect(screen.getByLabelText('Zeitraum')).toHaveValue('any')
       expect(screen.getByLabelText('Von')).toHaveValue('')
       expect(screen.getByLabelText('Sortierung')).toHaveValue('newest')
       expect(screen.getByText('Keine Filter aktiv')).toBeInTheDocument()
-      expect(screen.getByLabelText('In Beschreibungen suchen')).toHaveFocus()
+      expect(screen.getByLabelText('In Aufgabe und Beschreibung suchen')).toHaveFocus()
     })
 
     test('focuses the toggle when the section is collapsed', async () => {

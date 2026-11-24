@@ -27,8 +27,9 @@ const daysBetween = (from, to) => (Date.parse(to) - Date.parse(from)) / 86400000
 // Today as 'YYYY-MM-DD' in the time zone
 const today = (timeZone, now = new Date()) => new Intl.DateTimeFormat('en-CA', { timeZone, year: 'numeric', month: '2-digit', day: '2-digit' }).format(now);
 
-// The request body of a preview or a new invoice: { customerId, from, to, tz, invoiceDate (default: today in tz), lang }.
-// Returns { value: { customerId, from, to, timeZone, invoiceDate, lang, range } } (range: the entries' time limits as
+// The request body of a preview or a new invoice: { customerId, from, to, tz, invoiceDate (default: today in tz), lang,
+// groupByTask (default false: round the hours once per day and task, see utils/tasks.js) }.
+// Returns { value: { customerId, from, to, timeZone, invoiceDate, lang, groupByTask, range } } (range: the entries' time limits as
 // ISO strings, see dayRange in utils/period.js), or { error } with the text of a 400.
 function parseInvoiceRequest(body, now = new Date()) {
   if (body === null || typeof body !== 'object' || Array.isArray(body)) return { error: 'The request must be an object' };
@@ -43,7 +44,9 @@ function parseInvoiceRequest(body, now = new Date()) {
   const invoiceDate = body.invoiceDate === undefined ? today(timeZone, now) : parseDay(body.invoiceDate);
   if (!invoiceDate) return { error: 'invoiceDate must be YYYY-MM-DD' };
   const lang = LOCALES.includes(body.lang) ? body.lang : undefined;
-  return { value: { customerId, from, to, timeZone, invoiceDate, lang, range: dayRange(from, to, timeZone) } };
+  if (body.groupByTask !== undefined && typeof body.groupByTask !== 'boolean') return { error: 'groupByTask must be true or false' };
+  const groupByTask = body.groupByTask === true;
+  return { value: { customerId, from, to, timeZone, invoiceDate, lang, groupByTask, range: dayRange(from, to, timeZone) } };
 }
 
 // VAT in cents for a net amount in cents: net x rate / 100, halves up. A small business charges none.

@@ -16,6 +16,7 @@ import EntriesList from '../components/EntriesList'
 import EditableRecord from '../components/EditableRecord'
 import RecordForm from '../components/RecordForm'
 import EntryForm from '../components/EntryForm'
+import { tasksOf } from '../tasks'
 import Modal from '../components/Modal'
 import { formatRate } from '../format'
 import { idFromParam, trackingPath } from '../routes'
@@ -256,9 +257,9 @@ function TimeTracking({ customers, onCustomersChange, timer, settings }) {
     if (await timer.resume(entry, project, selectedCustomer)) setStopFocusRequest((n) => n + 1)
   }
 
-  const addEntry = async ({ projectId, startTime, endTime, description }) => {
+  const addEntry = async ({ projectId, startTime, endTime, description, task }) => {
     const created = await runAdd(
-      () => api.createTimeEntry(projectId, startTime, description, endTime),
+      () => api.createTimeEntry(projectId, startTime, description, endTime, task),
       msg`Time entry could not be saved.`
     )
     if (created) {
@@ -415,7 +416,8 @@ function TimeTracking({ customers, onCustomersChange, timer, settings }) {
           <Timer
             project={selectedProject}
             activeEntry={timer.activeEntry}
-            onStart={(description) => timer.start(selectedProject, description, selectedCustomer)}
+            onStart={(description, task) => timer.start(selectedProject, description, selectedCustomer, task)}
+            taskSuggestions={tasksOf(entries, selectedProject?.id)}
             onStop={timer.stop}
             error={timer.error}
             busy={timer.busy}
@@ -454,7 +456,7 @@ function TimeTracking({ customers, onCustomersChange, timer, settings }) {
           onSubmit={addProject} onCancel={closeDialog} error={addError} />
       </Modal>
       <Modal title={t`Add time`} open={dialog === 'entry'} onClose={closeDialog}>
-        <EntryForm projects={projects} projectId={selectedProjectId ?? projects[0]?.id} submitLabel={t`Save`}
+        <EntryForm projects={projects} projectId={selectedProjectId ?? projects[0]?.id} taskSuggestions={tasksOf(entries, selectedProjectId ?? projects[0]?.id)} submitLabel={t`Save`}
           onSubmit={addEntry} onCancel={closeDialog} error={addError} />
       </Modal>
     </div>

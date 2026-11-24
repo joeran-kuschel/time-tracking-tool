@@ -5,7 +5,7 @@ import { ui } from '../ui'
 
 
 // A form with visible labels for creating and editing records.
-// fields: [{ name, label, type ('text', 'email', 'password', 'number', 'date', 'time', 'textarea' or 'select'), required, options, min, step, autoComplete, maxLength, rows (textarea) }]
+// fields: [{ name, label, type ('text', 'email', 'password', 'number', 'date', 'time', 'textarea' or 'select'), required, options, min, step, autoComplete, maxLength, rows (textarea), suggestions (a text field offers these) }]
 // onSubmit(values) resolves truthy on success; a form without onCancel then resets for the next record.
 // With onCancel, the form has a Cancel button and Escape cancels.
 // validate(values) returns { field, message } to block submitting, or null.
@@ -56,7 +56,16 @@ function RecordForm({ legend, fields, initialValues, submitLabel, onSubmit, onCa
         </select>
       )
     }
-    return <input {...props} type={field.type ?? 'text'} min={field.min} step={field.step} maxLength={field.maxLength} autoComplete={field.autoComplete} />
+    const input = <input {...props} type={field.type ?? 'text'} min={field.min} step={field.step} maxLength={field.maxLength} autoComplete={field.autoComplete} list={field.suggestions?.length ? `${id}-${field.name}-list` : undefined} />
+    if (!field.suggestions?.length) return input
+    return (
+      <>
+        {input}
+        <datalist id={`${id}-${field.name}-list`}>
+          {field.suggestions.map((suggestion) => <option key={suggestion} value={suggestion} />)}
+        </datalist>
+      </>
+    )
   }
 
   return (

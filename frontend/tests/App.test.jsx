@@ -14,6 +14,7 @@ vi.mock('@/api', async (importOriginal) => ({
     getCustomers: vi.fn(),
     createCustomer: vi.fn(),
     getActiveEntry: vi.fn(),
+    getTasks: vi.fn(),
     getProjects: vi.fn(),
     getCustomerTimeEntries: vi.fn(),
     getMonthlyReport: vi.fn(),
@@ -59,6 +60,7 @@ beforeEach(() => {
   api.getDashboard.mockResolvedValue(emptyDashboard)
   vi.spyOn(console, 'error').mockImplementation(() => {})
   api.getActiveEntry.mockResolvedValue(null)
+  api.getTasks.mockResolvedValue([])
   api.getSettings.mockResolvedValue({})
   api.getLogo.mockRejectedValue(new ApiError(404, 'No logo stored'))
   api.getProjects.mockResolvedValue([{ id: 7, name: 'Website', hourly_rate: '80.00' }])
@@ -915,7 +917,7 @@ describe('App', () => {
 
     expect(screen.getByRole('link', { name: 'Berichte' })).toHaveAttribute('aria-current', 'page')
     expect(screen.getByLabelText('Kunde')).toHaveValue('1')
-    expect(api.getMonthlyReport).toHaveBeenCalledWith(1, new Date().getMonth() + 1, new Date().getFullYear(), false)
+    expect(api.getMonthlyReport).toHaveBeenCalledWith(1, new Date().getMonth() + 1, new Date().getFullYear(), false, false)
   })
 
   test('keeps the running timer when switching pages', async () => {
@@ -1054,7 +1056,7 @@ describe('App', () => {
 
     expect(screen.getByRole('link', { name: 'Berichte' })).toHaveAttribute('aria-current', 'page')
     expect(screen.getByLabelText('Kunde')).toHaveValue('1')
-    expect(api.getMonthlyReport).toHaveBeenCalledWith(1, 8, 2026, false)
+    expect(api.getMonthlyReport).toHaveBeenCalledWith(1, 8, 2026, false, false)
   })
 
   test('an error that is already shown follows the language switch', async () => {
@@ -1096,10 +1098,49 @@ describe('App', () => {
     expect(within(form).getByLabelText('Projekt')).toHaveValue('7')
     await userEvent.click(within(form).getByRole('button', { name: 'Speichern' }))
 
-    expect(api.createTimeEntry).toHaveBeenCalledWith(7, fromInputs('2026-09-21', '08:00'), 'Nachgetragen', fromInputs('2026-09-21', '09:30'))
+    expect(api.createTimeEntry).toHaveBeenCalledWith(7, fromInputs('2026-09-21', '08:00'), 'Nachgetragen', fromInputs('2026-09-21', '09:30'), '')
     expect(await screen.findByText('Nachgetragen')).toBeInTheDocument()
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Zeit nachtragen' })).toHaveFocus()
+  })
+
+  test('starts the timer with the typed task, and offers the tasks of the project from its entries', async () => {
+    const earlier = { id: 5, project_id: 7, start_time: '2026-09-20T08:00:00Z', end_time: '2026-09-20T09:00:00Z', description: null, task: 'Fix login' }
+    api.getCustomers.mockResolvedValue([{ id: 1, name: 'Muster GmbH' }])
+    api.getCustomerTimeEntries.mockResolvedValue([earlier])
+    api.createTimeEntry.mockResolvedValue({ id: 42, project_id: 7, task: 'Review', start_time: new Date().toISOString() })
+    await renderTimeTracking()
+    await userEvent.click(await screen.findByRole('button', { name: 'Muster GmbH' }))
+    await userEvent.click(await screen.findByRole('button', { name: /Website/, pressed: false }))
+
+    const field = screen.getByLabelText('Aufgabe (optional)')
+    expect([...field.list.options].map((option) => option.value)).toEqual(['Fix login'])
+    await userEvent.type(field, 'Review')
+    await userEvent.click(screen.getByRole('button', { name: 'Start' }))
+
+    expect(api.createTimeEntry).toHaveBeenCalledWith(7, expect.any(String), '', undefined, 'Review')
+    expect(await runningTimer()).toHaveTextContent('Review')
+  })
+
+  test('adds time manually with a task, and the form offers the earlier tasks', async () => {
+    const earlier = { id: 5, project_id: 7, start_time: '2026-09-20T08:00:00Z', end_time: '2026-09-20T09:00:00Z', description: null, task: 'Fix login' }
+    api.getCustomers.mockResolvedValue([{ id: 1, name: 'Muster GmbH' }])
+    api.getCustomerTimeEntries.mockResolvedValue([earlier])
+    api.createTimeEntry.mockResolvedValue({ id: 9 })
+    await renderTimeTracking()
+    await userEvent.click(await screen.findByRole('button', { name: 'Muster GmbH' }))
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Zeit nachtragen' }))
+    const form = screen.getByRole('dialog', { name: 'Zeit nachtragen' })
+    expect([...within(form).getByLabelText('Aufgabe (optional)').list.options].map((option) => option.value)).toEqual(['Fix login'])
+    await userEvent.clear(within(form).getByLabelText('Datum'))
+    await userEvent.type(within(form).getByLabelText('Datum'), '2026-09-21')
+    await userEvent.type(within(form).getByLabelText('Start'), '08:00')
+    await userEvent.type(within(form).getByLabelText('Ende'), '09:30')
+    await userEvent.type(within(form).getByLabelText('Aufgabe (optional)'), 'Fix login')
+    await userEvent.click(within(form).getByRole('button', { name: 'Speichern' }))
+
+    expect(api.createTimeEntry).toHaveBeenCalledWith(7, fromInputs('2026-09-21', '08:00'), '', fromInputs('2026-09-21', '09:30'), 'Fix login')
   })
 
   test('renaming the selected customer keeps it and its project selected', async () => {
@@ -1386,7 +1427,7 @@ describe('App addresses', () => {
     await userEvent.selectOptions(await screen.findByLabelText('Kunde'), 'Muster GmbH')
 
     expect(await screen.findByLabelText('Stundensatz und Beträge anzeigen')).toBeChecked()
-    await waitFor(() => expect(api.getMonthlyReport).toHaveBeenLastCalledWith(1, new Date().getMonth() + 1, new Date().getFullYear(), true))
+    await waitFor(() => expect(api.getMonthlyReport).toHaveBeenLastCalledWith(1, new Date().getMonth() + 1, new Date().getFullYear(), true, false))
     expect(api.getSettings).toHaveBeenCalledTimes(1)
   })
 

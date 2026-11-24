@@ -21,8 +21,47 @@ describe('Timer', () => {
     await userEvent.type(screen.getByLabelText('Beschreibung (optional)'), 'Konzept')
     await userEvent.click(screen.getByRole('button', { name: 'Start' }))
 
-    expect(onStart).toHaveBeenCalledWith('Konzept')
+    expect(onStart).toHaveBeenCalledWith('Konzept', '')
     expect(screen.getByLabelText('Beschreibung (optional)')).toHaveValue('')
+  })
+
+  test('starts with the typed task and offers the earlier tasks of the project', async () => {
+    const onStart = vi.fn().mockResolvedValue({ id: 42 })
+    const { container } = renderTimer({ onStart, taskSuggestions: ['Fix login', 'Review'] })
+
+    expect([...container.querySelectorAll('datalist option')].map((option) => option.value)).toEqual(['Fix login', 'Review'])
+    expect(screen.getByLabelText('Aufgabe (optional)')).toHaveAttribute('list', container.querySelector('datalist').id)
+    await userEvent.type(screen.getByLabelText('Aufgabe (optional)'), 'Fix login')
+    await userEvent.type(screen.getByLabelText('Beschreibung (optional)'), 'Anruf')
+    await userEvent.click(screen.getByRole('button', { name: 'Start' }))
+
+    expect(onStart).toHaveBeenCalledWith('Anruf', 'Fix login')
+    expect(screen.getByLabelText('Aufgabe (optional)')).toHaveValue('')
+  })
+
+  test('clears the typed task when another project is selected, since a task belongs to a project', async () => {
+    const { rerender } = renderTimer({ project: website })
+    await userEvent.type(screen.getByLabelText('Aufgabe (optional)'), 'Fix login')
+
+    rerender(<Timer project={shop} activeEntry={null} onStart={vi.fn()} onStop={vi.fn()} error={null} />)
+
+    expect(screen.getByLabelText('Aufgabe (optional)')).toHaveValue('')
+  })
+
+  test('keeps the typed task when the start fails', async () => {
+    renderTimer({ onStart: vi.fn().mockResolvedValue(undefined) })
+
+    await userEvent.type(screen.getByLabelText('Aufgabe (optional)'), 'Fix login')
+    await userEvent.click(screen.getByRole('button', { name: 'Start' }))
+
+    expect(screen.getByLabelText('Aufgabe (optional)')).toHaveValue('Fix login')
+  })
+
+  test('shows the task of the running timer and does not let it be changed', () => {
+    renderTimer({ activeEntry: { ...running, task: 'Fix login' } })
+
+    expect(screen.getByLabelText('Aufgabe (optional)')).toHaveValue('Fix login')
+    expect(screen.getByLabelText('Aufgabe (optional)')).toBeDisabled()
   })
 
   test('marks Start and Stop as disabled while a start or stop is being sent', () => {

@@ -21,6 +21,43 @@ async function fill(date, start, end) {
 }
 
 describe('EntryForm', () => {
+  test('sends the task, and offers the earlier tasks', async () => {
+    const onSubmit = vi.fn().mockResolvedValue({ id: 1 })
+    const { container } = renderForm({ onSubmit, taskSuggestions: ['Fix login'] })
+
+    expect([...container.querySelectorAll('datalist option')].map((option) => option.value)).toEqual(['Fix login'])
+    await fill('2026-09-21', '08:00', '09:30')
+    await userEvent.type(screen.getByLabelText('Aufgabe (optional)'), 'Fix login')
+    await userEvent.click(screen.getByRole('button', { name: 'Speichern' }))
+
+    expect(onSubmit).toHaveBeenCalledWith(expect.objectContaining({ task: 'Fix login' }))
+  })
+
+  test('opens an entry with its task, and clears it when it is emptied', async () => {
+    const onSubmit = vi.fn().mockResolvedValue({ id: 1 })
+    const entry = { id: 1, project_id: 7, start_time: '2026-09-21T08:00:00Z', end_time: '2026-09-21T09:30:00Z', task: 'Fix login', description: null }
+    renderForm({ entry, onSubmit })
+
+    expect(screen.getByLabelText('Aufgabe (optional)')).toHaveValue('Fix login')
+    await userEvent.clear(screen.getByLabelText('Aufgabe (optional)'))
+    await userEvent.click(screen.getByRole('button', { name: 'Speichern' }))
+
+    expect(onSubmit).toHaveBeenCalledWith(expect.objectContaining({ task: '' }))
+  })
+
+  test('takes at most 100 characters of a task', () => {
+    renderForm()
+
+    expect(screen.getByLabelText('Aufgabe (optional)')).toHaveAttribute('maxlength', '100')
+  })
+
+  test('has no field without suggestions turning into a list', () => {
+    const { container } = renderForm()
+
+    expect(container.querySelector('datalist')).toBeNull()
+    expect(screen.getByLabelText('Aufgabe (optional)')).not.toHaveAttribute('list')
+  })
+
   test('adds an entry for the selected project with local times', async () => {
     const onSubmit = vi.fn().mockResolvedValue({ id: 1 })
     renderForm({ onSubmit })
@@ -32,6 +69,7 @@ describe('EntryForm', () => {
 
     expect(onSubmit).toHaveBeenCalledWith({
       projectId: 7,
+      task: '',
       startTime: fromInputs('2026-09-21', '08:00'),
       endTime: fromInputs('2026-09-21', '09:30'),
       description: 'Konzept',

@@ -25,7 +25,8 @@ The **Reports** page (German: **Berichte**) shows a customer's time entries of o
    - The choice the browser used to remember (`localStorage`, key `reportAmounts`) has no effect any more and is removed
      when the page opens.
    - What the screen shows: see [The report](#the-report).
-4. **Download PDF** downloads the same report as a PDF, in the customer's report language, or in the language the UI
+4. **Sum hours per day and task** (German: **Stunden je Tag und Aufgabe summieren**) is a second checkbox, **off** at every visit. Ticked, the report loads again with `group=task` ([Reports API](../backend/reports.md#sum-per-day-and-task)): the entries of one day, project and [task](time-tracking.md#task) become one row with the summed hours, and the Description column shows the task in bold followed by the details of the blocks (*Fix login · Review; Call*). Entries without a task keep their rows. The total is the same, except for rounding, which applies once per row. The PDF and CSV downloads follow the checkbox; the grouped CSV has a Task column and no Start and End. The detailed list shows no task, like the PDF and CSV.
+5. **Download PDF** downloads the same report as a PDF, in the customer's report language, or in the language the UI
    currently uses if the customer has none (see below), with or without amounts, as the checkbox says. It is only shown when the month has entries.
    - The PDF is loaded in the background first: if that fails, the page stays and shows *PDF could not be downloaded.*
      (`role="alert"`) instead of replacing the app with the server's error.
@@ -35,7 +36,7 @@ The **Reports** page (German: **Berichte**) shows a customer's time entries of o
      top right: the name in bold, the lines of the address and the email. A logo is printed at the top left, with the
      text to its right. Without any detail the PDF is as it was. The
      CSV and the screen do not change. Long values wrap inside the page; the details never take a second page.
-5. **Download CSV** (German: **CSV herunterladen**), next to it, downloads the same entries as a CSV file for
+6. **Download CSV** (German: **CSV herunterladen**), next to it, downloads the same entries as a CSV file for
    spreadsheets: date, start, end, customer, project, description and hours per entry, plus the hourly rate and the
    amount when the checkbox is ticked.
    - The file follows the report language (below): German uses `;` between the columns and a decimal comma (`1,50`), English uses `,`
@@ -43,7 +44,7 @@ The **Reports** page (German: **Berichte**) shows a customer's time entries of o
    - If a download fails, the page shows *CSV could not be downloaded.* (`role="alert"`). While a download runs, both
      buttons are marked disabled (`aria-disabled`) and ignore clicks, so only one download runs at a time.
      Details: [Reports API](../backend/reports.md#csv-export).
-6. **Status** (*Draft*, *Ready to send*, *Sent*; German: *Entwurf*, *Bereit zum Versand*, *Verschickt*) records where
+7. **Status** (*Draft*, *Ready to send*, *Sent*; German: *Entwurf*, *Bereit zum Versand*, *Verschickt*) records where
    the report of this customer and month stands. Changing it saves right away; if saving fails, the select keeps the
    old status and an error shows. Only shown when the month has entries. The Dashboard counts the sent reports of the
    previous month and lists the others. See [Reports API](../backend/reports.md#report-status).
@@ -116,7 +117,7 @@ and `€142.50` in English.
 
 ## Code
 
-`frontend/src/pages/Reports.jsx` (gets `settings` from `App`; `amountsChoice` is `null` until the checkbox is touched, so
+`frontend/src/pages/Reports.jsx` (gets `settings` from `App`; `groupByTask` is the second checkbox and goes to `getMonthlyReport`, `downloadPDF` and `downloadCSV`; `amountsChoice` is `null` until the checkbox is touched, so
 it follows the setting), `reportOptions.js` (`forgetStoredShowAmounts()` removes the old stored choice), `api.js` (`getMonthlyReport`, `downloadPDF`,
 `downloadCSV`, each with an `amounts` argument that adds `&amounts=1` only when true), `rounding.js` (the sentence that names the rule), `format.js`. Tests (in
 `frontend/tests/`): `pages/Reports.test.jsx`, `api.test.js`, `reportOptions.test.js`, `rounding.test.js`.

@@ -105,13 +105,17 @@ Adding a customer, a project or a time entry happens in a modal dialog (native `
 
 See [Timer](timer.md).
 
+## Task
+
+Besides the description, an entry can have a **task** (*Aufgabe*): the name that entries of one activity share, for example when a call for another task interrupts it. The description stays for the details of one block. Reports and invoices can then sum the hours per day and task, see [Reports](reports.md#sum-hours-per-day-and-task). The **Task (optional)** field is in the timer, in *Add time* and in the edit form of an entry; it offers the earlier tasks of the project as suggestions (taken from the entries already loaded) and takes up to 100 characters. The entry rows show the task in bold before the description. Old entries have none; set it with **Edit**.
+
 ## Entries
 
 - Shown once a customer is selected. The heading reads *Entries for Muster GmbH*, or *Entries for Website* while a
   project is selected.
 - Entries are grouped by project, in the order of the project list; projects without entries are left out. Each group
   has a heading with the project name and its total time (*Website · 12:30 h gesamt*, see
-  [Durations](durations.md)) and its own table (named by that heading): date, time, hours and description, newest first. A running entry counts `0` hours in the total, as
+  [Durations](durations.md)) and its own table (named by that heading): date, time, hours, task and description (*Aufgabe und Beschreibung*), newest first. A running entry counts `0` hours in the total, as
   in its row.
 - With a project selected, only its group is shown.
 - The date is short with the weekday (`Mo., 21. Sept.` / `Mon, Sep 21`), the time is start and end (`09:00 – 12:30`).

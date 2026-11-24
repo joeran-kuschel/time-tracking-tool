@@ -193,7 +193,7 @@ describe('timeEntryController.create', () => {
 
     await controller.create({ body }, res);
 
-    expect(TimeEntry.create).toHaveBeenCalledWith(3, '2026-09-21T08:00:00.000Z', null, 'Konzept');
+    expect(TimeEntry.create).toHaveBeenCalledWith(3, '2026-09-21T08:00:00.000Z', null, 'Konzept', undefined);
     expect(res.status).toHaveBeenCalledWith(201);
   });
 

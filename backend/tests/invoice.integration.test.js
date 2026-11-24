@@ -209,3 +209,93 @@ describe('creating, with the real models', () => {
     expect(list).toEqual([expect.objectContaining({ id: made.id, customerId: null, customerName: 'Muster GmbH' })]);
   });
 });
+
+describe('groupByTask: rounding once per day and task', () => {
+  const rule = { roundingMinutes: 15, roundingDirection: 'up' };
+  // Three blocks of 5 minutes of one task on one day, with a call in between
+  beforeEach(async () => {
+    await Settings.update(rule);
+    await TimeEntry.create(website.id, '2026-02-10T09:00:00Z', '2026-02-10T09:05:00Z', 'review', 'Fix login');
+    await TimeEntry.create(website.id, '2026-02-10T10:00:00Z', '2026-02-10T10:05:00Z', 'call', null);
+    await TimeEntry.create(website.id, '2026-02-10T11:00:00Z', '2026-02-10T11:05:00Z', 'redirect', 'fix login');
+    await TimeEntry.create(website.id, '2026-02-10T12:00:00Z', '2026-02-10T12:05:00Z', 'tests', 'Fix login');
+  });
+
+  test('rounds every entry on its own by default', async () => {
+    const { lines } = (await preview()).json.mock.calls[0][0];
+
+    expect(lines[0].minutes).toBe(60);
+  });
+
+  test('rounds the blocks of a task as one when groupByTask is true', async () => {
+    const { lines } = (await preview({ groupByTask: true })).json.mock.calls[0][0];
+
+    // 15 minutes of the task rounded as one (15) plus the call rounded on its own (15)
+    expect(lines[0].minutes).toBe(30);
+  });
+
+  test('answers 400 for a groupByTask that is not true or false, and stores nothing', async () => {
+    const res = await preview({ groupByTask: 'yes' });
+
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(res.json).toHaveBeenCalledWith({ error: 'groupByTask must be true or false' });
+  });
+});
+
+describe('groupByTask: days in the time zone, running timers and the stored invoice', () => {
+  beforeEach(() => Settings.update({ roundingMinutes: 15, roundingDirection: 'up' }));
+
+  test('a task is summed per day of the invoice time zone: 23:30 and 00:30 Berlin time are two days', async () => {
+    // Berlin is UTC+1 in February: these start at 23:30 on 10 February and 00:30 on 11 February, 5 minutes each
+    await TimeEntry.create(website.id, '2026-02-10T22:30:00Z', '2026-02-10T22:35:00Z', null, 'Fix login');
+    await TimeEntry.create(website.id, '2026-02-10T23:30:00Z', '2026-02-10T23:35:00Z', null, 'Fix login');
+
+    const { lines } = (await preview({ groupByTask: true })).json.mock.calls[0][0];
+
+    expect(lines[0].minutes).toBe(30);
+    expect((await preview({ groupByTask: true, tz: 'UTC' })).json.mock.calls[0][0].lines[0].minutes).toBe(15);
+  });
+
+  test('a running timer with a task is not billed and does not change the rounded row', async () => {
+    await TimeEntry.create(website.id, '2026-02-10T09:00:00Z', '2026-02-10T09:05:00Z', null, 'Fix login');
+    await TimeEntry.create(website.id, '2026-02-10T10:00:00Z', null, null, 'Fix login');
+
+    const { lines } = (await preview({ groupByTask: true })).json.mock.calls[0][0];
+
+    expect(lines).toEqual([expect.objectContaining({ minutes: 15 })]);
+  });
+
+  test('entries of different projects with one task are not merged', async () => {
+    await TimeEntry.create(website.id, '2026-02-10T09:00:00Z', '2026-02-10T09:05:00Z', null, 'Fix login');
+    await TimeEntry.create(advice.id, '2026-02-10T10:00:00Z', '2026-02-10T10:05:00Z', null, 'Fix login');
+
+    const { lines } = (await preview({ groupByTask: true })).json.mock.calls[0][0];
+
+    expect(lines.map((line) => [line.name, line.minutes]).sort()).toEqual([['Beratung', 15], ['Website', 15]]);
+  });
+
+  test('without tasks, groupByTask changes nothing', async () => {
+    await TimeEntry.create(website.id, '2026-02-10T09:00:00Z', '2026-02-10T09:05:00Z', 'a');
+    await TimeEntry.create(website.id, '2026-02-10T10:00:00Z', '2026-02-10T10:05:00Z', 'b');
+
+    const plain = (await preview()).json.mock.calls[0][0];
+    const grouped = (await preview({ groupByTask: true })).json.mock.calls[0][0];
+
+    expect(grouped.lines).toEqual(plain.lines);
+    expect(grouped.net).toBe(plain.net);
+  });
+
+  test('the stored invoice has the rounded grouped line and the amounts of the preview', async () => {
+    await TimeEntry.create(website.id, '2026-02-10T09:00:00Z', '2026-02-10T09:05:00Z', 'a', 'Fix login');
+    await TimeEntry.create(website.id, '2026-02-10T10:00:00Z', '2026-02-10T10:05:00Z', 'b', 'fix login');
+    await TimeEntry.create(website.id, '2026-02-10T11:00:00Z', '2026-02-10T11:05:00Z', 'c', 'Fix login');
+    const shown = (await preview({ groupByTask: true })).json.mock.calls[0][0];
+
+    const made = (await create({ groupByTask: true })).json.mock.calls[0][0];
+
+    const stored = (await mockPool.query('SELECT minutes, amount_cents FROM invoice_lines WHERE invoice_id = $1', [made.id])).rows;
+    // 15 minutes of the task rounded as one = 15 minutes at 80.00 per hour
+    expect(stored).toEqual([{ minutes: 15, amount_cents: 2000 }]);
+    expect(made.net).toBe(shown.net);
+  });
+});

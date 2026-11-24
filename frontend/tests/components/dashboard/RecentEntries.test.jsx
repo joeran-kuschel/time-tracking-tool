@@ -27,6 +27,15 @@ describe('RecentEntries', () => {
     expect(screen.getByRole('button', { name: 'Fortsetzen: Pflege' })).toBeInTheDocument()
   })
 
+  test('shows the task before the description, and the task alone for an entry without description', () => {
+    render(<RecentEntries entries={[{ ...entries[0], task: 'Fix login' }, { ...entries[1], task: 'Review' }]} />)
+
+    const [first, second] = screen.getAllByRole('listitem')
+    expect(first).toHaveTextContent('Fix login · Login')
+    expect(second).toHaveTextContent('Review')
+    expect(second).not.toHaveTextContent('Keine Beschreibung')
+  })
+
   test('clicking the button resumes that entry and is not a click on the link', async () => {
     const options = resume()
     render(<RecentEntries entries={entries} resume={options} />)

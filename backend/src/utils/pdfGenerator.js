@@ -5,6 +5,7 @@ const { activateLocale } = require('../i18n');
 
 const { formatDuration, reportMinutes } = require('./hours');
 const { reportAmounts, formatMoney } = require('./amounts');
+const { rowText } = require('./tasks');
 
 function reportFileName(customerName, month, year, locale, extension = 'pdf') {
   activateLocale(locale);
@@ -234,7 +235,7 @@ function entryCells(entry, timeZone, cents) {
     date: i18n.date(entry.start_time, { year: 'numeric', month: 'numeric', day: 'numeric', timeZone }),
     project: entry.project_name,
     hours: formatDuration(reportMinutes(entry)),
-    description: entry.description || '',
+    description: rowText(entry),
   };
 }
 

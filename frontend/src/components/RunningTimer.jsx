@@ -19,6 +19,7 @@ function RunningTimer({ entry, onStop, busy = false, stopRef }) {
       <p className="min-w-0 truncate text-sm">
         <span className="font-semibold">{entry.project_name}</span>
         {entry.customer_name && <span className="hidden text-muted sm:inline"> · {entry.customer_name}</span>}
+        {entry.task && <span className="hidden text-muted sm:inline"> · {entry.task}</span>}
       </p>
       <span className="font-mono text-sm font-medium">{elapsedTime}</span>
       <button

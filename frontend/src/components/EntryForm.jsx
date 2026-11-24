@@ -1,6 +1,7 @@
 import { useLingui } from '@lingui/react/macro'
 import RecordForm from './RecordForm'
 import { fromInputs, toDateInput, toTimeInput } from '../entryTime'
+import { MAX_TASK } from '../tasks'
 
 const DAY = 24 * 60 * 60 * 1000
 
@@ -9,10 +10,11 @@ function daysBetween(start, end) {
   return Math.round((new Date(toDateInput(end)) - new Date(toDateInput(start))) / DAY)
 }
 
-// Form to add or edit a finished time entry: project, date, start, end and description.
+// Form to add or edit a finished time entry: project, date, start, end, task and description.
+// taskSuggestions: the earlier tasks the Task field offers.
 // The form has one date; an edited entry that ends on a later day keeps that offset.
-// onSubmit receives { projectId, startTime, endTime, description } as ISO times.
-function EntryForm({ entry, projects, projectId, legend, submitLabel, onSubmit, onCancel, error, autoFocus }) {
+// onSubmit receives { projectId, startTime, endTime, task, description } as ISO times.
+function EntryForm({ entry, projects, projectId, legend, submitLabel, onSubmit, onCancel, error, autoFocus, taskSuggestions = [] }) {
   const { t } = useLingui()
   // Never negative: an old entry that ends on the day before its start opens as ending on the start's day
   const endDayOffset = entry ? Math.max(0, daysBetween(entry.start_time, entry.end_time)) : 0
@@ -23,9 +25,10 @@ function EntryForm({ entry, projects, projectId, legend, submitLabel, onSubmit, 
         date: toDateInput(entry.start_time),
         start: toTimeInput(entry.start_time),
         end: toTimeInput(entry.end_time),
+        task: entry.task ?? '',
         description: entry.description ?? '',
       }
-    : { projectId: String(projectId), date: toDateInput(new Date()), start: '', end: '', description: '' }
+    : { projectId: String(projectId), date: toDateInput(new Date()), start: '', end: '', task: '', description: '' }
 
   const toTimes = (values) => ({
     startTime: fromInputs(values.date, values.start),
@@ -37,6 +40,7 @@ function EntryForm({ entry, projects, projectId, legend, submitLabel, onSubmit, 
     { name: 'date', label: t`Date`, type: 'date', required: true },
     { name: 'start', label: t`Start`, type: 'time', required: true },
     { name: 'end', label: endDayOffset > 0 ? t`End (next day)` : t`End`, type: 'time', required: true },
+    { name: 'task', label: t`Task (optional)`, maxLength: MAX_TASK, suggestions: taskSuggestions },
     { name: 'description', label: t`Description (optional)`, type: 'textarea' },
   ]
 
@@ -52,7 +56,7 @@ function EntryForm({ entry, projects, projectId, legend, submitLabel, onSubmit, 
       initialValues={initialValues}
       submitLabel={submitLabel}
       validate={validate}
-      onSubmit={(values) => onSubmit({ projectId: Number(values.projectId), ...toTimes(values), description: values.description })}
+      onSubmit={(values) => onSubmit({ projectId: Number(values.projectId), ...toTimes(values), task: values.task, description: values.description })}
       onCancel={onCancel}
       error={error}
       autoFocus={autoFocus}

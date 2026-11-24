@@ -3,6 +3,7 @@ import { Link } from 'react-router'
 import { Plural, Trans, useLingui } from '@lingui/react/macro'
 import { formatClock, formatDay, minutesBetween, minutesOfHours } from '../format'
 import Duration from './Duration'
+import EntryText from './EntryText'
 import ResumeButton, { ResumeHints } from './ResumeButton'
 import { trackingPath } from '../routes'
 import { ui } from '../ui'
@@ -40,7 +41,7 @@ function EntryResults({ results, busy, loadingMore, onShowMore, resume }) {
     onShowMore()
   }
 
-  const labels = { date: t`Date`, customer: t`Customer`, project: t`Project`, time: t`Time`, hours: t`Hours`, description: t`Description` }
+  const labels = { date: t`Date`, customer: t`Customer`, project: t`Project`, time: t`Time`, hours: t`Hours`, description: t`Task and description` }
 
   return (
     <section aria-labelledby={headingId} aria-busy={busy} className={`${ui.card} flex flex-col gap-4`}>
@@ -85,7 +86,7 @@ function EntryResults({ results, busy, loadingMore, onShowMore, resume }) {
                       <Duration minutes={minutesBetween(entry.start_time, entry.end_time)} />
                     </td>
                     <td data-label={labels.description} className={cell}>
-                      {entry.description || <span className="text-muted"><Trans>No description</Trans></span>}
+                      <EntryText entry={entry} empty={<span className="text-muted"><Trans>No description</Trans></span>} />
                     </td>
                     <td className={`${cell} max-sm:pt-2 sm:text-right`}>
                       <div className="flex items-center gap-1 sm:justify-end">

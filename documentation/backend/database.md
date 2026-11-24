@@ -5,13 +5,13 @@ instead.
 
 ## Schema
 
-Defined in `backend/migrations/001_init_schema.sql`, `002_report_status.sql`, `003_one_running_timer.sql`, `004_auth.sql`, `005_settings.sql`, `006_settings_show_amounts.sql`, `007_settings_rounding.sql`, `008_settings_rounding_steps.sql`, `009_customer_rounding.sql`, `010_settings_default_hourly_rate.sql`, `011_customer_report_language.sql`, `012_settings_week_start.sql`, `013_settings_sender_details.sql`, `014_sender_logo.sql`, `015_settings_invoicing.sql`, `016_invoice_details.sql` and `017_invoices.sql`:
+Defined in `backend/migrations/001_init_schema.sql`, `002_report_status.sql`, `003_one_running_timer.sql`, `004_auth.sql`, `005_settings.sql`, `006_settings_show_amounts.sql`, `007_settings_rounding.sql`, `008_settings_rounding_steps.sql`, `009_customer_rounding.sql`, `010_settings_default_hourly_rate.sql`, `011_customer_report_language.sql`, `012_settings_week_start.sql`, `013_settings_sender_details.sql`, `014_sender_logo.sql`, `015_settings_invoicing.sql`, `016_invoice_details.sql`, `017_invoices.sql` and `018_time_entry_task.sql`:
 
 | Table | Columns | Relations |
 |---|---|---|
 | `customers` | `id`, `name`, `email`, `rounding_minutes`, `rounding_direction` (both empty: the global rounding setting; see [Customers API](customers.md#rounding-rule)), `address` (varchar(300)) and `tax_id` (varchar(30)) for invoices (`NULL` = not set), `report_language` (`de`, `en` or empty: the language of the app; see [Customers API](customers.md#report-language)), `created_at`, `updated_at` | |
 | `projects` | `id`, `customer_id`, `name`, `hourly_rate` (decimal 10,2, default 0), `created_at`, `updated_at` | `customer_id` → `customers`, `ON DELETE CASCADE` |
-| `time_entries` | `id`, `project_id`, `start_time`, `end_time` (null while running), `description`, `created_at`, `updated_at` | `project_id` → `projects`, `ON DELETE CASCADE` |
+| `time_entries` | `id`, `project_id`, `start_time`, `end_time` (null while running), `description`, `task` (optional, up to 100 characters), `created_at`, `updated_at` | `project_id` → `projects`, `ON DELETE CASCADE` |
 | `report_status` | `customer_id`, `year`, `month` (1–12), `status` (`draft`, `ready` or `sent`), `updated_at`; primary key `(customer_id, year, month)` | `customer_id` → `customers`, `ON DELETE CASCADE` |
 | `users` | `id`, `email` (unique, lower case), `password_hash`, `created_at` | |
 | `sessions` | `token_hash` (SHA-256 of the cookie's token, primary key), `user_id`, `created_at`, `expires_at` (idle expiry) | `user_id` → `users`, `ON DELETE CASCADE` |
@@ -20,7 +20,7 @@ Defined in `backend/migrations/001_init_schema.sql`, `002_report_status.sql`, `0
 | `invoices` | `id`, `number` (unique), `customer_id`, `invoice_date`, `period_from`, `period_to`, `language`, a copy of the customer and of the sender, `vat_mode`, `vat_rate`, `net_cents`, `vat_cents`, `gross_cents`, `pdf` (`BYTEA`), `created_at` ([Invoices API](invoices.md)) | `customer_id` → `customers`, `ON DELETE SET NULL` |
 | `invoice_lines` | `id`, `invoice_id`, `position`, `description`, `minutes`, `rate_cents`, `amount_cents` | `invoice_id` → `invoices`, `ON DELETE CASCADE` |
 
-Indexes: `projects(customer_id)`, `time_entries(project_id)`, `time_entries(start_time)`, and the partial unique index
+Indexes: `projects(customer_id)`, `time_entries(project_id)`, `time_entries(project_id, task)`, `time_entries(start_time)`, and the partial unique index
 `one_running_timer`, which allows only one time entry without `end_time` (one running timer, see
 [Time entries API](time-entries.md#creating-entries)), and `sessions(user_id)`. How `users` and `sessions` are used:
 [Authentication](authentication.md).

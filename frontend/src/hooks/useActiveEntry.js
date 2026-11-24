@@ -53,8 +53,9 @@ export function useActiveEntry() {
     return undefined
   })
 
-  const start = (project, description, customer) => begin(
-    () => api.createTimeEntry(project.id, new Date().toISOString(), description),
+  // task: the name that entries of one activity share (optional)
+  const start = (project, description, customer, task) => begin(
+    () => api.createTimeEntry(project.id, new Date().toISOString(), description, undefined, task),
     msg`Timer could not be started.`, project, customer
   )
 

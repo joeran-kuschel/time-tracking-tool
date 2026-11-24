@@ -2,6 +2,8 @@ const TimeEntry = require('../models/TimeEntry');
 const Project = require('../models/Project');
 const Settings = require('../models/Settings');
 const { parseEntryFilter } = require('../utils/entryFilter');
+const { parseTask } = require('../utils/tasks');
+const { isId } = require('../utils/invoicing');
 const { roundingRuleOf, withBilling } = require('../utils/rounding');
 
 const isValidTime = (value) => typeof value === 'string' && !Number.isNaN(Date.parse(value));
@@ -27,9 +29,13 @@ function stopTime(sentEnd, start, now = new Date()) {
 exports.create = async (req, res) => {
   try {
     const { projectId, startTime, endTime, description } = req.body;
+    const task = parseTask(req.body.task);
 
     if (!projectId || !startTime) {
       return res.status(400).json({ error: 'projectId and startTime are required' });
+    }
+    if (task.error) {
+      return res.status(400).json({ error: task.error });
     }
     if (!isValidTime(startTime) || (endTime && !isValidTime(endTime))) {
       return res.status(400).json({ error: 'startTime and endTime must be valid dates' });
@@ -45,7 +51,7 @@ exports.create = async (req, res) => {
       return res.status(409).json(TIMER_RUNNING);
     }
 
-    const entry = await TimeEntry.create(projectId, toUtc(startTime), endTime ? toUtc(endTime) : null, description);
+    const entry = await TimeEntry.create(projectId, toUtc(startTime), endTime ? toUtc(endTime) : null, description, task.value);
     res.status(201).json(entry);
   } catch (err) {
     if (err.code === UNIQUE_VIOLATION) {
@@ -61,9 +67,13 @@ exports.create = async (req, res) => {
 exports.update = async (req, res) => {
   try {
     const { startTime, endTime, projectId, description } = req.body;
+    const task = parseTask(req.body.task);
 
     if (!endTime) {
       return res.status(400).json({ error: 'endTime is required' });
+    }
+    if (task.error) {
+      return res.status(400).json({ error: task.error });
     }
     if (!isValidTime(endTime) || (startTime !== undefined && !isValidTime(startTime))) {
       return res.status(400).json({ error: 'startTime and endTime must be valid dates' });
@@ -94,6 +104,7 @@ exports.update = async (req, res) => {
       endTime: isStop ? stopTime(endTime, entry.start_time) : toUtc(endTime),
       projectId,
       description,
+      task: task.value,
     });
     res.json(updated);
   } catch (err) {
@@ -222,5 +233,18 @@ exports.delete = async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Failed to delete time entry' });
+  }
+};
+
+// The tasks used in a project, most recent first, for the suggestions of the Task field
+exports.getTasks = async (req, res) => {
+  try {
+    if (!isId(req.params.projectId)) {
+      return res.status(400).json({ error: 'projectId must be a record id' });
+    }
+    res.json(await TimeEntry.getTasks(Number(req.params.projectId)));
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Failed to fetch tasks' });
   }
 };

@@ -21,7 +21,7 @@ const answer = (entries, total = entries.length, hours = 3) => ({ entries, total
 const lastQuery = () => api.searchTimeEntries.mock.lastCall[0]
 const lastPaging = () => api.searchTimeEntries.mock.lastCall[1]
 const status = () => screen.getByRole('status')
-const searchField = () => screen.getByLabelText('In Beschreibungen suchen')
+const searchField = () => screen.getByLabelText('In Aufgabe und Beschreibung suchen')
 
 // A promise that is settled by hand
 function deferred() {
@@ -86,7 +86,7 @@ describe('Entries', () => {
 
     const table = await screen.findByRole('table')
     const columns = within(table).getAllByRole('columnheader').map((th) => th.textContent)
-    expect(columns).toEqual(['Datum', 'Kunde', 'Projekt', 'Zeit', 'Stunden', 'Beschreibung', 'Aktionen'])
+    expect(columns).toEqual(['Datum', 'Kunde', 'Projekt', 'Zeit', 'Stunden', 'Aufgabe und Beschreibung', 'Aktionen'])
     const rows = within(table).getAllByRole('row')
     expect(within(rows[1]).getByText('Muster GmbH')).toBeInTheDocument()
     expect(within(rows[1]).getByText('Website')).toBeInTheDocument()

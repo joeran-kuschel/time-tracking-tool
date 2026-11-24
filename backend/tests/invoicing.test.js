@@ -236,3 +236,19 @@ describe('senderOf', () => {
     });
   });
 });
+
+describe('parseInvoiceRequest: groupByTask', () => {
+  const body = { customerId: 3, from: '2026-02-01', to: '2026-02-28', tz: 'Europe/Berlin' };
+
+  test('is off by default and on for true', () => {
+    expect(parseInvoiceRequest(body).value.groupByTask).toBe(false);
+    expect(parseInvoiceRequest({ ...body, groupByTask: true }).value.groupByTask).toBe(true);
+    expect(parseInvoiceRequest({ ...body, groupByTask: false }).value.groupByTask).toBe(false);
+  });
+
+  test('refuses anything but true or false', () => {
+    for (const groupByTask of ['true', 1, null, {}]) {
+      expect(parseInvoiceRequest({ ...body, groupByTask }).error).toBe('groupByTask must be true or false');
+    }
+  });
+});

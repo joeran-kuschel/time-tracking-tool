@@ -22,7 +22,7 @@ euros, like the JSON report; the currency is always `EUR`.
 ### The request of `/preview` and `POST /`
 
 ```json
-{ "customerId": 3, "from": "2026-02-01", "to": "2026-02-28", "tz": "Europe/Berlin", "invoiceDate": "2026-03-05", "lang": "de" }
+{ "customerId": 3, "from": "2026-02-01", "to": "2026-02-28", "tz": "Europe/Berlin", "invoiceDate": "2026-03-05", "lang": "de", "groupByTask": false }
 ```
 
 - `customerId`: a whole number (or digits as text). `404` when the customer does not exist.
@@ -30,6 +30,7 @@ euros, like the JSON report; the currency is always `EUR`.
   most 366 days. The entries are those that **start** in these days in the time zone `tz` (the browser's, like the
   reports; unknown or missing means UTC), the same limits as the filters of the Entries page (`dayRange` in `utils/period.js`).
 - `invoiceDate`: optional, default today in `tz`. It decides the year of the invoice number.
+- `groupByTask`: optional `true` or `false` (default `false`; anything else answers `400`). With `true`, the entries of one day and task are rounded as one row, like the report's [sum per day and task](reports.md#sum-per-day-and-task). Without a rounding rule it changes nothing. The invoice lines stay one per project.
 - `lang`: optional `de` or `en`. The language of the invoice is the customer's own report language, else `lang`, else German.
 
 Anything else answers `400` with the reason (`customerId is required`, `from and to are required as YYYY-MM-DD`, …).

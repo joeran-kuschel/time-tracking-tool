@@ -25,7 +25,7 @@ const invoices = [
   { id: 4, number: '2026-0004', customerId: 1, customerName: 'Muster GmbH', invoiceDate: '2026-02-03', periodFrom: '2026-01-01', periodTo: '2026-01-31', language: 'de', gross: '500.00' },
   { id: 3, number: '2026-0003', customerId: null, customerName: 'Alt AG', invoiceDate: '2026-01-05', periodFrom: '2025-12-01', periodTo: '2025-12-31', language: 'de', gross: '99.90' },
 ]
-const REQUEST = { customerId: 1, from: '2026-02-01', to: '2026-02-28', invoiceDate: '2026-03-05', lang: 'de' }
+const REQUEST = { customerId: 1, from: '2026-02-01', to: '2026-02-28', invoiceDate: '2026-03-05', lang: 'de', groupByTask: false }
 
 const renderPage = (customerList = customers) => renderWithRouter(<Invoices customers={customerList} />, { route: '/invoices' })
 const customerSelect = () => screen.getByLabelText('Kunde')
@@ -93,6 +93,23 @@ describe('Invoices', () => {
 
       expect(api.previewInvoice).toHaveBeenCalledTimes(1)
       expect(api.previewInvoice).toHaveBeenCalledWith(REQUEST)
+    })
+
+    test('rounds per day and task only when asked to, and loads the preview again for it', async () => {
+      renderPage()
+      await selectCustomer('Muster GmbH')
+      await previewCard()
+
+      await userEvent.click(screen.getByRole('checkbox', { name: 'Stunden je Tag und Aufgabe runden' }))
+
+      await waitFor(() => expect(api.previewInvoice).toHaveBeenLastCalledWith({ ...REQUEST, groupByTask: true }))
+      expect(api.previewInvoice).toHaveBeenCalledTimes(2)
+    })
+
+    test('is off at first, and the checkbox is not checked', async () => {
+      renderPage()
+
+      expect(screen.getByRole('checkbox', { name: 'Stunden je Tag und Aufgabe runden' })).not.toBeChecked()
     })
 
     test('shows the lines with hours, rate and amount, and the totals', async () => {
@@ -435,6 +452,33 @@ describe('Invoices', () => {
 
       await waitFor(() => expect(api.createInvoice).toHaveBeenCalledTimes(1))
       expect(api.createInvoice).toHaveBeenCalledWith(REQUEST)
+    })
+
+    test('creates it with groupByTask when the checkbox is on', async () => {
+      api.createInvoice.mockResolvedValue(created)
+      renderPage()
+      await selectCustomer('Muster GmbH')
+      await previewCard()
+      await userEvent.click(screen.getByRole('checkbox', { name: 'Stunden je Tag und Aufgabe runden' }))
+      await waitFor(() => expect(api.previewInvoice).toHaveBeenLastCalledWith({ ...REQUEST, groupByTask: true }))
+      const question = await openQuestion()
+
+      await userEvent.click(within(question).getByRole('button', { name: 'Rechnung erstellen' }))
+
+      await waitFor(() => expect(api.createInvoice).toHaveBeenCalledWith({ ...REQUEST, groupByTask: true }))
+    })
+
+    test('switching the checkbox off again asks for the plain preview', async () => {
+      renderPage()
+      await selectCustomer('Muster GmbH')
+      await previewCard()
+      const box = screen.getByRole('checkbox', { name: 'Stunden je Tag und Aufgabe runden' })
+
+      await userEvent.click(box)
+      await waitFor(() => expect(api.previewInvoice).toHaveBeenLastCalledWith({ ...REQUEST, groupByTask: true }))
+      await userEvent.click(box)
+
+      await waitFor(() => expect(api.previewInvoice).toHaveBeenLastCalledWith(REQUEST))
     })
 
     test('says it was created, shows it in the list, puts the focus on its download button and loads the preview again', async () => {

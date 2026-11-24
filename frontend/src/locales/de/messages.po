@@ -17,7 +17,7 @@ msgstr ""
 msgid ", {share} of total"
 msgstr ", {share} vom Gesamtwert"
 
-#: src/pages/TimeTracking.jsx:338
+#: src/pages/TimeTracking.jsx:339
 msgid ", timer running"
 msgstr ", Timer läuft"
 
@@ -26,7 +26,7 @@ msgid "(deleted)"
 msgstr "(gelöscht)"
 
 #. placeholder {0}: results.total
-#: src/components/EntryResults.jsx:51
+#: src/components/EntryResults.jsx:52
 msgid "{0, plural, one {# entry} other {# entries}}"
 msgstr "{0, plural, one {# Eintrag} other {# Einträge}}"
 
@@ -59,7 +59,7 @@ msgstr "{sent} von {total}"
 msgid "{total} this month"
 msgstr "{total} in diesem Monat"
 
-#: src/components/EntriesList.jsx:86
+#: src/components/EntriesList.jsx:90
 msgid "{total} total"
 msgstr "{total} gesamt"
 
@@ -91,8 +91,8 @@ msgstr "7 %"
 msgid "A timer is already running."
 msgstr "Es läuft bereits ein Timer."
 
-#: src/components/EntriesList.jsx:95
-#: src/components/EntryResults.jsx:65
+#: src/components/EntriesList.jsx:99
+#: src/components/EntryResults.jsx:66
 #: src/components/invoices/InvoiceList.jsx:42
 msgid "Actions"
 msgstr "Aktionen"
@@ -101,16 +101,16 @@ msgstr "Aktionen"
 msgid "Active filters"
 msgstr "Aktive Filter"
 
-#: src/components/dashboard/TrackTimeCard.jsx:84
+#: src/components/dashboard/TrackTimeCard.jsx:95
 msgid "Add"
 msgstr "Hinzufügen"
 
-#: src/components/dashboard/TrackTimeCard.jsx:94
+#: src/components/dashboard/TrackTimeCard.jsx:105
 msgid "Add a customer and a project on the Time tracking page first."
 msgstr "Lege zuerst auf der Seite Zeiterfassung einen Kunden und ein Projekt an."
 
-#: src/pages/TimeTracking.jsx:437
-#: src/pages/TimeTracking.jsx:456
+#: src/pages/TimeTracking.jsx:439
+#: src/pages/TimeTracking.jsx:458
 msgid "Add time"
 msgstr "Zeit nachtragen"
 
@@ -118,7 +118,7 @@ msgstr "Zeit nachtragen"
 msgid "Address"
 msgstr "Adresse"
 
-#: src/pages/TimeTracking.jsx:156
+#: src/pages/TimeTracking.jsx:157
 msgid "Address for invoices (optional)"
 msgstr "Adresse für Rechnungen (optional)"
 
@@ -131,17 +131,17 @@ msgid "All customers"
 msgstr "Alle Kunden"
 
 #: src/components/EntryFilters.jsx:158
-#: src/pages/TimeTracking.jsx:280
+#: src/pages/TimeTracking.jsx:281
 msgid "All projects"
 msgstr "Alle Projekte"
 
 #: src/components/dashboard/BillingTable.jsx:53
 #: src/components/invoices/InvoicePreview.jsx:66
-#: src/pages/Reports.jsx:304
+#: src/pages/Reports.jsx:328
 msgid "Amount"
 msgstr "Betrag"
 
-#: src/pages/Reports.jsx:274
+#: src/pages/Reports.jsx:298
 msgid "Amount (net)"
 msgstr "Betrag (netto)"
 
@@ -149,11 +149,11 @@ msgstr "Betrag (netto)"
 msgid "Any time"
 msgstr "Beliebig"
 
-#: src/pages/Reports.jsx:249
+#: src/pages/Reports.jsx:273
 msgid "Back to Reports"
 msgstr "Zurück zu Berichte"
 
-#: src/pages/TimeTracking.jsx:407
+#: src/pages/TimeTracking.jsx:408
 msgid "Back to Time tracking"
 msgstr "Zurück zu Zeiterfassung"
 
@@ -191,7 +191,7 @@ msgstr "Kalender"
 
 #: src/components/ConfirmAction.jsx:32
 #: src/components/ConfirmDelete.jsx:30
-#: src/components/RecordForm.jsx:80
+#: src/components/RecordForm.jsx:89
 msgid "Cancel"
 msgstr "Abbrechen"
 
@@ -236,7 +236,7 @@ msgstr "Rechnung {number} für {customerName} über {total} erstellen? Die Numme
 msgid "Created invoices"
 msgstr "Erstellte Rechnungen"
 
-#: src/pages/Reports.jsx:124
+#: src/pages/Reports.jsx:135
 msgid "CSV could not be downloaded."
 msgstr "CSV konnte nicht heruntergeladen werden."
 
@@ -246,26 +246,26 @@ msgstr "Benutzerdefiniert"
 
 #: src/components/dashboard/BillingTable.jsx:49
 #: src/components/EntryFilters.jsx:137
-#: src/components/EntryResults.jsx:43
+#: src/components/EntryResults.jsx:44
 #: src/components/invoices/InvoiceList.jsx:39
-#: src/pages/Invoices.jsx:203
-#: src/pages/Reports.jsx:160
+#: src/pages/Invoices.jsx:205
+#: src/pages/Reports.jsx:171
 msgid "Customer"
 msgstr "Kunde"
 
-#: src/components/dashboard/TrackTimeCard.jsx:59
+#: src/components/dashboard/TrackTimeCard.jsx:69
 msgid "Customer and project"
 msgstr "Kunde und Projekt"
 
-#: src/pages/TimeTracking.jsx:180
+#: src/pages/TimeTracking.jsx:181
 msgid "Customer could not be created."
 msgstr "Kunde konnte nicht angelegt werden."
 
-#: src/pages/TimeTracking.jsx:31
+#: src/pages/TimeTracking.jsx:32
 msgid "Customer could not be deleted."
 msgstr "Kunde konnte nicht gelöscht werden."
 
-#: src/pages/TimeTracking.jsx:31
+#: src/pages/TimeTracking.jsx:32
 msgid "Customer could not be saved."
 msgstr "Kunde konnte nicht gespeichert werden."
 
@@ -273,8 +273,8 @@ msgstr "Kunde konnte nicht gespeichert werden."
 msgid "Customer: {customerName}"
 msgstr "Kunde: {customerName}"
 
-#: src/pages/TimeTracking.jsx:316
-#: src/pages/TimeTracking.jsx:321
+#: src/pages/TimeTracking.jsx:317
+#: src/pages/TimeTracking.jsx:322
 msgid "Customers"
 msgstr "Kunden"
 
@@ -295,11 +295,11 @@ msgstr "Dashboard"
 msgid "Dashboard could not be loaded."
 msgstr "Dashboard konnte nicht geladen werden."
 
-#: src/components/EntriesList.jsx:91
-#: src/components/EntryForm.jsx:37
-#: src/components/EntryResults.jsx:43
+#: src/components/EntriesList.jsx:95
+#: src/components/EntryForm.jsx:40
+#: src/components/EntryResults.jsx:44
 #: src/components/invoices/InvoiceList.jsx:38
-#: src/pages/Reports.jsx:300
+#: src/pages/Reports.jsx:324
 msgid "Date"
 msgstr "Datum"
 
@@ -319,7 +319,7 @@ msgstr "Standard-Stundensatz für neue Projekte (€)"
 msgid "Delete"
 msgstr "Löschen"
 
-#: src/pages/TimeTracking.jsx:357
+#: src/pages/TimeTracking.jsx:358
 msgid "Delete {customerName} and all its projects and time entries?"
 msgstr "{customerName} und alle Projekte und Zeiteinträge löschen?"
 
@@ -327,7 +327,7 @@ msgstr "{customerName} und alle Projekte und Zeiteinträge löschen?"
 msgid "Delete {name}"
 msgstr "{name} löschen"
 
-#: src/pages/TimeTracking.jsx:382
+#: src/pages/TimeTracking.jsx:383
 msgid "Delete {projectName} and all its time entries?"
 msgstr "{projectName} und alle Zeiteinträge löschen?"
 
@@ -340,22 +340,20 @@ msgstr "Rechnung {number} löschen"
 msgid "Delete invoice {number}? Its number stays used and is never reused. An invoice you have sent should be kept."
 msgstr "Rechnung {number} löschen? Ihre Nummer bleibt vergeben und wird nie wieder verwendet. Eine Rechnung, die du verschickt hast, solltest du aufbewahren."
 
-#: src/components/EntriesList.jsx:64
+#: src/components/EntriesList.jsx:67
 msgid "Delete the entry from {start}"
 msgstr "Eintrag vom {start} löschen"
 
-#: src/components/EntriesList.jsx:39
+#: src/components/EntriesList.jsx:42
 msgid "Delete the entry from {start}?"
 msgstr "Eintrag vom {start} löschen?"
 
-#: src/components/EntriesList.jsx:94
-#: src/components/EntryResults.jsx:43
-#: src/pages/Reports.jsx:302
+#: src/pages/Reports.jsx:326
 msgid "Description"
 msgstr "Beschreibung"
 
-#: src/components/EntryForm.jsx:40
-#: src/components/Timer.jsx:66
+#: src/components/EntryForm.jsx:44
+#: src/components/Timer.jsx:96
 msgid "Description (optional)"
 msgstr "Beschreibung (optional)"
 
@@ -367,11 +365,11 @@ msgstr "Richtung"
 msgid "Download"
 msgstr "Herunterladen"
 
-#: src/pages/Reports.jsx:217
+#: src/pages/Reports.jsx:241
 msgid "Download CSV"
 msgstr "CSV herunterladen"
 
-#: src/pages/Reports.jsx:221
+#: src/pages/Reports.jsx:245
 msgid "Download PDF"
 msgstr "PDF herunterladen"
 
@@ -383,7 +381,7 @@ msgstr "PDF der Rechnung {number} herunterladen"
 msgid "draft"
 msgstr "Entwurf"
 
-#: src/pages/Reports.jsx:25
+#: src/pages/Reports.jsx:26
 msgid "Draft"
 msgstr "Entwurf"
 
@@ -395,15 +393,15 @@ msgstr "In Berichten wird jeder Eintrag einzeln gerundet. Die gespeicherten Zeit
 msgid "Edit {name}"
 msgstr "{name} bearbeiten"
 
-#: src/pages/TimeTracking.jsx:165
+#: src/pages/TimeTracking.jsx:166
 msgid "Edit customer"
 msgstr "Kunde bearbeiten"
 
-#: src/pages/TimeTracking.jsx:209
+#: src/pages/TimeTracking.jsx:210
 msgid "Edit project"
 msgstr "Projekt bearbeiten"
 
-#: src/components/EntriesList.jsx:63
+#: src/components/EntriesList.jsx:66
 msgid "Edit the entry from {start}"
 msgstr "Eintrag vom {start} bearbeiten"
 
@@ -411,7 +409,7 @@ msgstr "Eintrag vom {start} bearbeiten"
 msgid "Email"
 msgstr "E-Mail"
 
-#: src/pages/TimeTracking.jsx:153
+#: src/pages/TimeTracking.jsx:154
 msgid "Email (optional)"
 msgstr "E-Mail (optional)"
 
@@ -419,15 +417,15 @@ msgstr "E-Mail (optional)"
 msgid "Email address"
 msgstr "E-Mail-Adresse"
 
-#: src/components/EntryForm.jsx:39
+#: src/components/EntryForm.jsx:42
 msgid "End"
 msgstr "Ende"
 
-#: src/components/EntryForm.jsx:39
+#: src/components/EntryForm.jsx:42
 msgid "End (next day)"
 msgstr "Ende (nächster Tag)"
 
-#: src/components/EntryForm.jsx:45
+#: src/components/EntryForm.jsx:49
 msgid "End must be after start."
 msgstr "Das Ende muss nach dem Start liegen."
 
@@ -451,11 +449,11 @@ msgstr "Geben Sie einen Betrag ab 0 mit bis zu zwei Nachkommastellen ein, zum Be
 msgid "Enter an email address like name@example.com."
 msgstr "Gib eine E-Mail-Adresse wie name@beispiel.de ein."
 
-#: src/pages/Invoices.jsx:187
+#: src/pages/Invoices.jsx:189
 msgid "Enter the first and the last day of the period."
 msgstr "Gib den ersten und den letzten Tag des Zeitraums ein."
 
-#: src/pages/Invoices.jsx:223
+#: src/pages/Invoices.jsx:229
 msgid "Enter the invoice date."
 msgstr "Gib das Rechnungsdatum ein."
 
@@ -466,11 +464,11 @@ msgid "Entries"
 msgstr "Einträge"
 
 #: src/pages/Entries.jsx:42
-#: src/pages/TimeTracking.jsx:138
+#: src/pages/TimeTracking.jsx:139
 msgid "Entries could not be loaded."
 msgstr "Einträge konnten nicht geladen werden."
 
-#: src/pages/TimeTracking.jsx:433
+#: src/pages/TimeTracking.jsx:435
 msgid "Entries for {entriesOf}"
 msgstr "Einträge für {entriesOf}"
 
@@ -491,7 +489,7 @@ msgid "For example your IBAN, BIC and the bank. Up to 4 lines."
 msgstr "Zum Beispiel deine IBAN, BIC und die Bank. Bis zu 4 Zeilen."
 
 #: src/components/EntryFilters.jsx:183
-#: src/pages/Invoices.jsx:210
+#: src/pages/Invoices.jsx:212
 msgid "From"
 msgstr "Von"
 
@@ -511,16 +509,16 @@ msgstr "Halbe Stunde (30 Minuten)"
 msgid "Hour (60 minutes)"
 msgstr "Stunde (60 Minuten)"
 
-#: src/pages/TimeTracking.jsx:207
+#: src/pages/TimeTracking.jsx:208
 msgid "Hourly rate (€)"
 msgstr "Stundensatz (€)"
 
 #: src/components/dashboard/BillingTable.jsx:51
 #: src/components/dashboard/HoursChart.jsx:151
-#: src/components/EntriesList.jsx:93
-#: src/components/EntryResults.jsx:43
+#: src/components/EntriesList.jsx:97
+#: src/components/EntryResults.jsx:44
 #: src/components/invoices/InvoicePreview.jsx:64
-#: src/pages/Reports.jsx:303
+#: src/pages/Reports.jsx:327
 msgid "Hours"
 msgstr "Stunden"
 
@@ -588,7 +586,7 @@ msgstr "Stunden auf Schritte von 5 Minuten aufgerundet."
 msgid "Hours this month"
 msgstr "Stunden diesen Monat"
 
-#: src/components/EntryResults.jsx:98
+#: src/components/EntryResults.jsx:99
 msgid "in Time tracking"
 msgstr "in Zeiterfassung"
 
@@ -596,15 +594,15 @@ msgstr "in Zeiterfassung"
 msgid "Invoice {existing} covers {existingFrom} to {existingTo}."
 msgstr "Rechnung {existing} umfasst {existingFrom} bis {existingTo}."
 
-#: src/pages/Invoices.jsx:249
+#: src/pages/Invoices.jsx:255
 msgid "Invoice {number} created."
 msgstr "Rechnung {number} erstellt."
 
-#: src/pages/Invoices.jsx:250
+#: src/pages/Invoices.jsx:256
 msgid "Invoice {number} deleted."
 msgstr "Rechnung {number} gelöscht."
 
-#: src/pages/Invoices.jsx:218
+#: src/pages/Invoices.jsx:220
 msgid "Invoice date"
 msgstr "Rechnungsdatum"
 
@@ -620,12 +618,12 @@ msgstr "Rechnungsnummer {number}. Sie wird vergeben, wenn du die Rechnung erstel
 msgid "Invoice number pattern"
 msgstr "Muster der Rechnungsnummer"
 
-#: src/pages/Invoices.jsx:196
+#: src/pages/Invoices.jsx:198
 #: src/routes.js:13
 msgid "Invoices"
 msgstr "Rechnungen"
 
-#: src/pages/Invoices.jsx:66
+#: src/pages/Invoices.jsx:68
 msgid "Invoices could not be loaded."
 msgstr "Rechnungen konnten nicht geladen werden."
 
@@ -661,8 +659,8 @@ msgstr "Wie das System"
 #: src/components/AuthGate.jsx:70
 #: src/components/invoices/InvoiceList.jsx:29
 #: src/pages/Dashboard.jsx:78
-#: src/pages/Invoices.jsx:227
-#: src/pages/Reports.jsx:253
+#: src/pages/Invoices.jsx:233
+#: src/pages/Reports.jsx:277
 #: src/pages/Settings.jsx:140
 #: src/pages/Settings.jsx:146
 msgid "Loading..."
@@ -702,7 +700,7 @@ msgstr "Logo gespeichert."
 msgid "Main"
 msgstr "Hauptnavigation"
 
-#: src/components/dashboard/TrackTimeCard.jsx:100
+#: src/components/dashboard/TrackTimeCard.jsx:111
 msgid "Manual entry"
 msgstr "Nachtragen"
 
@@ -710,11 +708,11 @@ msgstr "Nachtragen"
 msgid "Monday"
 msgstr "Montag"
 
-#: src/pages/Reports.jsx:175
+#: src/pages/Reports.jsx:186
 msgid "Month"
 msgstr "Monat"
 
-#: src/pages/Reports.jsx:258
+#: src/pages/Reports.jsx:282
 msgid "Monthly report"
 msgstr "Monatsabrechnung"
 
@@ -722,8 +720,8 @@ msgstr "Monatsabrechnung"
 msgid "Monthly reports"
 msgstr "Monatsabrechnungen"
 
-#: src/pages/TimeTracking.jsx:152
-#: src/pages/TimeTracking.jsx:206
+#: src/pages/TimeTracking.jsx:153
+#: src/pages/TimeTracking.jsx:207
 msgid "Name"
 msgstr "Name"
 
@@ -735,17 +733,17 @@ msgstr "Rundungsregel in Berichten nennen"
 msgid "Net amount"
 msgstr "Nettobetrag"
 
-#: src/pages/TimeTracking.jsx:317
-#: src/pages/TimeTracking.jsx:448
+#: src/pages/TimeTracking.jsx:318
+#: src/pages/TimeTracking.jsx:450
 msgid "New customer"
 msgstr "Neuer Kunde"
 
-#: src/pages/Invoices.jsx:199
+#: src/pages/Invoices.jsx:201
 msgid "New invoice"
 msgstr "Neue Rechnung"
 
-#: src/pages/TimeTracking.jsx:302
-#: src/pages/TimeTracking.jsx:452
+#: src/pages/TimeTracking.jsx:303
+#: src/pages/TimeTracking.jsx:454
 msgid "New project"
 msgstr "Neues Projekt"
 
@@ -761,20 +759,20 @@ msgstr "Neueste zuerst"
 msgid "Next invoice number"
 msgstr "Nächste Rechnungsnummer"
 
-#: src/pages/Reports.jsx:181
+#: src/pages/Reports.jsx:192
 msgid "Next month"
 msgstr "Nächster Monat"
 
-#: src/components/dashboard/RecentEntries.jsx:43
-#: src/components/EntryResults.jsx:88
+#: src/components/dashboard/RecentEntries.jsx:44
+#: src/components/EntryResults.jsx:89
 msgid "No description"
 msgstr "Ohne Beschreibung"
 
-#: src/pages/Reports.jsx:335
+#: src/pages/Reports.jsx:361
 msgid "No entries for this period"
 msgstr "Keine Einträge für diesen Zeitraum"
 
-#: src/components/EntryResults.jsx:50
+#: src/components/EntryResults.jsx:51
 msgid "No entries found"
 msgstr "Keine Einträge gefunden"
 
@@ -782,11 +780,11 @@ msgstr "Keine Einträge gefunden"
 msgid "No entries in {lastMonthName}"
 msgstr "Keine Einträge im {lastMonthName}"
 
-#: src/components/EntriesList.jsx:121
+#: src/components/EntriesList.jsx:125
 msgid "No entries yet"
 msgstr "Noch keine Einträge"
 
-#: src/components/dashboard/RecentEntries.jsx:32
+#: src/components/dashboard/RecentEntries.jsx:33
 msgid "No entries yet."
 msgstr "Noch keine Einträge."
 
@@ -825,7 +823,7 @@ msgstr "Nummer"
 msgid "Oldest first"
 msgstr "Älteste zuerst"
 
-#: src/components/EntryResults.jsx:97
+#: src/components/EntryResults.jsx:98
 #: src/components/invoices/InvoiceList.jsx:82
 msgid "Open"
 msgstr "Öffnen"
@@ -848,7 +846,7 @@ msgid "Open report for {customerName}"
 msgstr "Abrechnung für {customerName} öffnen"
 
 #: src/components/invoices/MissingDetails.jsx:29
-#: src/pages/Invoices.jsx:244
+#: src/pages/Invoices.jsx:250
 msgid "Open Settings"
 msgstr "Einstellungen öffnen"
 
@@ -861,7 +859,7 @@ msgstr "Seite nicht gefunden"
 msgid "Password"
 msgstr "Passwort"
 
-#: src/pages/Reports.jsx:122
+#: src/pages/Reports.jsx:133
 msgid "PDF could not be downloaded."
 msgstr "PDF konnte nicht heruntergeladen werden."
 
@@ -898,27 +896,27 @@ msgstr "PDF ansehen"
 msgid "Preview PDF for {customerName} (opens in a new tab)"
 msgstr "PDF ansehen für {customerName} (öffnet in einem neuen Tab)"
 
-#: src/pages/Reports.jsx:177
+#: src/pages/Reports.jsx:188
 msgid "Previous month"
 msgstr "Vorheriger Monat"
 
 #: src/components/EntryFilters.jsx:150
-#: src/components/EntryForm.jsx:36
-#: src/components/EntryResults.jsx:43
+#: src/components/EntryForm.jsx:39
+#: src/components/EntryResults.jsx:44
 #: src/components/invoices/InvoicePreview.jsx:63
-#: src/pages/Reports.jsx:301
+#: src/pages/Reports.jsx:325
 msgid "Project"
 msgstr "Projekt"
 
-#: src/pages/TimeTracking.jsx:217
+#: src/pages/TimeTracking.jsx:218
 msgid "Project could not be created."
 msgstr "Projekt konnte nicht angelegt werden."
 
-#: src/pages/TimeTracking.jsx:32
+#: src/pages/TimeTracking.jsx:33
 msgid "Project could not be deleted."
 msgstr "Projekt konnte nicht gelöscht werden."
 
-#: src/pages/TimeTracking.jsx:32
+#: src/pages/TimeTracking.jsx:33
 msgid "Project could not be saved."
 msgstr "Projekt konnte nicht gespeichert werden."
 
@@ -927,13 +925,13 @@ msgid "Project: {projectName}"
 msgstr "Projekt: {projectName}"
 
 #: src/components/dashboard/BillingTable.jsx:50
-#: src/pages/Reports.jsx:279
-#: src/pages/TimeTracking.jsx:277
+#: src/pages/Reports.jsx:303
+#: src/pages/TimeTracking.jsx:278
 msgid "Projects"
 msgstr "Projekte"
 
 #: src/pages/Entries.jsx:75
-#: src/pages/TimeTracking.jsx:119
+#: src/pages/TimeTracking.jsx:120
 msgid "Projects could not be loaded."
 msgstr "Projekte konnten nicht geladen werden."
 
@@ -954,11 +952,11 @@ msgstr "Satz"
 msgid "ready to send"
 msgstr "bereit zum Versand"
 
-#: src/pages/Reports.jsx:26
+#: src/pages/Reports.jsx:27
 msgid "Ready to send"
 msgstr "Bereit zum Versand"
 
-#: src/components/dashboard/RecentEntries.jsx:21
+#: src/components/dashboard/RecentEntries.jsx:22
 msgid "Recent entries"
 msgstr "Letzte Einträge"
 
@@ -978,23 +976,23 @@ msgstr "Logo entfernen"
 msgid "Report"
 msgstr "Abrechnung"
 
-#: src/pages/Reports.jsx:260
+#: src/pages/Reports.jsx:284
 msgid "Report {reportCustomer} – {reportPeriod}"
 msgstr "Abrechnung {reportCustomer} – {reportPeriod}"
 
-#: src/pages/Reports.jsx:93
+#: src/pages/Reports.jsx:104
 msgid "Report could not be loaded."
 msgstr "Bericht konnte nicht geladen werden."
 
-#: src/pages/TimeTracking.jsx:155
+#: src/pages/TimeTracking.jsx:156
 msgid "Report language"
 msgstr "Berichtssprache"
 
-#: src/pages/Reports.jsx:129
+#: src/pages/Reports.jsx:140
 msgid "Report status could not be saved."
 msgstr "Status der Abrechnung konnte nicht gespeichert werden."
 
-#: src/pages/Reports.jsx:156
+#: src/pages/Reports.jsx:167
 #: src/routes.js:12
 msgid "Reports"
 msgstr "Berichte"
@@ -1007,7 +1005,7 @@ msgstr "Abrechnungen für {lastMonthName} verschickt"
 msgid "Reset filters"
 msgstr "Filter zurücksetzen"
 
-#: src/components/EntryResults.jsx:47
+#: src/components/EntryResults.jsx:48
 msgid "Results"
 msgstr "Ergebnisse"
 
@@ -1019,6 +1017,10 @@ msgstr "Fortsetzen: {projectName}"
 msgid "Resume: {projectName}, {description}"
 msgstr "Fortsetzen: {projectName}, {description}"
 
+#: src/pages/Invoices.jsx:226
+msgid "Round the hours per day and task"
+msgstr "Stunden je Tag und Aufgabe runden"
+
 #: src/settingsGroups.js:60
 msgid "Round time entries"
 msgstr "Zeiteinträge runden"
@@ -1027,7 +1029,7 @@ msgstr "Zeiteinträge runden"
 msgid "Rounded hours × hourly rate of each project"
 msgstr "Gerundete Stunden × Stundensatz des Projekts"
 
-#: src/pages/TimeTracking.jsx:154
+#: src/pages/TimeTracking.jsx:155
 msgid "Rounding"
 msgstr "Rundung"
 
@@ -1039,16 +1041,16 @@ msgstr "Die Rundung gilt auch für Berichte vergangener Monate. PDF- und CSV-Dat
 msgid "Rounding differs by customer."
 msgstr "Die Rundung unterscheidet sich je Kunde."
 
-#: src/pages/TimeTracking.jsx:368
+#: src/pages/TimeTracking.jsx:369
 msgid "Rounding: {customerRounding}"
 msgstr "Rundung: {customerRounding}"
 
-#: src/components/EntriesList.jsx:53
-#: src/components/EntryResults.jsx:81
+#: src/components/EntriesList.jsx:56
+#: src/components/EntryResults.jsx:82
 msgid "running"
 msgstr "läuft"
 
-#: src/components/Timer.jsx:52
+#: src/components/Timer.jsx:63
 msgid "Running since {since}"
 msgstr "Läuft seit {since}"
 
@@ -1065,45 +1067,45 @@ msgid "Same as the app"
 msgstr "Wie die App"
 
 #: src/components/EditableRecord.jsx:22
-#: src/components/EntriesList.jsx:36
+#: src/components/EntriesList.jsx:39
 #: src/pages/Settings.jsx:170
-#: src/pages/TimeTracking.jsx:449
-#: src/pages/TimeTracking.jsx:453
-#: src/pages/TimeTracking.jsx:457
+#: src/pages/TimeTracking.jsx:451
+#: src/pages/TimeTracking.jsx:455
+#: src/pages/TimeTracking.jsx:459
 msgid "Save"
 msgstr "Speichern"
 
-#: src/components/dashboard/TrackTimeCard.jsx:75
+#: src/components/dashboard/TrackTimeCard.jsx:85
 msgid "Saved {savedDuration} to {savedProject}."
 msgstr "{savedDuration} für {savedProject} gespeichert."
 
 #: src/components/EntryFilters.jsx:124
-msgid "Search in descriptions"
-msgstr "In Beschreibungen suchen"
+msgid "Search in task and description"
+msgstr "In Aufgabe und Beschreibung suchen"
 
 #: src/components/EntryFilters.jsx:54
 msgid "Search: {query}"
 msgstr "Suche: {query}"
 
-#: src/pages/Invoices.jsx:205
-#: src/pages/Reports.jsx:167
-#: src/pages/TimeTracking.jsx:410
+#: src/pages/Invoices.jsx:207
+#: src/pages/Reports.jsx:178
+#: src/pages/TimeTracking.jsx:411
 msgid "Select a customer"
 msgstr "Wähle einen Kunden"
 
-#: src/pages/Invoices.jsx:226
+#: src/pages/Invoices.jsx:232
 msgid "Select a customer to prepare an invoice."
 msgstr "Wähle einen Kunden, um eine Rechnung vorzubereiten."
 
-#: src/pages/Reports.jsx:252
+#: src/pages/Reports.jsx:276
 msgid "Select a customer to see the report."
 msgstr "Wähle einen Kunden, um den Bericht zu sehen."
 
-#: src/components/Timer.jsx:79
+#: src/components/Timer.jsx:109
 msgid "Select a project to start the timer."
 msgstr "Wähle ein Projekt, um den Timer zu starten."
 
-#: src/pages/Reports.jsx:27
+#: src/pages/Reports.jsx:28
 msgid "Sent"
 msgstr "Verschickt"
 
@@ -1124,11 +1126,11 @@ msgstr "Einstellungen konnten nicht gespeichert werden."
 msgid "Settings saved."
 msgstr "Einstellungen gespeichert."
 
-#: src/pages/TimeTracking.jsx:395
+#: src/pages/TimeTracking.jsx:396
 msgid "Show all projects"
 msgstr "Alle Projekte anzeigen"
 
-#: src/pages/Reports.jsx:209
+#: src/pages/Reports.jsx:220
 msgid "Show hourly rate and amounts"
 msgstr "Stundensatz und Beträge anzeigen"
 
@@ -1136,11 +1138,11 @@ msgstr "Stundensatz und Beträge anzeigen"
 msgid "Show hourly rate and amounts in reports"
 msgstr "Stundensatz und Beträge in Berichten anzeigen"
 
-#: src/components/EntryResults.jsx:115
+#: src/components/EntryResults.jsx:116
 msgid "Show more"
 msgstr "Mehr anzeigen"
 
-#: src/components/EntryResults.jsx:117
+#: src/components/EntryResults.jsx:118
 msgid "Showing {shown} of {total}"
 msgstr "{shown} von {total} angezeigt"
 
@@ -1164,42 +1166,56 @@ msgstr "Sortierung"
 msgid "Sort: {sortName}"
 msgstr "Sortierung: {sortName}"
 
-#: src/components/EntryForm.jsx:38
-#: src/components/Timer.jsx:97
+#: src/components/EntryForm.jsx:41
+#: src/components/Timer.jsx:127
 msgid "Start"
 msgstr "Start"
 
-#: src/pages/Reports.jsx:189
+#: src/pages/Reports.jsx:200
 msgid "Status"
 msgstr "Status"
 
-#: src/components/Timer.jsx:102
+#: src/components/Timer.jsx:132
 msgid "Stop"
 msgstr "Stop"
 
-#: src/components/RunningTimer.jsx:32
+#: src/components/RunningTimer.jsx:33
 msgid "Stop <0>timer</0>"
 msgstr "Stop <0>Timer</0>"
 
-#: src/components/EntriesList.jsx:19
+#: src/components/EntriesList.jsx:21
 #: src/components/ResumeButton.jsx:13
-#: src/pages/TimeTracking.jsx:30
+#: src/pages/TimeTracking.jsx:31
 msgid "Stop the running timer first."
 msgstr "Stoppe zuerst den laufenden Timer."
+
+#: src/pages/Reports.jsx:233
+msgid "Sum hours per day and task"
+msgstr "Stunden je Tag und Aufgabe summieren"
 
 #: src/settingsGroups.js:103
 msgid "Sunday"
 msgstr "Sonntag"
 
+#: src/components/EntryForm.jsx:43
+#: src/components/Timer.jsx:77
+msgid "Task (optional)"
+msgstr "Aufgabe (optional)"
+
+#: src/components/EntriesList.jsx:98
+#: src/components/EntryResults.jsx:44
+msgid "Task and description"
+msgstr "Aufgabe und Beschreibung"
+
 #: src/settingsGroups.js:145
 msgid "Tax ID"
 msgstr "Steuernummer"
 
-#: src/pages/TimeTracking.jsx:157
+#: src/pages/TimeTracking.jsx:158
 msgid "Tax ID (optional)"
 msgstr "Steuernummer (optional)"
 
-#: src/pages/TimeTracking.jsx:367
+#: src/pages/TimeTracking.jsx:368
 msgid "Tax ID: {customerTaxId}"
 msgstr "Steuernummer: {customerTaxId}"
 
@@ -1231,19 +1247,19 @@ msgstr "Der Eintrag läuft weiter: die Zeit seit seinem Ende zählt als Arbeitsz
 msgid "The file is too large. Choose an image of at most 1 MB."
 msgstr "Die Datei ist zu groß. Wähle ein Bild mit höchstens 1 MB."
 
-#: src/pages/Invoices.jsx:188
+#: src/pages/Invoices.jsx:190
 msgid "The first day must not be after the last day."
 msgstr "Der erste Tag darf nicht nach dem letzten Tag liegen."
 
-#: src/pages/Invoices.jsx:144
+#: src/pages/Invoices.jsx:146
 msgid "The invoice could not be created."
 msgstr "Die Rechnung konnte nicht erstellt werden."
 
-#: src/pages/Invoices.jsx:163
+#: src/pages/Invoices.jsx:165
 msgid "The invoice could not be deleted."
 msgstr "Die Rechnung konnte nicht gelöscht werden."
 
-#: src/pages/Invoices.jsx:100
+#: src/pages/Invoices.jsx:102
 msgid "The invoice could not be prepared."
 msgstr "Die Rechnung konnte nicht vorbereitet werden."
 
@@ -1259,7 +1275,7 @@ msgstr "Die Rechnung ist auf {language} (die Berichtssprache dieses Kunden)."
 msgid "The invoice number is already used. Raise the next invoice number in the settings."
 msgstr "Die Rechnungsnummer ist schon vergeben. Erhöhe die nächste Rechnungsnummer in den Einstellungen."
 
-#: src/pages/Invoices.jsx:247
+#: src/pages/Invoices.jsx:253
 msgid "The invoice would be {previewTotal} in total."
 msgstr "Die Rechnung hätte insgesamt {previewTotal}."
 
@@ -1296,20 +1312,20 @@ msgid "The pattern needs exactly one counter, for example {counter}."
 msgstr "Das Muster braucht genau einen Zähler, zum Beispiel {counter}."
 
 #. placeholder {0}: languageName(i18n, ownLanguage)
-#: src/pages/Reports.jsx:151
+#: src/pages/Reports.jsx:162
 msgid "The PDF and CSV are in {0} (the report language of this customer)."
 msgstr "PDF und CSV sind auf {0} (Berichtssprache dieses Kunden)."
 
 #. placeholder {0}: languageName(i18n, i18n.locale)
-#: src/pages/Reports.jsx:152
+#: src/pages/Reports.jsx:163
 msgid "The PDF and CSV are in the language of the app ({0})."
 msgstr "PDF und CSV sind in der Sprache der App ({0})."
 
-#: src/pages/Invoices.jsx:177
+#: src/pages/Invoices.jsx:179
 msgid "The PDF could not be downloaded."
 msgstr "Das PDF konnte nicht heruntergeladen werden."
 
-#: src/pages/Invoices.jsx:189
+#: src/pages/Invoices.jsx:191
 msgid "The period can be at most {maxDays} days."
 msgstr "Der Zeitraum darf höchstens {maxDays} Tage lang sein."
 
@@ -1321,7 +1337,7 @@ msgstr "Die Berichte-Seite startet mit dieser Einstellung. Für einen einzelnen 
 msgid "The server is not reachable."
 msgstr "Der Server ist nicht erreichbar."
 
-#: src/components/Timer.jsx:84
+#: src/components/Timer.jsx:114
 msgid "The timer is running for {trackedProject}. Stop it to start {selectedProject}."
 msgstr "Der Timer läuft für {trackedProject}. Stoppe ihn, um {selectedProject} zu starten."
 
@@ -1345,8 +1361,8 @@ msgstr "Unter dieser Adresse gibt es keine Seite."
 msgid "These settings are used by invoices, which can be created in a later version. Nothing else changes."
 msgstr "Diese Einstellungen verwenden Rechnungen, die in einer späteren Version erstellt werden können. Sonst ändert sich nichts."
 
-#: src/pages/Reports.jsx:247
-#: src/pages/TimeTracking.jsx:405
+#: src/pages/Reports.jsx:271
+#: src/pages/TimeTracking.jsx:406
 msgid "This customer does not exist (any more)."
 msgstr "Dieser Kunde existiert nicht (mehr)."
 
@@ -1359,7 +1375,7 @@ msgstr "Diese Rechnung kann noch nicht erstellt werden:"
 msgid "This month"
 msgstr "Dieser Monat"
 
-#: src/pages/TimeTracking.jsx:393
+#: src/pages/TimeTracking.jsx:394
 msgid "This project does not exist (any more)."
 msgstr "Dieses Projekt existiert nicht (mehr)."
 
@@ -1373,8 +1389,8 @@ msgstr "Diese Woche"
 msgid "This year"
 msgstr "Dieses Jahr"
 
-#: src/components/EntriesList.jsx:92
-#: src/components/EntryResults.jsx:43
+#: src/components/EntriesList.jsx:96
+#: src/components/EntryResults.jsx:44
 msgid "Time"
 msgstr "Zeit"
 
@@ -1382,35 +1398,35 @@ msgstr "Zeit"
 msgid "Time and billing"
 msgstr "Zeit und Abrechnung"
 
-#: src/components/EntriesList.jsx:18
+#: src/components/EntriesList.jsx:20
 msgid "Time entry could not be deleted."
 msgstr "Zeiteintrag konnte nicht gelöscht werden."
 
-#: src/components/dashboard/TrackTimeCard.jsx:46
-#: src/components/EntriesList.jsx:17
-#: src/pages/TimeTracking.jsx:262
+#: src/components/dashboard/TrackTimeCard.jsx:53
+#: src/components/EntriesList.jsx:19
+#: src/pages/TimeTracking.jsx:263
 msgid "Time entry could not be saved."
 msgstr "Zeiteintrag konnte nicht gespeichert werden."
 
-#: src/pages/TimeTracking.jsx:402
+#: src/pages/TimeTracking.jsx:403
 #: src/routes.js:10
 msgid "Time tracking"
 msgstr "Zeiterfassung"
 
-#: src/components/dashboard/TrackTimeCard.jsx:99
-#: src/components/Timer.jsx:48
+#: src/components/dashboard/TrackTimeCard.jsx:110
+#: src/components/Timer.jsx:59
 msgid "Timer"
 msgstr "Timer"
 
-#: src/hooks/useActiveEntry.js:63
+#: src/hooks/useActiveEntry.js:64
 msgid "Timer could not be resumed."
 msgstr "Timer konnte nicht fortgesetzt werden."
 
-#: src/hooks/useActiveEntry.js:58
+#: src/hooks/useActiveEntry.js:59
 msgid "Timer could not be started."
 msgstr "Timer konnte nicht gestartet werden."
 
-#: src/hooks/useActiveEntry.js:69
+#: src/hooks/useActiveEntry.js:70
 msgid "Timer could not be stopped."
 msgstr "Timer konnte nicht gestoppt werden."
 
@@ -1423,7 +1439,7 @@ msgid "Timer stopped"
 msgstr "Timer gestoppt"
 
 #: src/components/EntryFilters.jsx:196
-#: src/pages/Invoices.jsx:214
+#: src/pages/Invoices.jsx:216
 msgid "To"
 msgstr "Bis"
 
@@ -1443,7 +1459,7 @@ msgstr "Zu viele fehlgeschlagene Versuche. Versuche es in ein paar Minuten erneu
 
 #: src/components/dashboard/BillingTable.jsx:90
 #: src/components/invoices/InvoiceList.jsx:41
-#: src/pages/Reports.jsx:324
+#: src/pages/Reports.jsx:350
 msgid "Total"
 msgstr "Gesamt"
 
@@ -1451,12 +1467,12 @@ msgstr "Gesamt"
 msgid "Total amount"
 msgstr "Gesamtbetrag"
 
-#: src/pages/Reports.jsx:269
+#: src/pages/Reports.jsx:293
 msgid "Total hours"
 msgstr "Gesamtstunden"
 
-#: src/components/dashboard/TrackTimeCard.jsx:92
-#: src/components/dashboard/TrackTimeCard.jsx:97
+#: src/components/dashboard/TrackTimeCard.jsx:103
+#: src/components/dashboard/TrackTimeCard.jsx:108
 msgid "Track time"
 msgstr "Zeit erfassen"
 
@@ -1464,7 +1480,7 @@ msgstr "Zeit erfassen"
 #: src/components/AuthGate.jsx:66
 #: src/components/invoices/InvoiceList.jsx:25
 #: src/pages/Dashboard.jsx:75
-#: src/pages/Reports.jsx:238
+#: src/pages/Reports.jsx:262
 #: src/pages/Settings.jsx:142
 msgid "Try again"
 msgstr "Erneut versuchen"
@@ -1483,7 +1499,7 @@ msgid "upcoming"
 msgstr "noch offen"
 
 #: src/pages/Settings.jsx:65
-#: src/pages/TimeTracking.jsx:162
+#: src/pages/TimeTracking.jsx:163
 msgid "Use at most {maxLines} lines."
 msgstr "Verwende höchstens {maxLines} Zeilen."
 
@@ -1503,7 +1519,7 @@ msgstr "Umsatzsteuer {vatRate} %"
 msgid "VAT rate"
 msgstr "Umsatzsteuersatz"
 
-#: src/components/dashboard/RecentEntries.jsx:27
+#: src/components/dashboard/RecentEntries.jsx:28
 msgid "View all"
 msgstr "Alle ansehen"
 

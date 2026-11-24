@@ -177,3 +177,52 @@ describe('reportRows with amounts', () => {
     expect(plain.rows[0]).toHaveLength(7);
   });
 });
+
+describe('reportRows grouped by task', () => {
+  const grouped = (overrides) => entry({ task: 'Fix login', details: ['review', 'redirect'], count: 2, ...overrides });
+  const options = { customerName: 'Muster GmbH', locale: 'en', timeZone: 'UTC', grouped: true };
+
+  test('leaves out Start and End and adds Task after Project', () => {
+    expect(reportRows([], options).headers).toEqual(['Date', 'Customer', 'Project', 'Task', 'Description', 'Hours']);
+    expect(reportRows([], { ...options, locale: 'de' }).headers).toEqual(['Datum', 'Kunde', 'Projekt', 'Aufgabe', 'Beschreibung', 'Stunden']);
+  });
+
+  test('writes the task and the details joined by semicolons', () => {
+    const { rows } = reportRows([grouped()], options);
+
+    expect(rows[0]).toEqual([
+      { text: '2026-09-21' }, { text: 'Muster GmbH' }, { text: 'Website' }, { text: 'Fix login' },
+      { text: 'review; redirect' }, { number: '1.50' },
+    ]);
+  });
+
+  test('an entry without a task has an empty task cell and its own description', () => {
+    const { rows } = reportRows([entry({ task: null })], options);
+
+    expect(rows[0].slice(3, 5)).toEqual([{ text: '' }, { text: 'Konzept' }]);
+  });
+
+  test('a group without details has an empty description', () => {
+    expect(reportRows([grouped({ details: [] })], options).rows[0][4]).toEqual({ text: '' });
+  });
+
+  test('a running entry with a task keeps the task, an empty description and 0 hours', () => {
+    const { rows } = reportRows([entry({ task: 'Fix login', description: null, end_time: null })], options);
+
+    expect(rows[0].slice(3)).toEqual([{ text: 'Fix login' }, { text: '' }, { number: '0.00' }]);
+  });
+
+  test('the amounts view adds Rate and Amount after the hours, from the summed minutes', () => {
+    const priced = grouped({ hourly_rate: '80.00', project_id: 1 });
+    const { headers, rows } = reportRows([priced], { ...options, amounts: true });
+
+    expect(headers.slice(-3)).toEqual(['Hours', 'Rate (EUR/h)', 'Amount (EUR)']);
+    expect(rows[0].slice(5)).toEqual([{ number: '1.50' }, { number: '80.00' }, { number: '120.00' }]);
+  });
+
+  test('the amounts view uses the billed hours of a rounded group', () => {
+    const priced = grouped({ hourly_rate: '80.00', project_id: 1, billed_hours: '1.75' });
+
+    expect(reportRows([priced], { ...options, amounts: true }).rows[0].slice(5)).toEqual([{ number: '1.75' }, { number: '80.00' }, { number: '140.00' }]);
+  });
+});

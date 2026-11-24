@@ -5,7 +5,7 @@ The timer on the Time tracking page tracks working time for one project at a tim
 ## Starting and stopping
 
 1. Select a customer, then a project.
-2. Optionally enter a description.
+2. Optionally enter a task (the field offers the project's earlier tasks) and a description. The task names the activity that interrupted blocks of work share, see [Time tracking](time-tracking.md#task).
 3. Press **Start**. The timer only starts once the backend has saved the entry; if that fails, an error is shown and the
    timer stays stopped.
 4. Press **Stop**. If stopping fails, the timer keeps running and shows an error, so you can try again.
@@ -14,8 +14,7 @@ While a start or stop is being sent, **Start**, **Stop** and the header's Stop b
 dimmed, and further clicks do nothing (`busy` in `useActiveEntry`). A double click therefore sends one request, not two.
 The backend also refuses a second running timer on its own, see [Time entries API](../backend/time-entries.md#creating-entries).
 
-The description is saved when the timer starts and kept when it stops. While the timer runs, the field shows the saved
-description and can't be edited.
+The task and the description are saved when the timer starts and kept when it stops. While the timer runs, the fields show them and can't be edited. A failed start keeps what you typed. The header shows the running task next to the customer. `Timer` makes no request: pages give it the suggestions as `taskSuggestions` (`tasksOf` in `tasks.js` on the Time tracking page, `useTaskSuggestions` on the Dashboard).
 
 ## Running timer across pages and reloads
 

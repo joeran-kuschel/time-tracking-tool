@@ -121,7 +121,7 @@ function EntryFilters({ filters, customers, projects, firstDay, onChange, onSear
 
       <div id={panelId} hidden={!expanded} className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <div className="sm:col-span-2 lg:col-span-3">
-          <label htmlFor={`${fieldId}-q`} className={ui.label}><Trans>Search in descriptions</Trans></label>
+          <label htmlFor={`${fieldId}-q`} className={ui.label}><Trans>Search in task and description</Trans></label>
           <input
             ref={search}
             id={`${fieldId}-q`}
