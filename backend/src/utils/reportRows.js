@@ -22,15 +22,20 @@ const number = (value) => ({ number: value });
 // Returns { headers: string[], rows: Cell[][] } where a cell is { text } or { number } (a number already formatted
 // for the language), so a format can treat them differently. Dates and times are in the browser's time zone.
 // Translates synchronously right after activateLocale, see src/i18n.js.
+// grouped: the rows are sums per day and task (utils/tasks.js). Their end is not a real time, so the columns Start and End
+// are left out, and the column Task is added after Project; the description column holds the details.
 // With amounts, the columns Rate (EUR/h) and Amount (EUR) follow the hours; the money rules are in utils/amounts.js.
-function reportRows(entries, { customerName, locale, timeZone = 'UTC', amounts = false }) {
+function reportRows(entries, { customerName, locale, timeZone = 'UTC', amounts = false, grouped = false }) {
   activateLocale(locale);
   const headers = [
     i18n._({ id: 'report.date', message: 'Date' }),
-    i18n._({ id: 'export.start', message: 'Start' }),
-    i18n._({ id: 'export.end', message: 'End' }),
+    ...(grouped ? [] : [
+      i18n._({ id: 'export.start', message: 'Start' }),
+      i18n._({ id: 'export.end', message: 'End' }),
+    ]),
     i18n._({ id: 'export.customer', message: 'Customer' }),
     i18n._({ id: 'report.project', message: 'Project' }),
+    ...(grouped ? [i18n._({ id: 'report.task', message: 'Task' })] : []),
     i18n._({ id: 'report.description', message: 'Description' }),
     i18n._({ id: 'report.hours', message: 'Hours' }),
     ...(amounts ? [
@@ -41,11 +46,14 @@ function reportRows(entries, { customerName, locale, timeZone = 'UTC', amounts =
   const amountCents = amounts ? reportAmounts(entries).entryCents : [];
   const rows = entries.map((entry, index) => [
     text(dateInZone(entry.start_time, timeZone)),
-    text(timeInZone(entry.start_time, timeZone)),
-    text(entry.end_time ? timeInZone(entry.end_time, timeZone) : ''),
+    ...(grouped ? [] : [
+      text(timeInZone(entry.start_time, timeZone)),
+      text(entry.end_time ? timeInZone(entry.end_time, timeZone) : ''),
+    ]),
     text(customerName),
     text(entry.project_name),
-    text(entry.description),
+    ...(grouped ? [text(entry.task)] : []),
+    text(grouped ? (entry.details ?? [entry.description].filter(Boolean)).join('; ') : entry.description),
     number(formatDecimal(reportMinutes(entry) / 60)),
     ...(amounts ? [number(formatDecimal(rateCentsOf(entry) / 100)), number(formatDecimal(amountCents[index] / 100))] : []),
   ]);

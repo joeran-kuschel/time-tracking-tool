@@ -31,6 +31,8 @@ function Invoices({ customers }) {
   const [from, setFrom] = useState(initialFrom)
   const [to, setTo] = useState(initialTo)
   const [invoiceDate, setInvoiceDate] = useState(() => dayOf(new Date()))
+  // Round the hours once per day and task instead of once per entry (only matters with a rounding rule)
+  const [groupByTask, setGroupByTask] = useState(false)
   const [preview, setPreview] = useState(null)
   const [previewing, setPreviewing] = useState(false)
   // Raised to load the preview again for the same choice (after creating, or when creating found something changed)
@@ -76,7 +78,7 @@ function Invoices({ customers }) {
   // A customer that is gone from the list (deleted elsewhere) is no choice any more
   const chosenId = customers.some((c) => c.id === customerId) ? customerId : null
   const problem = periodProblem(from, to)
-  const request = { customerId: chosenId, from, to, invoiceDate, lang: i18n.locale }
+  const request = { customerId: chosenId, from, to, invoiceDate, lang: i18n.locale, groupByTask }
   const ready = chosenId !== null && !problem && isDay(invoiceDate)
   useEffect(() => {
     setPreview(null)
@@ -103,7 +105,7 @@ function Invoices({ customers }) {
       setPreviewing(false)
     })
     return () => { current = false }
-  }, [ready, chosenId, from, to, invoiceDate, i18n.locale, reload])
+  }, [ready, chosenId, from, to, invoiceDate, groupByTask, i18n.locale, reload])
 
   // A message about the last invoice that was made or deleted does not stay when the choice for the next one changes
   // (and the error of the last creation does not stay either)
@@ -111,7 +113,7 @@ function Invoices({ customers }) {
     setNotice(null)
     clearCreate()
     setCreateStatus(null)
-  }, [chosenId, from, to, invoiceDate])
+  }, [chosenId, from, to, invoiceDate, groupByTask])
 
   // After a failed creation the question is gone, so the focus goes to the error, where the keyboard and the screen reader are
   useEffect(() => {
@@ -219,6 +221,10 @@ function Invoices({ customers }) {
             <input id={dateFieldId} type="date" value={invoiceDate} onChange={(e) => setInvoiceDate(e.target.value)} aria-invalid={isDay(invoiceDate) ? undefined : true} className={`${ui.input} w-44`} />
           </div>
         </div>
+        <label className="flex min-h-[2.75rem] items-center gap-2 text-sm font-medium">
+          <input type="checkbox" checked={groupByTask} onChange={(e) => setGroupByTask(e.target.checked)} className="h-5 w-5 accent-accent" />
+          <Trans>Round the hours per day and task</Trans>
+        </label>
         <ErrorMessage id={periodErrorId} message={periodMessage} />
         {!isDay(invoiceDate) && <ErrorMessage message={t`Enter the invoice date.`} />}
 

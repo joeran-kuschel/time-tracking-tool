@@ -496,3 +496,38 @@ describe('generateReportPDF with an entry that ends before it starts', () => {
     expect(written.filter((value) => /^-€|^€-/.test(value))).toEqual([]);
   });
 });
+
+describe('generateReportPDF with tasks', () => {
+  const rows = [
+    { start_time: '2026-03-02T08:00:00Z', end_time: '2026-03-02T09:30:00Z', project_name: 'Website', description: 'Konzept', task: 'Fix login' },
+    { start_time: '2026-03-03T08:00:00Z', end_time: '2026-03-03T09:00:00Z', project_name: 'Website', description: null, task: 'Fix login', details: ['review', 'redirect'], count: 2 },
+    { start_time: '2026-03-04T08:00:00Z', end_time: '2026-03-04T08:30:00Z', project_name: 'Website', description: null, task: 'Fix login', details: [], count: 2 },
+    { start_time: '2026-03-05T08:00:00Z', end_time: null, project_name: 'Website', description: 'Test', task: 'Fix login' },
+  ];
+  const run = async (locale = 'en') => {
+    await generateReportPDF(rows, { customerName: 'Muster GmbH', month: 3, year: 2026, locale });
+    return PDFDocument.last.texts;
+  };
+
+  test('an entry is written with its description only, as before', async () => {
+    const written = await run();
+
+    expect(written).toContain('Konzept');
+    expect(written).not.toContain('Fix login: Konzept');
+  });
+
+  test('a summed row reads "Task: detail; detail", and without details only the task', async () => {
+    const written = await run();
+
+    expect(written).toContain('Fix login: review; redirect');
+    expect(written).toContain('Fix login');
+  });
+
+  test('a running entry keeps its description', async () => {
+    expect(await run()).toContain('Test');
+  });
+
+  test('the text of a summed row is the same in German', async () => {
+    expect(await run('de')).toContain('Fix login: review; redirect');
+  });
+});

@@ -8,6 +8,8 @@ import EntryForm from './EntryForm'
 import ConfirmDelete from './ConfirmDelete'
 import RecordActions from './RecordActions'
 import ResumeButton, { ResumeHints } from './ResumeButton'
+import EntryText from './EntryText'
+import { tasksOf } from '../tasks'
 
 const dateTime = { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }
 const cell = 'px-3 py-1.5 border-b border-line-soft'
@@ -21,7 +23,8 @@ const messages = {
 
 // One entry; finished entries can be resumed, edited in place or deleted, running ones only stopped with the timer.
 // resume: see ResumeButton
-function EntryRow({ entry, projects, onUpdate, onDelete, onDeleted, resume }) {
+// taskSuggestions: the project's earlier tasks, for the Task field of the edit form
+function EntryRow({ entry, projects, onUpdate, onDelete, onDeleted, resume, taskSuggestions }) {
   const { t, i18n } = useLingui()
   const editable = useEditable({ onUpdate: (changes) => onUpdate(entry, changes), onDelete: () => onDelete(entry), onDeleted, messages })
   const isRunning = !entry.end_time
@@ -33,7 +36,7 @@ function EntryRow({ entry, projects, onUpdate, onDelete, onDeleted, resume }) {
       <tr>
         <td colSpan={5} className={`${cell} py-3`}>
           {editable.mode === 'edit' ? (
-            <EntryForm entry={entry} projects={projects} submitLabel={t`Save`} onSubmit={editable.save}
+            <EntryForm entry={entry} projects={projects} taskSuggestions={taskSuggestions} submitLabel={t`Save`} onSubmit={editable.save}
               onCancel={editable.cancel} error={editable.error} autoFocus />
           ) : (
             <ConfirmDelete message={t`Delete the entry from ${start}?`} onConfirm={editable.remove}
@@ -54,7 +57,7 @@ function EntryRow({ entry, projects, onUpdate, onDelete, onDeleted, resume }) {
           : formatClock(i18n, entry.end_time)}
       </td>
       <td className={`${cell} whitespace-nowrap text-right font-mono`}><Duration minutes={minutesBetween(entry.start_time, entry.end_time)} /></td>
-      <td className={cell}>{entry.description || <span className="text-muted">—</span>}</td>
+      <td className={cell}><EntryText entry={entry} empty={<span className="text-muted">—</span>} /></td>
       <td className={cell}>
         {!isRunning && (
           <div className="flex justify-end gap-1">
@@ -79,6 +82,7 @@ function ProjectGroup({ project, entries, projects, onUpdate, onDelete, onDelete
   const { t, i18n } = useLingui()
   const headingId = useId()
   const total = formatDuration(i18n, entries.reduce((sum, e) => sum + minutesBetween(e.start_time, e.end_time), 0))
+  const tasks = tasksOf(entries, project.id)
 
   return (
     <div>
@@ -91,13 +95,13 @@ function ProjectGroup({ project, entries, projects, onUpdate, onDelete, onDelete
             <th scope="col" className={`${headCell} w-36`}><Trans>Date</Trans></th>
             <th scope="col" className={`${headCell} w-36`}><Trans>Time</Trans></th>
             <th scope="col" className={`${headCell} w-24 text-right`}><Trans>Hours</Trans></th>
-            <th scope="col" className={headCell}><Trans>Description</Trans></th>
+            <th scope="col" className={headCell}><Trans>Task and description</Trans></th>
             <th scope="col" className={`${headCell} w-24 text-right`}><Trans>Actions</Trans></th>
           </tr>
         </thead>
         <tbody>
           {entries.map((entry) => (
-            <EntryRow key={entry.id} entry={entry} projects={projects} onUpdate={onUpdate} onDelete={onDelete} onDeleted={onDeleted} resume={resume} />
+            <EntryRow key={entry.id} entry={entry} projects={projects} onUpdate={onUpdate} onDelete={onDelete} onDeleted={onDeleted} resume={resume} taskSuggestions={tasks} />
           ))}
         </tbody>
       </table>

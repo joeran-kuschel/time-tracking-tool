@@ -34,6 +34,13 @@ describe('EntriesList', () => {
     expect(screen.getByRole('heading', { level: 3 })).toHaveTextContent('Website · 0:02 h gesamt')
   })
 
+  test('shows the task before the description', () => {
+    const withTask = [{ ...entries[0], task: 'Fix login' }]
+    render(<EntriesList entries={withTask} projects={projects} />)
+
+    expect(screen.getByRole('table', { name: /^Website/ })).toHaveTextContent('Fix login · Konzept')
+  })
+
   test('shows the duration of an entry as a time element', () => {
     render(<EntriesList entries={entries} projects={projects} />)
 
@@ -79,6 +86,33 @@ describe('EntriesList', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Speichern' }))
 
     expect(onUpdate).toHaveBeenCalledWith(entries[0], expect.objectContaining({ projectId: 7, description: 'Konzept überarbeitet' }))
+  })
+
+  test('the edit form offers the earlier tasks of the entry\'s project, each once, and not those of other projects', async () => {
+    const list = [
+      { id: 1, project_id: 7, start_time: '2026-09-21T08:00:00Z', end_time: '2026-09-21T09:30:00Z', description: null, task: 'Fix login' },
+      { id: 2, project_id: 7, start_time: '2026-09-22T08:00:00Z', end_time: '2026-09-22T09:30:00Z', description: null, task: 'fix LOGIN' },
+      { id: 3, project_id: 7, start_time: '2026-09-23T08:00:00Z', end_time: '2026-09-23T09:30:00Z', description: null, task: 'Review' },
+      { id: 4, project_id: 8, start_time: '2026-09-23T08:00:00Z', end_time: '2026-09-23T09:30:00Z', description: null, task: 'Elsewhere' },
+    ]
+    render(<EntriesList entries={list} projects={[...projects, { id: 8, name: 'App' }]} onUpdate={vi.fn()} onDelete={vi.fn()} />)
+
+    await userEvent.click(screen.getAllByRole('button', { name: /bearbeiten/ })[0])
+
+    const options = [...screen.getByLabelText('Aufgabe (optional)').list.options].map((option) => option.value)
+    expect(options).toEqual(['Review', 'fix LOGIN'])
+  })
+
+  test('changing the task of an entry sends it with the save', async () => {
+    const onUpdate = vi.fn().mockResolvedValue({ id: 1 })
+    render(<EntriesList entries={[{ ...entries[0], task: 'Fix login' }]} projects={projects} onUpdate={onUpdate} onDelete={vi.fn()} />)
+
+    await userEvent.click(screen.getByRole('button', { name: /bearbeiten/ }))
+    await userEvent.clear(screen.getByLabelText('Aufgabe (optional)'))
+    await userEvent.type(screen.getByLabelText('Aufgabe (optional)'), 'Review')
+    await userEvent.click(screen.getByRole('button', { name: 'Speichern' }))
+
+    expect(onUpdate).toHaveBeenCalledWith(expect.objectContaining({ id: 1 }), expect.objectContaining({ task: 'Review' }))
   })
 
   test('deletes an entry after a confirmation', async () => {

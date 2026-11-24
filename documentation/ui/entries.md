@@ -10,7 +10,7 @@ The page opens with the **current month** selected. Results load right away and 
 
 | Filter | What it does |
 |---|---|
-| *Search in descriptions* (*In Beschreibungen suchen*) | Finds entries whose description contains the text, in any case. `%`, `_` and `\` mean themselves. Applies after a short pause in typing (about 0.3 seconds) and at once on Enter or when the field is emptied. |
+| *Search in task and description* (*In Aufgabe und Beschreibung suchen*) | Finds entries whose task or description contains the text, in any case. `%`, `_` and `\` mean themselves. Applies after a short pause in typing (about 0.3 seconds) and at once on Enter or when the field is emptied. |
 | *Customer* (*Kunde*) | Only this customer's entries. |
 | *Project* (*Projekt*) | Only this project. Disabled until a customer is chosen; changing the customer clears the project. |
 | *Period* (*Zeitraum*) | *Any time* (*Beliebig*), *Today*, *This week* (seven days from the first day of the week: Monday or Sunday, see [Settings](settings.md)), *Last week*, *This month*, *Last month*, *This year*, *Custom* (*Benutzerdefiniert*). Choosing one fills *From* and *To*. |
@@ -43,7 +43,7 @@ month again. There is no URL state.
 
 - A status line says how many entries match and their hours, e.g. *12 entries, 31:30 h* ([Durations](durations.md)), or *No entries found*. The
   count covers all matches, the hours only finished entries (a running entry counts as an entry, with no hours yet).
-- The entries are a table: *Date*, *Customer*, *Project*, *Time*, *Hours*, *Description*, *Actions*. Below the `sm`
+- The entries are a table: *Date*, *Customer*, *Project*, *Time*, *Hours*, *Task and description* (*Aufgabe und Beschreibung*; the task in bold first), *Actions*. Below the `sm`
   breakpoint every row becomes a card whose cells show their column name, so the page reflows at 320 px without
   horizontal scrolling.
 - **Open** (*Öffnen*) is a link to the entry's customer and project on the Time tracking

@@ -10,6 +10,7 @@ import ErrorMessage from '../components/ErrorMessage'
 import MissingRecord from '../components/MissingRecord'
 import { entryMinutes, formatAmount, formatRate } from '../format'
 import Duration from '../components/Duration'
+import EntryText from '../components/EntryText'
 import { forgetStoredShowAmounts } from '../reportOptions'
 import { idFromParam, periodFromParam, reportPath } from '../routes'
 import { roundingNote } from '../rounding'
@@ -26,6 +27,13 @@ const statuses = [
   { value: 'ready', label: msg`Ready to send` },
   { value: 'sent', label: msg`Sent` },
 ]
+
+// The entry as the description cell shows it. The detailed list shows no task, like the PDF and CSV; the summed one shows the
+// task, with the details of the blocks of a group (a running entry has one detail at most)
+const rowEntry = (entry, grouped) => {
+  if (!grouped) return { ...entry, task: null }
+  return entry.details ? { ...entry, description: entry.details.join('; ') } : entry
+}
 
 // Minutes per project, in the order the projects first appear: [{ id, name, minutes }]. The minutes of an entry are
 // the report's (entryMinutes), whole, so rows add up exactly.
@@ -61,6 +69,8 @@ function Reports({ customers, settings }) {
   // null until the checkbox is touched: it follows the setting, which is off while the settings are not loaded
   const [amountsChoice, setAmountsChoice] = useState(null)
   const showAmounts = amountsChoice ?? settings.values?.showAmounts ?? false
+  // Sum the hours per day and task; off at every visit, the detailed list is the default
+  const [groupByTask, setGroupByTask] = useState(false)
   // "Try again" for settings that could not be loaded; the button stays in place while it loads
   const [retrySettings, retryingSettings] = useRetry(settings.load)
   // The first report waits for the settings (or their failure), so it is not loaded twice. A retry clears the error
@@ -76,6 +86,7 @@ function Reports({ customers, settings }) {
   const customerFieldId = useId()
   const statusFieldId = useId()
   const amountsFieldId = useId()
+  const groupFieldId = useId()
   const languageNoteId = useId()
   const monthLabelId = useId()
   const reportHeadingId = useId()
@@ -90,13 +101,13 @@ function Reports({ customers, settings }) {
     // Only the answer for the current choice is shown
     let current = true
     setLoading(true)
-    run(() => api.getMonthlyReport(customerId, month, year, showAmounts), msg`Report could not be loaded.`).then((data) => {
+    run(() => api.getMonthlyReport(customerId, month, year, showAmounts, groupByTask), msg`Report could not be loaded.`).then((data) => {
       if (!current) return
       if (data) setReport(data)
       setLoading(false)
     })
     return () => { current = false }
-  }, [customerId, month, year, showAmounts, settingsReady])
+  }, [customerId, month, year, showAmounts, groupByTask, settingsReady])
 
   // Choosing a customer adds a history entry, stepping through the months replaces the current one
   const openCustomer = (id) => navigate(reportPath(id, period.year, params.yearMonth && period.month))
@@ -119,9 +130,9 @@ function Reports({ customers, settings }) {
     setDownloading(false)
   }
   const handleDownloadPDF = () =>
-    download(() => api.downloadPDF(customerId, period.month, period.year, i18n.locale, showAmounts), msg`PDF could not be downloaded.`)
+    download(() => api.downloadPDF(customerId, period.month, period.year, i18n.locale, showAmounts, groupByTask), msg`PDF could not be downloaded.`)
   const handleDownloadCSV = () =>
-    download(() => api.downloadCSV(customerId, period.month, period.year, i18n.locale, showAmounts), msg`CSV could not be downloaded.`)
+    download(() => api.downloadCSV(customerId, period.month, period.year, i18n.locale, showAmounts, groupByTask), msg`CSV could not be downloaded.`)
 
   const changeStatus = async (status) => {
     const saved = await runStatus(
@@ -207,6 +218,19 @@ function Reports({ customers, settings }) {
               className="h-5 w-5 accent-accent"
             />
             <Trans>Show hourly rate and amounts</Trans>
+          </label>
+        )}
+
+        {customerId && (
+          <label className="flex min-h-[2.75rem] items-center gap-2 text-sm font-medium">
+            <input
+              id={groupFieldId}
+              type="checkbox"
+              checked={groupByTask}
+              onChange={(e) => setGroupByTask(e.target.checked)}
+              className="h-5 w-5 accent-accent"
+            />
+            <Trans>Sum hours per day and task</Trans>
           </label>
         )}
 
@@ -311,7 +335,9 @@ function Reports({ customers, settings }) {
                           {i18n.date(entry.start_time, { year: 'numeric', month: 'numeric', day: 'numeric' })}
                         </td>
                         <td className={cell}>{entry.project_name}</td>
-                        <td className={cell}>{entry.description || <span className="text-muted">—</span>}</td>
+                        <td className={cell}>
+                          <EntryText entry={rowEntry(entry, groupByTask)} empty={<span className="text-muted">—</span>} />
+                        </td>
                         <td className={`${cell} whitespace-nowrap text-right font-mono text-sm`}><Duration minutes={entryMinutes(entry)} /></td>
                         {withAmounts && (
                           <td className={`${cell} whitespace-nowrap text-right font-mono text-sm`}>{formatAmount(i18n, entry.amount)}</td>

@@ -101,6 +101,57 @@ describe('RecordForm', () => {
     expect(await axe(container)).toHaveNoViolations()
   })
 
+  describe('suggestions', () => {
+    const suggestionFields = (suggestions) => [{ name: 'task', label: 'Aufgabe', suggestions }]
+    const renderSuggestions = (suggestions) => render(
+      <RecordForm fields={suggestionFields(suggestions)} initialValues={{ task: '' }} submitLabel="Speichern" onSubmit={vi.fn()} />
+    )
+
+    test('a text field offers its suggestions as a list that the field points to', () => {
+      const { container } = renderSuggestions(['Fix login', 'Review'])
+
+      const list = container.querySelector('datalist')
+      expect(screen.getByLabelText('Aufgabe')).toHaveAttribute('list', list.id)
+      expect([...list.options].map((option) => option.value)).toEqual(['Fix login', 'Review'])
+    })
+
+    test('without suggestions, or with an empty list, the field has no list', () => {
+      for (const suggestions of [undefined, []]) {
+        const { container, unmount } = renderSuggestions(suggestions)
+
+        expect(screen.getByLabelText('Aufgabe')).not.toHaveAttribute('list')
+        expect(container.querySelector('datalist')).toBeNull()
+        unmount()
+      }
+    })
+
+    test('the suggestions do not stop the user from typing something else, and it is submitted', async () => {
+      const onSubmit = vi.fn().mockResolvedValue(true)
+      render(<RecordForm fields={suggestionFields(['Fix login'])} initialValues={{ task: '' }} submitLabel="Speichern" onSubmit={onSubmit} />)
+
+      await userEvent.type(screen.getByLabelText('Aufgabe'), 'Etwas Neues')
+      await userEvent.click(screen.getByRole('button', { name: 'Speichern' }))
+
+      expect(onSubmit).toHaveBeenCalledWith({ task: 'Etwas Neues' })
+    })
+
+    test('two forms on one page do not share a list id', () => {
+      const { container } = render(<>
+        <RecordForm fields={suggestionFields(['A'])} initialValues={{ task: '' }} submitLabel="Eins" onSubmit={vi.fn()} />
+        <RecordForm fields={suggestionFields(['B'])} initialValues={{ task: '' }} submitLabel="Zwei" onSubmit={vi.fn()} />
+      </>)
+
+      const ids = [...container.querySelectorAll('datalist')].map((list) => list.id)
+      expect(new Set(ids).size).toBe(2)
+    })
+
+    test('has no accessibility violations', async () => {
+      const { container } = renderSuggestions(['Fix login'])
+
+      expect(await axe(container)).toHaveNoViolations()
+    })
+  })
+
   test('has no detectable accessibility violations', async () => {
     const { container } = renderForm({ onCancel: vi.fn(), error: 'Fehler.' })
     expect(await axe(container)).toHaveNoViolations()

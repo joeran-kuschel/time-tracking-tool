@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
-import { renderWithRouter as render, screen, within } from '../support/render'
+import { renderWithRouter as render, screen, waitFor, within } from '../support/render'
 import userEvent from '@testing-library/user-event'
 import { axe } from '../support/axe'
 import Dashboard from '@/pages/Dashboard'
@@ -11,7 +11,7 @@ vi.mock('@/api', async (importOriginal) => {
   const actual = await importOriginal()
   return {
     ...actual,
-    api: { getDashboard: vi.fn(), createTimeEntry: vi.fn(), pdfPreviewUrl: actual.api.pdfPreviewUrl },
+    api: { getDashboard: vi.fn(), getTasks: vi.fn(), createTimeEntry: vi.fn(), pdfPreviewUrl: actual.api.pdfPreviewUrl },
   }
 })
 
@@ -58,6 +58,7 @@ beforeEach(() => {
   vi.useFakeTimers({ toFake: ['Date'] })
   vi.setSystemTime(new Date(2026, 8, 24, 15, 0))
   api.getDashboard.mockResolvedValue(data)
+  api.getTasks.mockResolvedValue([])
 })
 
 afterEach(() => {
@@ -248,8 +249,25 @@ describe('Dashboard', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Start' }))
 
     expect(timer.start).toHaveBeenCalledWith(
-      expect.objectContaining({ id: 7, name: 'Website' }), 'Konzept', { id: 1, name: 'Muster GmbH' }
+      expect.objectContaining({ id: 7, name: 'Website' }), 'Konzept', { id: 1, name: 'Muster GmbH' }, ''
     )
+  })
+
+  test('offers the tasks of the chosen project and starts the timer with the typed task', async () => {
+    api.getTasks.mockImplementation((projectId) => Promise.resolve(projectId === 7 ? ['Fix login', 'Review'] : []))
+    const timer = stoppedTimer()
+    timer.start.mockResolvedValue({ id: 50 })
+    renderDashboard(timer)
+    await loaded()
+
+    await userEvent.selectOptions(screen.getByLabelText('Kunde und Projekt'), 'Muster GmbH · Website')
+    const panel = within(screen.getByRole('tabpanel', { name: 'Timer' }))
+    await waitFor(() => expect(panel.getByLabelText('Aufgabe (optional)').list.options).toHaveLength(2))
+    expect(api.getTasks).toHaveBeenLastCalledWith(7)
+    await userEvent.type(panel.getByLabelText('Aufgabe (optional)'), 'Fix login')
+    await userEvent.click(screen.getByRole('button', { name: 'Start' }))
+
+    expect(timer.start).toHaveBeenCalledWith(expect.objectContaining({ id: 7 }), '', { id: 1, name: 'Muster GmbH' }, 'Fix login')
   })
 
   test('stopping the running timer confirms the saved hours and reloads', async () => {
@@ -282,8 +300,40 @@ describe('Dashboard', () => {
     await userEvent.type(panel.getByLabelText('Ende'), '09:15')
     await userEvent.click(panel.getByRole('button', { name: 'Hinzufügen' }))
 
-    expect(api.createTimeEntry).toHaveBeenCalledWith(8, fromInputs('2026-09-23', '08:00'), '', fromInputs('2026-09-23', '09:15'))
+    expect(api.createTimeEntry).toHaveBeenCalledWith(8, fromInputs('2026-09-23', '08:00'), '', fromInputs('2026-09-23', '09:15'), '')
     expect(api.getDashboard).toHaveBeenCalledTimes(2)
+  })
+
+  test('a manual entry sends its task, and the suggestions are loaded again so the new task shows up', async () => {
+    api.getTasks.mockResolvedValueOnce([]).mockResolvedValue(['Fix login'])
+    api.createTimeEntry.mockResolvedValue({ id: 60 })
+    renderDashboard()
+    await loaded()
+    await userEvent.click(screen.getByRole('tab', { name: 'Nachtragen' }))
+    const panel = within(screen.getByRole('tabpanel', { name: 'Nachtragen' }))
+    await userEvent.clear(panel.getByLabelText('Datum'))
+    await userEvent.type(panel.getByLabelText('Datum'), '2026-09-23')
+    await userEvent.type(panel.getByLabelText('Start'), '08:00')
+    await userEvent.type(panel.getByLabelText('Ende'), '09:15')
+    await userEvent.type(panel.getByLabelText('Aufgabe (optional)'), 'Fix login')
+    const callsBefore = api.getTasks.mock.calls.length
+
+    await userEvent.click(panel.getByRole('button', { name: 'Hinzufügen' }))
+
+    expect(api.createTimeEntry).toHaveBeenCalledWith(expect.any(Number), fromInputs('2026-09-23', '08:00'), '', fromInputs('2026-09-23', '09:15'), 'Fix login')
+    await waitFor(() => expect(api.getTasks.mock.calls.length).toBeGreaterThan(callsBefore))
+  })
+
+  test('a failing task request shows no error and leaves the Task field working', async () => {
+    api.getTasks.mockRejectedValue(new ApiError(500, 'boom'))
+    renderDashboard()
+    await loaded()
+
+    const field = within(screen.getByRole('tabpanel', { name: 'Timer' })).getByLabelText('Aufgabe (optional)')
+    await userEvent.type(field, 'Neu')
+
+    expect(field).toHaveValue('Neu')
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
   })
 
   test('asks for a project first when there is none', async () => {

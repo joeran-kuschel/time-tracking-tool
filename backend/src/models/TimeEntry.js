@@ -1,4 +1,5 @@
 const pool = require('../config/database');
+const { taskKey } = require('../utils/tasks');
 
 // Entries with their project, hourly rate and customer, for reports and the dashboard
 const PROJECT_AND_CUSTOMER_JOINS = `FROM time_entries te
@@ -21,10 +22,10 @@ function searchWhere({ q, customerId, projectId, from, to }) {
   const conditions = [];
   const add = (condition, value) => {
     params.push(value);
-    conditions.push(condition.replace('?', `$${params.length}`));
+    conditions.push(condition.replaceAll('?', `$${params.length}`));
   };
   // strpos matches the text literally, so %, _ and \ in it need no escaping (unlike LIKE)
-  if (q) add('strpos(lower(te.description), lower(?)) > 0', q);
+  if (q) add('(strpos(lower(te.description), lower(?)) > 0 OR strpos(lower(te.task), lower(?)) > 0)', q);
   if (customerId) add('c.id = ?', customerId);
   if (projectId) add('p.id = ?', projectId);
   if (from) add('te.start_time >= ?', from);
@@ -33,25 +34,27 @@ function searchWhere({ q, customerId, projectId, from, to }) {
 }
 
 class TimeEntry {
-  static async create(projectId, startTime, endTime, description) {
+  // task: the shared name of an activity (utils/tasks.js), already trimmed; undefined or null for none
+  static async create(projectId, startTime, endTime, description, task) {
     const result = await pool.query(
-      'INSERT INTO time_entries (project_id, start_time, end_time, description) VALUES ($1, $2, $3, $4) RETURNING *',
-      [projectId, startTime, endTime, description || null]
+      'INSERT INTO time_entries (project_id, start_time, end_time, description, task) VALUES ($1, $2, $3, $4, $5) RETURNING *',
+      [projectId, startTime, endTime, description || null, task || null]
     );
     return result.rows[0];
   }
 
-  // Fields left out keep their stored value; for the description, '' or null clears it.
-  static async update(id, { startTime, endTime, projectId, description }) {
+  // Fields left out keep their stored value; for the description and the task, '' or null clears it.
+  static async update(id, { startTime, endTime, projectId, description, task }) {
     const result = await pool.query(
       `UPDATE time_entries
        SET start_time = COALESCE($1::timestamp, start_time),
            end_time = $2,
            project_id = COALESCE($3::integer, project_id),
            description = CASE WHEN $4::boolean THEN $5 ELSE description END,
+           task = CASE WHEN $6::boolean THEN $7 ELSE task END,
            updated_at = CURRENT_TIMESTAMP
-       WHERE id = $6 RETURNING *`,
-      [startTime ?? null, endTime, projectId ?? null, description !== undefined, description || null, id]
+       WHERE id = $8 RETURNING *`,
+      [startTime ?? null, endTime, projectId ?? null, description !== undefined, description || null, task !== undefined, task || null, id]
     );
     return result.rows[0];
   }
@@ -66,6 +69,21 @@ class TimeEntry {
       [id]
     );
     return result.rows[0];
+  }
+
+  // The tasks used in a project, the most recently worked on first, each once (ignoring case and surrounding spaces, the
+  // way reports compare them; the spelling of the latest entry), for the suggestions of the Task field
+  static async getTasks(projectId, limit = 50) {
+    const result = await pool.query(
+      `SELECT task FROM time_entries WHERE project_id = $1 AND task IS NOT NULL
+       GROUP BY task ORDER BY MAX(start_time) DESC LIMIT $2`,
+      [projectId, limit * 4]
+    );
+    const seen = new Set();
+    return result.rows
+      .map((row) => row.task)
+      .filter((task) => !seen.has(taskKey(task)) && seen.add(taskKey(task)))
+      .slice(0, limit);
   }
 
   static async getById(id) {

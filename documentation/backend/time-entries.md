@@ -12,17 +12,18 @@ All paths are under `/api/time-entries`.
 | `GET` | `/project/:projectId` | All entries of a project, newest first |
 | `GET` | `/customer/:customerId` | All entries of a customer's projects with `project_name` and `hourly_rate`, ordered by project name, then newest first; `[]` for an unknown customer (used by the Time tracking page). With a rounding rule each entry also has `billed_hours`, `billed_amount` and `billed_rule` (the rule that produced them) for the month summary and its note, see [Rounding](reports.md#rounding); the answer stays an array |
 | `GET` | `/search` | Entries of all customers matching a text, customer, project and period, with `total` and `hours` (used by the Entries page, see [Searching entries](#searching-entries)) |
+| `GET` | `/tasks/:projectId` | The distinct tasks used in a project, the most recently worked on first (at most 50), for the suggestions of the Task field; `400` for an id that is not a record id |
 | `GET` | `/:id` | One entry, or `404` |
 | `POST` | `/` | Create an entry (start a timer, or add a finished entry) |
 | `PATCH` | `/:id` | Stop a running entry, or edit a finished one |
 | `POST` | `/:id/resume` | Run a finished entry on again (see [Resuming an entry](#resuming-an-entry)) |
 | `DELETE` | `/:id` | Delete a finished entry |
 
-`/active` and `/search` are registered before `/:id`, so they are never read as an id. A test checks the order.
+`/active`, `/search` and `/tasks/:projectId` are registered before `/:id`, so they are never read as an id. A test checks the order.
 
 ## Creating entries
 
-Body: `{ projectId, startTime, endTime?, description? }`. `projectId` and `startTime` are required (`400` otherwise).
+Body: `{ projectId, startTime, endTime?, description?, task? }`. `projectId` and `startTime` are required (`400` otherwise).
 Times must be valid dates (`400` otherwise). An entry added by hand (with `endTime`) needs its end after its start
 (`400` otherwise). Overlapping entries are allowed.
 
@@ -55,6 +56,19 @@ Body: `{ endTime, startTime?, projectId?, description? }`. `endTime` is required
 - `404` for an unknown entry.
 
 This is a single `UPDATE` (`backend/src/models/TimeEntry.js`, `update(id, { startTime, endTime, projectId, description })`).
+
+## Task
+
+An entry has an optional **task** (`task`, `VARCHAR(100)`, migration `018_time_entry_task.sql`): the name that entries of one
+activity share, while the description stays free text for the details of one block of work. Reports and invoices can sum the
+hours per day and task, see [Reports API](reports.md#sum-per-day-and-task). Old entries have no task.
+
+- `POST /` and `PATCH /:id` take `task`. `parseTask` in `utils/tasks.js` trims it; an empty text or spaces clear it (`null`),
+  a value that is not text or longer than 100 characters answers `400`. Left out on a `PATCH`, the stored task stays (so
+  stopping a timer keeps it). Entries answer with `task` wherever they are listed.
+- `GET /search` also finds the text `q` in the task.
+- Tasks are compared ignoring case and surrounding spaces (`taskKey`); the first spelling is shown.
+- Resuming an entry keeps its task, because the same entry runs on.
 
 ## Resuming an entry
 

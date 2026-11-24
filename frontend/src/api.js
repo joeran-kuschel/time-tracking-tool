@@ -71,8 +71,11 @@ const timeZone = () => encodeURIComponent(browserTimeZone());
 // amounts: also ask for hourly rates and amounts; the parameter is only sent when true
 const amountsParam = (amounts) => (amounts ? '&amounts=1' : '');
 
-const reportUrl = (format, customerId, month, year, locale, amounts) =>
-  `${API_URL}/reports/customer/${customerId}/${format}?month=${month}&year=${year}&lang=${locale}&tz=${timeZone()}${amountsParam(amounts)}`;
+// group: sum the hours per day and task (the parameter is only sent when true)
+const groupParam = (group) => (group ? '&group=task' : '');
+
+const reportUrl = (format, customerId, month, year, locale, amounts, group) =>
+  `${API_URL}/reports/customer/${customerId}/${format}?month=${month}&year=${year}&lang=${locale}&tz=${timeZone()}${amountsParam(amounts)}${groupParam(group)}`;
 
 // Loads the file first, so a failed download throws ApiError instead of leaving the page
 async function download(url, fallbackName) {
@@ -125,11 +128,14 @@ export const api = {
 
   deleteProject: (id) => request(`/projects/${id}`, { method: 'DELETE' }),
 
-  // Time Entries; without endTime, createTimeEntry starts the timer
-  createTimeEntry: (projectId, startTime, description, endTime) =>
-    request('/time-entries', { method: 'POST', body: { projectId, startTime, description, endTime } }),
+  // Time Entries; without endTime, createTimeEntry starts the timer. task: the name that entries of one activity share
+  createTimeEntry: (projectId, startTime, description, endTime, task) =>
+    request('/time-entries', { method: 'POST', body: { projectId, startTime, description, endTime, task } }),
 
-  // changes: { startTime, endTime, projectId, description }
+  // The tasks used in a project, the latest first (suggestions for the Task field)
+  getTasks: (projectId) => request(`/time-entries/tasks/${projectId}`),
+
+  // changes: { startTime, endTime, projectId, description, task }
   updateTimeEntry: (id, changes) =>
     request(`/time-entries/${id}`, { method: 'PATCH', body: changes }),
 
@@ -166,8 +172,8 @@ export const api = {
   deleteLogo: () => request('/settings/logo', { method: 'DELETE' }),
 
   // Reports
-  getMonthlyReport: (customerId, month, year, amounts) =>
-    request(`/reports/customer/${customerId}?month=${month}&year=${year}&tz=${timeZone()}${amountsParam(amounts)}`),
+  getMonthlyReport: (customerId, month, year, amounts, group) =>
+    request(`/reports/customer/${customerId}?month=${month}&year=${year}&tz=${timeZone()}${amountsParam(amounts)}${groupParam(group)}`),
 
   // status: 'draft', 'ready' or 'sent'
   setReportStatus: (customerId, month, year, status) =>
@@ -176,7 +182,7 @@ export const api = {
   // The PDF shown in the browser instead of downloaded
   pdfPreviewUrl: (customerId, month, year, locale) => `${reportUrl('pdf', customerId, month, year, locale)}&inline=1`,
 
-  // Invoices (the backend's documentation/backend/invoices.md). invoice: { customerId, from, to, invoiceDate, lang }, the days as
+  // Invoices (the backend's documentation/backend/invoices.md). invoice: { customerId, from, to, invoiceDate, lang, groupByTask }, the days as
   // 'YYYY-MM-DD'; the browser's time zone is added. previewInvoice answers with the lines, the totals and what is missing and
   // takes no number; createInvoice takes one, makes the PDF and stores both (422: something is missing, 409: the number is
   // used, 404: the customer is gone).
@@ -197,10 +203,10 @@ export const api = {
   getDashboard: (from, to, month, year) =>
     request(`/dashboard?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}&month=${month}&year=${year}&tz=${timeZone()}`),
 
-  downloadPDF: (customerId, month, year, locale, amounts) =>
-    download(reportUrl('pdf', customerId, month, year, locale, amounts), 'report.pdf'),
+  downloadPDF: (customerId, month, year, locale, amounts, group) =>
+    download(reportUrl('pdf', customerId, month, year, locale, amounts, group), 'report.pdf'),
 
   // The same entries as a CSV file; its separators follow the language
-  downloadCSV: (customerId, month, year, locale, amounts) =>
-    download(reportUrl('csv', customerId, month, year, locale, amounts), 'report.csv')
+  downloadCSV: (customerId, month, year, locale, amounts, group) =>
+    download(reportUrl('csv', customerId, month, year, locale, amounts, group), 'report.csv')
 };

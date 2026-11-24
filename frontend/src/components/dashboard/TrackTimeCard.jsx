@@ -3,6 +3,7 @@ import { msg } from '@lingui/core/macro'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { api } from '../../api'
 import { useAction } from '../../hooks/useAction'
+import { useTaskSuggestions } from '../../hooks/useTaskSuggestions'
 import { formatDuration, minutesBetween } from '../../format'
 import { ui } from '../../ui'
 import EntryForm from '../EntryForm'
@@ -26,9 +27,15 @@ function TrackTimeCard({ projects, defaultProjectId, timer, onSaved }) {
   const project = projects.find((p) => p.id === projectId) ?? null
   const customer = project && { id: project.customer_id, name: project.customer_name }
 
-  const start = async (description) => {
+  // Reloaded after an entry was saved, so a new task shows up
+  const [savedCount, setSavedCount] = useState(0)
+  const taskSuggestions = useTaskSuggestions(projectId, savedCount)
+
+  const start = async (description, task) => {
     setSaved(null)
-    return timer.start(project, description, customer)
+    const started = await timer.start(project, description, customer, task)
+    if (started) setSavedCount((n) => n + 1)
+    return started
   }
 
   const stop = async () => {
@@ -40,12 +47,15 @@ function TrackTimeCard({ projects, defaultProjectId, timer, onSaved }) {
     return stopped
   }
 
-  const addEntry = async ({ projectId: entryProjectId, startTime, endTime, description }) => {
+  const addEntry = async ({ projectId: entryProjectId, startTime, endTime, description, task }) => {
     const created = await runAdd(
-      () => api.createTimeEntry(entryProjectId, startTime, description, endTime),
+      () => api.createTimeEntry(entryProjectId, startTime, description, endTime, task),
       msg`Time entry could not be saved.`
     )
-    if (created) onSaved()
+    if (created) {
+      setSavedCount((n) => n + 1)
+      onSaved()
+    }
     return created
   }
 
@@ -70,7 +80,7 @@ function TrackTimeCard({ projects, defaultProjectId, timer, onSaved }) {
       {timer.activeEntry?.customer_name && (
         <p className="text-sm text-muted">{timer.activeEntry.customer_name}</p>
       )}
-      <Timer project={project} activeEntry={timer.activeEntry} onStart={start} onStop={stop} busy={timer.busy} bare />
+      <Timer project={project} activeEntry={timer.activeEntry} onStart={start} onStop={stop} busy={timer.busy} taskSuggestions={taskSuggestions} bare />
       {saved && !timer.activeEntry && (
         <p className="text-sm text-muted"><Trans>Saved {savedDuration} to {savedProject}.</Trans></p>
       )}
@@ -81,6 +91,7 @@ function TrackTimeCard({ projects, defaultProjectId, timer, onSaved }) {
     <EntryForm
       projects={projects.map((p) => ({ id: p.id, name: label(p) }))}
       projectId={projectId}
+      taskSuggestions={taskSuggestions}
       submitLabel={t`Add`}
       onSubmit={addEntry}
       error={addError}

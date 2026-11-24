@@ -19,6 +19,7 @@ an invoice does not need a report and does not change one.
     it is not reserved) and the language of the invoice: the customer's own report language, else the app's;
   - a table with one line per project (project, hours as `h:mm`, rate, amount) and below it the net amount, the VAT with its
     rate and the total. For a small business only the total, and the sentence about §19 UStG. A status line that is always on the page (visually hidden) says the total when the preview is there (*The invoice would be 1.359,58 € in total.*).
+- **Round the hours per day and task** (German: *Stunden je Tag und Aufgabe runden*): a checkbox below the dates, off at first. Ticked, the hours of one day and [task](time-tracking.md#task) are rounded as one (with a rounding rule), like the report's sum, and the preview loads again. It is not stored with the invoice; the lines stay one per project.
 - **What is missing:** if the preview says something is missing, an alert (*This invoice cannot be created yet:*) lists it, each
   with a link to where to put it right: your name, address and tax ID (*Open Settings*), the customer's address (*Open customer*,
   on the Time tracking page), or no entries in the period (no link). **Create invoice** is then marked `aria-disabled`, says

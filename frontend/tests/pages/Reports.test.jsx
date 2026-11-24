@@ -89,7 +89,7 @@ describe('Reports', () => {
 
     await selectCustomer('Muster GmbH')
 
-    expect(api.getMonthlyReport).toHaveBeenCalledWith(1, 9, 2026, false)
+    expect(api.getMonthlyReport).toHaveBeenCalledWith(1, 9, 2026, false, false)
     expect(await screen.findByRole('heading', { name: 'Abrechnung Muster GmbH – September 2026' })).toBeInTheDocument()
   })
 
@@ -99,7 +99,7 @@ describe('Reports', () => {
 
     expect(screen.getByLabelText('Kunde')).toHaveValue('2')
     expect(await screen.findByRole('heading', { name: 'Abrechnung Neu AG – September 2026' })).toBeInTheDocument()
-    expect(api.getMonthlyReport).toHaveBeenCalledWith(2, 9, 2026, false)
+    expect(api.getMonthlyReport).toHaveBeenCalledWith(2, 9, 2026, false, false)
   })
 
   test('opens with the month it is given', async () => {
@@ -107,7 +107,7 @@ describe('Reports', () => {
     renderReports('/reports/1/2026-08')
 
     expect(screen.getByRole('group', { name: 'Monat' })).toHaveTextContent('August 2026')
-    expect(api.getMonthlyReport).toHaveBeenCalledWith(1, 8, 2026, false)
+    expect(api.getMonthlyReport).toHaveBeenCalledWith(1, 8, 2026, false, false)
   })
 
   describe('address', () => {
@@ -127,7 +127,7 @@ describe('Reports', () => {
       await selectCustomer('Neu AG')
 
       expect(path()).toBe('/reports/2/2026-08')
-      expect(api.getMonthlyReport).toHaveBeenLastCalledWith(2, 8, 2026, false)
+      expect(api.getMonthlyReport).toHaveBeenLastCalledWith(2, 8, 2026, false, false)
     })
 
     test('writes the month into the address when stepping, across the turn of the year', async () => {
@@ -174,7 +174,7 @@ describe('Reports', () => {
       renderReports('/reports/1')
 
       expect(screen.getByRole('group', { name: 'Monat' })).toHaveTextContent('September 2026')
-      await waitFor(() => expect(api.getMonthlyReport).toHaveBeenCalledWith(1, 9, 2026, false))
+      await waitFor(() => expect(api.getMonthlyReport).toHaveBeenCalledWith(1, 9, 2026, false, false))
     })
 
     test('says so for a customer that does not exist, without asking the server', () => {
@@ -209,7 +209,7 @@ describe('Reports', () => {
 
       rerender(ui(customers))
 
-      await waitFor(() => expect(api.getMonthlyReport).toHaveBeenCalledWith(1, 8, 2026, false))
+      await waitFor(() => expect(api.getMonthlyReport).toHaveBeenCalledWith(1, 8, 2026, false, false))
       expect(screen.queryByText('Dieser Kunde existiert nicht (mehr).')).not.toBeInTheDocument()
       expect(screen.getByLabelText('Kunde')).toHaveValue('1')
     })
@@ -298,11 +298,11 @@ describe('Reports', () => {
 
     await userEvent.click(within(month).getByRole('button', { name: 'Nächster Monat' }))
     expect(month).toHaveTextContent('Oktober 2026')
-    expect(api.getMonthlyReport).toHaveBeenLastCalledWith(1, 10, 2026, false)
+    expect(api.getMonthlyReport).toHaveBeenLastCalledWith(1, 10, 2026, false, false)
 
     for (let i = 0; i < 10; i++) await userEvent.click(within(month).getByRole('button', { name: 'Vorheriger Monat' }))
     expect(month).toHaveTextContent('Dezember 2025')
-    expect(api.getMonthlyReport).toHaveBeenLastCalledWith(1, 12, 2025, false)
+    expect(api.getMonthlyReport).toHaveBeenLastCalledWith(1, 12, 2025, false, false)
     expect(await screen.findByText('Keine Einträge für diesen Zeitraum')).toBeInTheDocument()
   })
 
@@ -508,15 +508,15 @@ describe('Reports', () => {
       api.getMonthlyReport.mockImplementation(answer)
       renderReports('/reports/1')
       const box = await screen.findByLabelText(optionLabel)
-      expect(api.getMonthlyReport).toHaveBeenLastCalledWith(1, 9, 2026, false)
+      expect(api.getMonthlyReport).toHaveBeenLastCalledWith(1, 9, 2026, false, false)
 
       await userEvent.click(box)
       await screen.findByText('Betrag (netto)')
-      expect(api.getMonthlyReport).toHaveBeenLastCalledWith(1, 9, 2026, true)
+      expect(api.getMonthlyReport).toHaveBeenLastCalledWith(1, 9, 2026, true, false)
 
       await userEvent.click(box)
       await waitFor(() => expect(screen.queryByText('Betrag (netto)')).not.toBeInTheDocument())
-      expect(api.getMonthlyReport).toHaveBeenLastCalledWith(1, 9, 2026, false)
+      expect(api.getMonthlyReport).toHaveBeenLastCalledWith(1, 9, 2026, false, false)
     })
 
     test('keeps the focus on the checkbox after toggling', async () => {
@@ -545,7 +545,7 @@ describe('Reports', () => {
       renderReports('/reports/1')
 
       expect(await screen.findByLabelText(optionLabel)).not.toBeChecked()
-      expect(api.getMonthlyReport).toHaveBeenLastCalledWith(1, 9, 2026, false)
+      expect(api.getMonthlyReport).toHaveBeenLastCalledWith(1, 9, 2026, false, false)
     })
 
     test('keeps working when the browser blocks its storage', async () => {
@@ -581,16 +581,16 @@ describe('Reports', () => {
       await waitFor(() => expect(screen.getByRole('button', { name: 'PDF herunterladen' })).toHaveAttribute('aria-disabled', 'false'))
       await userEvent.click(screen.getByRole('button', { name: 'CSV herunterladen' }))
       await waitFor(() => expect(screen.getByRole('button', { name: 'CSV herunterladen' })).toHaveAttribute('aria-disabled', 'false'))
-      expect(api.downloadPDF).toHaveBeenLastCalledWith(1, 9, 2026, 'de', false)
-      expect(api.downloadCSV).toHaveBeenLastCalledWith(1, 9, 2026, 'de', false)
+      expect(api.downloadPDF).toHaveBeenLastCalledWith(1, 9, 2026, 'de', false, false)
+      expect(api.downloadCSV).toHaveBeenLastCalledWith(1, 9, 2026, 'de', false, false)
 
       await userEvent.click(screen.getByLabelText(optionLabel))
       await userEvent.click(await screen.findByRole('button', { name: 'PDF herunterladen' }))
       await waitFor(() => expect(screen.getByRole('button', { name: 'PDF herunterladen' })).toHaveAttribute('aria-disabled', 'false'))
       await userEvent.click(screen.getByRole('button', { name: 'CSV herunterladen' }))
 
-      expect(api.downloadPDF).toHaveBeenLastCalledWith(1, 9, 2026, 'de', true)
-      expect(api.downloadCSV).toHaveBeenLastCalledWith(1, 9, 2026, 'de', true)
+      expect(api.downloadPDF).toHaveBeenLastCalledWith(1, 9, 2026, 'de', true, false)
+      expect(api.downloadCSV).toHaveBeenLastCalledWith(1, 9, 2026, 'de', true, false)
     })
 
     test('still shows the option after a failed load', async () => {
@@ -614,6 +614,140 @@ describe('Reports', () => {
     })
   })
 
+  describe('summing the hours per day and task', () => {
+    const grouped = {
+      ...report,
+      entries: [
+        { ...report.entries[0], task: 'Fix login', details: ['Konzept', 'Anruf'], count: 2, entryIds: [2, 3] },
+        { ...report.entries[1], task: null },
+      ],
+    }
+
+    test('is off at first and loads the report without it', async () => {
+      switchLocale('en')
+      api.getMonthlyReport.mockImplementation(answer)
+      renderReports('/reports/1')
+      await screen.findByText('Konzept')
+
+      expect(screen.getByRole('checkbox', { name: 'Sum hours per day and task' })).not.toBeChecked()
+      expect(api.getMonthlyReport).toHaveBeenLastCalledWith(1, 9, 2026, false, false)
+    })
+
+    test('loads the report again with the sum, and shows the task with the details of its entries', async () => {
+      switchLocale('en')
+      api.getMonthlyReport.mockImplementation((customerId, month, year, amounts, group) => Promise.resolve(group ? grouped : report))
+      renderReports('/reports/1')
+      await screen.findByText('Konzept')
+
+      await userEvent.click(screen.getByRole('checkbox', { name: 'Sum hours per day and task' }))
+
+      await waitFor(() => expect(api.getMonthlyReport).toHaveBeenLastCalledWith(1, 9, 2026, false, true))
+      const row = (await screen.findByText('Fix login')).closest('tr')
+      expect(row).toHaveTextContent('Fix login · Konzept; Anruf')
+    })
+
+    test('shows the task of a running entry, which is no group, in the summed report', async () => {
+      switchLocale('en')
+      const running = { ...report.entries[1], id: 9, end_time: null, task: 'Fix login', description: null }
+      api.getMonthlyReport.mockImplementation((customerId, month, year, amounts, group) => Promise.resolve(group ? { ...report, entries: [running] } : report))
+      renderReports('/reports/1')
+      await screen.findByText('Konzept')
+
+      await userEvent.click(screen.getByRole('checkbox', { name: 'Sum hours per day and task' }))
+
+      expect(await screen.findByText('Fix login')).toBeInTheDocument()
+    })
+
+    test('shows no task in the detailed list, like the PDF and the CSV', async () => {
+      switchLocale('en')
+      api.getMonthlyReport.mockResolvedValue({ ...report, entries: [{ ...report.entries[0], task: 'Fix login' }, report.entries[1]] })
+      renderReports('/reports/1')
+
+      expect(await screen.findByText('Konzept')).toBeInTheDocument()
+      expect(screen.queryByText('Fix login')).not.toBeInTheDocument()
+    })
+
+    test('the downloads follow the choice', async () => {
+      switchLocale('en')
+      api.getMonthlyReport.mockImplementation((customerId, month, year, amounts, group) => Promise.resolve(group ? grouped : report))
+      renderReports('/reports/1')
+      await userEvent.click(await screen.findByRole('checkbox', { name: 'Sum hours per day and task' }))
+      await screen.findByText('Fix login')
+
+      await userEvent.click(screen.getByRole('button', { name: 'Download PDF' }))
+      await waitFor(() => expect(api.downloadPDF).toHaveBeenCalledWith(1, 9, 2026, 'en', false, true))
+      await userEvent.click(screen.getByRole('button', { name: 'Download CSV' }))
+      await waitFor(() => expect(api.downloadCSV).toHaveBeenCalledWith(1, 9, 2026, 'en', false, true))
+    })
+
+    test('together with the amounts it asks for both, and the downloads send both', async () => {
+      switchLocale('en')
+      api.getMonthlyReport.mockImplementation((customerId, month, year, amounts, group) => {
+        const base = group ? grouped : report
+        return Promise.resolve(amounts ? { ...base, entries: base.entries.map((entry) => ({ ...entry, amount: '10.00' })), currency: 'EUR', totalAmount: '20.00', projects: reportWithAmounts.projects } : base)
+      })
+      renderReports('/reports/1')
+      await userEvent.click(await screen.findByRole('checkbox', { name: 'Show hourly rate and amounts' }))
+      await userEvent.click(screen.getByRole('checkbox', { name: 'Sum hours per day and task' }))
+
+      await waitFor(() => expect(api.getMonthlyReport).toHaveBeenLastCalledWith(1, 9, 2026, true, true))
+      expect(await screen.findByText('Fix login')).toBeInTheDocument()
+      await userEvent.click(screen.getByRole('button', { name: 'Download CSV' }))
+      await waitFor(() => expect(api.downloadCSV).toHaveBeenCalledWith(1, 9, 2026, 'en', true, true))
+    })
+
+    test('switching it off again loads the detailed report', async () => {
+      switchLocale('en')
+      api.getMonthlyReport.mockImplementation((customerId, month, year, amounts, group) => Promise.resolve(group ? grouped : report))
+      renderReports('/reports/1')
+      const box = await screen.findByRole('checkbox', { name: 'Sum hours per day and task' })
+      await userEvent.click(box)
+      await screen.findByText('Fix login')
+
+      await userEvent.click(box)
+
+      await waitFor(() => expect(api.getMonthlyReport).toHaveBeenLastCalledWith(1, 9, 2026, false, false))
+      await waitFor(() => expect(screen.queryByText('Fix login')).not.toBeInTheDocument())
+    })
+
+    test('a summed row of a task without descriptions shows the task alone', async () => {
+      switchLocale('en')
+      api.getMonthlyReport.mockImplementation((customerId, month, year, amounts, group) => Promise.resolve(
+        group ? { ...report, entries: [{ ...report.entries[0], task: 'Fix login', description: null, details: [], count: 2, entryIds: [2, 3] }, report.entries[1]] } : report
+      ))
+      renderReports('/reports/1')
+      await userEvent.click(await screen.findByRole('checkbox', { name: 'Sum hours per day and task' }))
+
+      const row = (await screen.findByText('Fix login')).closest('tr')
+      expect(row).not.toHaveTextContent('·')
+    })
+
+    test('an error loading the summed report is shown', async () => {
+      switchLocale('en')
+      api.getMonthlyReport.mockImplementation((customerId, month, year, amounts, group) => (group ? Promise.reject(new ApiError(500, 'boom')) : Promise.resolve(report)))
+      renderReports('/reports/1')
+      await userEvent.click(await screen.findByRole('checkbox', { name: 'Sum hours per day and task' }))
+
+      expect(await screen.findByRole('alert')).toHaveTextContent('Report could not be loaded.')
+    })
+
+    test('is not offered before a customer is chosen', () => {
+      switchLocale('en')
+      renderReports('/reports')
+
+      expect(screen.queryByRole('checkbox', { name: 'Sum hours per day and task' })).not.toBeInTheDocument()
+    })
+
+    test('has no accessibility violations', async () => {
+      switchLocale('en')
+      api.getMonthlyReport.mockImplementation(answer)
+      const { container } = renderReports('/reports/1')
+      await screen.findByText('Konzept')
+
+      expect(await axe(container)).toHaveNoViolations()
+    })
+  })
+
   test('downloads the PDF in the current language, only when there are entries', async () => {
     switchLocale('en')
     api.getMonthlyReport.mockResolvedValueOnce({ entries: [], totalHours: '0.00' }).mockResolvedValueOnce(report)
@@ -624,7 +758,7 @@ describe('Reports', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Next month' }))
     await userEvent.click(await screen.findByRole('button', { name: 'Download PDF' }))
 
-    expect(api.downloadPDF).toHaveBeenCalledWith(1, 10, 2026, 'en', false)
+    expect(api.downloadPDF).toHaveBeenCalledWith(1, 10, 2026, 'en', false, false)
   })
 
   test('shows an error on the page when the download fails', async () => {
@@ -647,7 +781,7 @@ describe('Reports', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Next month' }))
     await userEvent.click(await screen.findByRole('button', { name: 'Download CSV' }))
 
-    expect(api.downloadCSV).toHaveBeenCalledWith(1, 10, 2026, 'en', false)
+    expect(api.downloadCSV).toHaveBeenCalledWith(1, 10, 2026, 'en', false, false)
     expect(api.downloadPDF).not.toHaveBeenCalled()
   })
 
@@ -794,12 +928,12 @@ describe('Reports, the amounts setting', () => {
     expect(await screen.findByLabelText(optionLabel)).toBeChecked()
     expect(await screen.findByText('Betrag (netto)')).toBeInTheDocument()
     expect(api.getMonthlyReport).toHaveBeenCalledTimes(1)
-    expect(api.getMonthlyReport).toHaveBeenCalledWith(1, 9, 2026, true)
+    expect(api.getMonthlyReport).toHaveBeenCalledWith(1, 9, 2026, true, false)
 
     await userEvent.click(screen.getByRole('button', { name: 'PDF herunterladen' }))
-    await waitFor(() => expect(api.downloadPDF).toHaveBeenCalledWith(1, 9, 2026, 'de', true))
+    await waitFor(() => expect(api.downloadPDF).toHaveBeenCalledWith(1, 9, 2026, 'de', true, false))
     await userEvent.click(screen.getByRole('button', { name: 'CSV herunterladen' }))
-    await waitFor(() => expect(api.downloadCSV).toHaveBeenCalledWith(1, 9, 2026, 'de', true))
+    await waitFor(() => expect(api.downloadCSV).toHaveBeenCalledWith(1, 9, 2026, 'de', true, false))
   })
 
   test('starts without amounts when the setting is off', async () => {
@@ -809,7 +943,7 @@ describe('Reports, the amounts setting', () => {
     expect(await screen.findByLabelText(optionLabel)).not.toBeChecked()
     await screen.findByText('Konzept')
     expect(api.getMonthlyReport).toHaveBeenCalledTimes(1)
-    expect(api.getMonthlyReport).toHaveBeenCalledWith(1, 9, 2026, false)
+    expect(api.getMonthlyReport).toHaveBeenCalledWith(1, 9, 2026, false, false)
   })
 
   test('unticking for one report leaves the setting alone and the next month keeps the choice', async () => {
@@ -817,11 +951,11 @@ describe('Reports, the amounts setting', () => {
     api.getMonthlyReport.mockImplementation(answer)
     renderReports('/reports/1')
     await userEvent.click(await screen.findByLabelText(optionLabel))
-    await waitFor(() => expect(api.getMonthlyReport).toHaveBeenLastCalledWith(1, 9, 2026, false))
+    await waitFor(() => expect(api.getMonthlyReport).toHaveBeenLastCalledWith(1, 9, 2026, false, false))
 
     await userEvent.click(screen.getByRole('button', { name: 'Nächster Monat' }))
 
-    await waitFor(() => expect(api.getMonthlyReport).toHaveBeenLastCalledWith(1, 10, 2026, false))
+    await waitFor(() => expect(api.getMonthlyReport).toHaveBeenLastCalledWith(1, 10, 2026, false, false))
     expect(settings.save).not.toHaveBeenCalled()
     expect(settings.values.showAmounts).toBe(true)
   })
@@ -840,7 +974,7 @@ describe('Reports, the amounts setting', () => {
 
     expect(await screen.findByText('Betrag (netto)')).toBeInTheDocument()
     expect(api.getMonthlyReport).toHaveBeenCalledTimes(1)
-    expect(api.getMonthlyReport).toHaveBeenCalledWith(1, 9, 2026, true)
+    expect(api.getMonthlyReport).toHaveBeenCalledWith(1, 9, 2026, true, false)
     expect(screen.getByLabelText(optionLabel)).toBeChecked()
   })
 
@@ -851,7 +985,7 @@ describe('Reports, the amounts setting', () => {
 
     expect(await screen.findByRole('alert')).toHaveTextContent('Einstellungen konnten nicht geladen werden.')
     await screen.findByText('Konzept')
-    expect(api.getMonthlyReport).toHaveBeenCalledWith(1, 9, 2026, false)
+    expect(api.getMonthlyReport).toHaveBeenCalledWith(1, 9, 2026, false, false)
     expect(screen.getByLabelText(optionLabel)).not.toBeChecked()
 
     await userEvent.click(screen.getByRole('button', { name: 'Erneut versuchen' }))
@@ -884,7 +1018,7 @@ describe('Reports, the amounts setting', () => {
     rerender(reportsPage())
 
     expect(screen.getByLabelText(optionLabel)).not.toBeChecked()
-    expect(api.getMonthlyReport).toHaveBeenLastCalledWith(1, 9, 2026, false)
+    expect(api.getMonthlyReport).toHaveBeenLastCalledWith(1, 9, 2026, false, false)
   })
 
   test('follows a changed setting while the checkbox is untouched', async () => {
@@ -906,7 +1040,7 @@ describe('Reports, the amounts setting', () => {
 
     await screen.findByText('Konzept')
     expect(screen.getByLabelText(optionLabel)).not.toBeChecked()
-    expect(api.getMonthlyReport).toHaveBeenCalledWith(1, 9, 2026, false)
+    expect(api.getMonthlyReport).toHaveBeenCalledWith(1, 9, 2026, false, false)
   })
 
   test('shows the retry in English after a language switch', async () => {
@@ -1150,7 +1284,7 @@ describe('Reports, retrying the settings', () => {
     expect(screen.getByLabelText(optionLabel)).toBeChecked()
     expect(screen.queryByRole('alert')).not.toBeInTheDocument()
     expect(api.getMonthlyReport).toHaveBeenCalledTimes(2)
-    expect(api.getMonthlyReport).toHaveBeenLastCalledWith(1, 9, 2026, true)
+    expect(api.getMonthlyReport).toHaveBeenLastCalledWith(1, 9, 2026, true, false)
   })
 })
 
@@ -1183,11 +1317,12 @@ describe('Reports, the amounts option in edge cases', () => {
     switchLocale(locale)
     api.getMonthlyReport.mockImplementation(answer)
     const { container } = renderReports('/reports/1')
-    await userEvent.click(await screen.findByRole('checkbox'))
+    // The first checkbox is the amounts option, the second sums the hours per day and task
+    await userEvent.click((await screen.findAllByRole('checkbox'))[0])
     await screen.findByText(amountCard)
     expect(await axe(container)).toHaveNoViolations()
 
-    await userEvent.click(screen.getByRole('checkbox'))
+    await userEvent.click(screen.getAllByRole('checkbox')[0])
     await waitFor(() => expect(screen.queryByText(amountCard)).not.toBeInTheDocument())
     expect(await axe(container)).toHaveNoViolations()
   })
@@ -1198,7 +1333,7 @@ describe('Reports, the amounts option in edge cases', () => {
     renderReports('/reports/1')
 
     expect(await screen.findByLabelText(optionLabel)).not.toBeChecked()
-    expect(api.getMonthlyReport).toHaveBeenLastCalledWith(1, 9, 2026, false)
+    expect(api.getMonthlyReport).toHaveBeenLastCalledWith(1, 9, 2026, false, false)
     expect(window.localStorage.getItem('reportAmounts')).toBeNull()
   })
 
@@ -1367,7 +1502,7 @@ describe('Reports, the amounts option in edge cases', () => {
 
     await selectCustomer('Neu AG')
 
-    await waitFor(() => expect(api.getMonthlyReport).toHaveBeenLastCalledWith(2, 9, 2026, true))
+    await waitFor(() => expect(api.getMonthlyReport).toHaveBeenLastCalledWith(2, 9, 2026, true, false))
     expect(screen.getByLabelText(optionLabel)).toBeChecked()
   })
 
@@ -1383,7 +1518,7 @@ describe('Reports, the amounts option in edge cases', () => {
     await screen.findByText('Betrag (netto)')
 
     expect(api.downloadPDF).toHaveBeenCalledTimes(1)
-    expect(api.downloadPDF).toHaveBeenCalledWith(1, 9, 2026, 'de', false)
+    expect(api.downloadPDF).toHaveBeenCalledWith(1, 9, 2026, 'de', false, false)
     expect(screen.getByLabelText(optionLabel)).toBeChecked()
     expect(screen.queryByRole('alert')).not.toBeInTheDocument()
   })
@@ -1533,7 +1668,7 @@ describe('Reports: the language of the downloads', () => {
 
     await userEvent.click(await screen.findByRole('button', { name: 'PDF herunterladen' }))
 
-    expect(api.downloadPDF).toHaveBeenCalledWith(1, 9, 2026, 'de', false)
+    expect(api.downloadPDF).toHaveBeenCalledWith(1, 9, 2026, 'de', false, false)
     expect(await screen.findByRole('heading', { name: 'Abrechnung Muster GmbH – September 2026' })).toBeInTheDocument()
   })
 

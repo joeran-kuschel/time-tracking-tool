@@ -7,6 +7,7 @@ const Settings = require('../models/Settings');
 const Logo = require('../models/Logo');
 const { DEFAULT_LOCALE } = require('../i18n');
 const { roundingRuleOf, withBilledHours } = require('../utils/rounding');
+const { groupByTask } = require('../utils/tasks');
 const { isId, senderOf, parseInvoiceRequest, buildInvoice, missingDetails, invoiceFileName } = require('../utils/invoicing');
 const { counterScope, formatInvoiceNumber } = require('../utils/invoiceNumber');
 const { generateInvoicePDF } = require('../utils/invoicePdf');
@@ -53,7 +54,7 @@ async function prepare(req, res) {
     res.status(400).json({ error: parsed.error });
     return null;
   }
-  const { customerId, range, invoiceDate, lang } = parsed.value;
+  const { customerId, range, invoiceDate, lang, groupByTask: grouped, timeZone } = parsed.value;
   const customerRow = await Customer.getById(customerId);
   if (!customerRow) {
     res.status(404).json({ error: 'Customer not found' });
@@ -61,7 +62,8 @@ async function prepare(req, res) {
   }
   const [stored, settings] = await Promise.all([TimeEntry.getByCustomerIdInRange(customerId, range), Settings.get()]);
   // The same hours as a report of the period: the customer's own rounding rule, else the global one
-  const entries = withBilledHours(stored, roundingRuleOf(settings));
+  // With grouped, the entries of one day and task are rounded as one (utils/tasks.js), like the grouped report
+  const entries = withBilledHours(grouped ? groupByTask(stored, timeZone) : stored, roundingRuleOf(settings));
   const built = buildInvoice(entries, { vatMode: settings.vatMode, vatRate: settings.vatRate });
   const sender = senderOf(settings);
   const customer = { name: customerRow.name, address: customerRow.address, taxId: customerRow.tax_id };

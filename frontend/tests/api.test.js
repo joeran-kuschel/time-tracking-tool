@@ -121,6 +121,39 @@ describe('api', () => {
     expect(click).toHaveBeenCalled()
   })
 
+  test('sends the task with a new entry, asks for the tasks of a project and for grouped reports', async () => {
+    const fetch = mockFetch(200, {})
+
+    await api.createTimeEntry(7, '2026-11-24T09:00:00Z', 'Anruf', undefined, 'Fix login')
+    expect(JSON.parse(fetch.mock.calls[0][1].body)).toMatchObject({ projectId: 7, description: 'Anruf', task: 'Fix login' })
+
+    await api.getTasks(7)
+    expect(fetch.mock.calls[1][0]).toMatch(/\/time-entries\/tasks\/7$/)
+
+    await api.getMonthlyReport(1, 9, 2026, false, true)
+    expect(fetch.mock.calls[2][0]).toMatch(/\/reports\/customer\/1\?month=9&year=2026&tz=Europe%2FBerlin&group=task$/)
+
+    await api.getMonthlyReport(1, 9, 2026, true)
+    expect(fetch.mock.calls[3][0]).toMatch(/&amounts=1$/)
+  })
+
+  test('downloads a grouped report with group=task, and a detailed one without', async () => {
+    const response = { ok: true, status: 200, headers: new Headers(), blob: () => Promise.resolve(new Blob(['x'])) }
+    const fetch = vi.fn().mockResolvedValue(response)
+    vi.stubGlobal('fetch', fetch)
+    URL.createObjectURL = vi.fn(() => 'blob:x')
+    URL.revokeObjectURL = vi.fn()
+    vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {})
+
+    await api.downloadPDF(1, 9, 2026, 'en', false, true)
+    await api.downloadCSV(1, 9, 2026, 'en', true, true)
+    await api.downloadCSV(1, 9, 2026, 'en', false, false)
+
+    expect(fetch.mock.calls[0][0]).toMatch(/\/pdf\?.*&group=task$/)
+    expect(fetch.mock.calls[1][0]).toMatch(/\/csv\?.*&amounts=1&group=task$/)
+    expect(fetch.mock.calls[2][0]).not.toContain('group')
+  })
+
   test('throws an ApiError instead of downloading when the PDF fails', async () => {
     mockFetch(404, { error: 'No time entries found for the specified month' })
     const click = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {})

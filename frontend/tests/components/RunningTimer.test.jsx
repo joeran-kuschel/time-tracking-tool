@@ -24,6 +24,17 @@ describe('RunningTimer', () => {
     expect(region).toHaveTextContent('00:00:00')
   })
 
+  test('shows the task after the project and the customer, and nothing without one', () => {
+    const { rerender } = render(<RunningTimer entry={{ ...running, task: 'Fix login' }} onStop={vi.fn()} />)
+
+    expect(screen.getByRole('region', { name: 'Laufender Timer' })).toHaveTextContent('Website · Muster GmbH · Fix login')
+
+    rerender(<RunningTimer entry={{ ...running, task: null }} onStop={vi.fn()} />)
+
+    expect(screen.getByRole('region', { name: 'Laufender Timer' })).not.toHaveTextContent('Fix login')
+    expect(screen.getByRole('region', { name: 'Laufender Timer' })).not.toHaveTextContent('· null')
+  })
+
   test('stops the timer with a button named for it', async () => {
     const onStop = vi.fn()
     render(<RunningTimer entry={running} onStop={onStop} />)

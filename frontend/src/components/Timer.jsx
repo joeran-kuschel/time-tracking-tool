@@ -3,6 +3,7 @@ import { PlayIcon, StopIcon } from '@heroicons/react/24/solid'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { useElapsedTime } from '../hooks/useElapsedTime'
 import { formatClock } from '../format'
+import { MAX_TASK } from '../tasks'
 import { ui } from '../ui'
 import ErrorMessage from './ErrorMessage'
 
@@ -11,16 +12,23 @@ import ErrorMessage from './ErrorMessage'
 // so focus survives starting and stopping. The app announces both (useActiveEntry).
 // bare: without card and "Timer" heading, for a place that already names it (the dashboard's Timer tab).
 // busy: a start or stop is being sent; the button stays focusable but is marked disabled.
+// taskSuggestions: the project's earlier tasks, offered by the Task field; onStart(description, task).
 // focusStopRequest: a counter that a page raises after it started the timer from elsewhere (Resume on an entry): the
 // Stop button takes focus once the timer runs, since the button that was clicked is gone or disabled.
-function Timer({ project, activeEntry, onStart, onStop, error, busy = false, bare = false, focusStopRequest = 0 }) {
+function Timer({ project, activeEntry, onStart, onStop, error, busy = false, bare = false, focusStopRequest = 0, taskSuggestions = [] }) {
   const [description, setDescription] = useState('')
+  const [task, setTask] = useState('')
   const { t, i18n } = useLingui()
   const headingId = useId()
   const elapsedTime = useElapsedTime(activeEntry?.start_time)
   const stopButton = useRef(null)
 
   const isRunning = Boolean(activeEntry)
+  // A task belongs to a project, so it does not stay when another project is selected
+  const projectId = project?.id
+  useEffect(() => {
+    setTask('')
+  }, [projectId])
   useEffect(() => {
     if (focusStopRequest && isRunning) stopButton.current?.focus()
   }, [focusStopRequest, isRunning])
@@ -29,7 +37,10 @@ function Timer({ project, activeEntry, onStart, onStop, error, busy = false, bar
 
   const handleStart = async () => {
     if (!canStart) return
-    if (await onStart(description)) setDescription('')
+    if (await onStart(description, task)) {
+      setDescription('')
+      setTask('')
+    }
   }
 
   const trackedProject = isRunning ? activeEntry.project_name : null
@@ -59,6 +70,25 @@ function Timer({ project, activeEntry, onStart, onStop, error, busy = false, bar
 
       <div className={`font-mono text-5xl font-medium leading-none tracking-tight ${isRunning ? 'text-ink' : 'text-muted'}`}>
         {elapsedTime}
+      </div>
+
+      <div>
+        <label htmlFor="timer-task" className={ui.label}>
+          <Trans>Task (optional)</Trans>
+        </label>
+        <input
+          id="timer-task"
+          type="text"
+          list="timer-task-suggestions"
+          maxLength={MAX_TASK}
+          value={isRunning ? activeEntry.task || '' : task}
+          onChange={(e) => setTask(e.target.value)}
+          disabled={isRunning}
+          className={`${ui.input} disabled:bg-paper`}
+        />
+        <datalist id="timer-task-suggestions">
+          {taskSuggestions.map((suggestion) => <option key={suggestion} value={suggestion} />)}
+        </datalist>
       </div>
 
       <div>

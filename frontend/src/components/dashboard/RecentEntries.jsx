@@ -3,6 +3,7 @@ import { Link } from 'react-router'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { formatDay, minutesBetween } from '../../format'
 import Duration from '../Duration'
+import EntryText from '../EntryText'
 import ResumeButton, { ResumeHints } from '../ResumeButton'
 import { trackingPath } from '../../routes'
 import { ui } from '../../ui'
@@ -40,7 +41,7 @@ function RecentEntries({ entries, resume }) {
               >
                 <span className="w-24 shrink-0 text-sm text-muted">{formatDay(i18n, entry.start_time)}</span>
                 <span className="flex min-w-0 flex-1 flex-col">
-                  <span className="truncate">{entry.description || <span className="text-muted"><Trans>No description</Trans></span>}</span>
+                  <span className="truncate"><EntryText entry={entry} empty={<span className="text-muted"><Trans>No description</Trans></span>} /></span>
                   <span className="truncate text-sm text-muted">{entry.customer_name} · {entry.project_name}</span>
                 </span>
                 <span className="shrink-0 font-mono text-sm"><Duration minutes={minutesBetween(entry.start_time, entry.end_time)} /></span>

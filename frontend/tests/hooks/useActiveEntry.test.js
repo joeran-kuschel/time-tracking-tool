@@ -47,6 +47,17 @@ describe('useActiveEntry', () => {
     ))
   })
 
+  test('start sends the task along', async () => {
+    api.getActiveEntry.mockResolvedValue(null)
+    api.createTimeEntry.mockResolvedValue({ id: 42, project_id: 7, task: 'Fix login', start_time: '2026-09-21T08:00:00Z' })
+    const { result } = await renderLoaded()
+
+    await act(() => result.current.start(project, 'Anruf', { id: 1, name: 'Muster GmbH' }, 'Fix login'))
+
+    expect(api.createTimeEntry).toHaveBeenCalledWith(7, expect.any(String), 'Anruf', undefined, 'Fix login')
+    expect(result.current.activeEntry).toMatchObject({ task: 'Fix login' })
+  })
+
   test('start creates an entry and makes it active', async () => {
     api.getActiveEntry.mockResolvedValue(null)
     api.createTimeEntry.mockResolvedValue({ id: 42, project_id: 7, start_time: '2026-09-21T08:00:00Z' })
@@ -54,7 +65,7 @@ describe('useActiveEntry', () => {
 
     await act(() => result.current.start(project, 'Konzept', { id: 1, name: 'Muster GmbH' }))
 
-    expect(api.createTimeEntry).toHaveBeenCalledWith(7, expect.any(String), 'Konzept')
+    expect(api.createTimeEntry).toHaveBeenCalledWith(7, expect.any(String), 'Konzept', undefined, undefined)
     expect(result.current.activeEntry).toMatchObject({ id: 42, project_name: 'Website', customer_id: 1, customer_name: 'Muster GmbH' })
     expect(result.current.announcement).toEqual({ kind: 'started', projectName: 'Website' })
   })
