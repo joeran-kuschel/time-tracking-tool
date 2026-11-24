@@ -86,6 +86,25 @@ class TimeEntry {
       .slice(0, limit);
   }
 
+  // The entries with these ids as { id, end_time } (an unknown id is not in the answer)
+  static async getStates(ids) {
+    const placeholders = ids.map((_, index) => `$${index + 1}`).join(', ');
+    const result = await pool.query(`SELECT id, end_time FROM time_entries WHERE id IN (${placeholders})`, ids);
+    return result.rows;
+  }
+
+  // Sets the task of finished entries in one statement ('' or null clears it); nothing else changes. Answers the number of
+  // entries changed. The running entry is left out, so a timer that was started after the caller checked is not touched.
+  static async setTask(ids, task) {
+    const placeholders = ids.map((_, index) => `$${index + 2}`).join(', ');
+    const result = await pool.query(
+      `UPDATE time_entries SET task = $1, updated_at = CURRENT_TIMESTAMP
+       WHERE id IN (${placeholders}) AND end_time IS NOT NULL`,
+      [task || null, ...ids]
+    );
+    return result.rowCount;
+  }
+
   static async getById(id) {
     const result = await pool.query('SELECT * FROM time_entries WHERE id = $1', [id]);
     return result.rows[0];

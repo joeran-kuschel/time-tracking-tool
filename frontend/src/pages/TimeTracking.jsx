@@ -16,7 +16,9 @@ import EntriesList from '../components/EntriesList'
 import EditableRecord from '../components/EditableRecord'
 import RecordForm from '../components/RecordForm'
 import EntryForm from '../components/EntryForm'
-import { tasksOf } from '../tasks'
+import { tasksOf, tasksOfAll } from '../tasks'
+import SetTaskBar from '../components/SetTaskBar'
+import { useBulkTask } from '../hooks/useBulkTask'
 import Modal from '../components/Modal'
 import { formatRate } from '../format'
 import { idFromParam, trackingPath } from '../routes'
@@ -141,6 +143,16 @@ function TimeTracking({ customers, onCustomersChange, timer, settings }) {
   }
 
   const refreshEntries = () => selectedCustomerId && loadEntries(selectedCustomerId)
+
+  // Setting the task of several entries: what is selected is gone when another customer or project opens, and so are
+  // entries that were deleted
+  const bulk = useBulkTask(refreshEntries)
+  useEffect(() => {
+    bulk.selection.clear()
+  }, [selectedCustomerId, selectedProjectId])
+  useEffect(() => {
+    bulk.selection.keepOnly(entries.map((entry) => entry.id))
+  }, [entries])
 
   const openDialog = (name) => {
     clearAddError()
@@ -441,8 +453,10 @@ function TimeTracking({ customers, onCustomersChange, timer, settings }) {
               )}
             </div>
             <ErrorMessage message={entriesError} />
+            <SetTaskBar count={bulk.selection.count} done={bulk.done} suggestions={tasksOfAll(entries)} onApply={bulk.apply}
+              onClear={bulk.selection.clear} busy={bulk.busy} error={bulk.error} />
             <EntriesList entries={visibleEntries} projects={projects} onUpdate={updateEntry} onDelete={deleteEntry}
-              resume={{ onResume: resumeEntry, timerRunning: Boolean(timer.activeEntry), busy: timer.busy }} />
+              resume={{ onResume: resumeEntry, timerRunning: Boolean(timer.activeEntry), busy: timer.busy }} selection={bulk.selection} />
           </section>
         )}
       </div>

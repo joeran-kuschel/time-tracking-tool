@@ -81,3 +81,7 @@ without an index, see [Searching entries](../backend/time-entries.md#searching-e
 `frontend/tests/pages/Entries.test.jsx` (requests, debounce, stale answers, errors, Show more, Reset, axe in both
 languages), `tests/components/EntryFilters.test.jsx` (fields, presets, chips, collapse, Reset),
 `tests/filters.test.js`, `tests/hooks/useDebouncedValue.test.js`, `tests/api.test.js` and `tests/App.test.jsx`.
+
+## Setting the task of several entries
+
+The results have the same selection as the Time tracking page ([Setting the task of several entries](time-tracking.md#setting-the-task-of-several-entries)): a checkbox for each finished result, *Alle angezeigten auswählen* in the table header (it covers the loaded rows; **Show more** loads further ones to select), and the bar above the results with **Set task**. The task field suggests the tasks of the shown results. A search such as "login" finds the entries that belong together; tick them and set one task. After a success the first page of results loads again. A new search drops the selected entries that are not in the results any more.

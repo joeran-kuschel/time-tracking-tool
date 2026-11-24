@@ -10,6 +10,7 @@ router.get('/customer/:customerId', timeEntryController.getByCustomerId);
 router.get('/:id', timeEntryController.getById);
 router.post('/', timeEntryController.create);
 router.post('/:id/resume', timeEntryController.resume);
+router.patch('/task', timeEntryController.setTask);
 router.patch('/:id', timeEntryController.update);
 router.delete('/:id', timeEntryController.delete);
 

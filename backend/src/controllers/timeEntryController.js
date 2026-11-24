@@ -248,3 +248,40 @@ exports.getTasks = async (req, res) => {
     res.status(500).json({ error: 'Failed to fetch tasks' });
   }
 };
+
+// The most entries one request sets the task of
+const MAX_TASK_IDS = 1000;
+const MAX_ID = 2147483647;
+
+// Sets the task of several finished entries at once: { ids, task } (task '' or null clears it). 400 for a bad request, 404 when
+// an entry is unknown, 409 when one is the running timer; in both cases nothing changes. Answers { updated } with the number
+// of entries changed.
+exports.setTask = async (req, res) => {
+  try {
+    const body = req.body ?? {};
+    const task = parseTask(body.task);
+    if (task.error) {
+      return res.status(400).json({ error: task.error });
+    }
+    if (body.task === undefined) {
+      return res.status(400).json({ error: 'task is required (an empty text clears it)' });
+    }
+    const ids = Array.isArray(body.ids) ? [...new Set(body.ids)] : null;
+    if (!ids || ids.length === 0 || ids.length > MAX_TASK_IDS || !ids.every((id) => Number.isInteger(id) && id >= 1 && id <= MAX_ID)) {
+      return res.status(400).json({ error: `ids must be 1 to ${MAX_TASK_IDS} entry ids` });
+    }
+
+    const states = await TimeEntry.getStates(ids);
+    if (states.length !== ids.length) {
+      return res.status(404).json({ error: 'Time entry not found' });
+    }
+    if (states.some((state) => state.end_time === null)) {
+      return res.status(409).json({ error: 'Stop the timer before changing its task' });
+    }
+
+    res.json({ updated: await TimeEntry.setTask(ids, task.value) });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Failed to set the task' });
+  }
+};

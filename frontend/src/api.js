@@ -132,6 +132,9 @@ export const api = {
   createTimeEntry: (projectId, startTime, description, endTime, task) =>
     request('/time-entries', { method: 'POST', body: { projectId, startTime, description, endTime, task } }),
 
+  // Sets the task of several finished entries at once ('' removes it) -> { updated }; 404: an entry is gone, 409: one is running
+  setTask: (ids, task) => request('/time-entries/task', { method: 'PATCH', body: { ids, task } }),
+
   // The tasks used in a project, the latest first (suggestions for the Task field)
   getTasks: (projectId) => request(`/time-entries/tasks/${projectId}`),
 

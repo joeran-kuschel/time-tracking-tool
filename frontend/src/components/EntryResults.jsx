@@ -5,6 +5,8 @@ import { formatClock, formatDay, minutesBetween, minutesOfHours } from '../forma
 import Duration from './Duration'
 import EntryText from './EntryText'
 import ResumeButton, { ResumeHints } from './ResumeButton'
+import EntrySelect from './EntrySelect'
+import SelectCheckbox from './SelectCheckbox'
 import { trackingPath } from '../routes'
 import { ui } from '../ui'
 
@@ -16,7 +18,8 @@ const cell = 'px-3 py-1.5 border-b border-line-soft max-sm:block max-sm:border-b
 // results: { entries, total, hours } or null before the first answer. The status line is the only live region and
 // shows the loaded results, so it changes once per answer and not while loading.
 // resume: see ResumeButton; the button sits before Open.
-function EntryResults({ results, busy, loadingMore, onShowMore, resume }) {
+// selection: useSelection(); with it, finished entries have a checkbox, and the header one selects all shown (see SetTaskBar).
+function EntryResults({ results, busy, loadingMore, onShowMore, resume, selection }) {
   const { t, i18n } = useLingui()
   const headingId = useId()
   const list = useRef(null)
@@ -25,6 +28,8 @@ function EntryResults({ results, busy, loadingMore, onShowMore, resume }) {
   const shown = entries.length
   const total = results?.total ?? 0
   const hasMore = shown < total
+  const selectable = entries.filter((entry) => entry.end_time).map((entry) => entry.id)
+  const selectedCount = selection ? selectable.filter((id) => selection.has(id)).length : 0
 
   // The Show more button is gone once everything is loaded, so focus moves to the list
   useEffect(() => {
@@ -52,11 +57,21 @@ function EntryResults({ results, busy, loadingMore, onShowMore, resume }) {
           : <><Plural value={results.total} one="# entry" other="# entries" />, <Duration minutes={minutesOfHours(results.hours)} /></>)}
       </p>
 
+      {selection && selectable.length > 0 && (
+        // Above the table, not in its header: below sm the header is hidden, and this stays visible and reachable
+        <label className="flex min-h-[2.75rem] items-center gap-2 text-sm font-medium">
+          <SelectCheckbox label={t`Select all shown`} checked={selectedCount === selectable.length} indeterminate={selectedCount > 0 && selectedCount < selectable.length}
+            onChange={(on) => selection.setMany(selectable, on)} />
+          <Trans>Select all shown</Trans>
+        </label>
+      )}
+
       {entries.length > 0 && (
         <div ref={list} tabIndex={-1} className="overflow-x-auto focus:outline-none">
           <table className="w-full border-collapse text-sm">
             <thead className="max-sm:sr-only">
               <tr className="text-left">
+                {selection && <th scope="col" className={`${headCell} w-10`}><span className="sr-only"><Trans>Select</Trans></span></th>}
                 <th scope="col" className={headCell}>{labels.date}</th>
                 <th scope="col" className={headCell}>{labels.customer}</th>
                 <th scope="col" className={headCell}>{labels.project}</th>
@@ -73,6 +88,7 @@ function EntryResults({ results, busy, loadingMore, onShowMore, resume }) {
                 const customerName = entry.customer_name
                 return (
                   <tr key={entry.id} className="max-sm:mb-3 max-sm:block max-sm:rounded-lg max-sm:border max-sm:border-line max-sm:p-3">
+                    {selection && <td className={cell}><EntrySelect entry={entry} projectName={entry.project_name} selection={selection} /></td>}
                     <td data-label={labels.date} className={`${cell} whitespace-nowrap`}>{day}</td>
                     <td data-label={labels.customer} className={cell}>{entry.customer_name}</td>
                     <td data-label={labels.project} className={cell}>{entry.project_name}</td>

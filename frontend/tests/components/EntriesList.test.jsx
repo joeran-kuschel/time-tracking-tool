@@ -3,6 +3,7 @@ import { render, screen } from '../support/render'
 import userEvent from '@testing-library/user-event'
 import { axe } from '../support/axe'
 import EntriesList from '@/components/EntriesList'
+import { useSelection } from '@/hooks/useSelection'
 
 const entries = [
   { id: 1, project_id: 7, start_time: '2026-09-21T08:00:00Z', end_time: '2026-09-21T09:30:00Z', description: 'Konzept' },
@@ -193,5 +194,91 @@ describe('EntriesList', () => {
 
       expect(await axe(container)).toHaveNoViolations()
     })
+  })
+})
+
+function WithSelection({ list = entries }) {
+  const selection = useSelection()
+  return (
+    <>
+      <p data-testid="ids">{selection.ids.join(',')}</p>
+      <EntriesList entries={list} projects={projects} selection={selection} />
+    </>
+  )
+}
+
+describe('EntriesList with a selection', () => {
+  const two = [
+    { id: 1, project_id: 7, start_time: '2026-09-21T08:00:00Z', end_time: '2026-09-21T09:30:00Z', description: 'Konzept', task: 'Fix login' },
+    { id: 3, project_id: 7, start_time: '2026-09-22T08:00:00Z', end_time: '2026-09-22T09:00:00Z', description: null, task: null },
+    { id: 2, project_id: 7, start_time: '2026-09-23T10:00:00Z', end_time: null, description: null },
+  ]
+
+  test('has no checkboxes without a selection', () => {
+    render(<EntriesList entries={two} projects={projects} />)
+
+    expect(screen.queryByRole('checkbox')).not.toBeInTheDocument()
+  })
+
+  test('has a labelled checkbox for each finished entry and none for the running one', () => {
+    render(<WithSelection list={two} />)
+
+    const names = screen.getAllByRole('checkbox').map((box) => box.getAttribute('aria-label'))
+    expect(names).toHaveLength(3)
+    expect(names[0]).toBe('Alle von Website auswählen')
+    expect(names[1]).toMatch(/^Auswählen: Website, .*, Fix login: Konzept$/)
+    expect(names[2]).toBe('Auswählen: Website, Di., 22. Sept.')
+  })
+
+  test('selects an entry with its checkbox and unselects it again', async () => {
+    render(<WithSelection list={two} />)
+
+    await userEvent.click(screen.getAllByRole('checkbox')[1])
+    expect(screen.getByTestId('ids')).toHaveTextContent('1')
+
+    await userEvent.click(screen.getAllByRole('checkbox')[1])
+    expect(screen.getByTestId('ids')).toHaveTextContent('')
+  })
+
+  test('the checkbox of the heading selects all finished entries of the project, is mixed for some, and unselects them', async () => {
+    render(<WithSelection list={two} />)
+    const all = () => screen.getByRole('checkbox', { name: 'Alle von Website auswählen' })
+
+    await userEvent.click(screen.getAllByRole('checkbox')[1])
+    expect(all().indeterminate).toBe(true)
+    expect(all()).not.toBeChecked()
+
+    await userEvent.click(all())
+    expect(screen.getByTestId('ids')).toHaveTextContent('1,3')
+    expect(all()).toBeChecked()
+    expect(all().indeterminate).toBe(false)
+
+    await userEvent.click(all())
+    expect(screen.getByTestId('ids')).toHaveTextContent('')
+  })
+
+  test('has no select-all checkbox for a project with only a running entry', () => {
+    render(<WithSelection list={[two[2]]} />)
+
+    expect(screen.queryByRole('checkbox')).not.toBeInTheDocument()
+  })
+
+  test('the edit form takes the whole row', async () => {
+    const onUpdate = vi.fn()
+    function Edit() {
+      const selection = useSelection()
+      return <EntriesList entries={two} projects={projects} selection={selection} onUpdate={onUpdate} onDelete={vi.fn()} />
+    }
+    render(<Edit />)
+
+    await userEvent.click(screen.getAllByRole('button', { name: /^Eintrag vom .* bearbeiten$/ })[0])
+
+    expect(screen.getByRole('cell', { name: /Speichern/ })).toHaveAttribute('colspan', '6')
+  })
+
+  test('has no accessibility violations', async () => {
+    const { container } = render(<WithSelection list={two} />)
+
+    expect(await axe(container)).toHaveNoViolations()
   })
 })

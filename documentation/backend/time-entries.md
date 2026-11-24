@@ -15,11 +15,12 @@ All paths are under `/api/time-entries`.
 | `GET` | `/tasks/:projectId` | The distinct tasks used in a project, the most recently worked on first (at most 50), for the suggestions of the Task field; `400` for an id that is not a record id |
 | `GET` | `/:id` | One entry, or `404` |
 | `POST` | `/` | Create an entry (start a timer, or add a finished entry) |
+| `PATCH` | `/task` | Set the task of several finished entries at once (see [Setting the task of several entries](#setting-the-task-of-several-entries)) |
 | `PATCH` | `/:id` | Stop a running entry, or edit a finished one |
 | `POST` | `/:id/resume` | Run a finished entry on again (see [Resuming an entry](#resuming-an-entry)) |
 | `DELETE` | `/:id` | Delete a finished entry |
 
-`/active`, `/search` and `/tasks/:projectId` are registered before `/:id`, so they are never read as an id. A test checks the order.
+`/active`, `/search`, `/tasks/:projectId` and `PATCH /task` are registered before `/:id`, so they are never read as an id. A test checks the order.
 
 ## Creating entries
 
@@ -69,6 +70,19 @@ hours per day and task, see [Reports API](reports.md#sum-per-day-and-task). Old 
 - `GET /search` also finds the text `q` in the task.
 - Tasks are compared ignoring case and surrounding spaces (`taskKey`); the first spelling is shown.
 - Resuming an entry keeps its task, because the same entry runs on.
+
+### Setting the task of several entries
+
+`PATCH /api/time-entries/task` with `{ ids, task }` sets the task of old entries in one step (the bulk action of the
+[Time tracking](../ui/time-tracking.md#task) and [Entries](../ui/entries.md#setting-the-task-of-several-entries) pages).
+
+- `ids`: 1 to 1000 distinct entry ids (whole numbers from 1); `task`: required, `''` or `null` removes the task, otherwise the rules
+  of [Task](#task) apply. Anything else answers `400`.
+- `404` when an id is unknown, `409` when one of them is the running timer. Both check first, so nothing changes.
+- Otherwise one `UPDATE … WHERE id IN (…) AND end_time IS NOT NULL` sets `task` and `updated_at`, and the answer is `{ "updated": n }`.
+  Descriptions, times and projects stay as they are. Entries of different projects may be mixed. The `end_time IS NOT NULL` part
+  keeps a timer that was started after the check out of the update.
+- Tests: `tests/timeEntry.setTask.model.test.js` (real SQL), `tests/timeEntry.setTask.controller.test.js`.
 
 ## Resuming an entry
 

@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, test, vi } from 'vitest'
 import { act, fireEvent, renderWithRouter as render, screen, waitFor, within } from '../support/render'
 import userEvent from '@testing-library/user-event'
 import { axe } from '../support/axe'
@@ -8,7 +8,7 @@ import { switchLocale } from '@/i18n'
 
 vi.mock('@/api', async (importOriginal) => ({
   ...(await importOriginal()),
-  api: { searchTimeEntries: vi.fn(), getProjects: vi.fn() },
+  api: { searchTimeEntries: vi.fn(), getProjects: vi.fn(), setTask: vi.fn() },
 }))
 
 const customers = [{ id: 1, name: 'Muster GmbH' }, { id: 2, name: 'Neu AG' }]
@@ -86,7 +86,7 @@ describe('Entries', () => {
 
     const table = await screen.findByRole('table')
     const columns = within(table).getAllByRole('columnheader').map((th) => th.textContent)
-    expect(columns).toEqual(['Datum', 'Kunde', 'Projekt', 'Zeit', 'Stunden', 'Aufgabe und Beschreibung', 'Aktionen'])
+    expect(columns).toEqual(['Auswählen', 'Datum', 'Kunde', 'Projekt', 'Zeit', 'Stunden', 'Aufgabe und Beschreibung', 'Aktionen'])
     const rows = within(table).getAllByRole('row')
     expect(within(rows[1]).getByText('Muster GmbH')).toBeInTheDocument()
     expect(within(rows[1]).getByText('Website')).toBeInTheDocument()
@@ -682,5 +682,200 @@ describe('Entries', () => {
 
       expect(await axe(container)).toHaveNoViolations()
     })
+  })
+})
+
+describe('Entries: setting the task of several results', () => {
+  const box = (name) => screen.getByRole('checkbox', { name })
+
+  test('sets the task of the selected results, loads the results again and tells it', async () => {
+    api.setTask.mockResolvedValue({ updated: 2 })
+    renderPage()
+    await screen.findByText('Eintrag 1')
+
+    await userEvent.click(screen.getByRole('checkbox', { name: 'Alle angezeigten auswählen' }))
+    expect(screen.getByText('2 Einträge ausgewählt')).toBeInTheDocument()
+    api.searchTimeEntries.mockResolvedValue(answer([entry(1, { task: 'Fix login' }), entry(2, { task: 'Fix login' })]))
+    await userEvent.click(screen.getByRole('button', { name: 'Aufgabe setzen' }))
+    await userEvent.type(screen.getByLabelText('Aufgabe'), 'Fix login')
+    await userEvent.click(screen.getByRole('button', { name: 'Übernehmen' }))
+
+    await waitFor(() => expect(api.setTask).toHaveBeenCalledWith([1, 2], 'Fix login'))
+    expect(await screen.findByText('Aufgabe für 2 Einträge geändert.')).toHaveFocus()
+    expect(await screen.findAllByText('Fix login')).toHaveLength(2)
+    expect(screen.queryByText('2 Einträge ausgewählt')).not.toBeInTheDocument()
+    expect(api.searchTimeEntries).toHaveBeenCalledTimes(2)
+  })
+
+  test('keeps the selection and shows the error when it fails', async () => {
+    api.setTask.mockRejectedValue(new ApiError(409, 'x'))
+    renderPage()
+    await screen.findByText('Eintrag 1')
+    await userEvent.click(box(/Eintrag 1$/))
+    await userEvent.click(screen.getByRole('button', { name: 'Aufgabe setzen' }))
+    await userEvent.type(screen.getByLabelText('Aufgabe'), 'A')
+
+    await userEvent.click(screen.getByRole('button', { name: 'Übernehmen' }))
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('Die Aufgabe konnte nicht gesetzt werden. Für einen der Einträge läuft ein Timer')
+    expect(screen.getByLabelText('Aufgabe')).toHaveValue('A')
+    expect(screen.getByRole('checkbox', { name: /Eintrag 1$/ })).toBeChecked()
+  })
+
+  test('suggests the tasks of the results', async () => {
+    api.searchTimeEntries.mockResolvedValue(answer([entry(1, { task: 'Fix login' }), entry(2, { task: 'Review' })]))
+    const { container } = renderPage()
+    await screen.findAllByText('Fix login')
+    await userEvent.click(screen.getByRole('checkbox', { name: 'Alle angezeigten auswählen' }))
+
+    await userEvent.click(screen.getByRole('button', { name: 'Aufgabe setzen' }))
+
+    expect([...container.querySelectorAll('datalist option')].map((o) => o.value)).toEqual(['Fix login', 'Review'])
+  })
+
+  test('a selected result that is not in the results any more is no longer selected', async () => {
+    renderPage()
+    await screen.findByText('Eintrag 1')
+    await userEvent.click(box(/Eintrag 1$/))
+    expect(screen.getByText('1 Eintrag ausgewählt')).toBeInTheDocument()
+
+    api.searchTimeEntries.mockResolvedValue(answer([entry(2)]))
+    await userEvent.selectOptions(screen.getByLabelText('Kunde'), 'Muster GmbH')
+
+    await waitFor(() => expect(screen.queryByText('1 Eintrag ausgewählt')).not.toBeInTheDocument())
+  })
+
+  test('has no accessibility violations with a selection and the question open', async () => {
+    const { container } = renderPage()
+    await screen.findByText('Eintrag 1')
+    await userEvent.click(box(/Eintrag 1$/))
+    await userEvent.click(screen.getByRole('button', { name: 'Aufgabe setzen' }))
+
+    expect(await axe(container)).toHaveNoViolations()
+  })
+})
+
+describe('Entries: selecting results further', () => {
+  const box = (name) => screen.getByRole('checkbox', { name })
+  const entryNumber = (n) => (name) => name.endsWith(`Eintrag ${n}`)
+
+  test('keeps the selection when Show more adds the next page, and the header box then selects all shown', async () => {
+    api.searchTimeEntries.mockResolvedValueOnce(answer([entry(1), entry(2)], 3)).mockResolvedValueOnce({ ...answer([entry(3)], 3), offset: 2 })
+    renderPage()
+    await screen.findByText('Eintrag 1')
+    await userEvent.click(box(entryNumber(1)))
+
+    await userEvent.click(screen.getByRole('button', { name: 'Mehr anzeigen' }))
+    await screen.findByText('Eintrag 3')
+
+    expect(screen.getByText('1 Eintrag ausgewählt')).toBeInTheDocument()
+    expect(box(entryNumber(1))).toBeChecked()
+    expect(box('Alle angezeigten auswählen').indeterminate).toBe(true)
+    await userEvent.click(box('Alle angezeigten auswählen'))
+    expect(screen.getByText('3 Einträge ausgewählt')).toBeInTheDocument()
+  })
+
+  test('sends the ids of the selected results of both pages', async () => {
+    api.searchTimeEntries.mockResolvedValueOnce(answer([entry(1), entry(2)], 3)).mockResolvedValueOnce({ ...answer([entry(3)], 3), offset: 2 })
+    api.setTask.mockResolvedValue({ updated: 2 })
+    renderPage()
+    await screen.findByText('Eintrag 1')
+    await userEvent.click(box(entryNumber(2)))
+    await userEvent.click(screen.getByRole('button', { name: 'Mehr anzeigen' }))
+    await screen.findByText('Eintrag 3')
+    await userEvent.click(box(entryNumber(3)))
+
+    await userEvent.click(screen.getByRole('button', { name: 'Aufgabe setzen' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Übernehmen' }))
+
+    await waitFor(() => expect(api.setTask).toHaveBeenCalledWith([2, 3], ''))
+  })
+
+  test('has no checkbox on the running result, and the header box leaves it out', async () => {
+    api.searchTimeEntries.mockResolvedValue(answer([entry(1), entry(2, { end_time: null })]))
+    renderPage()
+    await screen.findByText('Eintrag 1')
+
+    await userEvent.click(box('Alle angezeigten auswählen'))
+
+    expect(screen.getByText('1 Eintrag ausgewählt')).toBeInTheDocument()
+    expect(screen.getAllByRole('checkbox')).toHaveLength(2)
+  })
+
+  test('says it all in English', async () => {
+    api.setTask.mockResolvedValue({ updated: 1 })
+    renderPage()
+    await screen.findByText('Eintrag 1')
+    act(() => switchLocale('en'))
+
+    await userEvent.click(screen.getByRole('checkbox', { name: /^Select: Website, .*Eintrag 1$/ }))
+    expect(screen.getByText('1 entry selected')).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: 'Set task' }))
+    expect(screen.getByText(/The task of 1 entry changes\./)).toBeInTheDocument()
+    await userEvent.type(screen.getByLabelText('Task'), 'Fix login')
+    await userEvent.click(screen.getByRole('button', { name: 'Apply' }))
+
+    expect(await screen.findByText('Task changed for 1 entry.')).toBeInTheDocument()
+  })
+
+  test('says the error in English', async () => {
+    api.setTask.mockRejectedValue(new ApiError(404, 'x'))
+    renderPage()
+    await screen.findByText('Eintrag 1')
+    act(() => switchLocale('en'))
+    await userEvent.click(screen.getByRole('checkbox', { name: /Eintrag 1$/ }))
+    await userEvent.click(screen.getByRole('button', { name: 'Set task' }))
+
+    await userEvent.click(screen.getByRole('button', { name: 'Apply' }))
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('The task could not be set. An entry does not exist any more.')
+  })
+
+  test('a second click on Apply while the request is sent sends nothing more', async () => {
+    const pending = deferred()
+    api.setTask.mockReturnValue(pending.promise)
+    renderPage()
+    await screen.findByText('Eintrag 1')
+    await userEvent.click(box(entryNumber(1)))
+    await userEvent.click(screen.getByRole('button', { name: 'Aufgabe setzen' }))
+
+    await userEvent.click(screen.getByRole('button', { name: 'Übernehmen' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Übernehmen' }))
+
+    expect(api.setTask).toHaveBeenCalledTimes(1)
+    await act(async () => pending.resolve({ updated: 1 }))
+  })
+
+  it('reloads with the filters of now when they changed while the task was being set', async () => {
+    const pending = deferred()
+    api.setTask.mockReturnValue(pending.promise)
+    renderPage()
+    await screen.findByText('Eintrag 1')
+    await userEvent.click(box(/Eintrag 1$/))
+    await userEvent.click(screen.getByRole('button', { name: 'Aufgabe setzen' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Übernehmen' }))
+
+    await userEvent.selectOptions(screen.getByLabelText('Kunde'), 'Neu AG')
+    await waitFor(() => expect(lastQuery()).toMatchObject({ customerId: '2' }))
+    await act(async () => pending.resolve({ updated: 1 }))
+
+    await waitFor(() => expect(api.setTask).toHaveBeenCalled())
+    expect(lastQuery()).toMatchObject({ customerId: '2' })
+    expect(api.searchTimeEntries.mock.calls.at(-1)[1]).toMatchObject({ offset: 0 })
+  })
+
+  it('does not bring the old success message back when a later selection is cleared', async () => {
+    api.setTask.mockResolvedValue({ updated: 1 })
+    renderPage()
+    await screen.findByText('Eintrag 1')
+    await userEvent.click(box(entryNumber(1)))
+    await userEvent.click(screen.getByRole('button', { name: 'Aufgabe setzen' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Übernehmen' }))
+    await screen.findByText('Aufgabe für 1 Eintrag geändert.')
+
+    await userEvent.click(box(entryNumber(2)))
+    await userEvent.click(screen.getByRole('button', { name: 'Auswahl aufheben' }))
+
+    expect(screen.queryByText('Aufgabe für 1 Eintrag geändert.')).not.toBeInTheDocument()
   })
 })
