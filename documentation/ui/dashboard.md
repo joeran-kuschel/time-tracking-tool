@@ -52,7 +52,8 @@ the report, so they equal the report of the same customer and month: the **billa
 **Billing** table. Each of those two cards names the rule under its heading (*Hours rounded up to quarter hours.*,
 German: *Stunden auf Viertelstunden aufgerundet.*), whatever the setting *Name the rounding rule in reports* says: that
 setting is about the report a customer receives, these are your own screens. The **tracked time** stays exact: *This
-week*, *This month* (and its average per day), the hours chart and the recent entries. That is why *This month* can show
+week*, *This month* (and its average per day), the recent entries and, by default, the hours chart (which has a switch for
+the billed hours, see below). That is why *This month* can show
 less than the hours in *Billing*. Customers can have their own rounding rule ([Time tracking](time-tracking.md#customers)): the figures of each customer follow its rule, and when the customers of the month do not share one rule the two notes say *Rounding differs by customer.* (German: *Die Rundung unterscheidet sich je Kunde.*) instead of naming a rule, and the customer's own report names its rule. Without a rounding rule nothing here changes. (An entry that ends before it starts
 keeps counting with its negative hours here, as before; the report counts it as 0, see [Time
 entries](../backend/time-entries.md#entries-that-end-before-they-start).)
@@ -64,6 +65,15 @@ Bars for the month, with a **Days / Weeks** switch (buttons with `aria-pressed`)
 - **Days:** one bar per day, scale 0 to 8 h (higher when a day has more). Labels on the 1st, on the first day of each week and *Today*.
 - **Weeks:** one bar per calendar week touching the month, counting only that month's days; scale 0
   to 40 h. Weeks start on the first day of the week (see below) and carry ISO week numbers. Labels *Week 36* plus the date range, the current week as *This week*.
+- **Tracked / Billed** (German: *Erfasst* / *Abrechenbar*): with a rounding rule, a second switch next to *Days / Weeks*
+  (buttons with `aria-pressed`) changes what the bars count. **Tracked** is the default and the exact time. **Billed**
+  counts the rounded hours of the report for each entry (`entryMinutes`, with the rule of the entry's customer), so the
+  month total equals the hours of the *Billing* table. Under the heading, the note names the rule (*Hours rounded up to
+  quarter hours.*, or *Rounding differs by customer.*). A running entry counts 0 and an entry that ends before it starts
+  counts its exact negative minutes, as in the billing figures. Without a rounding rule the switch is not shown. The
+  choice is not remembered: the chart starts with **Tracked** on every visit, and *This week* and *This month* always
+  stay tracked time. The readout (*… this month, billed*), the hidden table's caption (*Billed hours per day*) and the
+  arrow-key values follow the switch; the scale grows with the largest bar in both views.
 - Next to the title, a readout shows the month total. Hovering a bar shows its value there instead (*Mon, Sep 21:
   1:30 h*; future days read *upcoming*).
 - **Keyboard and screen readers:** the bars are one tab stop (a group named *Bars, use the arrow keys to read the

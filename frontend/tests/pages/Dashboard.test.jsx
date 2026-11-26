@@ -419,6 +419,17 @@ describe('Dashboard with a rounding rule', () => {
     expect(recent.getByText('0:20 h')).toBeInTheDocument()
   })
 
+  test('the chart has a Tracked / Billed switch, and its billed month total is the hours of the Billing table', async () => {
+    renderDashboard()
+    await loaded()
+    const chart = within(screen.getByRole('region', { name: 'Stunden pro Tag' }))
+
+    expect(chart.getByText('1:32 h in diesem Monat')).toBeInTheDocument()
+    await userEvent.click(chart.getByRole('button', { name: 'Abrechenbar' }))
+
+    expect(chart.getByText('2:00 h in diesem Monat, abrechenbar')).toBeInTheDocument()
+  })
+
   test('names the rule under By customer and Billing', async () => {
     renderDashboard()
     await loaded()
@@ -442,6 +453,7 @@ describe('Dashboard with a rounding rule', () => {
     renderDashboard()
     await loaded()
 
+    expect(screen.queryByRole('group', { name: 'Grundlage der Stunden' })).not.toBeInTheDocument()
     expect(screen.queryByText(/gerundet/)).not.toBeInTheDocument()
   })
 

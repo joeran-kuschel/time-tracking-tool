@@ -89,7 +89,7 @@ function Dashboard({ timer, onResume, firstDay }) {
             <KeyFigures entries={data.entries} lastMonthReports={data.lastMonthReports} now={now} rounding={rounding} firstDay={firstDay} />
           </div>
           <div className="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,24rem)]">
-            <HoursChart entries={data.entries} now={now} firstDay={firstDay} />
+            <HoursChart entries={data.entries} now={now} firstDay={firstDay} rounding={rounding} />
             <ByCustomer rows={customers} now={now} rounding={rounding} />
           </div>
           <div className="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,24rem)]">

@@ -67,9 +67,13 @@ msgstr "{lastMonthName}: {sent} of {total} reports sent."
 msgid "{sent} of {total}"
 msgstr "{sent} of {total}"
 
-#: src/components/dashboard/HoursChart.jsx:57
+#: src/components/dashboard/HoursChart.jsx:93
 msgid "{total} this month"
 msgstr "{total} this month"
+
+#: src/components/dashboard/HoursChart.jsx:93
+msgid "{total} this month, billed"
+msgstr "{total} this month, billed"
 
 #: src/components/EntriesList.jsx:99
 msgid "{total} total"
@@ -185,7 +189,7 @@ msgstr "Back to Time tracking"
 msgid "Bank details"
 msgstr "Bank details"
 
-#: src/components/dashboard/HoursChart.jsx:111
+#: src/components/dashboard/HoursChart.jsx:146
 msgid "Bars, use the arrow keys to read the values"
 msgstr "Bars, use the arrow keys to read the values"
 
@@ -200,6 +204,18 @@ msgstr "Billable amount"
 #: src/components/dashboard/KeyFigures.jsx:37
 msgid "Billable in {monthName}"
 msgstr "Billable in {monthName}"
+
+#: src/components/dashboard/HoursChart.jsx:17
+msgid "Billed"
+msgstr "Billed"
+
+#: src/components/dashboard/HoursChart.jsx:116
+msgid "Billed hours per day, {monthName}"
+msgstr "Billed hours per day, {monthName}"
+
+#: src/components/dashboard/HoursChart.jsx:117
+msgid "Billed hours per week, {monthName}"
+msgstr "Billed hours per week, {monthName}"
 
 #: src/components/dashboard/BillingTable.jsx:39
 msgid "Billing · {monthName}"
@@ -220,7 +236,7 @@ msgstr "Calendar"
 msgid "Cancel"
 msgstr "Cancel"
 
-#: src/components/dashboard/HoursChart.jsx:84
+#: src/components/dashboard/HoursChart.jsx:132
 msgid "Chart view"
 msgstr "Chart view"
 
@@ -332,11 +348,11 @@ msgstr "Dashboard could not be loaded."
 msgid "Date"
 msgstr "Date"
 
-#: src/components/dashboard/HoursChart.jsx:150
+#: src/components/dashboard/HoursChart.jsx:185
 msgid "Day"
 msgstr "Day"
 
-#: src/components/dashboard/HoursChart.jsx:9
+#: src/components/dashboard/HoursChart.jsx:10
 msgid "Days"
 msgstr "Days"
 
@@ -547,7 +563,7 @@ msgid "Hourly rate (€)"
 msgstr "Hourly rate (€)"
 
 #: src/components/dashboard/BillingTable.jsx:51
-#: src/components/dashboard/HoursChart.jsx:151
+#: src/components/dashboard/HoursChart.jsx:186
 #: src/components/EntriesList.jsx:115
 #: src/components/EntryResults.jsx:49
 #: src/components/invoices/InvoicePreview.jsx:64
@@ -559,19 +575,23 @@ msgstr "Hours"
 msgid "Hours × hourly rate of each project"
 msgstr "Hours × hourly rate of each project"
 
-#: src/components/dashboard/HoursChart.jsx:80
+#: src/components/dashboard/HoursChart.jsx:131
+msgid "Hours basis"
+msgstr "Hours basis"
+
+#: src/components/dashboard/HoursChart.jsx:125
 msgid "Hours per day"
 msgstr "Hours per day"
 
-#: src/components/dashboard/HoursChart.jsx:147
+#: src/components/dashboard/HoursChart.jsx:116
 msgid "Hours per day, {monthName}"
 msgstr "Hours per day, {monthName}"
 
-#: src/components/dashboard/HoursChart.jsx:80
+#: src/components/dashboard/HoursChart.jsx:125
 msgid "Hours per week"
 msgstr "Hours per week"
 
-#: src/components/dashboard/HoursChart.jsx:147
+#: src/components/dashboard/HoursChart.jsx:117
 msgid "Hours per week, {monthName}"
 msgstr "Hours per week, {monthName}"
 
@@ -1451,7 +1471,7 @@ msgstr "This month"
 msgid "This project does not exist (any more)."
 msgstr "This project does not exist (any more)."
 
-#: src/components/dashboard/HoursChart.jsx:47
+#: src/components/dashboard/HoursChart.jsx:83
 #: src/components/dashboard/KeyFigures.jsx:35
 #: src/components/EntryFilters.jsx:11
 msgid "This week"
@@ -1520,7 +1540,7 @@ msgstr "To"
 msgid "To the nearest"
 msgstr "To the nearest"
 
-#: src/components/dashboard/HoursChart.jsx:35
+#: src/components/dashboard/HoursChart.jsx:71
 #: src/components/EntryFilters.jsx:10
 msgid "Today"
 msgstr "Today"
@@ -1548,6 +1568,10 @@ msgstr "Total hours"
 msgid "Track time"
 msgstr "Track time"
 
+#: src/components/dashboard/HoursChart.jsx:16
+msgid "Tracked"
+msgstr "Tracked"
+
 #: src/App.jsx:135
 #: src/components/AuthGate.jsx:66
 #: src/components/invoices/InvoiceList.jsx:25
@@ -1566,7 +1590,7 @@ msgstr "Up"
 msgid "Up to 6 lines, for example street and town."
 msgstr "Up to 6 lines, for example street and town."
 
-#: src/components/dashboard/HoursChart.jsx:55
+#: src/components/dashboard/HoursChart.jsx:91
 msgid "upcoming"
 msgstr "upcoming"
 
@@ -1595,19 +1619,19 @@ msgstr "VAT rate"
 msgid "View all"
 msgstr "View all"
 
-#: src/components/dashboard/HoursChart.jsx:150
+#: src/components/dashboard/HoursChart.jsx:185
 msgid "Week"
 msgstr "Week"
 
-#: src/components/dashboard/HoursChart.jsx:47
+#: src/components/dashboard/HoursChart.jsx:83
 msgid "Week {week}"
 msgstr "Week {week}"
 
-#: src/components/dashboard/HoursChart.jsx:43
+#: src/components/dashboard/HoursChart.jsx:79
 msgid "Week {week}, {range}"
 msgstr "Week {week}, {range}"
 
-#: src/components/dashboard/HoursChart.jsx:10
+#: src/components/dashboard/HoursChart.jsx:11
 msgid "Weeks"
 msgstr "Weeks"
 
