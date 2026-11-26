@@ -67,9 +67,13 @@ msgstr "{lastMonthName}: {sent} von {total} Abrechnungen verschickt."
 msgid "{sent} of {total}"
 msgstr "{sent} von {total}"
 
-#: src/components/dashboard/HoursChart.jsx:57
+#: src/components/dashboard/HoursChart.jsx:93
 msgid "{total} this month"
 msgstr "{total} in diesem Monat"
+
+#: src/components/dashboard/HoursChart.jsx:93
+msgid "{total} this month, billed"
+msgstr "{total} in diesem Monat, abrechenbar"
 
 #: src/components/EntriesList.jsx:99
 msgid "{total} total"
@@ -185,7 +189,7 @@ msgstr "Zurück zu Zeiterfassung"
 msgid "Bank details"
 msgstr "Bankverbindung"
 
-#: src/components/dashboard/HoursChart.jsx:111
+#: src/components/dashboard/HoursChart.jsx:146
 msgid "Bars, use the arrow keys to read the values"
 msgstr "Balken, mit den Pfeiltasten die Werte lesen"
 
@@ -200,6 +204,18 @@ msgstr "Abrechenbarer Betrag"
 #: src/components/dashboard/KeyFigures.jsx:37
 msgid "Billable in {monthName}"
 msgstr "Abrechenbar im {monthName}"
+
+#: src/components/dashboard/HoursChart.jsx:17
+msgid "Billed"
+msgstr "Abrechenbar"
+
+#: src/components/dashboard/HoursChart.jsx:116
+msgid "Billed hours per day, {monthName}"
+msgstr "Abrechenbare Stunden pro Tag, {monthName}"
+
+#: src/components/dashboard/HoursChart.jsx:117
+msgid "Billed hours per week, {monthName}"
+msgstr "Abrechenbare Stunden pro Woche, {monthName}"
 
 #: src/components/dashboard/BillingTable.jsx:39
 msgid "Billing · {monthName}"
@@ -220,7 +236,7 @@ msgstr "Kalender"
 msgid "Cancel"
 msgstr "Abbrechen"
 
-#: src/components/dashboard/HoursChart.jsx:84
+#: src/components/dashboard/HoursChart.jsx:132
 msgid "Chart view"
 msgstr "Ansicht des Diagramms"
 
@@ -332,11 +348,11 @@ msgstr "Dashboard konnte nicht geladen werden."
 msgid "Date"
 msgstr "Datum"
 
-#: src/components/dashboard/HoursChart.jsx:150
+#: src/components/dashboard/HoursChart.jsx:185
 msgid "Day"
 msgstr "Tag"
 
-#: src/components/dashboard/HoursChart.jsx:9
+#: src/components/dashboard/HoursChart.jsx:10
 msgid "Days"
 msgstr "Tage"
 
@@ -547,7 +563,7 @@ msgid "Hourly rate (€)"
 msgstr "Stundensatz (€)"
 
 #: src/components/dashboard/BillingTable.jsx:51
-#: src/components/dashboard/HoursChart.jsx:151
+#: src/components/dashboard/HoursChart.jsx:186
 #: src/components/EntriesList.jsx:115
 #: src/components/EntryResults.jsx:49
 #: src/components/invoices/InvoicePreview.jsx:64
@@ -559,19 +575,23 @@ msgstr "Stunden"
 msgid "Hours × hourly rate of each project"
 msgstr "Stunden × Stundensatz des Projekts"
 
-#: src/components/dashboard/HoursChart.jsx:80
+#: src/components/dashboard/HoursChart.jsx:131
+msgid "Hours basis"
+msgstr "Grundlage der Stunden"
+
+#: src/components/dashboard/HoursChart.jsx:125
 msgid "Hours per day"
 msgstr "Stunden pro Tag"
 
-#: src/components/dashboard/HoursChart.jsx:147
+#: src/components/dashboard/HoursChart.jsx:116
 msgid "Hours per day, {monthName}"
 msgstr "Stunden pro Tag, {monthName}"
 
-#: src/components/dashboard/HoursChart.jsx:80
+#: src/components/dashboard/HoursChart.jsx:125
 msgid "Hours per week"
 msgstr "Stunden pro Woche"
 
-#: src/components/dashboard/HoursChart.jsx:147
+#: src/components/dashboard/HoursChart.jsx:117
 msgid "Hours per week, {monthName}"
 msgstr "Stunden pro Woche, {monthName}"
 
@@ -1451,7 +1471,7 @@ msgstr "Dieser Monat"
 msgid "This project does not exist (any more)."
 msgstr "Dieses Projekt existiert nicht (mehr)."
 
-#: src/components/dashboard/HoursChart.jsx:47
+#: src/components/dashboard/HoursChart.jsx:83
 #: src/components/dashboard/KeyFigures.jsx:35
 #: src/components/EntryFilters.jsx:11
 msgid "This week"
@@ -1520,7 +1540,7 @@ msgstr "Bis"
 msgid "To the nearest"
 msgstr "Auf- oder abrunden (nächstgelegene Stufe)"
 
-#: src/components/dashboard/HoursChart.jsx:35
+#: src/components/dashboard/HoursChart.jsx:71
 #: src/components/EntryFilters.jsx:10
 msgid "Today"
 msgstr "Heute"
@@ -1548,6 +1568,10 @@ msgstr "Gesamtstunden"
 msgid "Track time"
 msgstr "Zeit erfassen"
 
+#: src/components/dashboard/HoursChart.jsx:16
+msgid "Tracked"
+msgstr "Erfasst"
+
 #: src/App.jsx:135
 #: src/components/AuthGate.jsx:66
 #: src/components/invoices/InvoiceList.jsx:25
@@ -1566,7 +1590,7 @@ msgstr "Aufrunden"
 msgid "Up to 6 lines, for example street and town."
 msgstr "Bis zu 6 Zeilen, zum Beispiel Straße und Ort."
 
-#: src/components/dashboard/HoursChart.jsx:55
+#: src/components/dashboard/HoursChart.jsx:91
 msgid "upcoming"
 msgstr "noch offen"
 
@@ -1595,19 +1619,19 @@ msgstr "Umsatzsteuersatz"
 msgid "View all"
 msgstr "Alle ansehen"
 
-#: src/components/dashboard/HoursChart.jsx:150
+#: src/components/dashboard/HoursChart.jsx:185
 msgid "Week"
 msgstr "Woche"
 
-#: src/components/dashboard/HoursChart.jsx:47
+#: src/components/dashboard/HoursChart.jsx:83
 msgid "Week {week}"
 msgstr "Woche {week}"
 
-#: src/components/dashboard/HoursChart.jsx:43
+#: src/components/dashboard/HoursChart.jsx:79
 msgid "Week {week}, {range}"
 msgstr "Woche {week}, {range}"
 
-#: src/components/dashboard/HoursChart.jsx:10
+#: src/components/dashboard/HoursChart.jsx:11
 msgid "Weeks"
 msgstr "Wochen"
 

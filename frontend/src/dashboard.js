@@ -11,10 +11,14 @@ const firstOfMonth = (date) => new Date(date.getFullYear(), date.getMonth(), 1)
 const daysInMonth = (date) => new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate()
 const isWeekday = (date) => date.getDay() !== 0 && date.getDay() !== 6
 
-const sumMinutes = (entries) => entries.reduce((sum, e) => sum + minutesBetween(e.start_time, e.end_time), 0)
+const exactMinutes = (entry) => minutesBetween(entry.start_time, entry.end_time)
+
+// The minutes of the entries as counted by minutesOf: the exact tracked time unless the caller passes another count
+// (the chart's billed view passes entryMinutes, the rounded hours of the report)
+const sumMinutes = (entries, minutesOf = exactMinutes) => entries.reduce((sum, e) => sum + minutesOf(e), 0)
 
 // The tracked time of the entries in minutes, exact: never the rounded billed hours (running entries count 0)
-export const trackedMinutes = sumMinutes
+export const trackedMinutes = (entries) => sumMinutes(entries)
 const startsIn = (from, to) => (entry) => {
   const start = new Date(entry.start_time)
   return start >= from && start < to
@@ -70,19 +74,19 @@ export function workingDaysSoFar(now) {
   return count
 }
 
-// One row per day of the month: { date, minutes }
-export function dailyMinutes(entries, now) {
+// One row per day of the month: { date, minutes }. The minutes are the exact tracked time, or those of minutesOf.
+export function dailyMinutes(entries, now, minutesOf) {
   const month = monthEntries(entries, now)
   return Array.from({ length: daysInMonth(now) }, (_, i) => {
     const date = new Date(now.getFullYear(), now.getMonth(), i + 1)
-    return { date, minutes: sumMinutes(month.filter(startsIn(date, addDays(date, 1)))) }
+    return { date, minutes: sumMinutes(month.filter(startsIn(date, addDays(date, 1))), minutesOf) }
   })
 }
 
 // One row per calendar week touching the month, counting only the month's days:
-// { week, start, end } with start and end clipped to the month, and minutes
-export function weeklyMinutes(entries, now, firstDay = 1) {
-  const days = dailyMinutes(entries, now)
+// { week, start, end } with start and end clipped to the month, and minutes (counted like dailyMinutes does)
+export function weeklyMinutes(entries, now, firstDay = 1, minutesOf) {
+  const days = dailyMinutes(entries, now, minutesOf)
   const weeks = []
   for (const { date, minutes } of days) {
     const last = weeks[weeks.length - 1]

@@ -1,4 +1,5 @@
 import { describe, expect, test } from 'vitest'
+import { entryMinutes } from '@/format'
 import {
   byCustomer, dailyMinutes, dashboardRange, isoWeek, startOfWeek, trackedMinutes, weekMinutes, weekNumber, weeklyMinutes, workingDaysSoFar,
 } from '@/dashboard'
@@ -223,5 +224,41 @@ describe('byCustomer in whole minutes', () => {
     const half = (id) => ({ id, start_time: '2026-09-21T09:00:00', end_time: '2026-09-21T09:00:30' })
 
     expect(trackedMinutes([1, 2, 3].map(half))).toBe(3)
+  })
+})
+
+describe('dailyMinutes and weeklyMinutes counted as billed hours', () => {
+  // 7 and 44 minutes on Tuesday the 1st, rounded up to quarter hours: 15 and 45; a running entry; one that ends before it starts
+  const billedEntries = [
+    { ...entry(21, muster, website, '95.00', '2026-09-01T09:00:00', '2026-09-01T09:07:00'), billed_hours: '0.25' },
+    { ...entry(22, muster, website, '95.00', '2026-09-01T10:00:00', '2026-09-01T10:44:00'), billed_hours: '0.75' },
+    entry(23, muster, website, '95.00', '2026-09-02T09:00:00', null),
+    { ...entry(24, muster, website, '95.00', '2026-09-02T12:00:00', '2026-09-02T11:30:00'), billed_hours: null },
+  ]
+
+  test('count the exact tracked time by default', () => {
+    expect(dailyMinutes(billedEntries, now)[0].minutes).toBe(51)
+  })
+
+  test('count the rounded hours of the report with entryMinutes', () => {
+    const days = dailyMinutes(billedEntries, now, entryMinutes)
+
+    expect(days[0].minutes).toBe(60)
+  })
+
+  test('count a running entry as 0 and an entry that ends before it starts as its exact negative minutes, as the billing figures do', () => {
+    expect(dailyMinutes(billedEntries, now, entryMinutes)[1].minutes).toBe(-30)
+  })
+
+  test('weeklyMinutes passes the count on to the weeks', () => {
+    const exact = weeklyMinutes(billedEntries, now)
+    const billed = weeklyMinutes(billedEntries, now, 1, entryMinutes)
+
+    expect(exact[0].minutes).toBe(51 - 30)
+    expect(billed[0].minutes).toBe(60 - 30)
+  })
+
+  test('trackedMinutes stays exact whatever the entries carry', () => {
+    expect(trackedMinutes(billedEntries.slice(0, 2))).toBe(51)
   })
 })
